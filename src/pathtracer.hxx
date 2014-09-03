@@ -48,7 +48,7 @@ public:
 				Vec3f LoDirect = Vec3f(0);
 				const Material& mat = mScene.GetMaterial( isect.matID );
 
-				for(size_t i=0; i<mScene.GetLightCount(); i++)
+				for(int i=0; i<mScene.GetLightCount(); i++)
 				{
 					const AbstractLight* light = mScene.GetLightPtr(i);
 					assert(light != 0);

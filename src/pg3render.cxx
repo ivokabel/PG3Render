@@ -2,6 +2,7 @@
 #include <cmath>
 #include <time.h>
 #include <cstdlib>
+#include <algorithm>
 #include "math.hxx"
 #include "ray.hxx"
 #include "geometry.hxx"
@@ -66,6 +67,8 @@ float render(
         {
             int threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(iter);
+
+            printf(".");
         }
     }
 
@@ -143,14 +146,13 @@ int main(int argc, const char *argv[])
         printf("Target:  %d iteration(s)\n", config.mIterations);
 
     // Renders the image
-    printf("Running: %s... ", config.GetName(config.mAlgorithm));
+    printf("Running: %s ", config.GetName(config.mAlgorithm));
     fflush(stdout);
     float time = render(config);
-    printf("done in %.2f s\n", time);
+    printf(" done in %.2f s\n", time);
 
     // Saves the image
     std::string extension = config.mOutputName.substr(config.mOutputName.length() - 3, 3);
-
     if(extension == "bmp")
         fbuffer.SaveBMP(config.mOutputName.c_str(), 2.2f /*gamma*/);
     else if(extension == "hdr")

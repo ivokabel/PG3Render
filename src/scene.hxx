@@ -90,37 +90,37 @@ public:
     // Loads a Cornell Box scene
     enum BoxMask
     {
-		// light source flags
+        // light source flags
         kLightCeiling      = 1,
-		kLightBox          = 2,
+        kLightBox          = 2,
         kLightPoint        = 4,
         kLightEnv          = 8,
-		// geometry flags
+        // geometry flags
         kSpheres           = 64,
         kWalls             = 256,
-		// material flags
-		kSpheresDiffuse    = 512,
-		kSpheresGlossy     = 1024,
-		kWallsDiffuse      = 2048,
-		kWallsGlossy       = 4096,
+        // material flags
+        kSpheresDiffuse    = 512,
+        kSpheresGlossy     = 1024,
+        kWallsDiffuse      = 2048,
+        kWallsGlossy       = 4096,
         kDefault           = (kLightCeiling | kWalls | kSpheres | kSpheresDiffuse | kWallsDiffuse ),
     };
 
-	inline void SetMaterial(
-		Material &aMat, 
-		const Vec3f& aDiffuseReflectance, 
-		const Vec3f& aGlossyReflectance, 
-		float aPhongExponent, 
-		uint aDiffuse, 
-		uint aGlossy)
-	{
-		aMat.Reset();
+    inline void SetMaterial(
+        Material &aMat, 
+        const Vec3f& aDiffuseReflectance, 
+        const Vec3f& aGlossyReflectance, 
+        float aPhongExponent, 
+        uint aDiffuse, 
+        uint aGlossy)
+    {
+        aMat.Reset();
         aMat.mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : Vec3f(0);
         aMat.mPhongReflectance   = aGlossy  ? aGlossyReflectance  : Vec3f(0);
         aMat.mPhongExponent      = aPhongExponent;
-		if( aGlossy ) 
-			aMat.mDiffuseReflectance /= 2; // to make it energy conserving
-	}
+        if( aGlossy ) 
+            aMat.mDiffuseReflectance /= 2; // to make it energy conserving
+    }
 
     void LoadCornellBox(
         const Vec2i &aResolution,
@@ -148,27 +148,27 @@ public:
         mMaterials.push_back(mat);
 
         // 2) white floor (and possibly ceiling)
-		SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.803922f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.803922f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 3) green left wall
-		SetMaterial(mat, Vec3f(0.156863f, 0.803922f, 0.172549f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Vec3f(0.156863f, 0.803922f, 0.172549f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 4) red right wall
-		SetMaterial(mat, Vec3f(0.803922f, 0.152941f, 0.152941f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Vec3f(0.803922f, 0.152941f, 0.152941f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 5) white back wall
-		SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.803922f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.803922f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 6) sphere1 (yellow)
-		SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.152941f), Vec3f(0.7f), 200, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
+        SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.152941f), Vec3f(0.7f), 200, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
         mMaterials.push_back(mat);
 
-		// 7) sphere2 (blue)
-		SetMaterial(mat, Vec3f(0.152941f, 0.152941f, 0.803922f), Vec3f(0.7f), 600, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
+        // 7) sphere2 (blue)
+        SetMaterial(mat, Vec3f(0.152941f, 0.152941f, 0.803922f), Vec3f(0.7f), 600, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
         mMaterials.push_back(mat);
 
         delete mGeometry;
@@ -189,52 +189,51 @@ public:
         GeometryList *geometryList = new GeometryList;
         mGeometry = geometryList;
 
-		// Floor
-		geometryList->mGeometry.push_back(new Triangle(cb[0], cb[4], cb[5], 2));
-		geometryList->mGeometry.push_back(new Triangle(cb[5], cb[1], cb[0], 2));
+        // Floor
+        geometryList->mGeometry.push_back(new Triangle(cb[0], cb[4], cb[5], 2));
+        geometryList->mGeometry.push_back(new Triangle(cb[5], cb[1], cb[0], 2));
 
-		if(aBoxMask & kWalls)
-		{
-			// Left wall
-			geometryList->mGeometry.push_back(new Triangle(cb[3], cb[7], cb[4], 3));
-			geometryList->mGeometry.push_back(new Triangle(cb[4], cb[0], cb[3], 3));
+        if(aBoxMask & kWalls)
+        {
+            // Left wall
+            geometryList->mGeometry.push_back(new Triangle(cb[3], cb[7], cb[4], 3));
+            geometryList->mGeometry.push_back(new Triangle(cb[4], cb[0], cb[3], 3));
 
-			// Right wall
-			geometryList->mGeometry.push_back(new Triangle(cb[1], cb[5], cb[6], 4));
-			geometryList->mGeometry.push_back(new Triangle(cb[6], cb[2], cb[1], 4));
+            // Right wall
+            geometryList->mGeometry.push_back(new Triangle(cb[1], cb[5], cb[6], 4));
+            geometryList->mGeometry.push_back(new Triangle(cb[6], cb[2], cb[1], 4));
 
-			// Back wall
-			geometryList->mGeometry.push_back(new Triangle(cb[0], cb[1], cb[2], 5));
-			geometryList->mGeometry.push_back(new Triangle(cb[2], cb[3], cb[0], 5));
+            // Back wall
+            geometryList->mGeometry.push_back(new Triangle(cb[0], cb[1], cb[2], 5));
+            geometryList->mGeometry.push_back(new Triangle(cb[2], cb[3], cb[0], 5));
 
 
-			// Ceiling
-			if(light_ceiling && !light_box)
-			{
-				geometryList->mGeometry.push_back(new Triangle(cb[2], cb[6], cb[7], 0));
-				geometryList->mGeometry.push_back(new Triangle(cb[7], cb[3], cb[2], 1));
-			}
-			else
-			{
-				geometryList->mGeometry.push_back(new Triangle(cb[2], cb[6], cb[7], 2));
-				geometryList->mGeometry.push_back(new Triangle(cb[7], cb[3], cb[2], 2));
-			}
-		}
+            // Ceiling
+            if(light_ceiling && !light_box)
+            {
+                geometryList->mGeometry.push_back(new Triangle(cb[2], cb[6], cb[7], 0));
+                geometryList->mGeometry.push_back(new Triangle(cb[7], cb[3], cb[2], 1));
+            }
+            else
+            {
+                geometryList->mGeometry.push_back(new Triangle(cb[2], cb[6], cb[7], 2));
+                geometryList->mGeometry.push_back(new Triangle(cb[7], cb[3], cb[2], 2));
+            }
+        }
 
-		// Spheres
-		if( aBoxMask & kSpheres )
-		{
+        // Spheres
+        if( aBoxMask & kSpheres )
+        {
+            float smallRadius = 0.5f;
+            Vec3f leftWallCenter  = (cb[0] + cb[4]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
+            Vec3f rightWallCenter = (cb[1] + cb[5]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
+            float xlen = rightWallCenter.x - leftWallCenter.x;
+            Vec3f leftBallCenter  = leftWallCenter  + Vec3f(2.f * xlen / 7.f, 0, 0);
+            Vec3f rightBallCenter = rightWallCenter - Vec3f(2.f * xlen / 7.f, -xlen/4, 0);
 
-			float smallRadius = 0.5f;
-			Vec3f leftWallCenter  = (cb[0] + cb[4]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
-			Vec3f rightWallCenter = (cb[1] + cb[5]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
-			float xlen = rightWallCenter.x - leftWallCenter.x;
-			Vec3f leftBallCenter  = leftWallCenter  + Vec3f(2.f * xlen / 7.f, 0, 0);
-			Vec3f rightBallCenter = rightWallCenter - Vec3f(2.f * xlen / 7.f, -xlen/4, 0);
-
-			geometryList->mGeometry.push_back(new Sphere(leftBallCenter,  smallRadius, 6));
-			geometryList->mGeometry.push_back(new Sphere(rightBallCenter, smallRadius, 7));
-		}
+            geometryList->mGeometry.push_back(new Sphere(leftBallCenter,  smallRadius, 6));
+            geometryList->mGeometry.push_back(new Sphere(rightBallCenter, smallRadius, 7));
+        }
 
         //////////////////////////////////////////////////////////////////////////
         // Light box at the ceiling
@@ -263,15 +262,15 @@ public:
             // Front wall
             geometryList->mGeometry.push_back(new Triangle(lb[4], lb[5], lb[6], 5));
             geometryList->mGeometry.push_back(new Triangle(lb[6], lb[7], lb[4], 5));
-			// Floor
-			geometryList->mGeometry.push_back(new Triangle(lb[0], lb[5], lb[4], 0));
-			geometryList->mGeometry.push_back(new Triangle(lb[5], lb[0], lb[1], 1));
+            // Floor
+            geometryList->mGeometry.push_back(new Triangle(lb[0], lb[5], lb[4], 0));
+            geometryList->mGeometry.push_back(new Triangle(lb[5], lb[0], lb[1], 1));
         }
 
         //////////////////////////////////////////////////////////////////////////
         // Lights
         
-		if(light_ceiling && !light_box)
+        if(light_ceiling && !light_box)
         {
             // entire ceiling is a light source
             mLights.resize(2);
@@ -336,13 +335,13 @@ public:
             acronym += "s";
         }
 
-		if((aBoxMask & kWalls|kSpheres) == 0)
+        if((aBoxMask & kWalls|kSpheres) == 0)
         {
             name    += "empty ";
             acronym += "e";
         }
 
-		name    += "+ ";
+        name    += "+ ";
         acronym += "_";
 
         // Light sources
@@ -369,17 +368,17 @@ public:
             acronym += "e";
         }
 
-		name    += "+ ";
+        name    += "+ ";
         acronym += "_";
 
-		// Material
+        // Material
         if((aBoxMask & kSpheresDiffuse) == kSpheresDiffuse)
         {
             name    += "sph. diffuse ";
             acronym += "sd";
         }
 
-		if((aBoxMask & kSpheresGlossy) == kSpheresGlossy)
+        if((aBoxMask & kSpheresGlossy) == kSpheresGlossy)
         {
             name    += "sph. glossy ";
             acronym += "sg";
@@ -391,7 +390,7 @@ public:
             acronym += "wd";
         }
 
-		if((aBoxMask & kWallsGlossy) == kWallsGlossy)
+        if((aBoxMask & kWallsGlossy) == kWallsGlossy)
         {
             name    += "walls glossy ";
             acronym += "wg";

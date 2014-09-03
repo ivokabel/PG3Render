@@ -144,7 +144,7 @@ void PrintHelp(const char *argv[])
     for(int i = 0; i < SizeOfArray(g_SceneConfigs); i++)
         printf("          %d    %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
 
-    printf("    -a  Selects the rendering algorithm (default vcm):\n");
+    printf("    -a  Selects the rendering algorithm (default pt):\n");
 
     for(int i = 0; i < (int)Config::kAlgorithmMax; i++)
         printf("          %-3s  %s\n",
@@ -160,7 +160,7 @@ void PrintHelp(const char *argv[])
 // Parses command line, setting up config
 void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 {
-    // Parameters marked with [cmd] can be change from command line
+    // Parameters marked with [cmd] can be changed from command line
     oConfig.mScene         = NULL;                  // [cmd] When NULL, renderer will not run
     oConfig.mAlgorithm     = Config::kAlgorithmMax; // [cmd]
     oConfig.mIterations    = 1;                     // [cmd]
