@@ -60,6 +60,7 @@ struct Config
     int         mBaseSeed;
     uint        mMaxPathLength;
     uint        mMinPathLength;
+    std::string mDefOutputExtension;
     std::string mOutputName;
     Vec2i       mResolution;
 };
@@ -97,22 +98,22 @@ uint g_SceneConfigs[] = {
 
 std::string DefaultFilename(
     const uint              aSceneConfig,
-    const Scene             &aScene,
-    const Config::Algorithm aAlgorithm)
+    const Config          & aConfig
+    )
 {
     aSceneConfig; // unused parameter
 
     std::string filename;
 
     // We use scene acronym
-    filename += aScene.mSceneAcronym;
+    filename += aConfig.mScene->mSceneAcronym;
 
     // We add acronym of the used algorithm
     filename += "_";
-    filename += Config::GetAcronym(aAlgorithm);
+    filename += Config::GetAcronym(aConfig.mAlgorithm);
 
-    // And it will be written as bmp
-    filename += ".bmp";
+    // And it will be written in chosen format
+    filename += "." + aConfig.mDefOutputExtension;
 
     return filename;
 }
@@ -140,7 +141,8 @@ void PrintHelp(const char *argv[])
 {
     printf("\n");
     printf("Usage: %s [ -s <scene_id> | -a <algorithm> |\n", argv[0]);
-    printf("           -t <time> | -i <iteration> | -o <output_name> | --report ]\n\n");
+    printf("    -t <time> | -i <iterations> | -e <default_output_extension> | -o <output_name> | --report ]\n\n");
+
     printf("    -s  Selects the scene (default 0):\n");
 
     for(int i = 0; i < SizeOfArray(g_SceneConfigs); i++)
@@ -155,6 +157,7 @@ void PrintHelp(const char *argv[])
 
     printf("    -t  Number of seconds to run the algorithm\n");
     printf("    -i  Number of iterations to run the algorithm (default 1)\n");
+    printf("    -e  Extension of the default output file: bmp or hdr (default bmp)\n");
     printf("    -o  User specified output name, with extension .bmp or .hdr (default .bmp)\n");
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
 }
@@ -163,17 +166,18 @@ void PrintHelp(const char *argv[])
 void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
-    oConfig.mScene         = NULL;                  // [cmd] When NULL, renderer will not run
-    oConfig.mAlgorithm     = Config::kAlgorithmMax; // [cmd]
-    oConfig.mIterations    = 1;                     // [cmd]
-    oConfig.mMaxTime       = -1.f;                  // [cmd]
-    oConfig.mOutputName    = "";                    // [cmd]
-    oConfig.mNumThreads    = 0;
-    oConfig.mBaseSeed      = 1234;
-    oConfig.mMaxPathLength = 10;
-    oConfig.mMinPathLength = 0;
-    oConfig.mResolution    = Vec2i(512, 512);
-    //oConfig.mFramebuffer   = NULL; // this is never set by any parameter
+    oConfig.mScene              = NULL;                  // [cmd] When NULL, renderer will not run
+    oConfig.mAlgorithm          = Config::kAlgorithmMax; // [cmd]
+    oConfig.mIterations         = 1;                     // [cmd]
+    oConfig.mMaxTime            = -1.f;                  // [cmd]
+    oConfig.mDefOutputExtension = "bmp";                 // [cmd]
+    oConfig.mOutputName         = "";                    // [cmd]
+    oConfig.mNumThreads         = 0;
+    oConfig.mBaseSeed           = 1234;
+    oConfig.mMaxPathLength      = 10;
+    oConfig.mMinPathLength      = 0;
+    oConfig.mResolution         = Vec2i(512, 512);
+    //oConfig.mFramebuffer      = NULL; // this is never set by any parameter
 
     int sceneID    = 0; // default 0
 
@@ -233,7 +237,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
         {
             if(++i == argc)
             {
-                printf("Missing <iteration> argument, please see help (-h)\n");
+                printf("Missing <iterations> argument, please see help (-h)\n");
                 return;
             }
 
@@ -242,7 +246,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 
             if(iss.fail() || oConfig.mIterations < 1)
             {
-                printf("Invalid <iteration> argument, please see help (-h)\n");
+                printf("Invalid <iterations> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -265,7 +269,30 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 
             oConfig.mIterations = -1; // time has precedence
         }
-        else if(arg == "-o") // number of seconds to run
+        else if (arg == "-e") // extension of default output file name
+        {
+            if (++i == argc)
+            {
+                printf("Missing <default_output_extension> argument, please see help (-h)\n");
+                return;
+            }
+
+            oConfig.mDefOutputExtension = argv[i];
+
+            if (oConfig.mDefOutputExtension != "bmp" && oConfig.mDefOutputExtension != "hdr")
+            {
+                printf(
+                    "The <default_output_extension> argument \"%s\" is neither \"bmp\" nor \"hdr\". Using \"bmp\".\n", 
+                    oConfig.mDefOutputExtension.c_str());
+                oConfig.mDefOutputExtension = "bmp";
+            }
+            else if (oConfig.mDefOutputExtension.length() == 0)
+            {
+                printf("Invalid <default_output_extension> argument, please see help (-h)\n");
+                return;
+            }
+        }
+        else if (arg == "-o") // custom output file name
         {
             if(++i == argc)
             {
@@ -298,8 +325,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     // If no output name is chosen, create a default one
     if(oConfig.mOutputName.length() == 0)
     {
-        oConfig.mOutputName = DefaultFilename(g_SceneConfigs[sceneID],
-            *oConfig.mScene, oConfig.mAlgorithm);
+        oConfig.mOutputName = DefaultFilename(g_SceneConfigs[sceneID], oConfig);
     }
 
     // Check if output name has valid extension (.bmp or .hdr) and if not add .bmp

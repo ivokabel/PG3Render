@@ -139,24 +139,31 @@ int main(int argc, const char *argv[])
     config.mFramebuffer = &fbuffer;
 
     // Prints what we are doing
-    printf("Scene:   %s\n", config.mScene->mSceneName.c_str());
+    printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
     if(config.mMaxTime > 0)
-        printf("Target:  %g seconds render time\n", config.mMaxTime);
+        printf("Target:    %g seconds render time\n", config.mMaxTime);
     else
-        printf("Target:  %d iteration(s)\n", config.mIterations);
+        printf("Target:    %d iteration(s)\n", config.mIterations);
 
     // Renders the image
-    printf("Running: %s ", config.GetName(config.mAlgorithm));
+    printf("Running:   %s ", config.GetName(config.mAlgorithm));
     fflush(stdout);
     float time = render(config);
     printf(" done in %.2f s\n", time);
 
     // Saves the image
+    printf("Saving to: %s ... ", config.mOutputName.c_str());
     std::string extension = config.mOutputName.substr(config.mOutputName.length() - 3, 3);
     if(extension == "bmp")
+    {
         fbuffer.SaveBMP(config.mOutputName.c_str(), 2.2f /*gamma*/);
-    else if(extension == "hdr")
+        printf("done\n");
+    }
+    else if (extension == "hdr")
+    {
         fbuffer.SaveHDR(config.mOutputName.c_str());
+        printf("done\n");
+    }
     else
         printf("Used unknown extension %s\n", extension.c_str());
 
