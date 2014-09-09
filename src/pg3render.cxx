@@ -130,7 +130,7 @@ int main(int argc, const char *argv[])
     if(config.mNumThreads <= 0)
         config.mNumThreads  = std::max(1, omp_get_num_procs());
 
-    // When some error has been encountered, exits
+    // When some error has been encountered, exit
     if(config.mScene == NULL)
         return 1;
 

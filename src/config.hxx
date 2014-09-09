@@ -100,6 +100,8 @@ std::string DefaultFilename(
     const Scene             &aScene,
     const Config::Algorithm aAlgorithm)
 {
+    aSceneConfig; // unused parameter
+
     std::string filename;
 
     // We use scene acronym

@@ -79,6 +79,9 @@ public:
                 if(dotLN > 0)
                     mFramebuffer.AddColor(sample, (rhoD/PI_F) * Vec3f(dotLN));
 				*/
+
+                // unused parameter?
+                aIteration;
             }
         }
 

@@ -8,10 +8,7 @@ class AbstractLight
 {
 public:
 
-	virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
-	{
-		return Vec3f(0);
-	}
+    virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -32,6 +29,17 @@ public:
         float len    = normal.Length();
         mInvArea     = 2.f / len;
         mFrame.SetFromZ(normal);
+    }
+
+    virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
+    {
+        // TODO
+        aSurfPt;
+        aFrame;
+        oWig;
+        oLightDist;
+
+    	return Vec3f(0);
     }
 
 public:
@@ -85,6 +93,17 @@ public:
     BackgroundLight()
     {
         mBackgroundColor = Vec3f(135, 206, 250) / Vec3f(255.f);
+    }
+
+    virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
+    {
+        // TODO
+        aSurfPt;
+        aFrame;
+        oWig;
+        oLightDist;
+
+        return Vec3f(0);
     }
 
 public:
