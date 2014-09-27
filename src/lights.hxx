@@ -31,6 +31,15 @@ public:
         mFrame.SetFromZ(normal);
     }
 
+    virtual void SetPower(const Vec3f& aPower)
+    {
+        // Radiance = Flux/(Pi*Area)  [W * sr^-1 * m^2]
+        // = 25/(Pi*0.25) = 31.831
+        // = 25/(Pi*6.5538048016) = 1.214
+
+        mRadiance = aPower * mInvArea / PI_F;
+    }
+
     virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
     {
         // TODO
@@ -45,7 +54,7 @@ public:
 public:
     Vec3f p0, e1, e2;
     Frame mFrame;
-    Vec3f mRadiance;
+    Vec3f mRadiance;    // Integral radiance? [W.m^-2.sr^-1]
     float mInvArea;
 };
 
@@ -57,6 +66,11 @@ public:
     PointLight(const Vec3f& aPosition)
     {
         mPosition = aPosition;
+    }
+
+    virtual void SetPower(const Vec3f& aPower)
+    {
+        mIntensity = aPower / (4 * PI_F);
     }
 
 	virtual Vec3f sampleIllumination(
@@ -82,7 +96,7 @@ public:
 public:
 
     Vec3f mPosition;
-    Vec3f mIntensity;
+    Vec3f mIntensity;   // Integral radiant intensity? [W.sr^-1]
 };
 
 

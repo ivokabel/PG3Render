@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <cmath>
@@ -273,45 +274,59 @@ public:
         if(light_ceiling && !light_box)
         {
             // entire ceiling is a light source
+
             mLights.resize(2);
-            AreaLight *l = new AreaLight(cb[2], cb[6], cb[7]);
-            l->mRadiance = Vec3f(1.21f);
-            mLights[0] = l;
+
+            // The whole ceiling emmits 25 Watts
+            const float totalPower = 25.0f; // Flux, in Wats
+
+            AreaLight *light = new AreaLight(cb[2], cb[6], cb[7]);
+            //light->mRadiance = Vec3f(1.21f); // 25/2 Watts
+            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            mLights[0] = light;
             mMaterial2Light.insert(std::make_pair(0, 0));
 
-            l = new AreaLight(cb[7], cb[3], cb[2]);
-            l->mRadiance = Vec3f(1.21f);
-            mLights[1] = l;
+            light = new AreaLight(cb[7], cb[3], cb[2]);
+            //light->mRadiance = Vec3f(1.21f); // 25/2 Watts
+            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            mLights[1] = light;
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
         if(light_box && !light_ceiling)
         {
             // With light box
+
             mLights.resize(2);
-            AreaLight *l = new AreaLight(lb[0], lb[5], lb[4]);
-            l->mRadiance = Vec3f(31.831f); // 25 Watts
-            mLights[0] = l;
+
+            // The whole lightbox emmits 25 Watts
+            const float totalPower = 25.0f; // Flux, in Wats
+
+            AreaLight *light = new AreaLight(lb[0], lb[5], lb[4]);
+            //light->mRadiance = Vec3f(31.831f); // 25/2 Watts
+            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            mLights[0] = light;
             mMaterial2Light.insert(std::make_pair(0, 0));
 
-            l = new AreaLight(lb[5], lb[0], lb[1]);
-            l->mRadiance = Vec3f(31.831f); // 25 Watts
-            mLights[1] = l;
+            light = new AreaLight(lb[5], lb[0], lb[1]);
+            //light->mRadiance = Vec3f(31.831f); // 25/2 Watts
+            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            mLights[1] = light;
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
         if(light_point)
         {
-            PointLight *l = new PointLight(Vec3f(0.0, -0.5, 1.0));
-            l->mIntensity = Vec3f( 50.f/*Watts*/ / (4*PI_F) );
-            mLights.push_back(l);
+            PointLight *light = new PointLight(Vec3f(0.0, -0.5, 1.0));
+            light->SetPower(Vec3f(50.f/*Watts*/));
+            mLights.push_back(light);
         }
 
         if(light_env)
         {
-            BackgroundLight *l = new BackgroundLight;
-            mLights.push_back(l);
-            mBackground = l;
+            BackgroundLight *light = new BackgroundLight;
+            mLights.push_back(light);
+            mBackground = light;
         }
     }
 
