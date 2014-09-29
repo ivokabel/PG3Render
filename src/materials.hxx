@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "math.hxx"
+#include "spectrum.hxx"
 
 class Material
 {
@@ -12,24 +13,24 @@ public:
 
     void Reset()
     {
-        mDiffuseReflectance = Vec3f(0);
-        mPhongReflectance   = Vec3f(0);
+        mDiffuseReflectance = Spectrum(0);
+        mPhongReflectance   = Spectrum(0);
         mPhongExponent      = 1.f;
     }
 
-	Vec3f evalBrdf( const Vec3f& wil, const Vec3f& wol ) const
+	Spectrum evalBrdf( const Vec3f& wil, const Vec3f& wol ) const
 	{
 		if( wil.z <= 0 && wol.z <= 0)
-			return Vec3f(0);
+			return Spectrum(0);
 
-		Vec3f diffuseComponent = mDiffuseReflectance / PI_F;
+		Spectrum diffuseComponent(mDiffuseReflectance / PI_F);
 
-		// Vec3f glossyComponent  = 
+		// Spectrum glossyComponent  = 
 
 		return diffuseComponent /* + glossyComponent */;
 	}
 
-    Vec3f mDiffuseReflectance;
-    Vec3f mPhongReflectance;
+    Spectrum mDiffuseReflectance;
+    Spectrum mPhongReflectance;
     float mPhongExponent;
 };

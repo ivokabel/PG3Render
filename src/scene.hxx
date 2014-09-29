@@ -5,6 +5,7 @@
 #include <map>
 #include <cmath>
 #include "math.hxx"
+#include "spectrum.hxx"
 #include "geometry.hxx"
 #include "camera.hxx"
 #include "materials.hxx"
@@ -109,17 +110,18 @@ public:
 
     inline void SetMaterial(
         Material &aMat, 
-        const Vec3f& aDiffuseReflectance, 
-        const Vec3f& aGlossyReflectance, 
+        const Spectrum& aDiffuseReflectance, 
+        const Spectrum& aGlossyReflectance, 
         float aPhongExponent, 
         uint aDiffuse, 
         uint aGlossy)
     {
         aMat.Reset();
-        aMat.mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : Vec3f(0);
-        aMat.mPhongReflectance   = aGlossy  ? aGlossyReflectance  : Vec3f(0);
+        aMat.mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : Spectrum(0);
+        aMat.mPhongReflectance   = aGlossy  ? aGlossyReflectance  : Spectrum(0);
         aMat.mPhongExponent      = aPhongExponent;
         if( aGlossy ) 
+            // TODO: Is this enough? Shouldn't we do that also to the phong lobe reflectance?
             aMat.mDiffuseReflectance /= 2; // to make it energy conserving
     }
 
@@ -149,27 +151,27 @@ public:
         mMaterials.push_back(mat);
 
         // 2) white floor (and possibly ceiling)
-        SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.803922f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Spectrum(0.803922f, 0.803922f, 0.803922f), Spectrum(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 3) green left wall
-        SetMaterial(mat, Vec3f(0.156863f, 0.803922f, 0.172549f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Spectrum(0.156863f, 0.803922f, 0.172549f), Spectrum(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 4) red right wall
-        SetMaterial(mat, Vec3f(0.803922f, 0.152941f, 0.152941f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Spectrum(0.803922f, 0.152941f, 0.152941f), Spectrum(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 5) white back wall
-        SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.803922f), Vec3f(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
+        SetMaterial(mat, Spectrum(0.803922f, 0.803922f, 0.803922f), Spectrum(0.5f), 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
         mMaterials.push_back(mat);
 
         // 6) sphere1 (yellow)
-        SetMaterial(mat, Vec3f(0.803922f, 0.803922f, 0.152941f), Vec3f(0.7f), 200, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
+        SetMaterial(mat, Spectrum(0.803922f, 0.803922f, 0.152941f), Spectrum(0.7f), 200, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
         mMaterials.push_back(mat);
 
         // 7) sphere2 (blue)
-        SetMaterial(mat, Vec3f(0.152941f, 0.152941f, 0.803922f), Vec3f(0.7f), 600, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
+        SetMaterial(mat, Spectrum(0.152941f, 0.152941f, 0.803922f), Spectrum(0.7f), 600, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
         mMaterials.push_back(mat);
 
         delete mGeometry;
@@ -281,14 +283,14 @@ public:
             const float totalPower = 25.0f; // Flux, in Wats
 
             AreaLight *light = new AreaLight(cb[2], cb[6], cb[7]);
-            //light->mRadiance = Vec3f(1.21f); // 25/2 Watts
-            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            //light->mRadiance = Spectrum(1.21f); // 25/2 Watts
+            light->SetPower(Spectrum(totalPower / 2.0f)); // Each triangle emmits half of the flux
             mLights[0] = light;
             mMaterial2Light.insert(std::make_pair(0, 0));
 
             light = new AreaLight(cb[7], cb[3], cb[2]);
-            //light->mRadiance = Vec3f(1.21f); // 25/2 Watts
-            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            //light->mRadiance = Spectrum(1.21f); // 25/2 Watts
+            light->SetPower(Spectrum(totalPower / 2.0f)); // Each triangle emmits half of the flux
             mLights[1] = light;
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
@@ -303,22 +305,22 @@ public:
             const float totalPower = 25.0f; // Flux, in Wats
 
             AreaLight *light = new AreaLight(lb[0], lb[5], lb[4]);
-            //light->mRadiance = Vec3f(31.831f); // 25/2 Watts
-            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            //light->mRadiance = Spectrum(31.831f); // 25/2 Watts
+            light->SetPower(Spectrum(totalPower / 2.0f)); // Each triangle emmits half of the flux
             mLights[0] = light;
             mMaterial2Light.insert(std::make_pair(0, 0));
 
             light = new AreaLight(lb[5], lb[0], lb[1]);
-            //light->mRadiance = Vec3f(31.831f); // 25/2 Watts
-            light->SetPower(totalPower / 2.0f); // Each triangle emmits half of the flux
+            //light->mRadiance = Spectrum(31.831f); // 25/2 Watts
+            light->SetPower(Spectrum(totalPower / 2.0f)); // Each triangle emmits half of the flux
             mLights[1] = light;
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
         if(light_point)
         {
-            PointLight *light = new PointLight(Vec3f(0.0, -0.5, 1.0));
-            light->SetPower(Vec3f(50.f/*Watts*/));
+            PointLight *light = new PointLight(Spectrum(0.0, -0.5, 1.0));
+            light->SetPower(Spectrum(50.f/*Watts*/));
             mLights.push_back(light);
         }
 

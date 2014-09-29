@@ -62,5 +62,8 @@
     <ClInclude Include="src\utils.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\spectrum.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

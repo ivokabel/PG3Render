@@ -2,13 +2,14 @@
 
 #include <vector>
 #include <cmath>
+#include "spectrum.hxx"
 #include "math.hxx"
 
 #define EPS_COSINE 1e-6f
 #define EPS_RAY    1e-3f
 
 // sRGB luminance
-float Luminance(const Vec3f& aRGB)
+float Luminance(const Spectrum& aRGB)
 {
     return 0.212671f * aRGB.x +
         0.715160f * aRGB.y +

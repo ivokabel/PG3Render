@@ -4,6 +4,7 @@
 #include <cmath>
 #include <fstream>
 #include <string.h>
+#include "spectrum.hxx"
 #include "utils.hxx"
 
 class Framebuffer
@@ -17,7 +18,7 @@ public:
     // Accumulation
     void AddColor(
         const Vec2f& aSample,
-        const Vec3f& aColor)
+        const Spectrum& aColor)
     {
         if(aSample.x < 0 || aSample.x >= mResolution.x)
             return;
@@ -44,7 +45,7 @@ public:
 
     void Clear()
     {
-        memset(&mColor[0], 0, sizeof(Vec3f) * mColor.size());
+        memset(&mColor[0], 0, sizeof(Spectrum) * mColor.size());
     }
 
     void Add(const Framebuffer& aOther)
@@ -56,7 +57,7 @@ public:
     void Scale(float aScale)
     {
         for(size_t i=0; i<mColor.size(); i++)
-            mColor[i] = mColor[i] * Vec3f(aScale);
+            mColor[i] = mColor[i] * Spectrum(aScale);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -78,47 +79,48 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Saving
-    void SavePPM(
-        const char *aFilename,
-        float       aGamma = 1.f)
-    {
-        const float invGamma = 1.f / aGamma;
 
-        std::ofstream ppm(aFilename);
-        ppm << "P3" << std::endl;
-        ppm << mResX << " " << mResY << std::endl;
-        ppm << "255" << std::endl;
+    //void SavePPM(
+    //    const char *aFilename,
+    //    float       aGamma = 1.f)
+    //{
+    //    const float invGamma = 1.f / aGamma;
 
-        Vec3f *ptr = &mColor[0];
+    //    std::ofstream ppm(aFilename);
+    //    ppm << "P3" << std::endl;
+    //    ppm << mResX << " " << mResY << std::endl;
+    //    ppm << "255" << std::endl;
 
-        for(int y=0; y<mResY; y++)
-        {
-            for(int x=0; x<mResX; x++)
-            {
-                ptr = &mColor[x + y*mResX];
-                int r = int(std::pow(ptr->x, invGamma) * 255.f);
-                int g = int(std::pow(ptr->y, invGamma) * 255.f);
-                int b = int(std::pow(ptr->z, invGamma) * 255.f);
+    //    Vec3f *ptr = &mColor[0];
 
-                ppm << std::min(255, std::max(0, r)) << " "
-                    << std::min(255, std::max(0, g)) << " "
-                    << std::min(255, std::max(0, b)) << " ";
-            }
+    //    for(int y=0; y<mResY; y++)
+    //    {
+    //        for(int x=0; x<mResX; x++)
+    //        {
+    //            ptr = &mColor[x + y*mResX];
+    //            int r = int(std::pow(ptr->x, invGamma) * 255.f);
+    //            int g = int(std::pow(ptr->y, invGamma) * 255.f);
+    //            int b = int(std::pow(ptr->z, invGamma) * 255.f);
 
-            ppm << std::endl;
-        }
-    }
+    //            ppm << std::min(255, std::max(0, r)) << " "
+    //                << std::min(255, std::max(0, g)) << " "
+    //                << std::min(255, std::max(0, b)) << " ";
+    //        }
 
-    void SavePFM(const char* aFilename)
-    {
-        std::ofstream ppm(aFilename, std::ios::binary);
-        ppm << "PF" << std::endl;
-        ppm << mResX << " " << mResY << std::endl;
-        ppm << "-1" << std::endl;
+    //        ppm << std::endl;
+    //    }
+    //}
 
-        ppm.write(reinterpret_cast<const char*>(&mColor[0]),
-            mColor.size() * sizeof(Vec3f));
-    }
+    //void SavePFM(const char* aFilename)
+    //{
+    //    std::ofstream ppm(aFilename, std::ios::binary);
+    //    ppm << "PF" << std::endl;
+    //    ppm << mResX << " " << mResY << std::endl;
+    //    ppm << "-1" << std::endl;
+
+    //    ppm.write(reinterpret_cast<const char*>(&mColor[0]),
+    //        mColor.size() * sizeof(Vec3f));
+    //}
 
     //////////////////////////////////////////////////////////////////////////
     // Saving BMP
@@ -172,7 +174,7 @@ public:
             for(int x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
-                const Vec3f &rgbF = mColor[x + (mResY-y-1)*mResX];
+                const Spectrum &rgbF = mColor[x + (mResY-y-1)*mResX];
                 typedef unsigned char byte;
                 float gammaBgr[3];
                 gammaBgr[0] = std::pow(rgbF.z, invGamma) * 255.f;
@@ -207,7 +209,7 @@ public:
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
 
-                const Vec3f &rgbF = mColor[x + y*mResX];
+                const Spectrum &rgbF = mColor[x + y*mResX];
                 float v = std::max(rgbF.x, std::max(rgbF.y, rgbF.z));
 
                 if(v >= 1e-32f)
@@ -227,7 +229,7 @@ public:
 
 private:
 
-    std::vector<Vec3f> mColor;
+    std::vector<Spectrum> mColor;
     Vec2f              mResolution;
     int                mResX;
     int                mResY;

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <omp.h>
 #include <cassert>
+#include "spectrum.hxx"
 #include "renderer.hxx"
 #include "rng.hxx"
 
@@ -45,7 +46,7 @@ public:
 				frame.SetFromZ(isect.normal);
 				const Vec3f wol = frame.ToLocal(-ray.dir);
 
-				Vec3f LoDirect = Vec3f(0);
+				Spectrum LoDirect = Spectrum(0);
 				const Material& mat = mScene.GetMaterial( isect.matID );
 
 				for(int i=0; i<mScene.GetLightCount(); i++)
@@ -54,7 +55,7 @@ public:
 					assert(light != 0);
 
 					Vec3f wig; float lightDist;
-					Vec3f illum = light->sampleIllumination(surfPt, frame, wig, lightDist);
+					Spectrum illum = light->sampleIllumination(surfPt, frame, wig, lightDist);
 					
 					if(illum.Max() > 0)
 					{
@@ -70,14 +71,14 @@ public:
 
 				// this illustrates how to pick-up the material properties of the intersected surface
 				const Material& mat = mScene.GetMaterial( isect.matID );
-				const Vec3f& rhoD = mat.mDiffuseReflectance;
+				const Spectrum& rhoD = mat.mDiffuseReflectance;
 
 				// this illustrates how to pick-up the area source associated with the intersected surface
 				const AbstractLight *light = isect.lightID < 0 ?  0 : mScene.GetLightPtr( isect.lightID );
 				// we cannot do anything with the light because it has no interface right now
 
                 if(dotLN > 0)
-                    mFramebuffer.AddColor(sample, (rhoD/PI_F) * Vec3f(dotLN));
+                    mFramebuffer.AddColor(sample, (rhoD/PI_F) * Spectrum(dotLN));
 				*/
 
                 // unused parameter?

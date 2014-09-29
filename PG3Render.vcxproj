@@ -165,6 +165,7 @@
     <ClInclude Include="src\renderer.hxx" />
     <ClInclude Include="src\rng.hxx" />
     <ClInclude Include="src\scene.hxx" />
+    <ClInclude Include="src\spectrum.hxx" />
     <ClInclude Include="src\utils.hxx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

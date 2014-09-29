@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <omp.h>
+#include "spectrum.hxx"
 #include "renderer.hxx"
 #include "rng.hxx"
 
@@ -41,9 +42,9 @@ public:
                 float dotLN = Dot(isect.normal, -ray.dir);
 
                 if(dotLN > 0)
-                    mFramebuffer.AddColor(sample, Vec3f(dotLN));
+                    mFramebuffer.AddColor(sample, Spectrum(dotLN));
                 else
-                    mFramebuffer.AddColor(sample, Vec3f(-dotLN, 0, 0));
+                    mFramebuffer.AddColor(sample, Spectrum(-dotLN, 0, 0));
             }
         }
 

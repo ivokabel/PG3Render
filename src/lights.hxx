@@ -3,12 +3,13 @@
 #include <vector>
 #include <cmath>
 #include "math.hxx"
+#include "spectrum.hxx"
 
 class AbstractLight
 {
 public:
 
-    virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const = 0;
+    virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -31,7 +32,7 @@ public:
         mFrame.SetFromZ(normal);
     }
 
-    virtual void SetPower(const Vec3f& aPower)
+    virtual void SetPower(const Spectrum& aPower)
     {
         // Radiance = Flux/(Pi*Area)  [W * sr^-1 * m^2]
         // = 25/(Pi*0.25) = 31.831
@@ -40,7 +41,7 @@ public:
         mRadiance = aPower * mInvArea / PI_F;
     }
 
-    virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
+    virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
     {
         // TODO
         aSurfPt;
@@ -48,13 +49,13 @@ public:
         oWig;
         oLightDist;
 
-    	return Vec3f(0);
+    	return Spectrum(0);
     }
 
 public:
     Vec3f p0, e1, e2;
     Frame mFrame;
-    Vec3f mRadiance;    // Integral radiance? [W.m^-2.sr^-1]
+    Spectrum mRadiance;    // Integral radiance? [W.m^-2.sr^-1]
     float mInvArea;
 };
 
@@ -68,12 +69,12 @@ public:
         mPosition = aPosition;
     }
 
-    virtual void SetPower(const Vec3f& aPower)
+    virtual void SetPower(const Spectrum& aPower)
     {
         mIntensity = aPower / (4 * PI_F);
     }
 
-	virtual Vec3f sampleIllumination(
+	virtual Spectrum sampleIllumination(
 		const Vec3f& aSurfPt, 
 		const Frame& aFrame, 
 		Vec3f& oWig, 
@@ -88,7 +89,7 @@ public:
 		float cosTheta = Dot(aFrame.mZ, oWig);
 
 		if(cosTheta <= 0)
-			return Vec3f(0);
+			return Spectrum(0);
 
 		return mIntensity * cosTheta / distSqr;
 	}
@@ -96,7 +97,7 @@ public:
 public:
 
     Vec3f mPosition;
-    Vec3f mIntensity;   // Integral radiant intensity? [W.sr^-1]
+    Spectrum mIntensity;   // Integral radiant intensity? [W.sr^-1]
 };
 
 
@@ -106,10 +107,10 @@ class BackgroundLight : public AbstractLight
 public:
     BackgroundLight()
     {
-        mBackgroundColor = Vec3f(135, 206, 250) / Vec3f(255.f);
+        mBackgroundColor = Spectrum(135, 206, 250) / Spectrum(255.f);
     }
 
-    virtual Vec3f sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
+    virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
     {
         // TODO
         aSurfPt;
@@ -117,10 +118,10 @@ public:
         oWig;
         oLightDist;
 
-        return Vec3f(0);
+        return Spectrum(0);
     }
 
 public:
 
-    Vec3f mBackgroundColor;
+    Spectrum mBackgroundColor;
 };
