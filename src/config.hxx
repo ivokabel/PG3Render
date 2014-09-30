@@ -25,7 +25,7 @@ struct Config
     {
         kEyeLight,
         kPathTracing,
-		kAlgorithmMax
+        kAlgorithmMax
     };
 
     static const char* GetName(Algorithm aAlgorithm)
@@ -92,7 +92,7 @@ uint g_SceneConfigs[] = {
     Scene::kLightCeiling | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
     Scene::kLightBox     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightBox     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
-	Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+    Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy
 };
 
@@ -313,7 +313,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     // Check algorithm was selected
     if(oConfig.mAlgorithm == Config::kAlgorithmMax)
     {
-		oConfig.mAlgorithm = Config::kPathTracing;
+        oConfig.mAlgorithm = Config::kPathTracing;
     }
 
     // Load scene

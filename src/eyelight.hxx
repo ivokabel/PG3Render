@@ -41,10 +41,12 @@ public:
             {
                 float dotLN = Dot(isect.normal, -ray.dir);
 
+                Spectrum color;
                 if(dotLN > 0)
-                    mFramebuffer.AddColor(sample, Spectrum(dotLN));
+                    color.SetSRGBGreyLight(dotLN);
                 else
-                    mFramebuffer.AddColor(sample, Spectrum(-dotLN, 0, 0));
+                    color.SetSRGBLight(-dotLN, 0, 0);
+                mFramebuffer.AddColor(sample, color);
             }
         }
 

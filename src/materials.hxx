@@ -13,24 +13,42 @@ public:
 
     void Reset()
     {
-        mDiffuseReflectance = Spectrum(0);
-        mPhongReflectance   = Spectrum(0);
-        mPhongExponent      = 1.f;
+        mDiffuseReflectance.SetGreyAttenuation(0.0f);
+        mPhongReflectance.SetGreyAttenuation(0.0f);
+        mPhongExponent = 1.f;
     }
 
-	Spectrum evalBrdf( const Vec3f& wil, const Vec3f& wol ) const
-	{
-		if( wil.z <= 0 && wol.z <= 0)
-			return Spectrum(0);
+    void Set(
+        const Spectrum& aDiffuseReflectance,
+        const Spectrum& aGlossyReflectance,
+        float aPhongExponent,
+        uint aDiffuse,
+        uint aGlossy)
+    {
+        //Reset();
 
-		Spectrum diffuseComponent(mDiffuseReflectance / PI_F);
+        mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : Spectrum().Zero();
+        mPhongReflectance =   aGlossy ?  aGlossyReflectance  : Spectrum().Zero();
+        mPhongExponent = aPhongExponent;
 
-		// Spectrum glossyComponent  = 
+        if (aGlossy)
+            // TODO: Is this enough? Shouldn't we do that also to the phong lobe reflectance?
+            mDiffuseReflectance /= 2; // to make it energy conserving
+    }
 
-		return diffuseComponent /* + glossyComponent */;
-	}
+    Spectrum evalBrdf(const Vec3f& wil, const Vec3f& wol) const
+    {
+        if (wil.z <= 0 && wol.z <= 0)
+            return Spectrum().Zero();
 
-    Spectrum mDiffuseReflectance;
-    Spectrum mPhongReflectance;
-    float mPhongExponent;
+        Spectrum diffuseComponent(mDiffuseReflectance / PI_F); // TODO: Pre-compute
+
+        // Spectrum glossyComponent  = 
+
+        return diffuseComponent /* + glossyComponent */;
+    }
+
+    Spectrum    mDiffuseReflectance;
+    Spectrum    mPhongReflectance;
+    float       mPhongExponent;
 };

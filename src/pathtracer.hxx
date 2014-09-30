@@ -41,45 +41,46 @@ public:
 
             if(mScene.Intersect(ray, isect))
             {
-				const Vec3f surfPt = ray.org + ray.dir * isect.dist;
-				Frame frame;
-				frame.SetFromZ(isect.normal);
-				const Vec3f wol = frame.ToLocal(-ray.dir);
+                const Vec3f surfPt = ray.org + ray.dir * isect.dist;
+                Frame frame;
+                frame.SetFromZ(isect.normal);
+                const Vec3f wol = frame.ToLocal(-ray.dir);
 
-				Spectrum LoDirect = Spectrum(0);
-				const Material& mat = mScene.GetMaterial( isect.matID );
+                Spectrum LoDirect;
+                LoDirect.SetSRGBGreyLight(0.0f);
+                const Material& mat = mScene.GetMaterial( isect.matID );
 
-				for(int i=0; i<mScene.GetLightCount(); i++)
-				{
-					const AbstractLight* light = mScene.GetLightPtr(i);
-					assert(light != 0);
+                for(int i=0; i<mScene.GetLightCount(); i++)
+                {
+                    const AbstractLight* light = mScene.GetLightPtr(i);
+                    assert(light != 0);
 
-					Vec3f wig; float lightDist;
-					Spectrum illum = light->sampleIllumination(surfPt, frame, wig, lightDist);
-					
-					if(illum.Max() > 0)
-					{
-						if( ! mScene.Occluded(surfPt, wig, lightDist) )
-							LoDirect += illum * mat.evalBrdf(frame.ToLocal(wig), wol);
-					}
-				}
+                    Vec3f wig; float lightDist;
+                    Spectrum illum = light->sampleIllumination(surfPt, frame, wig, lightDist);
+                    
+                    if(illum.Max() > 0)
+                    {
+                        if( ! mScene.Occluded(surfPt, wig, lightDist) )
+                            LoDirect += illum * mat.evalBrdf(frame.ToLocal(wig), wol);
+                    }
+                }
 
-				mFramebuffer.AddColor(sample, LoDirect);
+                mFramebuffer.AddColor(sample, LoDirect);
 
-				/*
+                /*
                 float dotLN = Dot(isect.normal, -ray.dir);
 
-				// this illustrates how to pick-up the material properties of the intersected surface
-				const Material& mat = mScene.GetMaterial( isect.matID );
-				const Spectrum& rhoD = mat.mDiffuseReflectance;
+                // this illustrates how to pick-up the material properties of the intersected surface
+                const Material& mat = mScene.GetMaterial( isect.matID );
+                const Spectrum& rhoD = mat.mDiffuseReflectance;
 
-				// this illustrates how to pick-up the area source associated with the intersected surface
-				const AbstractLight *light = isect.lightID < 0 ?  0 : mScene.GetLightPtr( isect.lightID );
-				// we cannot do anything with the light because it has no interface right now
+                // this illustrates how to pick-up the area source associated with the intersected surface
+                const AbstractLight *light = isect.lightID < 0 ?  0 : mScene.GetLightPtr( isect.lightID );
+                // we cannot do anything with the light because it has no interface right now
 
                 if(dotLN > 0)
                     mFramebuffer.AddColor(sample, (rhoD/PI_F) * Spectrum(dotLN));
-				*/
+                */
 
                 // unused parameter?
                 aIteration;

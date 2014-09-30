@@ -22,11 +22,11 @@ public:
         const Vec3f &aP1,
         const Vec3f &aP2)
     {
-        p0 = aP0;
-        e1 = aP1 - aP0;
-        e2 = aP2 - aP0;
+        mP0 = aP0;
+        mE1 = aP1 - aP0;
+        mE2 = aP2 - aP0;
 
-        Vec3f normal = Cross(e1, e2);
+        Vec3f normal = Cross(mE1, mE2);
         float len    = normal.Length();
         mInvArea     = 2.f / len;
         mFrame.SetFromZ(normal);
@@ -38,7 +38,7 @@ public:
         // = 25/(Pi*0.25) = 31.831
         // = 25/(Pi*6.5538048016) = 1.214
 
-        mRadiance = aPower * mInvArea / PI_F;
+        mRadiance = aPower * (mInvArea / PI_F);
     }
 
     virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
@@ -49,14 +49,14 @@ public:
         oWig;
         oLightDist;
 
-    	return Spectrum(0);
+        return Spectrum().Zero();
     }
 
 public:
-    Vec3f p0, e1, e2;
-    Frame mFrame;
-    Spectrum mRadiance;    // Integral radiance? [W.m^-2.sr^-1]
-    float mInvArea;
+    Vec3f       mP0, mE1, mE2;
+    Frame       mFrame;
+    Spectrum    mRadiance;    // Spectral radiance
+    float       mInvArea;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -74,30 +74,30 @@ public:
         mIntensity = aPower / (4 * PI_F);
     }
 
-	virtual Spectrum sampleIllumination(
-		const Vec3f& aSurfPt, 
-		const Frame& aFrame, 
-		Vec3f& oWig, 
-		float& oLightDist) const
-	{
-		oWig           = mPosition - aSurfPt;
-		float distSqr  = oWig.LenSqr();
-		oLightDist     = sqrt(distSqr);
-		
-		oWig /= oLightDist;
+    virtual Spectrum sampleIllumination(
+        const Vec3f& aSurfPt, 
+        const Frame& aFrame, 
+        Vec3f& oWig, 
+        float& oLightDist) const
+    {
+        oWig           = mPosition - aSurfPt;
+        float distSqr  = oWig.LenSqr();
+        oLightDist     = sqrt(distSqr);
+        
+        oWig /= oLightDist;
 
-		float cosTheta = Dot(aFrame.mZ, oWig);
+        float cosTheta = Dot(aFrame.mZ, oWig);
 
-		if(cosTheta <= 0)
-			return Spectrum(0);
+        if (cosTheta <= 0)
+            return Spectrum().Zero();
 
-		return mIntensity * cosTheta / distSqr;
-	}
+        return mIntensity * cosTheta / distSqr;
+    }
 
 public:
 
-    Vec3f mPosition;
-    Spectrum mIntensity;   // Integral radiant intensity? [W.sr^-1]
+    Vec3f       mPosition;
+    Spectrum    mIntensity;   // Spectral radiant intensity
 };
 
 
@@ -107,7 +107,7 @@ class BackgroundLight : public AbstractLight
 public:
     BackgroundLight()
     {
-        mBackgroundColor = Spectrum(135, 206, 250) / Spectrum(255.f);
+        mBackgroundLight.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
     }
 
     virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
@@ -118,10 +118,10 @@ public:
         oWig;
         oLightDist;
 
-        return Spectrum(0);
+        return Spectrum().Zero();
     }
 
 public:
 
-    Spectrum mBackgroundColor;
+    Spectrum mBackgroundLight;
 };

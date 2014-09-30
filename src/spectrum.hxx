@@ -29,14 +29,7 @@ class SRGBSpectrum : public Vec3f
 {
 public:
 
-    // TODO: 
-    // Operators: addition
-
-    // TODO: Hide parameter constructors of the Vec3f. For setting the content use 
-    // the following public setters with specific semantics.
     SRGBSpectrum() {};
-    SRGBSpectrum(float a) : Vec3f(a) {};
-    SRGBSpectrum(float a, float b, float c) : Vec3f(a, b, c) {};
 
     // This constructor is needed to use the overloaded operators 
     // from Vec3f, which return objects of type Vec3f.
@@ -48,20 +41,18 @@ public:
         x = y = z = a;
     };
 
-    // Sets as attenuation quantity which is neutral - doesn't change the colour of incident light
-    void SetGreyAttenuation(float a)
-    {
-        x = y = z = a;
-    };
-
-    // TODO: hide triple parameter constructor
-
     // Sets as light quantity in sRGB colourspace coordinates
     void SetSRGBLight(float r, float g, float b)
     {
         x = r;
         y = g;
         z = b;
+    };
+
+    // Sets as attenuation quantity which is neutral - doesn't change the colour of incident light
+    void SetGreyAttenuation(float a)
+    {
+        x = y = z = a;
     };
 
     // Sets as attenuation quantity which will transform white sRGB incident light to light 
@@ -74,7 +65,8 @@ public:
     };
 
     // Converts the internal representation to SRGBSpectrum.
-    // TODO: In spectral version: What about gamut mapping? Do we allow negative coordinates?
+    // TODO: Make this a conversion operator to make things more fancy?
+    // TODO: In spectral version: Where do we want to do gamut mapping?
     void ConvertToSRGBSpectrum(SRGBSpectrum &oSpectrum) const
     {
         oSpectrum = *this;
@@ -82,11 +74,17 @@ public:
 
     // Later: ConvertToSampledSpectrum8()?
 
+    // Make this instance zero
+    SRGBSpectrum& Zero()
+    {
+        for (int i = 0; i<3; i++)
+            Get(i) = 0.0f;
+        return *this;
+    }
+
 private:
 
     // TODO: ? Sanity check (only in debug mode!) ? :
     // Set whether we were initialised as light or attenuation (enum: light, att, none) and 
     // throw an error is we are set incorrectly later on. Is it really helpfull?
 };
-
-Spectrum dummy;

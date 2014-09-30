@@ -56,8 +56,11 @@ public:
 
     void Scale(float aScale)
     {
-        for(size_t i=0; i<mColor.size(); i++)
-            mColor[i] = mColor[i] * Spectrum(aScale);
+        Spectrum scaleAttenuation;
+        scaleAttenuation.SetGreyAttenuation(aScale);
+
+        for (size_t i = 0; i < mColor.size(); i++)
+            mColor[i] *= scaleAttenuation;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -174,12 +177,15 @@ public:
             for(int x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
-                const Spectrum &rgbF = mColor[x + (mResY-y-1)*mResX];
+                const Spectrum &spectrum = mColor[x + (mResY-y-1)*mResX];
+                SRGBSpectrum sRGB;
+                spectrum.ConvertToSRGBSpectrum(sRGB);
+
                 typedef unsigned char byte;
                 float gammaBgr[3];
-                gammaBgr[0] = std::pow(rgbF.z, invGamma) * 255.f;
-                gammaBgr[1] = std::pow(rgbF.y, invGamma) * 255.f;
-                gammaBgr[2] = std::pow(rgbF.x, invGamma) * 255.f;
+                gammaBgr[0] = std::pow(sRGB.z, invGamma) * 255.f;
+                gammaBgr[1] = std::pow(sRGB.y, invGamma) * 255.f;
+                gammaBgr[2] = std::pow(sRGB.x, invGamma) * 255.f;
 
                 byte bgrB[3];
                 bgrB[0] = byte(std::min(255.f, std::max(0.f, gammaBgr[0])));
@@ -209,16 +215,18 @@ public:
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
 
-                const Spectrum &rgbF = mColor[x + y*mResX];
-                float v = std::max(rgbF.x, std::max(rgbF.y, rgbF.z));
+                const Spectrum &spectrum = mColor[x + y*mResX];
+                SRGBSpectrum sRGB;
+                spectrum.ConvertToSRGBSpectrum(sRGB);
+                float v = sRGB.Max();;
 
                 if(v >= 1e-32f)
                 {
                     int e;
                     v = float(frexp(v, &e) * 256.f / v);
-                    rgbe[0] = byte(rgbF.x * v);
-                    rgbe[1] = byte(rgbF.y * v);
-                    rgbe[2] = byte(rgbF.z * v);
+                    rgbe[0] = byte(sRGB.x * v);
+                    rgbe[1] = byte(sRGB.y * v);
+                    rgbe[2] = byte(sRGB.z * v);
                     rgbe[3] = byte(e + 128);
                 }
 
@@ -229,8 +237,8 @@ public:
 
 private:
 
-    std::vector<Spectrum> mColor;
-    Vec2f              mResolution;
-    int                mResX;
-    int                mResY;
+    std::vector<Spectrum>   mColor;
+    Vec2f                   mResolution;
+    int                     mResX;
+    int                     mResY;
 };

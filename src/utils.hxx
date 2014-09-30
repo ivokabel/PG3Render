@@ -9,11 +9,15 @@
 #define EPS_RAY    1e-3f
 
 // sRGB luminance
-float Luminance(const Spectrum& aRGB)
+float Luminance(const Spectrum& aSpectrum)
 {
-    return 0.212671f * aRGB.x +
-        0.715160f * aRGB.y +
-        0.072169f * aRGB.z;
+    SRGBSpectrum sRGB;
+    aSpectrum.ConvertToSRGBSpectrum(sRGB);
+
+    return
+        0.212671f * sRGB.x +
+        0.715160f * sRGB.y +
+        0.072169f * sRGB.z;
 }
 
 float FresnelDielectric(
