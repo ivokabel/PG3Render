@@ -170,5 +170,8 @@ int main(int argc, const char *argv[])
     // Scene cleanup
     delete config.mScene;
 
+    // debug
+    getchar(); // Wait for pressing the enter key on the command line
+
     return 0;
 }

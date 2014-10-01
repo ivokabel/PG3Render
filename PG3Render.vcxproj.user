@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-i 128 -a pt -e hdr -s 0</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i 8192 -a pt -e hdr -s 1 -o ws_p_sdsgwdwg_pt_8192s.hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
