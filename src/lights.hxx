@@ -9,7 +9,7 @@ class AbstractLight
 {
 public:
 
-    virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const = 0;
+    virtual Spectrum SampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ public:
         mRadiance = aPower * (mInvArea / PI_F);
     }
 
-    virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
+    virtual Spectrum SampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
     {
         // TODO
         aSurfPt;
@@ -74,7 +74,7 @@ public:
         mIntensity = aPower / (4 * PI_F);
     }
 
-    virtual Spectrum sampleIllumination(
+    virtual Spectrum SampleIllumination(
         const Vec3f& aSurfPt, 
         const Frame& aFrame, 
         Vec3f& oWig, 
@@ -110,7 +110,7 @@ public:
         mBackgroundLight.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
     }
 
-    virtual Spectrum sampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
+    virtual Spectrum SampleIllumination(const Vec3f& aSurfPt, const Frame& aFrame, Vec3f& oWig, float& oLightDist) const
     {
         // TODO
         aSurfPt;

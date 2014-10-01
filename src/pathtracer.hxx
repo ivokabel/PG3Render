@@ -56,12 +56,12 @@ public:
                     assert(light != 0);
 
                     Vec3f wig; float lightDist;
-                    Spectrum illum = light->sampleIllumination(surfPt, frame, wig, lightDist);
+                    Spectrum illum = light->SampleIllumination(surfPt, frame, wig, lightDist);
                     
                     if(illum.Max() > 0)
                     {
                         if( ! mScene.Occluded(surfPt, wig, lightDist) )
-                            LoDirect += illum * mat.evalBrdf(frame.ToLocal(wig), wol);
+                            LoDirect += illum * mat.EvalBrdf(frame.ToLocal(wig), wol);
                     }
                 }
 

@@ -33,7 +33,7 @@ public:
             mDiffuseReflectance /= 2; // to make it energy conserving (phong reflectance is already scaled down by the caller)
     }
 
-    Spectrum evalBrdf(const Vec3f& wil, const Vec3f& wol) const
+    Spectrum EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
     {
         if (wil.z <= 0 && wol.z <= 0)
             return Spectrum().Zero();
