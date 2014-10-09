@@ -16,9 +16,9 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Accumulation
-    void AddColor(
+    void AddRadiance(
         const Vec2f& aSample,
-        const Spectrum& aColor)
+        const Spectrum& aRadiance)
     {
         if(aSample.x < 0 || aSample.x >= mResolution.x)
             return;
@@ -29,7 +29,7 @@ public:
         int x = int(aSample.x);
         int y = int(aSample.y);
 
-        mColor[x + y * mResX] = mColor[x + y * mResX] + aColor;
+        mRadiance[x + y * mResX] = mRadiance[x + y * mResX] + aRadiance;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -39,19 +39,19 @@ public:
         mResolution = aResolution;
         mResX = int(aResolution.x);
         mResY = int(aResolution.y);
-        mColor.resize(mResX * mResY);
+        mRadiance.resize(mResX * mResY);
         Clear();
     }
 
     void Clear()
     {
-        memset(&mColor[0], 0, sizeof(Spectrum) * mColor.size());
+        memset(&mRadiance[0], 0, sizeof(Spectrum) * mRadiance.size());
     }
 
     void Add(const Framebuffer& aOther)
     {
-        for(size_t i=0; i<mColor.size(); i++)
-            mColor[i] = mColor[i] + aOther.mColor[i];
+        for(size_t i=0; i<mRadiance.size(); i++)
+            mRadiance[i] = mRadiance[i] + aOther.mRadiance[i];
     }
 
     void Scale(float aScale)
@@ -59,8 +59,8 @@ public:
         Spectrum scaleAttenuation;
         scaleAttenuation.SetGreyAttenuation(aScale);
 
-        for (size_t i = 0; i < mColor.size(); i++)
-            mColor[i] *= scaleAttenuation;
+        for (size_t i = 0; i < mRadiance.size(); i++)
+            mRadiance[i] *= scaleAttenuation;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ public:
         {
             for(int x=0; x<mResX; x++)
             {
-                lum += Luminance(mColor[x + y*mResX]);
+                lum += Luminance(mRadiance[x + y*mResX]);
             }
         }
 
@@ -94,13 +94,13 @@ public:
     //    ppm << mResX << " " << mResY << std::endl;
     //    ppm << "255" << std::endl;
 
-    //    Vec3f *ptr = &mColor[0];
+    //    Vec3f *ptr = &mRadiance[0];
 
     //    for(int y=0; y<mResY; y++)
     //    {
     //        for(int x=0; x<mResX; x++)
     //        {
-    //            ptr = &mColor[x + y*mResX];
+    //            ptr = &mRadiance[x + y*mResX];
     //            int r = int(std::pow(ptr->x, invGamma) * 255.f);
     //            int g = int(std::pow(ptr->y, invGamma) * 255.f);
     //            int b = int(std::pow(ptr->z, invGamma) * 255.f);
@@ -121,8 +121,8 @@ public:
     //    ppm << mResX << " " << mResY << std::endl;
     //    ppm << "-1" << std::endl;
 
-    //    ppm.write(reinterpret_cast<const char*>(&mColor[0]),
-    //        mColor.size() * sizeof(Vec3f));
+    //    ppm.write(reinterpret_cast<const char*>(&mRadiance[0]),
+    //        mRadiance.size() * sizeof(Vec3f));
     //}
 
     //////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ public:
             for(int x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
-                const Spectrum &spectrum = mColor[x + (mResY-y-1)*mResX];
+                const Spectrum &spectrum = mRadiance[x + (mResY-y-1)*mResX];
                 SRGBSpectrum sRGB;
                 spectrum.ConvertToSRGBSpectrum(sRGB);
 
@@ -215,7 +215,7 @@ public:
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
 
-                const Spectrum &spectrum = mColor[x + y*mResX];
+                const Spectrum &spectrum = mRadiance[x + y*mResX];
                 SRGBSpectrum sRGB;
                 spectrum.ConvertToSRGBSpectrum(sRGB);
                 float v = sRGB.Max();;
@@ -237,7 +237,7 @@ public:
 
 private:
 
-    std::vector<Spectrum>   mColor;
+    std::vector<Spectrum>   mRadiance;
     Vec2f                   mResolution;
     int                     mResX;
     int                     mResY;

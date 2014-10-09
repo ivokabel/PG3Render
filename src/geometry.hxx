@@ -46,7 +46,7 @@ public:
             bool hit = mGeometry[i]->Intersect(aRay, oResult);
 
             if(hit)
-                anyIntersection = hit;
+                anyIntersection = true;
         }
 
         return anyIntersection;

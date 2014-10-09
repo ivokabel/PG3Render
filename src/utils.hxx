@@ -181,9 +181,9 @@ float CosHemispherePdfW(
 // returns barycentric coordinates
 Vec2f SampleUniformTriangle(const Vec2f &aSamples)
 {
-    const float term = std::sqrt(aSamples.x);
+    const float xSqr = std::sqrt(aSamples.x);
 
-    return Vec2f(1.f - term, aSamples.y * term);
+    return Vec2f(1.f - xSqr, aSamples.y * xSqr);
 }
 
 //////////////////////////////////////////////////////////////////////////

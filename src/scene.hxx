@@ -126,6 +126,7 @@ public:
             Vec3f(3.73896e-4f, 0.0542148f, 0.998529f),
             Vec2f(float(aResolution.x), float(aResolution.y)), 45);
 
+        //////////////////////////////////////////////////////////////////////////
         // Materials
 
         Material mat;
@@ -175,7 +176,8 @@ public:
         delete mGeometry;
 
         //////////////////////////////////////////////////////////////////////////
-        // Cornell box
+        // Cornell box - geometry
+
         Vec3f cb[8] = {
             Vec3f(-1.27029f,  1.30455f, -1.28002f),
             Vec3f( 1.28975f,  1.30455f, -1.28002f),
@@ -273,7 +275,7 @@ public:
         
         if(light_ceiling && !light_box)
         {
-            // entire ceiling is a light source
+            // The entire ceiling is a light source
 
             mLights.resize(2);
 
@@ -322,15 +324,22 @@ public:
         if(light_point)
         {
             PointLight *light = new PointLight(Vec3f(0.0, -0.5, 1.0));
+
             Spectrum lightPower;
             lightPower.SetSRGBGreyLight(50.f/*Watts*/);
             light->SetPower(lightPower);
+
             mLights.push_back(light);
         }
 
         if(light_env)
         {
             BackgroundLight *light = new BackgroundLight;
+
+            Spectrum radiance;
+            radiance.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
+            light->SetConstantRadiance(radiance);
+
             mLights.push_back(light);
             mBackground = light;
         }
@@ -423,13 +432,13 @@ public:
 
 public:
 
-    AbstractGeometry      *mGeometry;
-    Camera                mCamera;
-    std::vector<Material> mMaterials;
-    std::vector<AbstractLight*>   mLights;
-    std::map<int, int>    mMaterial2Light;
+    AbstractGeometry            *mGeometry;
+    Camera                      mCamera;
+    std::vector<Material>       mMaterials;
+    std::vector<AbstractLight*> mLights;
+    std::map<int, int>          mMaterial2Light;
+    BackgroundLight*            mBackground;
     // SceneSphere           mSceneSphere;
-    BackgroundLight*      mBackground;
 
     std::string           mSceneName;
     std::string           mSceneAcronym;

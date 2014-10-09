@@ -8,8 +8,6 @@
 #include "renderer.hxx"
 #include "rng.hxx"
 
-// Right now this is a copy of EyeLight renderer. The task is to change this 
-// to a full-fledged path tracer.
 class PathTracer : public AbstractRenderer
 {
 public:
@@ -23,6 +21,8 @@ public:
 
     virtual void RunIteration(int aIteration)
     {
+        aIteration; // unused parameter
+
         const int resX = int(mScene.mCamera.mResolution.x);
         const int resY = int(mScene.mCamera.mResolution.y);
 
@@ -33,7 +33,9 @@ public:
             const int x = pixID % resX;
             const int y = pixID / resX;
 
-            const Vec2f sample = Vec2f(float(x), float(y)) + mRng.GetVec2f();
+            const Vec2f randomOffset = mRng.GetVec2f();
+            const Vec2f basedCoords  = Vec2f(float(x), float(y));
+            const Vec2f sample       = basedCoords + randomOffset;
 
             Ray   ray = mScene.mCamera.GenerateRay(sample);
             Isect isect;
@@ -45,27 +47,60 @@ public:
                 Frame frame;
                 frame.SetFromZ(isect.normal);
                 const Vec3f wol = frame.ToLocal(-ray.dir);
+                const Material& mat = mScene.GetMaterial(isect.matID);
+
+                ///////////////////////////////////////////////////////////////////////////////////
+                // Direct illumination
+                ///////////////////////////////////////////////////////////////////////////////////
+
+                // We split the planar integral over the surface of all light sources 
+                // into sub-integrals - one integral for each light source - and sum up 
+                // all the sub-results.
 
                 Spectrum LoDirect;
                 LoDirect.SetSRGBGreyLight(0.0f);
-                const Material& mat = mScene.GetMaterial( isect.matID );
 
                 for(int i=0; i<mScene.GetLightCount(); i++)
                 {
                     const AbstractLight* light = mScene.GetLightPtr(i);
                     assert(light != 0);
 
+                    // Choose a random sample on the light
                     Vec3f wig; float lightDist;
-                    Spectrum illum = light->SampleIllumination(surfPt, frame, wig, lightDist);
+                    Spectrum illumSample = light->SampleIllumination(surfPt, frame, wig, lightDist, mRng);
                     
-                    if(illum.Max() > 0)
+                    if(illumSample.Max() > 0.)
                     {
+                        // The illumination sample already contains 
+                        // (outgoing radiance * geometric component) / PDF
+                        // All what's left is to evaluate visibility and multiply by BRDF
                         if( ! mScene.Occluded(surfPt, wig, lightDist) )
-                            LoDirect += illum * mat.EvalBrdf(frame.ToLocal(wig), wol);
+                            LoDirect += illumSample * mat.EvalBrdf(frame.ToLocal(wig), wol);
                     }
                 }
 
-                mFramebuffer.AddColor(sample, LoDirect);
+                ///////////////////////////////////////////////////////////////////////////////////
+                // Emission
+                ///////////////////////////////////////////////////////////////////////////////////
+
+                Spectrum Le;
+
+                const AbstractLight *light = 
+                    isect.lightID < 0 ? NULL : mScene.GetLightPtr(isect.lightID);
+                if (light != NULL)
+                    Le = light->GetEmmision(surfPt, wol);
+                else
+                    Le.Zero();
+
+                ///////////////////////////////////////////////////////////////////////////////////
+                // TODO: Indirect illumination
+                ///////////////////////////////////////////////////////////////////////////////////
+
+                Spectrum LoIndirect;
+                LoIndirect.Zero(); // debug
+
+                // ...
+
 
                 /*
                 float dotLN = Dot(isect.normal, -ray.dir);
@@ -79,16 +114,26 @@ public:
                 // we cannot do anything with the light because it has no interface right now
 
                 if(dotLN > 0)
-                    mFramebuffer.AddColor(sample, (rhoD/PI_F) * Spectrum(dotLN));
+                    mFramebuffer.AddRadiance(sample, (rhoD/PI_F) * Spectrum(dotLN));
                 */
 
-                // unused parameter?
-                aIteration;
+                const Spectrum Lo = Le + LoDirect + LoIndirect;
+
+                mFramebuffer.AddRadiance(sample, Lo);
+            }
+            else
+            {
+                // No intersection - get light from the background
+
+                const BackgroundLight *backgroundLight = mScene.GetBackground();
+                Spectrum Le = backgroundLight->GetEmmision(ray.dir);
+
+                mFramebuffer.AddRadiance(sample, Le);
             }
         }
 
         mIterations++;
     }
 
-    Rng              mRng;
+    Rng     mRng;
 };
