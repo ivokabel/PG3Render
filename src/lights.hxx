@@ -207,7 +207,7 @@ public:
     // Returns amount of incoming radiance from the direction.
     Spectrum GetEmmision(const Vec3f& aWig) const
     {
-        aWig; // unused parameters
+        aWig; // unused parameter
 
         return mRadiance;
     };
@@ -230,29 +230,21 @@ public:
         float& oLightDist,
         Rng &rng) const
     {
-        // unused parameters
-        aSurfPt;
+        aSurfPt; // unused parameter
 
-        // For now, sample the whole sphere
-        // TODO: sample just the hemisphere above the point - cosine-weighted pdf
+        // Sample the hemisphere in the normal direction in a cosine-weighted fashion
         float pdf;
-        Vec3f wil = SampleUniformSphereW(rng.GetVec2f(), &pdf);
+        Vec3f wil = SampleCosHemisphereW(rng.GetVec2f(), &pdf);
 
         oWig        = aFrame.ToWorld(wil);
-        oLightDist  = 1E10; // TODO: Do it nicely
+        oLightDist  = std::numeric_limits<float>::max();
 
-        // This is obviously only needed when sampling the whole sphere
         const float cosThetaIn = wil.z;
-        if (cosThetaIn <= 0)
-            return Spectrum().Zero();
-        else
-        {
-            const Spectrum result =
-                  mRadiance
-                * cosThetaIn
-                / pdf;
-            return result;
-        }
+        const Spectrum result =
+              mRadiance
+            * cosThetaIn
+            / pdf;
+        return result;
     }
 
 public:
