@@ -95,7 +95,12 @@ uint g_SceneConfigs[] = {
     Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    Scene::kLightEnv | Scene::kSpheres | Scene::kSpheresDiffuse,
+    // 8
+    Scene::kLightEnv | Scene::kWallsDiffuse | Scene::kSpheres | Scene::kSpheresDiffuse,
+    // 9
+    Scene::kLightEnv | Scene::kWallsDiffuse | Scene::kSpheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
+    // 10
+    Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
 };
 
 std::string DefaultFilename(
