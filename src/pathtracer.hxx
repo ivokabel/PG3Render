@@ -26,7 +26,7 @@ public:
         const int resX = int(mScene.mCamera.mResolution.x);
         const int resY = int(mScene.mCamera.mResolution.y);
 
-        for(int pixID = 0; pixID < resX * resY; pixID++)
+        for (int pixID = 0; pixID < resX * resY; pixID++)
         {
             //////////////////////////////////////////////////////////////////////////
             // Generate ray
@@ -41,7 +41,7 @@ public:
             Isect isect;
             isect.dist = 1e36f;
 
-            if(mScene.Intersect(ray, isect))
+            if (mScene.Intersect(ray, isect))
             {
                 const Vec3f surfPt = ray.org + ray.dir * isect.dist;
                 Frame frame;
@@ -60,7 +60,7 @@ public:
                 Spectrum LoDirect;
                 LoDirect.SetSRGBGreyLight(0.0f);
 
-                for(int i=0; i<mScene.GetLightCount(); i++)
+                for (int i=0; i<mScene.GetLightCount(); i++)
                 {
                     const AbstractLight* light = mScene.GetLightPtr(i);
                     assert(light != 0);
@@ -69,12 +69,12 @@ public:
                     Vec3f wig; float lightDist;
                     Spectrum illumSample = light->SampleIllumination(surfPt, frame, wig, lightDist, mRng);
                     
-                    if(illumSample.Max() > 0.)
+                    if (illumSample.Max() > 0.)
                     {
                         // The illumination sample already contains 
                         // (outgoing radiance * geometric component) / PDF
                         // All what's left is to evaluate visibility and multiply by BRDF
-                        if( ! mScene.Occluded(surfPt, wig, lightDist) )
+                        if ( ! mScene.Occluded(surfPt, wig, lightDist) )
                             LoDirect += illumSample * mat.EvalBrdf(frame.ToLocal(wig), wol);
                     }
                 }
@@ -113,7 +113,7 @@ public:
                 const AbstractLight *light = isect.lightID < 0 ?  0 : mScene.GetLightPtr( isect.lightID );
                 // we cannot do anything with the light because it has no interface right now
 
-                if(dotLN > 0)
+                if (dotLN > 0)
                     mFramebuffer.AddRadiance(sample, (rhoD/PI_F) * Spectrum(dotLN));
                 */
 

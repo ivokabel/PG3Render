@@ -23,7 +23,7 @@ public:
         const int resX = int(mScene.mCamera.mResolution.x);
         const int resY = int(mScene.mCamera.mResolution.y);
 
-        for(int pixID = 0; pixID < resX * resY; pixID++)
+        for (int pixID = 0; pixID < resX * resY; pixID++)
         {
             //////////////////////////////////////////////////////////////////////////
             // Generate ray
@@ -37,12 +37,12 @@ public:
             Isect isect;
             isect.dist = 1e36f;
 
-            if(mScene.Intersect(ray, isect))
+            if (mScene.Intersect(ray, isect))
             {
                 float dotLN = Dot(isect.normal, -ray.dir);
 
                 Spectrum color;
-                if(dotLN > 0)
+                if (dotLN > 0)
                     color.SetSRGBGreyLight(dotLN);
                 else
                     color.SetSRGBLight(-dotLN, 0, 0);

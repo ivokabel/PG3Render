@@ -32,7 +32,7 @@ public:
     {
         oFramebuffer = mFramebuffer;
 
-        if(mIterations > 0)
+        if (mIterations > 0)
             oFramebuffer.Scale(1.f / mIterations);
     }
 

@@ -33,7 +33,7 @@ float render(
     AbstractRendererPtr *renderers;
     renderers = new AbstractRendererPtr[aConfig.mNumThreads];
 
-    for(int i=0; i<aConfig.mNumThreads; i++)
+    for (int i=0; i<aConfig.mNumThreads; i++)
     {
         renderers[i] = CreateRenderer(aConfig, aConfig.mBaseSeed + i);
 
@@ -46,11 +46,11 @@ float render(
 
     // Rendering loop, when we have any time limit, use time-based loop,
     // otherwise go with required iterations
-    if(aConfig.mMaxTime > 0)
+    if (aConfig.mMaxTime > 0)
     {
         // Time based loop
 #pragma omp parallel
-        while(clock() < startT + aConfig.mMaxTime*CLOCKS_PER_SEC)
+        while (clock() < startT + aConfig.mMaxTime*CLOCKS_PER_SEC)
         {
             int threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(iter);
@@ -63,7 +63,7 @@ float render(
     {
         // Iterations based loop
 #pragma omp parallel for
-        for(iter=0; iter < aConfig.mIterations; iter++)
+        for (iter=0; iter < aConfig.mIterations; iter++)
         {
             int threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(iter);
@@ -74,7 +74,7 @@ float render(
 
     clock_t endT = clock();
 
-    if(oUsedIterations)
+    if (oUsedIterations)
         *oUsedIterations = iter+1;
 
     // Accumulate from all renderers into a common framebuffer
@@ -83,12 +83,12 @@ float render(
     // With very low number of iterations and high number of threads
     // not all created renderers had to have been used.
     // Those must not participate in accumulation.
-    for(int i=0; i<aConfig.mNumThreads; i++)
+    for (int i=0; i<aConfig.mNumThreads; i++)
     {
-        if(!renderers[i]->WasUsed())
+        if (!renderers[i]->WasUsed())
             continue;
 
-        if(usedRenderers == 0)
+        if (usedRenderers == 0)
         {
             renderers[i]->GetFramebuffer(*aConfig.mFramebuffer);
         }
@@ -106,7 +106,7 @@ float render(
     aConfig.mFramebuffer->Scale(1.f / usedRenderers);
 
     // Clean up renderers
-    for(int i=0; i<aConfig.mNumThreads; i++)
+    for (int i=0; i<aConfig.mNumThreads; i++)
         delete renderers[i];
 
     delete [] renderers;
@@ -127,11 +127,11 @@ int main(int argc, const char *argv[])
     ParseCommandline(argc, argv, config);
 
     // If number of threads is invalid, set 1 thread per processor
-    if(config.mNumThreads <= 0)
+    if (config.mNumThreads <= 0)
         config.mNumThreads  = std::max(1, omp_get_num_procs());
 
     // When some error has been encountered, exit
-    if(config.mScene == NULL)
+    if (config.mScene == NULL)
         return 1;
 
     // Sets up framebuffer and number of threads
@@ -140,7 +140,7 @@ int main(int argc, const char *argv[])
 
     // Prints what we are doing
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
-    if(config.mMaxTime > 0)
+    if (config.mMaxTime > 0)
         printf("Target:    %g seconds render time\n", config.mMaxTime);
     else
         printf("Target:    %d iteration(s)\n", config.mIterations);
@@ -154,7 +154,7 @@ int main(int argc, const char *argv[])
     // Saves the image
     printf("Saving to: %s ... ", config.mOutputName.c_str());
     std::string extension = config.mOutputName.substr(config.mOutputName.length() - 3, 3);
-    if(extension == "bmp")
+    if (extension == "bmp")
     {
         fbuffer.SaveBMP(config.mOutputName.c_str(), 2.2f /*gamma*/);
         printf("done\n");

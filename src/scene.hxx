@@ -23,7 +23,7 @@ public:
     {
         delete mGeometry;
 
-        for(size_t i=0; i<mLights.size(); i++)
+        for (size_t i=0; i<mLights.size(); i++)
             delete mLights[i];
     }
 
@@ -33,13 +33,13 @@ public:
     {
         bool hit = mGeometry->Intersect(aRay, oResult);
 
-        if(hit)
+        if (hit)
         {
             oResult.lightID = -1;
             std::map<int, int>::const_iterator it =
                 mMaterial2Light.find(oResult.matID);
 
-            if(it != mMaterial2Light.end())
+            if (it != mMaterial2Light.end())
                 oResult.lightID = it->second;
         }
 
@@ -196,7 +196,7 @@ public:
         geometryList->mGeometry.push_back(new Triangle(cb[0], cb[4], cb[5], 2));
         geometryList->mGeometry.push_back(new Triangle(cb[5], cb[1], cb[0], 2));
 
-        if(aBoxMask & kWalls)
+        if (aBoxMask & kWalls)
         {
             // Left wall
             geometryList->mGeometry.push_back(new Triangle(cb[3], cb[7], cb[4], 3));
@@ -212,7 +212,7 @@ public:
 
 
             // Ceiling
-            if(light_ceiling && !light_box)
+            if (light_ceiling && !light_box)
             {
                 geometryList->mGeometry.push_back(new Triangle(cb[2], cb[6], cb[7], 0));
                 geometryList->mGeometry.push_back(new Triangle(cb[7], cb[3], cb[2], 1));
@@ -225,7 +225,7 @@ public:
         }
 
         // Spheres
-        if( aBoxMask & kSpheres )
+        if ( aBoxMask & kSpheres )
         {
             float smallRadius = 0.5f;
             Vec3f leftWallCenter  = (cb[0] + cb[4]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
@@ -251,7 +251,7 @@ public:
             Vec3f(-0.25f, -0.25f, 1.28002f)
         };
 
-        if(light_box && !light_ceiling)
+        if (light_box && !light_ceiling)
         {
             // Back wall
             geometryList->mGeometry.push_back(new Triangle(lb[0], lb[2], lb[1], 5));
@@ -273,7 +273,7 @@ public:
         //////////////////////////////////////////////////////////////////////////
         // Lights
         
-        if(light_ceiling && !light_box)
+        if (light_ceiling && !light_box)
         {
             // The entire ceiling is a light source
 
@@ -297,7 +297,7 @@ public:
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
-        if(light_box && !light_ceiling)
+        if (light_box && !light_ceiling)
         {
             // With light box
 
@@ -321,7 +321,7 @@ public:
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
-        if(light_point)
+        if (light_point)
         {
             PointLight *light = new PointLight(Vec3f(0.0, -0.5, 1.0));
 
@@ -332,7 +332,7 @@ public:
             mLights.push_back(light);
         }
 
-        if(light_env)
+        if (light_env)
         {
             BackgroundLight *light = new BackgroundLight;
 
@@ -353,19 +353,19 @@ public:
         std::string acronym;
 
         // Geometry
-        if((aBoxMask & kWalls) == kWalls)
+        if ((aBoxMask & kWalls) == kWalls)
         {
             name    += "walls ";
             acronym += "w";
         }
 
-        if((aBoxMask & kSpheres) == kSpheres)
+        if ((aBoxMask & kSpheres) == kSpheres)
         {
             name    += "spheres ";
             acronym += "s";
         }
 
-        if((aBoxMask & kWalls|kSpheres) == 0)
+        if ((aBoxMask & kWalls|kSpheres) == 0)
         {
             name    += "empty ";
             acronym += "e";
@@ -375,24 +375,24 @@ public:
         acronym += "_";
 
         // Light sources
-        if((aBoxMask & kLightCeiling) == kLightCeiling)
+        if ((aBoxMask & kLightCeiling) == kLightCeiling)
         {
             name    += "ceiling light ";
             acronym += "c";
         }
 
-        if((aBoxMask & kLightBox) == kLightBox)
+        if ((aBoxMask & kLightBox) == kLightBox)
         {
             name    += "light box ";
             acronym += "b";
         }
 
-        if((aBoxMask & kLightPoint) == kLightPoint)
+        if ((aBoxMask & kLightPoint) == kLightPoint)
         {
             name    += "point light ";
             acronym += "p";
         }
-        else if((aBoxMask & kLightEnv) == kLightEnv)
+        else if ((aBoxMask & kLightEnv) == kLightEnv)
         {
             name    += "env. light ";
             acronym += "e";
@@ -402,31 +402,31 @@ public:
         acronym += "_";
 
         // Material
-        if((aBoxMask & kSpheresDiffuse) == kSpheresDiffuse)
+        if ((aBoxMask & kSpheresDiffuse) == kSpheresDiffuse)
         {
             name    += "sph. diffuse ";
             acronym += "sd";
         }
 
-        if((aBoxMask & kSpheresGlossy) == kSpheresGlossy)
+        if ((aBoxMask & kSpheresGlossy) == kSpheresGlossy)
         {
             name    += "sph. glossy ";
             acronym += "sg";
         }
 
-        if((aBoxMask & kWallsDiffuse) == kWallsDiffuse)
+        if ((aBoxMask & kWallsDiffuse) == kWallsDiffuse)
         {
             name    += "walls diffuse ";
             acronym += "wd";
         }
 
-        if((aBoxMask & kWallsGlossy) == kWallsGlossy)
+        if ((aBoxMask & kWallsGlossy) == kWallsGlossy)
         {
             name    += "walls glossy ";
             acronym += "wg";
         }
 
-        if(oAcronym) *oAcronym = acronym;
+        if (oAcronym) *oAcronym = acronym;
         return name;
     }
 

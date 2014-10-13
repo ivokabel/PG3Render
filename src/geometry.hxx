@@ -33,7 +33,7 @@ public:
 
     virtual ~GeometryList()
     {
-        for(int i=0; i<(int)mGeometry.size(); i++)
+        for (int i=0; i<(int)mGeometry.size(); i++)
             delete mGeometry[i];
     };
 
@@ -41,11 +41,11 @@ public:
     {
         bool anyIntersection = false;
 
-        for(int i=0; i<(int)mGeometry.size(); i++)
+        for (int i=0; i<(int)mGeometry.size(); i++)
         {
             bool hit = mGeometry[i]->Intersect(aRay, oResult);
 
-            if(hit)
+            if (hit)
                 anyIntersection = true;
         }
 
@@ -56,9 +56,9 @@ public:
         const Ray &aRay,
         Isect     &oResult) const
     {
-        for(int i=0; i<(int)mGeometry.size(); i++)
+        for (int i=0; i<(int)mGeometry.size(); i++)
         {
-            if(mGeometry[i]->IntersectP(aRay, oResult))
+            if (mGeometry[i]->IntersectP(aRay, oResult))
                 return true;
         }
 
@@ -69,7 +69,7 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax)
     {
-        for(int i=0; i<(int)mGeometry.size(); i++)
+        for (int i=0; i<(int)mGeometry.size(); i++)
             mGeometry[i]->GrowBBox(aoBBoxMin, aoBBoxMax);
     }
 
@@ -113,12 +113,12 @@ public:
         const float v1d = Dot(v1, aRay.dir);
         const float v2d = Dot(v2, aRay.dir);
 
-        if(((v0d < 0.f)  && (v1d < 0.f)  && (v2d < 0.f)) ||
+        if (((v0d < 0.f)  && (v1d < 0.f)  && (v2d < 0.f)) ||
            ((v0d >= 0.f) && (v1d >= 0.f) && (v2d >= 0.f)))
         {
             const float distance = Dot(mNormal, ao) / Dot(mNormal, aRay.dir);
 
-            if((distance > aRay.tmin) & (distance < oResult.dist))
+            if ((distance > aRay.tmin) & (distance < oResult.dist))
             {
                 oResult.normal = mNormal;
                 oResult.matID  = matID;
@@ -134,9 +134,9 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax)
     {
-        for(int i=0; i<3; i++)
+        for (int i=0; i<3; i++)
         {
-            for(int j=0; j<3; j++)
+            for (int j=0; j<3; j++)
             {
                 aoBBoxMin.Get(j) = std::min(aoBBoxMin.Get(j), p[i].Get(j));
                 aoBBoxMax.Get(j) = std::max(aoBBoxMax.Get(j), p[i].Get(j));
@@ -185,7 +185,7 @@ public:
         // the resulting t is imprecise enough to get around ray epsilons
         const double disc = B*B - 4*A*C;
 
-        if(disc < 0)
+        if (disc < 0)
             return false;
 
         const double discSqrt = std::sqrt(disc);
@@ -194,13 +194,13 @@ public:
         double t0 = q / A;
         double t1 = C / q;
 
-        if(t0 > t1) std::swap(t0, t1);
+        if (t0 > t1) std::swap(t0, t1);
 
         float resT;
 
-        if(t0 > aRay.tmin && t0 < oResult.dist)
+        if (t0 > aRay.tmin && t0 < oResult.dist)
             resT = float(t0);
-        else if(t1 > aRay.tmin && t1 < oResult.dist)
+        else if (t1 > aRay.tmin && t1 < oResult.dist)
             resT = float(t1);
         else
             return false;
@@ -215,17 +215,17 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax)
     {
-        for(int i=0; i<8; i++)
+        for (int i=0; i<8; i++)
         {
             Vec3f p = center;
             Vec3f half(radius);
 
-            for(int j=0; j<3; j++)
-                if(i & (1 << j)) half.Get(j) = -half.Get(j);
+            for (int j=0; j<3; j++)
+                if (i & (1 << j)) half.Get(j) = -half.Get(j);
             
             p += half;
 
-            for(int j=0; j<3; j++)
+            for (int j=0; j<3; j++)
             {
                 aoBBoxMin.Get(j) = std::min(aoBBoxMin.Get(j), p.Get(j));
                 aoBBoxMax.Get(j) = std::max(aoBBoxMax.Get(j), p.Get(j));

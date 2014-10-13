@@ -36,7 +36,7 @@ struct Config
             "path tracing"
         };
 
-        if(aAlgorithm < 0 || aAlgorithm > 1)
+        if (aAlgorithm < 0 || aAlgorithm > 1)
             return "unknown algorithm";
 
         return algorithmNames[aAlgorithm];
@@ -46,7 +46,7 @@ struct Config
     {
         static const char* algorithmNames[7] = { "el", "pt" };
 
-        if(aAlgorithm < 0 || aAlgorithm > 1)
+        if (aAlgorithm < 0 || aAlgorithm > 1)
             return "unknown";
         return algorithmNames[aAlgorithm];
     }
@@ -152,12 +152,12 @@ void PrintHelp(const char *argv[])
 
     printf("    -s  Selects the scene (default 0):\n");
 
-    for(int i = 0; i < SizeOfArray(g_SceneConfigs); i++)
+    for (int i = 0; i < SizeOfArray(g_SceneConfigs); i++)
         printf("          %d    %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
 
     printf("    -a  Selects the rendering algorithm (default pt):\n");
 
-    for(int i = 0; i < (int)Config::kAlgorithmMax; i++)
+    for (int i = 0; i < (int)Config::kAlgorithmMax; i++)
         printf("          %-3s  %s\n",
             Config::GetAcronym(Config::Algorithm(i)),
             Config::GetName(Config::Algorithm(i)));
@@ -189,24 +189,24 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     int sceneID    = 0; // default 0
 
     // Load arguments
-    for(int i=1; i<argc; i++)
+    for (int i=1; i<argc; i++)
     {
         std::string arg(argv[i]);
 
         // print help string (at any position)
-        if(arg == "-h" || arg == "--help" || arg == "/?")
+        if (arg == "-h" || arg == "--help" || arg == "/?")
         {
             PrintHelp(argv);
             return;
         }
 
-        if(arg[0] != '-') // all our commands start with -
+        if (arg[0] != '-') // all our commands start with -
         {
             continue;
         }
-        else if(arg == "-s") // scene to load
+        else if (arg == "-s") // scene to load
         {
-            if(++i == argc)
+            if (++i == argc)
             {
                 printf("Missing <sceneID> argument, please see help (-h)\n");
                 return;
@@ -215,34 +215,34 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
             std::istringstream iss(argv[i]);
             iss >> sceneID;
 
-            if(iss.fail() || sceneID < 0 || sceneID >= SizeOfArray(g_SceneConfigs))
+            if (iss.fail() || sceneID < 0 || sceneID >= SizeOfArray(g_SceneConfigs))
             {
                 printf("Invalid <sceneID> argument, please see help (-h)\n");
                 return;
             }
         }
-        else if(arg == "-a") // algorithm to use
+        else if (arg == "-a") // algorithm to use
         {
-            if(++i == argc)
+            if (++i == argc)
             {
                 printf("Missing <algorithm> argument, please see help (-h)\n");
                 return;
             }
 
             std::string alg(argv[i]);
-            for(int i=0; i<Config::kAlgorithmMax; i++)
-                if(alg == Config::GetAcronym(Config::Algorithm(i)))
+            for (int i=0; i<Config::kAlgorithmMax; i++)
+                if (alg == Config::GetAcronym(Config::Algorithm(i)))
                     oConfig.mAlgorithm = Config::Algorithm(i);
 
-            if(oConfig.mAlgorithm == Config::kAlgorithmMax)
+            if (oConfig.mAlgorithm == Config::kAlgorithmMax)
             {
                 printf("Invalid <algorithm> argument, please see help (-h)\n");
                 return;
             }
         }
-        else if(arg == "-i") // number of iterations to run
+        else if (arg == "-i") // number of iterations to run
         {
-            if(++i == argc)
+            if (++i == argc)
             {
                 printf("Missing <iterations> argument, please see help (-h)\n");
                 return;
@@ -251,15 +251,15 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
             std::istringstream iss(argv[i]);
             iss >> oConfig.mIterations;
 
-            if(iss.fail() || oConfig.mIterations < 1)
+            if (iss.fail() || oConfig.mIterations < 1)
             {
                 printf("Invalid <iterations> argument, please see help (-h)\n");
                 return;
             }
         }
-        else if(arg == "-t") // number of seconds to run
+        else if (arg == "-t") // number of seconds to run
         {
-            if(++i == argc)
+            if (++i == argc)
             {
                 printf("Missing <time> argument, please see help (-h)\n");
                 return;
@@ -268,7 +268,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
             std::istringstream iss(argv[i]);
             iss >> oConfig.mMaxTime;
 
-            if(iss.fail() || oConfig.mMaxTime < 0)
+            if (iss.fail() || oConfig.mMaxTime < 0)
             {
                 printf("Invalid <time> argument, please see help (-h)\n");
                 return;
@@ -301,7 +301,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
         }
         else if (arg == "-o") // custom output file name
         {
-            if(++i == argc)
+            if (++i == argc)
             {
                 printf("Missing <output_name> argument, please see help (-h)\n");
                 return;
@@ -309,7 +309,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 
             oConfig.mOutputName = argv[i];
 
-            if(oConfig.mOutputName.length() == 0)
+            if (oConfig.mOutputName.length() == 0)
             {
                 printf("Invalid <output_name> argument, please see help (-h)\n");
                 return;
@@ -318,7 +318,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     }
 
     // Check algorithm was selected
-    if(oConfig.mAlgorithm == Config::kAlgorithmMax)
+    if (oConfig.mAlgorithm == Config::kAlgorithmMax)
     {
         oConfig.mAlgorithm = Config::kPathTracing;
     }
@@ -330,7 +330,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     oConfig.mScene = scene;
 
     // If no output name is chosen, create a default one
-    if(oConfig.mOutputName.length() == 0)
+    if (oConfig.mOutputName.length() == 0)
     {
         oConfig.mOutputName = DefaultFilename(g_SceneConfigs[sceneID], oConfig);
     }
@@ -338,10 +338,10 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     // Check if output name has valid extension (.bmp or .hdr) and if not add .bmp
     std::string extension = "";
 
-    if(oConfig.mOutputName.length() > 4) // must be at least 1 character before .bmp
+    if (oConfig.mOutputName.length() > 4) // must be at least 1 character before .bmp
         extension = oConfig.mOutputName.substr(
             oConfig.mOutputName.length() - 4, 4);
 
-    if(extension != ".bmp" && extension != ".hdr")
+    if (extension != ".bmp" && extension != ".hdr")
         oConfig.mOutputName += ".bmp";
 }

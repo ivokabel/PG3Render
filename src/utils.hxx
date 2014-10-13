@@ -24,12 +24,12 @@ float FresnelDielectric(
     float aCosInc,
     float mIOR)
 {
-    if(mIOR < 0)
+    if (mIOR < 0)
         return 1.f;
 
     float etaIncOverEtaTrans;
 
-    if(aCosInc < 0.f)
+    if (aCosInc < 0.f)
     {
         aCosInc = -aCosInc;
         etaIncOverEtaTrans = mIOR;
@@ -71,7 +71,7 @@ Vec3f SamplePowerCosHemisphereW(
     const float term2 = std::pow(aSamples.y, 1.f / (aPower + 1.f));
     const float term3 = std::sqrt(1.f - term2 * term2);
 
-    if(oPdfW)
+    if (oPdfW)
     {
         *oPdfW = (aPower + 1.f) * std::pow(term2, aPower) * (0.5f * INV_PI_F);
     }
@@ -104,9 +104,9 @@ Vec2f SampleConcentricDisc(
     float a = 2*aSamples.x - 1;   /* (a,b) is now on [-1,1]^2 */
     float b = 2*aSamples.y - 1;
 
-    if(a > -b)      /* region 1 or 2 */
+    if (a > -b)      /* region 1 or 2 */
     {
-        if(a > b)   /* region 1, also |a| > |b| */
+        if (a > b)   /* region 1, also |a| > |b| */
         {
             r = a;
             phi = (PI_F/4.f) * (b/a);
@@ -119,7 +119,7 @@ Vec2f SampleConcentricDisc(
     }
     else            /* region 3 or 4 */
     {
-        if(a < b)   /* region 3, also |a| >= |b|, a != 0 */
+        if (a < b)   /* region 3, also |a| >= |b|, a != 0 */
         {
             r = -a;
             phi = (PI_F/4.f) * (4.f + (b/a));
@@ -162,7 +162,7 @@ Vec3f SampleCosHemisphereW(
         std::sin(term1) * term2,
         std::sqrt(aSamples.y));
 
-    if(oPdfW)
+    if (oPdfW)
     {
         *oPdfW = ret.z * INV_PI_F;
     }
@@ -201,7 +201,7 @@ Vec3f SampleUniformSphereW(
         std::sin(term1) * term2,
         1.f - 2.f * aSamples.y);
 
-    if(oPdfSA)
+    if (oPdfSA)
     {
         //*oPdfSA = 1.f / (4.f * PI_F);
         *oPdfSA = INV_PI_F * 0.25f;

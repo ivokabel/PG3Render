@@ -26,29 +26,29 @@ public:
 
     // unary minus
     Vec2x<T> operator-() const
-    { Vec2x<T> res; for(int i=0; i<2; i++) res.Get(i) = -Get(i); return res; }
+    { Vec2x<T> res; for (int i=0; i<2; i++) res.Get(i) = -Get(i); return res; }
 
     // binary operations
     friend Vec2x<T> operator+(const Vec2x& a, const Vec2x& b)
-    { Vec2x<T> res; for(int i=0; i<2; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
+    { Vec2x<T> res; for (int i=0; i<2; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
     friend Vec2x<T> operator-(const Vec2x& a, const Vec2x& b)
-    { Vec2x<T> res; for(int i=0; i<2; i++) res.Get(i) = a.Get(i) - b.Get(i); return res; }
+    { Vec2x<T> res; for (int i=0; i<2; i++) res.Get(i) = a.Get(i) - b.Get(i); return res; }
     friend Vec2x<T> operator*(const Vec2x& a, const Vec2x& b)
-    { Vec2x<T> res; for(int i=0; i<2; i++) res.Get(i) = a.Get(i) * b.Get(i); return res; }
+    { Vec2x<T> res; for (int i=0; i<2; i++) res.Get(i) = a.Get(i) * b.Get(i); return res; }
     friend Vec2x<T> operator/(const Vec2x& a, const Vec2x& b)
-    { Vec2x<T> res; for(int i=0; i<2; i++) res.Get(i) = a.Get(i) / b.Get(i); return res; }
+    { Vec2x<T> res; for (int i=0; i<2; i++) res.Get(i) = a.Get(i) / b.Get(i); return res; }
 
     Vec2x<T>& operator+=(const Vec2x& a)
-    { for(int i=0; i<2; i++) Get(i) += a.Get(i); return *this;}
+    { for (int i=0; i<2; i++) Get(i) += a.Get(i); return *this;}
     Vec2x<T>& operator-=(const Vec2x& a)
-    { for(int i=0; i<2; i++) Get(i) -= a.Get(i); return *this;}
+    { for (int i=0; i<2; i++) Get(i) -= a.Get(i); return *this;}
     Vec2x<T>& operator*=(const Vec2x& a)
-    { for(int i=0; i<2; i++) Get(i) *= a.Get(i); return *this;}
+    { for (int i=0; i<2; i++) Get(i) *= a.Get(i); return *this;}
     Vec2x<T>& operator/=(const Vec2x& a)
-    { for(int i=0; i<2; i++) Get(i) /= a.Get(i); return *this;}
+    { for (int i=0; i<2; i++) Get(i) /= a.Get(i); return *this;}
 
     friend T Dot(const Vec2x& a, const Vec2x& b)
-    { T res(0); for(int i=0; i<2; i++) res += a.Get(i) * b.Get(i); return res; }
+    { T res(0); for (int i=0; i<2; i++) res += a.Get(i) * b.Get(i); return res; }
 
 public:
 
@@ -70,41 +70,41 @@ public:
     const T& Get(int a) const { return reinterpret_cast<const T*>(this)[a]; }
     T&       Get(int a)       { return reinterpret_cast<T*>(this)[a]; }
     Vec2x<T> GetXY() const    { return Vec2x<T>(x, y); }
-    T        Max()   const    { T res = Get(0); for(int i=1; i<3; i++) res = std::max(res, Get(i)); return res;}
+    T        Max()   const    { T res = Get(0); for (int i=1; i<3; i++) res = std::max(res, Get(i)); return res;}
     
     bool     IsZero() const
     {
-        for(int i=0; i<3; i++)
-            if(Get(i) != 0)
+        for (int i=0; i<3; i++)
+            if (Get(i) != 0)
                 return false;
         return true;
     }
 
     // unary minus
     Vec3x<T> operator-() const
-    { Vec3x<T> res; for(int i=0; i<3; i++) res.Get(i) = -Get(i); return res; }
+    { Vec3x<T> res; for (int i=0; i<3; i++) res.Get(i) = -Get(i); return res; }
 
     // binary operations
     friend Vec3x<T> operator+(const Vec3x& a, const Vec3x& b)
-    { Vec3x<T> res; for(int i=0; i<3; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
+    { Vec3x<T> res; for (int i=0; i<3; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
     friend Vec3x<T> operator-(const Vec3x& a, const Vec3x& b)
-    { Vec3x<T> res; for(int i=0; i<3; i++) res.Get(i) = a.Get(i) - b.Get(i); return res; }
+    { Vec3x<T> res; for (int i=0; i<3; i++) res.Get(i) = a.Get(i) - b.Get(i); return res; }
     friend Vec3x<T> operator*(const Vec3x& a, const Vec3x& b)
-    { Vec3x<T> res; for(int i=0; i<3; i++) res.Get(i) = a.Get(i) * b.Get(i); return res; }
+    { Vec3x<T> res; for (int i=0; i<3; i++) res.Get(i) = a.Get(i) * b.Get(i); return res; }
     friend Vec3x<T> operator/(const Vec3x& a, const Vec3x& b)
-    { Vec3x<T> res; for(int i=0; i<3; i++) res.Get(i) = a.Get(i) / b.Get(i); return res; }
+    { Vec3x<T> res; for (int i=0; i<3; i++) res.Get(i) = a.Get(i) / b.Get(i); return res; }
 
     Vec3x<T>& operator+=(const Vec3x& a)
-    { for(int i=0; i<3; i++) Get(i) += a.Get(i); return *this;}
+    { for (int i=0; i<3; i++) Get(i) += a.Get(i); return *this;}
     Vec3x<T>& operator-=(const Vec3x& a)
-    { for(int i=0; i<3; i++) Get(i) -= a.Get(i); return *this;}
+    { for (int i=0; i<3; i++) Get(i) -= a.Get(i); return *this;}
     Vec3x<T>& operator*=(const Vec3x& a)
-    { for(int i=0; i<3; i++) Get(i) *= a.Get(i); return *this;}
+    { for (int i=0; i<3; i++) Get(i) *= a.Get(i); return *this;}
     Vec3x<T>& operator/=(const Vec3x& a)
-    { for(int i=0; i<3; i++) Get(i) /= a.Get(i); return *this;}
+    { for (int i=0; i<3; i++) Get(i) /= a.Get(i); return *this;}
 
     friend T Dot(const Vec3x& a, const Vec3x& b)
-    { T res(0); for(int i=0; i<3; i++) res += a.Get(i) * b.Get(i); return res; }
+    { T res(0); for (int i=0; i<3; i++) res += a.Get(i) * b.Get(i); return res; }
 
     float    LenSqr() const   { return Dot(*this, *this);   }
     float    Length() const   { return std::sqrt(LenSqr()); }
@@ -140,7 +140,7 @@ class Mat4f
 public:
 
     Mat4f(){}
-    Mat4f(float a){ for(int i=0; i<16; i++) GetPtr()[i] = a; }
+    Mat4f(float a){ for (int i=0; i<16; i++) GetPtr()[i] = a; }
 
     const float* GetPtr() const { return reinterpret_cast<const float*>(this); }
     float*       GetPtr()       { return reinterpret_cast<float*>(this);       }
@@ -158,7 +158,7 @@ public:
 
     void SetRow(int r, const Vec3f &a, float b)
     {
-        for(int i=0; i<3; i++)
+        for (int i=0; i<3; i++)
             Get(r, i) = a.Get(i);
 
         Get(r, 3) = b;
@@ -167,8 +167,8 @@ public:
     Vec3f TransformVector(const Vec3f& aVec) const
     {
         Vec3f res(0);
-        for(int r=0; r<3; r++)
-            for(int c=0; c<3; c++)
+        for (int r=0; r<3; r++)
+            for (int c=0; c<3; c++)
                 res.Get(r) += aVec.Get(c) * Get(r, c);
 
         return res;
@@ -178,18 +178,18 @@ public:
     {
         float w = Get(3,3);
 
-        for(int c=0; c<3; c++)
+        for (int c=0; c<3; c++)
             w += Get(3, c) * aVec.Get(c);
 
         const float invW = 1.f / w;
 
         Vec3f res(0);
 
-        for(int r=0; r<3; r++)
+        for (int r=0; r<3; r++)
         {
             res.Get(r) = Get(r, 3);
 
-            for(int c=0; c<3; c++)
+            for (int c=0; c<3; c++)
                 res.Get(r) += aVec.Get(c) * Get(r, c);
 
             res.Get(r) *= invW;
@@ -202,14 +202,14 @@ public:
     static Mat4f Indetity()
     {
         Mat4f res(0);
-        for(int i=0; i<4; i++) res.Get(i,i) = 1.f;
+        for (int i=0; i<4; i++) res.Get(i,i) = 1.f;
         return res;
     }
 
     static Mat4f Scale(const Vec3f& aScale)
     {
         Mat4f res = Mat4f::Indetity();
-        for(int i=0; i<3; i++) res.Get(i,i) = aScale.Get(i);
+        for (int i=0; i<3; i++) res.Get(i,i) = aScale.Get(i);
         res.Get(3,3) = 1;
         return res;
     }
@@ -217,7 +217,7 @@ public:
     static Mat4f Translate(const Vec3f& aScale)
     {
         Mat4f res = Mat4f::Indetity();
-        for(int i=0; i<3; i++) res.Get(i,3) = aScale.Get(i);
+        for (int i=0; i<3; i++) res.Get(i,3) = aScale.Get(i);
         res.Get(3,3) = 1;
         return res;
     }
@@ -252,9 +252,9 @@ public:
 Mat4f operator*(const Mat4f& left, const Mat4f& right)
 {
     Mat4f res(0);
-    for(int row=0; row<4; row++)
-        for(int col=0; col<4; col++)
-            for(int i=0; i<4; i++)
+    for (int row=0; row<4; row++)
+        for (int col=0; col<4; col++)
+            for (int i=0; i<4; i++)
                 res.Get(row, col) += left.Get(row, i) * right.Get(i, col);
 
     return res;

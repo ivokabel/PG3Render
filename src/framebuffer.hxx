@@ -20,10 +20,10 @@ public:
         const Vec2f& aSample,
         const Spectrum& aRadiance)
     {
-        if(aSample.x < 0 || aSample.x >= mResolution.x)
+        if (aSample.x < 0 || aSample.x >= mResolution.x)
             return;
 
-        if(aSample.y < 0 || aSample.y >= mResolution.y)
+        if (aSample.y < 0 || aSample.y >= mResolution.y)
             return;
 
         int x = int(aSample.x);
@@ -50,7 +50,7 @@ public:
 
     void Add(const Framebuffer& aOther)
     {
-        for(size_t i=0; i<mRadiance.size(); i++)
+        for (size_t i=0; i<mRadiance.size(); i++)
             mRadiance[i] = mRadiance[i] + aOther.mRadiance[i];
     }
 
@@ -69,9 +69,9 @@ public:
     {
         float lum = 0;
 
-        for(int y=0; y<mResY; y++)
+        for (int y=0; y<mResY; y++)
         {
-            for(int x=0; x<mResX; x++)
+            for (int x=0; x<mResX; x++)
             {
                 lum += Luminance(mRadiance[x + y*mResX]);
             }
@@ -96,9 +96,9 @@ public:
 
     //    Vec3f *ptr = &mRadiance[0];
 
-    //    for(int y=0; y<mResY; y++)
+    //    for (int y=0; y<mResY; y++)
     //    {
-    //        for(int x=0; x<mResX; x++)
+    //        for (int x=0; x<mResX; x++)
     //        {
     //            ptr = &mRadiance[x + y*mResX];
     //            int r = int(std::pow(ptr->x, invGamma) * 255.f);
@@ -172,9 +172,9 @@ public:
         bmp.write((char*)&header, sizeof(header));
 
         const float invGamma = 1.f / aGamma;
-        for(int y=0; y<mResY; y++)
+        for (int y=0; y<mResY; y++)
         {
-            for(int x=0; x<mResX; x++)
+            for (int x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
                 const Spectrum &spectrum = mRadiance[x + (mResY-y-1)*mResX];
@@ -208,9 +208,9 @@ public:
         hdr << "FORMAT=32-bit_rle_rgbe" << '\n' << '\n';
         hdr << "-Y " << mResY << " +X " << mResX << '\n';
 
-        for(int y=0; y<mResY; y++)
+        for (int y=0; y<mResY; y++)
         {
-            for(int x=0; x<mResX; x++)
+            for (int x=0; x<mResX; x++)
             {
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
@@ -220,7 +220,7 @@ public:
                 spectrum.ConvertToSRGBSpectrum(sRGB);
                 float v = sRGB.Max();;
 
-                if(v >= 1e-32f)
+                if (v >= 1e-32f)
                 {
                     int e;
                     v = float(frexp(v, &e) * 256.f / v);
