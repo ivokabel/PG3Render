@@ -62,13 +62,34 @@ float render(
     else
     {
         // Iterations based loop
+        int globalCounter = 0;
 #pragma omp parallel for
         for (iter=0; iter < aConfig.mIterations; iter++)
         {
             int threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(iter);
 
-            printf(".");
+            // Print progress bar
+#pragma omp critical
+            {
+                globalCounter++;
+                const double progress   = (double)globalCounter / aConfig.mIterations;
+                const int barCount      = 20;
+
+                printf(
+                    "\rProgress:  %6.2f [", 
+                    100.0 * progress);
+                for (int bar = 1; bar <= barCount; bar++)
+                {
+                    const double barProgress = (double)bar / barCount;
+                    if (barProgress <= progress)
+                        printf("|");
+                    else
+                        printf(" ");
+                }
+                printf("]");
+                fflush(stdout);
+            }
         }
     }
 
@@ -146,7 +167,7 @@ int main(int argc, const char *argv[])
         printf("Target:    %d iteration(s)\n", config.mIterations);
 
     // Renders the image
-    printf("Running:   %s ", config.GetName(config.mAlgorithm));
+    printf("Running:   %s%s", config.GetName(config.mAlgorithm), (config.mMaxTime > 0) ? "..." : "\n");
     fflush(stdout);
     float time = render(config);
     printf(" done in %.2f s\n", time);
