@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
 #include <vector>
 #include <map>
 #include <cmath>
@@ -90,29 +91,48 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Loads a Cornell Box scene
+
     enum BoxMask
     {
         // light source flags
-        kLightCeiling      = 1,
-        kLightBox          = 2,
-        kLightPoint        = 4,
-        kLightEnv          = 8,
+        kLightCeiling       = 0x0001,
+        kLightBox           = 0x0002,
+        kLightPoint         = 0x0004,
+        kLightEnv           = 0x0008,
+
         // geometry flags
-        kSpheres           = 64,
-        kWalls             = 256,
+        kSpheres            = 0x0010,
+        kWalls              = 0x0020,
+
         // material flags
-        kSpheresDiffuse    = 512,
-        kSpheresGlossy     = 1024,
-        kWallsDiffuse      = 2048,
-        kWallsGlossy       = 4096,
-        kDefault           = (kLightCeiling | kWalls | kSpheres | kSpheresDiffuse | kWallsDiffuse ),
+        kSpheresDiffuse     = 0x0100,
+        kSpheresGlossy      = 0x0200,
+        kWallsDiffuse       = 0x0400,
+        kWallsGlossy        = 0x0800,
+
+        kDefault            = (kLightCeiling | kWalls | kSpheres | kSpheresDiffuse | kWallsDiffuse),
+    };
+
+    enum EnvironmentMapType
+    {
+        kEMInvalid              = -1,
+
+        kEMConstantBluish       = 0,
+        kEMConstantSRGBWhite    = 1,
+        //kEMDebugSinglePoint,
+        //kEMPlayaSunrise,
+
+        kEMCount,
+        kEMDefault              = kEMConstantBluish,
     };
 
     void LoadCornellBox(
         const Vec2i &aResolution,
-        uint aBoxMask = kDefault)
+        uint aBoxMask = kDefault,
+        uint aEnvironmentMapType = kEMDefault
+        )
     {
-        mSceneName = GetSceneName(aBoxMask, &mSceneAcronym);
+        mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
 
         bool light_ceiling = (aBoxMask & kLightCeiling)    != 0;
         bool light_box     = (aBoxMask & kLightBox)        != 0;
@@ -336,95 +356,202 @@ public:
         {
             BackgroundLight *light = new BackgroundLight;
 
-            Spectrum radiance;
-            radiance.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
-            light->SetConstantRadiance(radiance);
+            switch (aEnvironmentMapType)
+            {
+                case kEMConstantBluish:
+                {
+                    Spectrum radiance;
+                    radiance.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
+                    light->SetConstantRadiance(radiance);
+                    break;
+                }
 
-            mLights.push_back(light);
-            mBackground = light;
+                case kEMConstantSRGBWhite:
+                {
+                    Spectrum radiance;
+                    radiance.SetSRGBGreyLight(1.0f);
+                    light->SetConstantRadiance(radiance);
+                    break;
+                }
+
+                // TODO: Image-based Environment maps...
+
+                default:
+                    // Error: Undefined env map type
+                    assert(false);
+            }
+
+            if (light != NULL)
+            {
+                mLights.push_back(light);
+                mBackground = light;
+            }
         }
+    }
+
+    static std::string GetEnvMapName(
+        uint        aEnvironmentMapType,
+        std::string *oAcronym = NULL
+        )
+    {
+        std::string oName;
+
+        switch (aEnvironmentMapType)
+        {
+        case kEMConstantBluish:
+            oName = "const. bluish";
+            break;
+
+        case kEMConstantSRGBWhite:
+            oName = "const. sRGB white";
+            break;
+
+        default:
+            break;
+        }
+
+        if (oAcronym)
+            *oAcronym = std::to_string(aEnvironmentMapType);
+
+        return oName;
     }
 
     static std::string GetSceneName(
         uint        aBoxMask,
+        uint        aEnvironmentMapType = kEMInvalid,
         std::string *oAcronym = NULL)
     {
         std::string name;
         std::string acronym;
 
         // Geometry
+
+        bool geometryUsed = false;
+        #define GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED \
+            if (geometryUsed)      \
+                name += ", ";   \
+            geometryUsed = true;
+        #define GEOMETRY_ADD_SPACE_IF_NEEDED \
+            if (geometryUsed)      \
+                name += " ";    
+
         if ((aBoxMask & kWalls) == kWalls)
         {
-            name    += "walls ";
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name += "walls";
             acronym += "w";
         }
 
         if ((aBoxMask & kSpheres) == kSpheres)
         {
-            name    += "spheres ";
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "spheres";
             acronym += "s";
         }
 
         if ((aBoxMask & kWalls|kSpheres) == 0)
         {
-            name    += "empty ";
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "empty";
             acronym += "e";
         }
+
+        GEOMETRY_ADD_SPACE_IF_NEEDED
 
         name    += "+ ";
         acronym += "_";
 
         // Light sources
+
+        bool lightUsed = false;
+        #define LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED \
+            if (lightUsed)      \
+                name += ", ";   \
+            lightUsed = true;
+        #define LIGHTS_ADD_SPACE_IF_NEEDED \
+            if (lightUsed)      \
+                name += " ";    
+
         if ((aBoxMask & kLightCeiling) == kLightCeiling)
         {
-            name    += "ceiling light ";
+            LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "ceiling light";
             acronym += "c";
         }
 
         if ((aBoxMask & kLightBox) == kLightBox)
         {
-            name    += "light box ";
+            LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "light box";
             acronym += "b";
         }
 
         if ((aBoxMask & kLightPoint) == kLightPoint)
         {
-            name    += "point light ";
+            LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "point light";
             acronym += "p";
         }
         else if ((aBoxMask & kLightEnv) == kLightEnv)
         {
-            name    += "env. light ";
+            LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
+
+            name    += "env. light";
             acronym += "e";
+
+            if (aEnvironmentMapType != kEMInvalid)
+            {
+                std::string envMapAcronym;
+                name    += " (" + GetEnvMapName(aEnvironmentMapType, &envMapAcronym) + ")";
+                acronym += envMapAcronym;
+            }
         }
 
-        name    += "+ ";
+        LIGHTS_ADD_SPACE_IF_NEEDED
+
+        name += "+ ";
         acronym += "_";
 
         // Material
+
+        bool materialUsed = false;
+        #define MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED \
+            if (materialUsed)      \
+                name += ", ";   \
+            materialUsed = true;
+        #define MATERIALS_ADD_SPACE_IF_NEEDED \
+            if (materialUsed)      \
+                name += " ";    
+
         if ((aBoxMask & kSpheresDiffuse) == kSpheresDiffuse)
         {
-            name    += "sph. diffuse ";
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "sph. diffuse";
             acronym += "sd";
         }
 
         if ((aBoxMask & kSpheresGlossy) == kSpheresGlossy)
         {
-            name    += "sph. glossy ";
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "sph. glossy";
             acronym += "sg";
         }
 
         if ((aBoxMask & kWallsDiffuse) == kWallsDiffuse)
         {
-            name    += "walls diffuse ";
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "walls diffuse";
             acronym += "wd";
         }
 
         if ((aBoxMask & kWallsGlossy) == kWallsGlossy)
         {
-            name    += "walls glossy ";
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "walls glossy";
             acronym += "wg";
         }
+
+        MATERIALS_ADD_SPACE_IF_NEEDED
 
         if (oAcronym) *oAcronym = acronym;
         return name;

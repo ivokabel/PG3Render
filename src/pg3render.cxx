@@ -77,7 +77,7 @@ float render(
                 const int barCount      = 20;
 
                 printf(
-                    "\rProgress:  %6.2f%% [", 
+                    "\rProgress:  %5.1f%% [", 
                     100.0 * progress);
                 for (int bar = 1; bar <= barCount; bar++)
                 {
@@ -153,7 +153,11 @@ int main(int argc, const char *argv[])
 
     // When some error has been encountered, exit
     if (config.mScene == NULL)
+    {
+        // debug
+        getchar(); // Wait for pressing the enter key on the command line
         return 1;
+    }
 
     // Sets up framebuffer and number of threads
     Framebuffer fbuffer;
@@ -193,6 +197,5 @@ int main(int argc, const char *argv[])
 
     // debug
     getchar(); // Wait for pressing the enter key on the command line
-
     return 0;
 }

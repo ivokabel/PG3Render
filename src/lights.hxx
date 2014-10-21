@@ -6,7 +6,9 @@
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
+#include "ImfRgbaFile.h"    // OpenEXR
 
+//////////////////////////////////////////////////////////////////////////
 class AbstractLight
 {
 public:
@@ -196,12 +198,12 @@ class BackgroundLight : public AbstractLight
 public:
     BackgroundLight()
     {
-        mRadiance.Zero();
+        mConstantRadiance.Zero();
     }
 
     virtual void SetConstantRadiance(const Spectrum& aRadiance)
     {
-        mRadiance = aRadiance;
+        mConstantRadiance = aRadiance;
     }
 
     // Returns amount of incoming radiance from the direction.
@@ -209,7 +211,7 @@ public:
     {
         aWig; // unused parameter
 
-        return mRadiance;
+        return mConstantRadiance;
     };
 
     // Returns amount of outgoing radiance in the direction.
@@ -241,7 +243,7 @@ public:
 
         const float cosThetaIn = wil.z;
         const Spectrum result =
-              mRadiance
+              mConstantRadiance
             * cosThetaIn
             / pdf;
         return result;
@@ -249,5 +251,6 @@ public:
 
 public:
 
-    Spectrum mRadiance;
+    Spectrum mConstantRadiance;
+    // TODO: Environment map
 };

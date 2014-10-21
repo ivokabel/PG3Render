@@ -25,7 +25,7 @@ struct Config
     {
         kEyeLight,
         kPathTracing,
-        kAlgorithmMax
+        kAlgorithmCount
     };
 
     static const char* GetName(Algorithm aAlgorithm)
@@ -85,13 +85,17 @@ AbstractRenderer* CreateRenderer(
 }
 
 // Scene configurations
-uint g_SceneConfigs[] = {
+uint g_SceneConfigs[] = 
+{
     Scene::kLightPoint   | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightPoint   | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+
     Scene::kLightCeiling | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightCeiling | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+
     Scene::kLightBox     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightBox     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+
     Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
@@ -119,7 +123,7 @@ std::string DefaultFilename(
     filename += "_";
     filename += Config::GetAcronym(aConfig.mAlgorithm);
 
-    // And it will be written in chosen format
+    // And it will be written in the chosen format
     filename += "." + aConfig.mDefOutputExtension;
 
     return filename;
@@ -147,17 +151,20 @@ void PrintRngWarning()
 void PrintHelp(const char *argv[])
 {
     printf("\n");
-    printf("Usage: %s [ -s <scene_id> | -a <algorithm> |\n", argv[0]);
-    printf("    -t <time> | -i <iterations> | -e <default_output_extension> | -o <output_name> | --report ]\n\n");
+    printf(
+        "Usage: %s [ -s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | -e <def_output_ext> | -o <output_name> ]\n\n", 
+        argv[0]);
 
     printf("    -s  Selects the scene (default 0):\n");
-
     for (int i = 0; i < SizeOfArray(g_SceneConfigs); i++)
-        printf("          %d    %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
+        printf("          %2d   %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
+
+    printf("    -em Selects the environment map type (default 0; ignored if the scene doesn't use an environment map):\n");
+    for (int i = 0; i < Scene::kEMCount; i++)
+        printf("          %2d   %s\n", i, Scene::GetEnvMapName(i).c_str());
 
     printf("    -a  Selects the rendering algorithm (default pt):\n");
-
-    for (int i = 0; i < (int)Config::kAlgorithmMax; i++)
+    for (int i = 0; i < (int)Config::kAlgorithmCount; i++)
         printf("          %-3s  %s\n",
             Config::GetAcronym(Config::Algorithm(i)),
             Config::GetName(Config::Algorithm(i)));
@@ -173,12 +180,12 @@ void PrintHelp(const char *argv[])
 void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
-    oConfig.mScene              = NULL;                  // [cmd] When NULL, renderer will not run
-    oConfig.mAlgorithm          = Config::kAlgorithmMax; // [cmd]
-    oConfig.mIterations         = 1;                     // [cmd]
-    oConfig.mMaxTime            = -1.f;                  // [cmd]
-    oConfig.mDefOutputExtension = "bmp";                 // [cmd]
-    oConfig.mOutputName         = "";                    // [cmd]
+    oConfig.mScene              = NULL;                     // [cmd] When NULL, renderer will not run
+    oConfig.mAlgorithm          = Config::kAlgorithmCount;  // [cmd]
+    oConfig.mIterations         = 1;                        // [cmd]
+    oConfig.mMaxTime            = -1.f;                     // [cmd]
+    oConfig.mDefOutputExtension = "bmp";                    // [cmd]
+    oConfig.mOutputName         = "";                       // [cmd]
     oConfig.mNumThreads         = 0;
     oConfig.mBaseSeed           = 1234;
     oConfig.mMaxPathLength      = 10;
@@ -186,7 +193,8 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     oConfig.mResolution         = Vec2i(512, 512);
     //oConfig.mFramebuffer      = NULL; // this is never set by any parameter
 
-    int sceneID    = 0; // default 0
+    signed   int sceneID  = 0; // default 0
+    unsigned int envMapID = Scene::kEMDefault;
 
     // Load arguments
     for (int i=1; i<argc; i++)
@@ -208,7 +216,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <sceneID> argument, please see help (-h)\n");
+                printf("Missing <scene_id> argument, please see help (-h)\n");
                 return;
             }
 
@@ -217,7 +225,31 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || sceneID < 0 || sceneID >= SizeOfArray(g_SceneConfigs))
             {
-                printf("Invalid <sceneID> argument, please see help (-h)\n");
+                printf("Invalid <scene_id> argument, please see help (-h)\n");
+                return;
+            }
+        }
+        else if (arg == "-em") // environment map
+        {
+            if (++i == argc)
+            {
+                printf("Missing <environment_map_id> argument, please see help (-h)\n");
+                return;
+            }
+
+            if ((g_SceneConfigs[sceneID] & Scene::kLightEnv) == 0)
+            {
+                printf(
+                    "Warning: You specified an environment map; however, "
+                    "the scene was either not set yet or it doesn't use an environment map.\n\n");
+            }
+
+            std::istringstream iss(argv[i]);
+            iss >> envMapID;
+
+            if (iss.fail() || envMapID < 0 || envMapID >= Scene::kEMCount)
+            {
+                printf("Invalid <environment_map_id> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -230,11 +262,11 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
             }
 
             std::string alg(argv[i]);
-            for (int i=0; i<Config::kAlgorithmMax; i++)
+            for (int i=0; i<Config::kAlgorithmCount; i++)
                 if (alg == Config::GetAcronym(Config::Algorithm(i)))
                     oConfig.mAlgorithm = Config::Algorithm(i);
 
-            if (oConfig.mAlgorithm == Config::kAlgorithmMax)
+            if (oConfig.mAlgorithm == Config::kAlgorithmCount)
             {
                 printf("Invalid <algorithm> argument, please see help (-h)\n");
                 return;
@@ -318,14 +350,14 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     }
 
     // Check algorithm was selected
-    if (oConfig.mAlgorithm == Config::kAlgorithmMax)
+    if (oConfig.mAlgorithm == Config::kAlgorithmCount)
     {
         oConfig.mAlgorithm = Config::kPathTracing;
     }
 
     // Load scene
     Scene *scene = new Scene;
-    scene->LoadCornellBox(oConfig.mResolution, g_SceneConfigs[sceneID]);
+    scene->LoadCornellBox(oConfig.mResolution, g_SceneConfigs[sceneID], envMapID);
 
     oConfig.mScene = scene;
 

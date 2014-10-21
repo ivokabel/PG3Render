@@ -1,6 +1,8 @@
-*.suo
 Debug/
 Release/
+Output/
+Light Probes/
+*.suo
 *.opensdf
 *.sdf
 *.bmp
