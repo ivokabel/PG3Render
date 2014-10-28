@@ -77,8 +77,7 @@ float render(
                 const int barCount      = 20;
 
                 printf(
-                    "\rProgress:  %5.1f%% [", 
-                    100.0 * progress);
+                    "\rProgress:  [");
                 for (int bar = 1; bar <= barCount; bar++)
                 {
                     const double barProgress = (double)bar / barCount;
@@ -87,7 +86,7 @@ float render(
                     else
                         printf(".");
                 }
-                printf("]");
+                printf("] %.1f%%", 100.0 * progress);
                 fflush(stdout);
             }
         }

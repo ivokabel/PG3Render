@@ -119,8 +119,11 @@ public:
 
         kEMConstantBluish       = 0,
         kEMConstantSRGBWhite    = 1,
-        //kEMDebugSinglePoint,
-        //kEMPlayaSunrise,
+        kEMDebugSinglePixel     = 2,
+        kEMPisa                 = 3,
+        kEMGlacier              = 4,
+        kEMDoge2                = 5,
+        kEMPlayaSunrise         = 6,
 
         kEMCount,
         kEMDefault              = kEMConstantBluish,
@@ -374,7 +377,47 @@ public:
                     break;
                 }
 
-                // TODO: Image-based Environment maps...
+                case kEMDebugSinglePixel:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\Debugging\\Single pixel.exr",
+                        0.15f, 10.0f);
+                        //".\\Light Probes\\Debugging\\test_exr.exr",
+                        //0.15f, 1.0f);
+                    break;
+                }
+
+                case kEMPisa:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\pisa.exr", 
+                        0.0f, 1.0f);
+                    break;
+                }
+
+                case kEMGlacier:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\glacier.exr",
+                        0.1f, 1.0f);
+                    break;
+                }
+
+                case kEMDoge2:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+                        0.05f, 2.0f);
+                    break;
+                }
+
+                case kEMPlayaSunrise:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\hdrlabs.com\\Playa_Sunrise\\Playa_Sunrise.exr",
+                        0.25f, 3.0f);
+                    break;
+                }
 
                 default:
                     // Error: Undefined env map type
@@ -404,6 +447,26 @@ public:
 
         case kEMConstantSRGBWhite:
             oName = "const. sRGB white";
+            break;
+
+        case kEMDebugSinglePixel:
+            oName = "debug, single pixel, 18x6";
+            break;
+
+        case kEMPisa:
+            oName = "Pisa";
+            break;
+
+        case kEMGlacier:
+            oName = "glacier";
+            break;
+
+        case kEMDoge2:
+            oName = "doge2";
+            break;
+
+        case kEMPlayaSunrise:
+            oName = "playa sunrise";
             break;
 
         default:

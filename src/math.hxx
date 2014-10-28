@@ -1,5 +1,7 @@
 #pragma once 
 
+#include "debugging.hxx"
+
 #include <cmath>
 // for portability issues
 #define PI_F     3.14159265358979f
@@ -12,6 +14,14 @@ typedef unsigned uint;
 
 //////////////////////////////////////////////////////////////////////////
 // Math section
+
+template <typename T>
+inline T Clamp(const T& n, const T& lower, const T& upper)
+{
+    PG3_DEBUG_ASSERT(lower <= upper);
+    return std::max(lower, std::min(n, upper));
+}
+
 template<typename T>
 class Vec2x
 {

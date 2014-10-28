@@ -6,7 +6,7 @@
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
-#include "ImfRgbaFile.h"    // OpenEXR
+#include "environmentmap.hxx"
 
 //////////////////////////////////////////////////////////////////////////
 class AbstractLight
@@ -196,7 +196,8 @@ public:
 class BackgroundLight : public AbstractLight
 {
 public:
-    BackgroundLight()
+    BackgroundLight() :
+        mEnvMap(NULL)
     {
         mConstantRadiance.Zero();
     }
@@ -206,21 +207,29 @@ public:
         mConstantRadiance = aRadiance;
     }
 
+    virtual void LoadEnvironmentMap(const std::string filename, float rotate = 0.0f, float scale = 1.0f)
+    {
+        mEnvMap = new EnvironmentMap(filename, rotate, scale);
+    }
+
     // Returns amount of incoming radiance from the direction.
     Spectrum GetEmmision(const Vec3f& aWig) const
     {
         aWig; // unused parameter
 
-        return mConstantRadiance;
+        if (mEnvMap != NULL)
+            return mEnvMap->Lookup(aWig);
+        else
+            return mConstantRadiance;
     };
 
     // Returns amount of outgoing radiance in the direction.
-    // The point parameter is unused - it is a heritage of the abstract light interface
+    // The point parameter is unused - it is an heritage of the abstract light interface
     virtual Spectrum GetEmmision(
         const Vec3f& aPt, 
         const Vec3f& aWol) const
     {
-        aPt; aWol; // unused parameters
+        aPt; // unused parameter
 
         return GetEmmision(-aWol);
     };
@@ -234,23 +243,43 @@ public:
     {
         aSurfPt; // unused parameter
 
-        // Sample the hemisphere in the normal direction in a cosine-weighted fashion
-        float pdf;
-        Vec3f wil = SampleCosHemisphereW(rng.GetVec2f(), &pdf);
+        if (mEnvMap != NULL)
+        {
+            // Sample the hemisphere in the normal direction in a cosine-weighted fashion
+            // TODO: Importance sampling
+            float pdf;
+            Vec3f wil = SampleCosHemisphereW(rng.GetVec2f(), &pdf);
 
-        oWig        = aFrame.ToWorld(wil);
-        oLightDist  = std::numeric_limits<float>::max();
+            oWig = aFrame.ToWorld(wil);
+            oLightDist = std::numeric_limits<float>::max();
 
-        const float cosThetaIn = wil.z;
-        const Spectrum result =
-              mConstantRadiance
-            * cosThetaIn
-            / pdf;
-        return result;
+            const float cosThetaIn = wil.z;
+            const Spectrum result =
+                  mEnvMap->Lookup(oWig)
+                * cosThetaIn
+                / pdf;
+            return result;
+        }
+        else
+        {
+            // Sample the hemisphere in the normal direction in a cosine-weighted fashion
+            float pdf;
+            Vec3f wil = SampleCosHemisphereW(rng.GetVec2f(), &pdf);
+
+            oWig = aFrame.ToWorld(wil);
+            oLightDist = std::numeric_limits<float>::max();
+
+            const float cosThetaIn = wil.z;
+            const Spectrum result =
+                mConstantRadiance
+                * cosThetaIn
+                / pdf;
+            return result;
+        }
     }
 
 public:
 
-    Spectrum mConstantRadiance;
-    // TODO: Environment map
+    Spectrum        mConstantRadiance;
+    EnvironmentMap *mEnvMap;
 };

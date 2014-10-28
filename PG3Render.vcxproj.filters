@@ -18,6 +18,9 @@
     <ClCompile Include="src\pg3render.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\debugging.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.hxx">
@@ -63,6 +66,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\spectrum.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\environmentmap.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\debugging.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

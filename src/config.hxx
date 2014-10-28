@@ -79,8 +79,7 @@ AbstractRenderer* CreateRenderer(
     case Config::kPathTracing:
         return new PathTracer(scene, aSeed);
     default:
-        printf("Unknown algorithm!!\n");
-        exit(2);
+        PG3_FATAL_ERROR("Unknown algorithm!!");
     }
 }
 
