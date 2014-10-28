@@ -173,6 +173,7 @@
     <ClInclude Include="src\camera.hxx" />
     <ClInclude Include="src\config.hxx" />
     <ClInclude Include="src\debugging.hxx" />
+    <ClInclude Include="src\distribution.hxx" />
     <ClInclude Include="src\environmentmap.hxx" />
     <ClInclude Include="src\eyelight.hxx" />
     <ClInclude Include="src\framebuffer.hxx" />

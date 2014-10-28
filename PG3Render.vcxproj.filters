@@ -74,5 +74,8 @@
     <ClInclude Include="src\debugging.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\distribution.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

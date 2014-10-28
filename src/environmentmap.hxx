@@ -268,7 +268,7 @@ private:
             Clamp((int)xy.x, 0, imageSize.x - 1),
             Clamp((int)xy.y, 0, imageSize.y - 1));
 
-        // TODO: bilinear filtering
+        // TODO: bilinear filtering?
 
 
 
