@@ -151,7 +151,7 @@ void PrintHelp(const char *argv[])
 {
     printf("\n");
     printf(
-        "Usage: %s [ -s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | -e <def_output_ext> | -o <output_name> ]\n\n", 
+        "Usage: %s [ -s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | -e <def_output_ext> | -o <output_name> | -j <threads_count> ]\n\n", 
         argv[0]);
 
     printf("    -s  Selects the scene (default 0):\n");
@@ -172,6 +172,7 @@ void PrintHelp(const char *argv[])
     printf("    -i  Number of iterations to run the algorithm (default 1)\n");
     printf("    -e  Extension of the default output file: bmp or hdr (default bmp)\n");
     printf("    -o  User specified output name, with extension .bmp or .hdr (default .bmp)\n");
+    printf("    -j  Number of threads (\"jobs\") to be used\n");
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
 }
 
@@ -210,6 +211,23 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
         if (arg[0] != '-') // all our commands start with -
         {
             continue;
+        }
+        else if (arg == "-j") // jobs (number of threads)
+        {
+            if (++i == argc)
+            {
+                printf("Missing <threads_count> argument, please see help (-h)\n");
+                return;
+            }
+
+            std::istringstream iss(argv[i]);
+            iss >> oConfig.mNumThreads;
+
+            if (iss.fail() || oConfig.mNumThreads <= 0)
+            {
+                printf("Invalid <threads_count> argument, please see help (-h)\n");
+                return;
+            }
         }
         else if (arg == "-s") // scene to load
         {
