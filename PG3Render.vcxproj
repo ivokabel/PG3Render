@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClCompile Include="src\debugging.cxx" />
     <ClCompile Include="src\pg3render.cxx" />
+    <ClCompile Include="src\process.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.hxx" />
@@ -182,6 +183,7 @@
     <ClInclude Include="src\materials.hxx" />
     <ClInclude Include="src\math.hxx" />
     <ClInclude Include="src\pathtracer.hxx" />
+    <ClInclude Include="src\process.hxx" />
     <ClInclude Include="src\ray.hxx" />
     <ClInclude Include="src\renderer.hxx" />
     <ClInclude Include="src\rng.hxx" />

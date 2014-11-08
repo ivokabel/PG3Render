@@ -1,23 +1,26 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
 #include "spectrum.hxx"
 #include "math.hxx"
+
+#include <vector>
+#include <cmath>
+#include <algorithm>
 
 #define EPS_COSINE 1e-6f
 #define EPS_RAY    1e-3f
 
 // sRGB luminance
+// TODO: Move to Spectrum implementation
 float Luminance(const Spectrum& aSpectrum)
 {
-    SRGBSpectrum sRGB;
-    aSpectrum.ConvertToSRGBSpectrum(sRGB);
+    SRGBSpectrum srgb;
+    aSpectrum.ConvertToSRGBSpectrum(srgb);
 
     return
-        0.212671f * sRGB.x +
-        0.715160f * sRGB.y +
-        0.072169f * sRGB.z;
+        0.212671f * srgb.x +
+        0.715160f * srgb.y +
+        0.072169f * srgb.z;
 }
 
 float FresnelDielectric(

@@ -1,8 +1,3 @@
-#include <vector>
-#include <cmath>
-#include <time.h>
-#include <cstdlib>
-#include <algorithm>
 #include "math.hxx"
 #include "ray.hxx"
 #include "geometry.hxx"
@@ -12,11 +7,16 @@
 #include "eyelight.hxx"
 #include "pathtracer.hxx"
 #include "config.hxx"
+#include "process.hxx"
 
 #include <omp.h>
 #include <string>
 #include <set>
 #include <sstream>
+#include <vector>
+#include <cmath>
+#include <cstdlib>
+#include <time.h>
 
 //////////////////////////////////////////////////////////////////////////
 // The main rendering function, renders what is in aConfig
@@ -25,6 +25,8 @@ float render(
     const Config &aConfig,
     int *oUsedIterations = NULL)
 {
+    SetProcessPriority();
+
     // Set number of used threads
     omp_set_num_threads(aConfig.mNumThreads);
 
@@ -146,10 +148,6 @@ int main(int argc, const char *argv[])
     Config config;
     ParseCommandline(argc, argv, config);
 
-    // If number of threads is invalid, set 1 thread per processor
-    if (config.mNumThreads <= 0)
-        config.mNumThreads  = std::max(1, omp_get_num_procs());
-
     // When some error has been encountered, exit
     if (config.mScene == NULL)
     {
@@ -158,16 +156,16 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    // If number of threads is invalid, set 1 thread per processor
+    if (config.mNumThreads <= 0)
+        config.mNumThreads  = std::max(1, omp_get_num_procs());
+
+    // Print what we are doing
+    PrintInfo(config);
+
     // Sets up framebuffer and number of threads
     Framebuffer fbuffer;
     config.mFramebuffer = &fbuffer;
-
-    // Prints what we are doing
-    printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
-    if (config.mMaxTime > 0)
-        printf("Target:    %g seconds render time\n", config.mMaxTime);
-    else
-        printf("Target:    %d iteration(s)\n", config.mIterations);
 
     // Renders the image
     printf("Running:   %s%s", config.GetName(config.mAlgorithm), (config.mMaxTime > 0) ? "..." : "\n");

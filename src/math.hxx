@@ -10,6 +10,17 @@
 template<typename T>
 T Sqr(const T& a) { return a*a; }
 
+float FmodX(float x, float y)
+{
+    float result = fmod(x, y);
+    if (result < 0.0f)
+        result += y;
+
+    PG3_DEBUG_ASSERT_VAL_IN_RANGE(result, 0.0f, y);
+
+    return result;
+}
+
 typedef unsigned uint;
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,8 +76,9 @@ public:
     T x, y;
 };
 
-typedef Vec2x<float> Vec2f;
-typedef Vec2x<int>   Vec2i;
+typedef Vec2x<float>        Vec2f;
+typedef Vec2x<signed int>   Vec2i;
+typedef Vec2x<unsigned int> Vec2ui;
 
 template<typename T>
 class Vec3x

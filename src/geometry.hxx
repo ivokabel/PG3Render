@@ -1,9 +1,11 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
 #include "math.hxx"
 #include "ray.hxx"
+
+#include <vector>
+#include <cmath>
+#include <algorithm>
 
 //////////////////////////////////////////////////////////////////////////
 // Geometry

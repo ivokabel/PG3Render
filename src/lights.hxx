@@ -16,11 +16,12 @@ public:
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: (outgoing radiance * geometric component) / PDF
     virtual Spectrum SampleIllumination(
-        const Vec3f& aSurfPt, 
-        const Frame& aFrame, 
-        Vec3f& oWig, 
-        float& oLightDist,
-        Rng &rng) const = 0;
+        const Vec3f &aSurfPt, 
+        const Frame &aFrame, 
+        Rng         &aRng,
+        Vec3f       &oWig, 
+        float       &oLightDist
+        ) const = 0;
 
     // Returns amount of outgoing radiance from the point in the direction
     virtual Spectrum GetEmmision(
@@ -75,14 +76,15 @@ public:
     }
 
     virtual Spectrum SampleIllumination(
-        const Vec3f& aSurfPt, 
-        const Frame& aFrame, 
-        Vec3f& oWig, 
-        float& oLightDist, 
-        Rng &rng) const
+        const Vec3f &aSurfPt,
+        const Frame &aFrame,
+        Rng         &aRng,
+        Vec3f       &oWig,
+        float       &oLightDist
+        ) const
     {
         // Sample the whole triangle surface
-        const Vec2f baryCoords = SampleUniformTriangle(rng.GetVec2f());
+        const Vec2f baryCoords = SampleUniformTriangle(aRng.GetVec2f());
         const Vec3f P1 = mP0 + mE1;
         const Vec3f P2 = mP0 + mE2;
         const Vec3f samplePoint =
@@ -90,16 +92,16 @@ public:
             + baryCoords.y * P2
             + (1.0f - baryCoords.x - baryCoords.y) * mP0;
 
-#ifdef _DEBUG
+#ifdef PG3_DEBUG_ASSERT_ENABLED
         // Weak sanity check: the point must be within the min-max boundaries of the triangle vertices
         const float minX = std::min(std::min(mP0.x, P1.x), P2.x);
         const float maxX = std::max(std::max(mP0.x, P1.x), P2.x);
         const float minY = std::min(std::min(mP0.y, P1.y), P2.y);
         const float maxY = std::max(std::max(mP0.y, P1.y), P2.y);
-        assert(samplePoint.x >= minX);
-        assert(samplePoint.x <= maxX);
-        assert(samplePoint.y >= minY);
-        assert(samplePoint.y <= maxY);
+        PG3_DEBUG_ASSERT(samplePoint.x >= minX);
+        PG3_DEBUG_ASSERT(samplePoint.x <= maxX);
+        PG3_DEBUG_ASSERT(samplePoint.y >= minY);
+        PG3_DEBUG_ASSERT(samplePoint.y <= maxY);
 #endif
 
         // Direction, distance
@@ -163,13 +165,14 @@ public:
     };
 
     virtual Spectrum SampleIllumination(
-        const Vec3f& aSurfPt, 
-        const Frame& aFrame, 
-        Vec3f& oWig, 
-        float& oLightDist,
-        Rng &rng) const
+        const Vec3f &aSurfPt,
+        const Frame &aFrame,
+        Rng         &aRng,
+        Vec3f       &oWig,
+        float       &oLightDist
+        ) const
     {
-        rng; // unused parameter
+        aRng; // unused parameter
 
         oWig                = mPosition - aSurfPt;
         const float distSqr = oWig.LenSqr();
@@ -213,12 +216,12 @@ public:
     }
 
     // Returns amount of incoming radiance from the direction.
-    Spectrum GetEmmision(const Vec3f& aWig) const
+    Spectrum GetEmmision(const Vec3f& aWig, bool bDoBilinFiltering = false) const
     {
         aWig; // unused parameter
 
         if (mEnvMap != NULL)
-            return mEnvMap->Lookup(aWig);
+            return mEnvMap->Lookup(aWig, bDoBilinFiltering);
         else
             return mConstantRadiance;
     };
@@ -235,36 +238,61 @@ public:
     };
 
     virtual Spectrum SampleIllumination(
-        const Vec3f& aSurfPt, 
-        const Frame& aFrame, 
-        Vec3f& oWig, 
-        float& oLightDist,
-        Rng &rng) const
+        const Vec3f &aSurfPt, 
+        const Frame &aFrame, 
+        Rng         &aRng,
+        Vec3f       &oWig,
+        float       &oLightDist
+        ) const
     {
         aSurfPt; // unused parameter
 
+        #define USE_EM_IMPORTANCE_SAMPLING
+
         if (mEnvMap != NULL)
         {
-            // Sample the hemisphere in the normal direction in a cosine-weighted fashion
-            // TODO: Importance sampling
-            float pdf;
-            Vec3f wil = SampleCosHemisphereW(rng.GetVec2f(), &pdf);
+            #ifndef USE_EM_IMPORTANCE_SAMPLING
 
-            oWig = aFrame.ToWorld(wil);
-            oLightDist = std::numeric_limits<float>::max();
+                // Debug: Sample the hemisphere in the normal direction in a cosine-weighted fashion
+                float pdf;
+                Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
+                oWig = aFrame.ToWorld(wil);
+                const Spectrum radiance = mEnvMap->Lookup(oWig, false);
+                const float cosThetaIn = wil.z;
+                const Spectrum result =
+                        radiance
+                    * cosThetaIn
+                    / pdf;
+                return result;
 
-            const float cosThetaIn = wil.z;
-            const Spectrum result =
-                  mEnvMap->Lookup(oWig)
-                * cosThetaIn
-                / pdf;
-            return result;
+            #else
+
+                float pdf;
+                Spectrum radiance;
+
+                // Sample the environment map with the pdf proportional to luminance of the map
+                oWig        = mEnvMap->Sample(aRng.GetVec2f(), pdf, &radiance);
+                oLightDist  = std::numeric_limits<float>::max();
+
+                const float cosThetaIn = Dot(oWig, aFrame.Normal());
+                if (cosThetaIn <= 0.0f)
+                {
+                    // The sample is below the surface - no light contribution
+                    return Spectrum().Zero();
+                }
+                else
+                {
+                    const Spectrum result = radiance * cosThetaIn / pdf;
+                    return result;
+                }
+
+            #endif
         }
         else
         {
             // Sample the hemisphere in the normal direction in a cosine-weighted fashion
             float pdf;
-            Vec3f wil = SampleCosHemisphereW(rng.GetVec2f(), &pdf);
+            Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
 
             oWig = aFrame.ToWorld(wil);
             oLightDist = std::numeric_limits<float>::max();

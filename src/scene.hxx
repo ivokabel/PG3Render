@@ -12,6 +12,8 @@
 #include "materials.hxx"
 #include "lights.hxx"
 
+#include <sstream>
+
 class Scene
 {
 public:
@@ -101,8 +103,10 @@ public:
         kLightEnv           = 0x0008,
 
         // geometry flags
-        kSpheres            = 0x0010,
-        kWalls              = 0x0020,
+        k2Spheres           = 0x0010,
+        k1Sphere            = 0x0020,
+        kWalls              = 0x0040,
+        kFloor              = 0x0080,
 
         // material flags
         kSpheresDiffuse     = 0x0100,
@@ -110,23 +114,27 @@ public:
         kWallsDiffuse       = 0x0400,
         kWallsGlossy        = 0x0800,
 
-        kDefault            = (kLightCeiling | kWalls | kSpheres | kSpheresDiffuse | kWallsDiffuse),
+        kDefault            = (kLightCeiling | kWalls | k2Spheres | kSpheresDiffuse | kWallsDiffuse),
     };
 
     enum EnvironmentMapType
     {
-        kEMInvalid              = -1,
+        kEMInvalid                      = -1,
 
-        kEMConstantBluish       = 0,
-        kEMConstantSRGBWhite    = 1,
-        kEMDebugSinglePixel     = 2,
-        kEMPisa                 = 3,
-        kEMGlacier              = 4,
-        kEMDoge2                = 5,
-        kEMPlayaSunrise         = 6,
+        kEMConstBluish                  = 0,
+        kEMConstSRGBWhite               = 1,
+        kEMImgConstSRGBWhite8x4         = 2,
+        kEMImgConstSRGBWhite1024x512    = 3,
+        kEMImgDebugSinglePixel          = 4,
+        kEMImgPisa                      = 5,
+        kEMImgGlacier                   = 6,
+        kEMImgDoge2                     = 7,
+        kEMImgPlayaSunrise              = 8,
+        kEMImgEnnis                     = 9,
+        kEMImgSatellite                 = 10,
 
         kEMCount,
-        kEMDefault              = kEMConstantBluish,
+        kEMDefault                      = kEMConstBluish,
     };
 
     void LoadCornellBox(
@@ -160,7 +168,7 @@ public:
         // 1) light2, will only emit
         mMaterials.push_back(mat);
 
-        // 2) white floor (and possibly ceiling)
+        // 2) white floor (and possibly ceiling or single sphere)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
         mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
@@ -216,8 +224,11 @@ public:
         mGeometry = geometryList;
 
         // Floor
-        geometryList->mGeometry.push_back(new Triangle(cb[0], cb[4], cb[5], 2));
-        geometryList->mGeometry.push_back(new Triangle(cb[5], cb[1], cb[0], 2));
+        if (aBoxMask & kFloor)
+        {
+            geometryList->mGeometry.push_back(new Triangle(cb[0], cb[4], cb[5], 2));
+            geometryList->mGeometry.push_back(new Triangle(cb[5], cb[1], cb[0], 2));
+        }
 
         if (aBoxMask & kWalls)
         {
@@ -248,17 +259,25 @@ public:
         }
 
         // Spheres
-        if ( aBoxMask & kSpheres )
+        if ( aBoxMask & k2Spheres )
         {
-            float smallRadius = 0.5f;
-            Vec3f leftWallCenter  = (cb[0] + cb[4]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
-            Vec3f rightWallCenter = (cb[1] + cb[5]) * (1.f / 2.f) + Vec3f(0, 0, smallRadius);
+            float ballRadius = 0.5f;
+            Vec3f leftWallCenter  = (cb[0] + cb[4]) * (1.f / 2.f) + Vec3f(0, 0, ballRadius);
+            Vec3f rightWallCenter = (cb[1] + cb[5]) * (1.f / 2.f) + Vec3f(0, 0, ballRadius);
             float xlen = rightWallCenter.x - leftWallCenter.x;
             Vec3f leftBallCenter  = leftWallCenter  + Vec3f(2.f * xlen / 7.f, 0, 0);
             Vec3f rightBallCenter = rightWallCenter - Vec3f(2.f * xlen / 7.f, -xlen/4, 0);
 
-            geometryList->mGeometry.push_back(new Sphere(leftBallCenter,  smallRadius, 6));
-            geometryList->mGeometry.push_back(new Sphere(rightBallCenter, smallRadius, 7));
+            geometryList->mGeometry.push_back(new Sphere(leftBallCenter,  ballRadius, 6));
+            geometryList->mGeometry.push_back(new Sphere(rightBallCenter, ballRadius, 7));
+        }
+        if ( aBoxMask & k1Sphere )
+        {
+            float ballRadius = 1.0f;
+            Vec3f floorCenter = (cb[0] + cb[5]) * (1.f / 2.f);
+            Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
+
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 2));
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -361,7 +380,7 @@ public:
 
             switch (aEnvironmentMapType)
             {
-                case kEMConstantBluish:
+                case kEMConstBluish:
                 {
                     Spectrum radiance;
                     radiance.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
@@ -369,7 +388,7 @@ public:
                     break;
                 }
 
-                case kEMConstantSRGBWhite:
+                case kEMConstSRGBWhite:
                 {
                     Spectrum radiance;
                     radiance.SetSRGBGreyLight(1.0f);
@@ -377,51 +396,78 @@ public:
                     break;
                 }
 
-                case kEMDebugSinglePixel:
+                case kEMImgConstSRGBWhite8x4:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\Debugging\\Const white 8x4.exr");
+                    break;
+                }
+
+                case kEMImgConstSRGBWhite1024x512:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\Debugging\\Const white 1024x512.exr");
+                    break;
+                }
+
+                case kEMImgDebugSinglePixel:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\Debugging\\Single pixel.exr",
-                        0.15f, 10.0f);
-                        //".\\Light Probes\\Debugging\\test_exr.exr",
-                        //0.15f, 1.0f);
+                        0.35f, 10.0f);
                     break;
                 }
 
-                case kEMPisa:
+                case kEMImgPisa:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\pisa.exr", 
-                        0.0f, 1.0f);
+                        0.05f, 1.0f);
                     break;
                 }
 
-                case kEMGlacier:
+                case kEMImgGlacier:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\glacier.exr",
-                        0.1f, 1.0f);
+                        0.05f, 1.0f);
                     break;
                 }
 
-                case kEMDoge2:
+                case kEMImgDoge2:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                        0.05f, 2.0f);
+                        0.83f, 1.5f);
                     break;
                 }
 
-                case kEMPlayaSunrise:
+                case kEMImgPlayaSunrise:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\hdrlabs.com\\Playa_Sunrise\\Playa_Sunrise.exr",
-                        0.25f, 3.0f);
+                        0.1f, 2.0f);
+                    break;
+                }
+
+                case kEMImgEnnis:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\ennis.exr",
+                        0.53f, 0.2f);
+                    break;
+                }
+
+                case kEMImgSatellite:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                        -0.12f, 0.5f);
                     break;
                 }
 
                 default:
-                    // Error: Undefined env map type
-                    assert(false);
+                    PG3_FATAL_ERROR("Unknown environment map type");
             }
 
             if (light != NULL)
@@ -441,40 +487,63 @@ public:
 
         switch (aEnvironmentMapType)
         {
-        case kEMConstantBluish:
+        case kEMConstBluish:
             oName = "const. bluish";
             break;
 
-        case kEMConstantSRGBWhite:
+        case kEMConstSRGBWhite:
             oName = "const. sRGB white";
             break;
 
-        case kEMDebugSinglePixel:
+        case kEMImgConstSRGBWhite8x4:
+            oName = "debug, white, 8x4";
+            break;
+
+        case kEMImgConstSRGBWhite1024x512:
+            oName = "debug, white, 1024x512";
+            break;
+
+        case kEMImgDebugSinglePixel:
             oName = "debug, single pixel, 18x6";
             break;
 
-        case kEMPisa:
+        case kEMImgPisa:
             oName = "Pisa";
             break;
 
-        case kEMGlacier:
+        case kEMImgGlacier:
             oName = "glacier";
             break;
 
-        case kEMDoge2:
-            oName = "doge2";
+        case kEMImgDoge2:
+            oName = "Doge2";
             break;
 
-        case kEMPlayaSunrise:
+        case kEMImgPlayaSunrise:
             oName = "playa sunrise";
             break;
 
-        default:
+        case kEMImgEnnis:
+            oName = "ennis";
             break;
+
+        case kEMImgSatellite:
+            oName = "sattelite";
+            break;
+
+        default:
+            PG3_FATAL_ERROR("Unknown environment map type");
         }
 
         if (oAcronym)
-            *oAcronym = std::to_string(aEnvironmentMapType);
+        {
+            //*oAcronym = std::to_string(aEnvironmentMapType);
+            std::ostringstream outStream;
+            outStream.width(2);
+            outStream.fill('0');
+            outStream << aEnvironmentMapType;
+            *oAcronym = outStream.str();
+        }
 
         return oName;
     }
@@ -505,14 +574,21 @@ public:
             acronym += "w";
         }
 
-        if ((aBoxMask & kSpheres) == kSpheres)
+        if ((aBoxMask & k2Spheres) == k2Spheres)
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "spheres";
-            acronym += "s";
+            name    += "2 spheres";
+            acronym += "2s";
         }
 
-        if ((aBoxMask & kWalls|kSpheres) == 0)
+        if ((aBoxMask & k1Sphere) == k1Sphere)
+        {
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "1 sphere";
+            acronym += "1s";
+        }
+
+        if ((aBoxMask & kWalls|k2Spheres|k1Sphere) == 0)
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "empty";

@@ -5,6 +5,7 @@
 //#include "pdf.hxx"
 #include "debugging.hxx"
 #include "math.hxx"
+#include "distribution.hxx"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Adopted from SmallUPBP project and used as a reference for my own implementations.
@@ -14,7 +15,7 @@
 class InputImage
 {
 public:
-    InputImage(int width, int height)
+    InputImage(unsigned int width, unsigned int height)
     {
         mWidth  = width;
         mHeight = height;
@@ -31,7 +32,7 @@ public:
         mHeight = 0;
     }
 
-    Spectrum& ElementAt(int x, int y)
+    Spectrum& ElementAt(unsigned int x, unsigned int y)
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(x, 0, mWidth);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(y, 0, mHeight);
@@ -39,7 +40,7 @@ public:
         return mData[mWidth*y + x];
     }
 
-    const Spectrum& ElementAt(int x, int y) const
+    const Spectrum& ElementAt(unsigned int x, unsigned int y) const
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(x, 0, mWidth);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(y, 0, mHeight);
@@ -47,49 +48,49 @@ public:
         return mData[mWidth*y + x];
     }
 
-    Spectrum& ElementAt(int idx)
+    Spectrum& ElementAt(unsigned int idx)
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(idx, 0, mWidth*mHeight);
 
         return mData[idx];
     }
 
-    const Spectrum& ElementAt(int idx) const
+    const Spectrum& ElementAt(unsigned int idx) const
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(idx, 0, mWidth*mHeight);
 
         return mData[idx];
     }
 
-    Vec2i Size() const
+    Vec2ui Size() const
     {
-        return Vec2i(mWidth, mHeight);
+        return Vec2ui(mWidth, mHeight);
     }
 
-    int Width() const
+    unsigned int Width() const
     {
         return mWidth;
     }
 
-    int Height() const 
+    unsigned int Height() const
     { 
         return mHeight; 
     }
 
-    Spectrum*   mData;
-    int         mWidth;
-    int         mHeight;
+    Spectrum*       mData;
+    unsigned int    mWidth;
+    unsigned int    mHeight;
 };
 
 class EnvironmentMap
 {
 public:
-    // Expects absolute path of an OpenEXR file with an environment map with latitude-longitude mapping.
-    EnvironmentMap(const std::string filename, float rotate, float scale)
+    // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
+    EnvironmentMap(const std::string filename, float rotate, float scale) :
+        mPlan2AngPdfCoeff(1.0f / (2.0f * PI_F * PI_F))
     {
-        mImage = 0;
-        //mDistribution = 0;
-        //mNorm = 0.5f * INV_PI_F * INV_PI_F;
+        mImage = NULL;
+        mDistribution = NULL;
 
         try
         {
@@ -101,54 +102,85 @@ public:
             PG3_FATAL_ERROR("Environment map load failed!");
         }
 
-        //mDistribution = ConvertImageToPdf(mImage);
+        mDistribution = ConvertImageToPdf(mImage);
     }
 
     ~EnvironmentMap()
     {
         delete(mImage);
-        //delete(mDistribution);
+        delete(mDistribution);
     }
 
-    // Samples direction on unit sphere proportionally to the luminance of the map. Returns its PDF and optionally radiance.
-    //Vec3f Sample(
-    //    const Vec2f &aSamples,
-    //    float       &oPdfW,
-    //    Spectrum         *oRadiance = NULL) const
-    //{
-    //    float uv[2]; float pdf;
-    //    mDistribution->SampleContinuous(aSamples[0], aSamples[1], uv, &pdf);
+    // Samples direction on unit sphere proportionally to the luminance of the map. 
+    // Returns the sample PDF and optionally it's radiance.
+    Vec3f Sample(
+        const Vec2f &aSamples,
+        float       &oPdfW,
+        Spectrum    *oRadiance = NULL) const
+    {
+        PG3_DEBUG_ASSERT(mImage != NULL);
 
-    //    PG3_DEBUG_ASSERT(pdf > 0);
+        const Vec2ui imageSize = mImage->Size();
+        Vec2f uv;
+        float pdf;
 
-    //    oPdfW = mNorm * pdf / sinTheta(uv[1], mImage->Height());
+        mDistribution->SampleContinuous(aSamples, uv, &pdf);
+        PG3_DEBUG_ASSERT(pdf > 0.f);
 
-    //    Vec3f direction = LatLong2Dir(uv[0], uv[1]);
+        // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
+        // the angular PDF on the unit sphere over the appropriate trapezoid
+        //
+        // angular pdf = planar pdf * planar segment surf. area / sphere segment surf. area
+        //             = planar pdf * (1 / (width*height)) / (2*Pi*Pi*Sin(MidTheta) / (width*height))
+        //             = planar pdf / (2*Pi*Pi*Sin(MidTheta))
+        //
+        // FIXME: Uniform sampling of a segment of the 2D distribution doesn't yield 
+        //        uniform sampling of a corresponding segment on a sphere 
+        //        - the closer we are to the poles, the denser the sampling will be 
+        //        (even though the overall probability of the segment is correct).
+        //
+        // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
+        oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta(uv.y);
 
-    //    if (oRadiance)
-    //        *oRadiance = LookupRadiance(uv, mImage);
+        const Vec3f direction = LatLong2Dir(uv);
 
-    //    return direction;
-    //}
+#ifdef PG3_DEBUG_ASSERT_ENABLED
+        {
+            Vec2f uvdbg = Dir2LatLong(direction);
+            PG3_DEBUG_ASSERT_FLOAT_EQUAL(uvdbg.y, uv.y, 1E-4f);
+            // the closer we get to the poles, the closer the points are in the x coordinate
+            float densityCompensation = uv.y * (1.0f - uv.y);
+            float distanceXDirect    = fabs(uvdbg.x - uv.x);
+            float distanceXOverZero  = -distanceXDirect + 1.0f;
+            float distanceX = std::min(distanceXDirect, distanceXOverZero) * densityCompensation;
+            PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(distanceX, 1E-7f);
+        }
+#endif
+
+        if (oRadiance)
+            *oRadiance = LookupRadiance(uv, false);
+
+        return direction;
+    }
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
     // must be non-zero but not necessarily normalized.
     Spectrum Lookup(
-        const Vec3f &aDirection,
+        const Vec3f &aDirection, 
+        bool         bDoBilinFiltering,
         float       *oPdfW = NULL) const
     {
         PG3_DEBUG_ASSERT(!aDirection.IsZero());
 
         const Vec3f normDir     = aDirection / aDirection.Length();
         const Vec2f uv          = Dir2LatLong(normDir);
-        const Spectrum radiance = LookupRadiance(uv, mImage);
+        const Spectrum radiance = LookupRadiance(uv, bDoBilinFiltering);
 
         oPdfW; // unused parameter
-
         //if (oPdfW)
         //{
-        //    //Vec2f uv = Dir2LatLong(normDir);
-        //    *oPdfW = mNorm * mDistribution->Pdf(uv[0], uv[1]) / sinTheta(uv[1], mImage->Height());
+        //    Vec2f uv = Dir2LatLong(normDir);
+        //    *oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / sinMidTheta(uv[1]);
         //    if (*oPdfW == 0.0f) radiance = Spectrum(0);
         //}
 
@@ -159,6 +191,7 @@ private:
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
     InputImage* LoadImage(const char *filename, float rotate, float scale) const
     {
+        rotate = FmodX(rotate, 1.0f);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(rotate, 0.0f, 1.0f);
 
         Imf::RgbaInputFile file(filename, 1);
@@ -175,9 +208,9 @@ private:
 
         int c = 0;
         int iRot = (int)(rotate * width);
-        for (int j = 0; j < image->Height(); j++)
+        for (unsigned int j = 0; j < image->Height(); j++)
         {
-            for (int i = 0; i < image->Width(); i++) 
+            for (unsigned int i = 0; i < image->Width(); i++)
             {
                 int x = i + iRot;
                 if (x >= width) x -= width;
@@ -195,47 +228,64 @@ private:
         return image;
     }
 
-    // Converts luminance of the given environment map to 2D distribution with latitude-longitude mapping.
-    //Distribution2D* ConvertImageToPdf(const InputImage* image) const
-    //{
-    //    int height = image->Height();
-    //    int width = height + height; // height maps to PI, width maps to 2PI		
+    // Generates a 2D distribution with latitude-longitude mapping 
+    // based on the luminance of the provided environment map image
+    Distribution2D* ConvertImageToPdf(const InputImage* image) const
+    {
+        // Prepare source distribution data from the original environment map image data, 
+        // i.e. convert image values so that the probability of a pixel within 
+        // the lattitute-longitude parametrization is equal to the angular probability of 
+        // the projected segment on a unit sphere.
 
-    //    float *data = new float[width * height];
+        const Vec2ui size   = image->Size();
+        float *srcData      = new float[size.x * size.y];
 
-    //    for (int r = 0; r < height; ++r)
-    //    {
-    //        float v = (float)(r + 0.5f) / (float)height;
-    //        float sinTheta = sinf(PI_F * v);
-    //        int colOffset = r * width;
+        for (unsigned int row = 0; row < size.y; ++row)
+        {
+            // We compute the relative surface area of the current segment on the unit sphere.
+            // We can ommit the height of the segment because it only changes the result 
+            // by a multiplication constant and thus doesn't affect the shape of the resulting PDF.
+            const float segmAvgV    = ((float)row + 0.5f) / size.y;
+            const float sinAvgTheta = sinf(PI_F * segmAvgV);
 
-    //        for (int c = 0; c < width; ++c)
-    //        {
-    //            float u = (float)(c + 0.5f) / (float)width;
-    //            data[c + colOffset] = sinTheta * Luminance(image->ElementAt(c, r));
-    //        }
-    //    }
+            const unsigned int rowOffset = row * size.x;
 
-    //    return new Distribution2D(data, width, height);
-    //}
+            for (unsigned int column = 0; column < size.x; ++column)
+            {
+                const float luminance = 
+                    Luminance(image->ElementAt(column, row));
+                srcData[rowOffset + column] =
+                    sinAvgTheta * luminance;
+            }
+        }
+
+        return new Distribution2D(srcData, size.x, size.y);
+    }
 
     // Returns direction on unit sphere such that its longitude equals 2*PI*u and its latitude equals PI*v.
-    //Vec3f LatLong2Dir(float u, float v) const
-    //{
-    //    float phi = u * 2 * PI_F;
-    //    float theta = v * PI_F;
+    PG3_PROFILING_NOINLINE
+    Vec3f LatLong2Dir(const Vec2f &uv) const
+    {
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.x, 0.f, 1.f);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.y, 0.f, 1.f);
 
-    //    float sinTheta = sin(theta);
+        const float phi   = -(uv.x - 0.5f) * 2 * PI_F; // we rotate in the opposite direction
+        const float theta = uv.y * PI_F;
 
-    //    return Vec3f(-sinTheta * cos(phi), sinTheta * sin(phi), cos(theta));
-    //}
+        const float sinTheta = sin(theta);
+
+        return Vec3f(sinTheta * cos(phi), sinTheta * sin(phi), cos(theta));
+    }
 
     // Returns vector [u,v] in [0,1]x[0,1]. The direction must be non-zero and normalized.
+    PG3_PROFILING_NOINLINE
     Vec2f Dir2LatLong(const Vec3f &aDirection) const
     {
         PG3_DEBUG_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
 
-        const float phi   = atan2f(aDirection.x, aDirection.y);
+        // TODO: Use optimized formulae from Jarda's writeout
+
+        const float phi   = -atan2f(aDirection.y, aDirection.x); // we rotate in the opposite direction
         const float theta = acosf(aDirection.z);
 
         // Convert from [-Pi,Pi] to [0,1]
@@ -247,31 +297,25 @@ private:
         const float v = Clamp(theta * INV_PI_F, 0.f, 1.0f);
 
         return Vec2f(u, v);
-
-        //float phi = (aDirection.x() != 0 || aDirection.y() != 0) ? atan2f(aDirection.y(), aDirection.x()) : 0;
-        //float theta = acosf(aDirection.z());
-        //float u = Utils::clamp<float>(0.5 - phi * 0.5f * INV_PI_F, 0, 1);
-        //float v = Utils::clamp<float>(theta * INV_PI_F, 0, 1);
     }
 
-    // Returns radiance for the given lat long coordinates. Does bilinear filtering.
-    Spectrum LookupRadiance(const Vec2f &uv, const InputImage* image) const
+    // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
+    PG3_PROFILING_NOINLINE 
+    Spectrum LookupRadiance(const Vec2f &uv, bool bDoBilinFiltering) const
     {
-        //int width  = image->Width();
-        //int height = image->Height();
-        const Vec2i imageSize = image->Size();
+        PG3_DEBUG_ASSERT(mImage != NULL);
 
-        // Convert uv coords to image coordinates
-        Vec2f xy = uv * Vec2f((float)(imageSize.x - 1), (float)(imageSize.y - 1));
+        const Vec2ui imageSize = mImage->Size();
 
-        return image->ElementAt(
-            Clamp((int)xy.x, 0, imageSize.x - 1),
-            Clamp((int)xy.y, 0, imageSize.y - 1));
+        // Convert uv coords to mImage coordinates
+        Vec2f xy = uv * Vec2f((float)imageSize.x, (float)imageSize.y);
 
-        // TODO: bilinear filtering?
+        return mImage->ElementAt(
+            Clamp((unsigned int)xy.x, 0u, imageSize.x - 1),
+            Clamp((unsigned int)xy.y, 0u, imageSize.y - 1));
 
-
-
+        // TODO: bilinear filtering
+        bDoBilinFiltering;
 
 
 
@@ -280,11 +324,8 @@ private:
 
 
 
-
-
-
-        //int width = image->Width();
-        //int height = image->Height();
+        //int width = mImage->Width();
+        //int height = mImage->Height();
 
         //float xf = u * width;
         //float yf = v * height;
@@ -298,28 +339,34 @@ private:
         //float tx = xf - (float)xi1;
         //float ty = yf - (float)yi1;
 
-        //return (1 - ty) * ((1 - tx) * image->ElementAt(xi1, yi1) + tx * image->ElementAt(xi2, yi1))
-        //    + ty * ((1 - tx) * image->ElementAt(xi1, yi2) + tx * image->ElementAt(xi2, yi2));
+        //return (1 - ty) * ((1 - tx) * mImage->ElementAt(xi1, yi1) + tx * mImage->ElementAt(xi2, yi1))
+        //    + ty * ((1 - tx) * mImage->ElementAt(xi1, yi2) + tx * mImage->ElementAt(xi2, yi2));
     }
 
-    // Returns sine of latitude for a midpoint of a pixel in a map of the given height corresponding to v. Never returns zero.
-    //float sinTheta(const float v, const float height) const
-    //{
-    //    float result;
+    // The sine of latitude of the midpoint of a map pixel defined by the given v coordinate.
+    float sinMidTheta(const float v) const
+    {
+        PG3_DEBUG_ASSERT(mImage != NULL);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(v, 0.0f, 1.0f);
 
-    //    if (v < 1)
-    //        result = sinf(PI_F * (float)((int)(v * height) + 0.5f) / (float)height);
-    //    else
-    //        result = sinf(PI_F * (float)((height - 1) + 0.5f) / (float)height);
+        const float height  = (float)mImage->Height();
 
-    //    PG3_DEBUG_ASSERT(result > 0 && result <= 1);
+        const int segment   = std::min((int)(v * height), (int)height - 1);
+        const float result  = sinf(PI_F * (segment + 0.5f) / height);
 
-    //    return result;
+        PG3_DEBUG_ASSERT(result > 0.f && result <= 1.f);
 
-    //    return 0.f;
-    //}
+        return result;
+    }
 
-    InputImage* mImage;				    // The environment map
-    //Distribution2D* mDistribution;	// Environment map converted to 2D distribution	
-    //float mNorm;					// PDF normalization factor
+    // This class is not copyable because of a const member.
+    // If we don't delete the assignment operator and copy constructor 
+    // explicitly, the compiler may complain about not being able 
+    // to create default implementations.
+    EnvironmentMap & operator=(const EnvironmentMap&) = delete;
+    EnvironmentMap(const EnvironmentMap&) = delete;
+
+    InputImage*     mImage;             // Environment map itself
+    Distribution2D* mDistribution;      // 2D distribution of the environment map
+    const float     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
 };

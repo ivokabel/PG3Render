@@ -19,10 +19,10 @@ public:
 
     virtual ~AbstractRenderer(){}
 
-    // This class is not copyable because of the const mScene member.
+    // This class is not copyable because of a const member.
     // If we don't delete the assignment operator and copy constructor 
     // explicitly, the compiler may complain about not being able 
-    // to create their default implementations.
+    // to create default implementations.
     AbstractRenderer & operator=(const AbstractRenderer&) = delete;
     AbstractRenderer(const AbstractRenderer&) = delete;
 

@@ -1,12 +1,13 @@
 #pragma once
 
+#include "spectrum.hxx"
+#include "renderer.hxx"
+#include "rng.hxx"
+
 #include <vector>
 #include <cmath>
 #include <omp.h>
 #include <cassert>
-#include "spectrum.hxx"
-#include "renderer.hxx"
-#include "rng.hxx"
 
 class PathTracer : public AbstractRenderer
 {
@@ -63,11 +64,11 @@ public:
                 for (int i=0; i<mScene.GetLightCount(); i++)
                 {
                     const AbstractLight* light = mScene.GetLightPtr(i);
-                    assert(light != 0);
+                    PG3_DEBUG_ASSERT(light != 0);
 
                     // Choose a random sample on the light
                     Vec3f wig; float lightDist;
-                    Spectrum illumSample = light->SampleIllumination(surfPt, frame, wig, lightDist, mRng);
+                    Spectrum illumSample = light->SampleIllumination(surfPt, frame, mRng, wig, lightDist);
                     
                     if (illumSample.Max() > 0.)
                     {
@@ -126,7 +127,7 @@ public:
                 // No intersection - get light from the background
 
                 const BackgroundLight *backgroundLight = mScene.GetBackground();
-                Spectrum Le = backgroundLight->GetEmmision(ray.dir);
+                Spectrum Le = backgroundLight->GetEmmision(ray.dir, true);
 
                 mFramebuffer.AddRadiance(sample, Le);
             }

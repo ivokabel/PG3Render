@@ -86,24 +86,28 @@ AbstractRenderer* CreateRenderer(
 // Scene configurations
 uint g_SceneConfigs[] = 
 {
-    Scene::kLightPoint   | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightPoint   | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+    Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    Scene::kLightCeiling | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightCeiling | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+    Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    Scene::kLightBox     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightBox     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+    Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightEnv     | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+    Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
     // 8
-    Scene::kLightEnv | Scene::kWallsDiffuse | Scene::kSpheres | Scene::kSpheresDiffuse,
+    Scene::kLightEnv | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse,
     // 9
-    Scene::kLightEnv | Scene::kWallsDiffuse | Scene::kSpheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
+    Scene::kLightEnv | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
     // 10
-    Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kSpheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+    Scene::kLightEnv | Scene::kWallsDiffuse | Scene::k1Sphere | Scene::kSpheresDiffuse,
+    // 11
+    Scene::kLightEnv | Scene::kWallsDiffuse | Scene::k1Sphere | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
+    // 12
+    Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
 };
 
 std::string DefaultFilename(
@@ -139,12 +143,35 @@ void PrintRngWarning()
 {
 #if defined(LEGACY_RNG)
     printf("The code was not compiled for C++11.\n");
-    printf("It will be using Tiny Encryption Algorithm-based"
-        "random number generator.\n");
+    printf("It will be using Tiny Encryption Algorithm-based random number generator.\n");
     printf("This is worse than the Mersenne Twister from C++11.\n");
     printf("Consider setting up for C++11.\n");
     printf("Visual Studio 2010, and g++ 4.6.3 and later work.\n\n");
 #endif
+}
+
+void PrintInfo(const Config &config)
+{
+    printf("PG3Render\n");
+
+    printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
+    printf("Config:    "
+#ifndef _DEBUG
+        "release"
+#else
+#ifndef PG3_DEBUG_ASSERT_ENABLED
+        "debug"
+#endif
+        "debug with assertions"
+#endif
+        ", %d threads"
+        "\n",
+        config.mNumThreads
+        );
+    if (config.mMaxTime > 0)
+        printf("Target:    %g seconds render time\n", config.mMaxTime);
+    else
+        printf("Target:    %d iteration(s)\n", config.mIterations);
 }
 
 void PrintHelp(const char *argv[])

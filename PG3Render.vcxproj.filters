@@ -21,6 +21,9 @@
     <ClCompile Include="src\debugging.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\process.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.hxx">
@@ -75,6 +78,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\distribution.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\process.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
