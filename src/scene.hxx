@@ -168,7 +168,7 @@ public:
         // 1) light2, will only emit
         mMaterials.push_back(mat);
 
-        // 2) white floor (and possibly ceiling or single sphere)
+        // 2) white floor (and possibly the ceiling)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
         mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
@@ -202,6 +202,12 @@ public:
         diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.7f);
         mat.Set(diffuseReflectance, glossyReflectance, 600, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
+        mMaterials.push_back(mat);
+
+        // 8) large sphere (white)
+        diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
+        glossyReflectance.SetGreyAttenuation(0.5f);
+        mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
         mMaterials.push_back(mat);
 
         delete mGeometry;
@@ -277,7 +283,7 @@ public:
             Vec3f floorCenter = (cb[0] + cb[5]) * (1.f / 2.f);
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
-            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 2));
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
         }
 
         //////////////////////////////////////////////////////////////////////////

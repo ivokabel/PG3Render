@@ -30,7 +30,8 @@ public:
         mPhongExponent      = aPhongExponent;
 
         if (aGlossy)
-            mDiffuseReflectance /= 2; // to make it energy conserving (phong reflectance is already scaled down by the caller)
+            // to make it energy conserving (phong reflectance is already scaled down by the caller)
+            mDiffuseReflectance /= 2;
     }
 
     Spectrum EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
@@ -44,7 +45,8 @@ public:
         // Glossy component
         const float constComponent = (mPhongExponent + 2.0f) / (2.0f * PI_F); // TODO: Pre-compute
         const Vec3f wrl = ReflectLocal(wil);
-        // We need to restrict to positive cos values only, otherwise we get unwanted behaviour in the retroreflection zone.
+        // We need to restrict to positive cos values only, otherwise we get unwanted behaviour 
+        // in the retroreflection zone.
         const float thetaRCos = std::max(Dot(wrl, wol), 0.f); 
         const float poweredCos = powf(thetaRCos, mPhongExponent);
         const Spectrum glossyComponent(mPhongReflectance * (constComponent * poweredCos));
