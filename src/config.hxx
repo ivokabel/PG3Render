@@ -158,6 +158,7 @@ void PrintInfo(const Config &config)
 
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
     printf("Config:    "
+        "%d threads, "
 #ifndef _DEBUG
         "release"
 #else
@@ -166,7 +167,6 @@ void PrintInfo(const Config &config)
 #endif
         "debug with assertions"
 #endif
-        ", %d threads"
         "\n",
         config.mNumThreads
         );
