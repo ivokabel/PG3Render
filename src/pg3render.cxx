@@ -12,7 +12,6 @@
 #include <omp.h>
 #include <string>
 #include <set>
-#include <sstream>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
@@ -171,7 +170,9 @@ int main(int argc, const char *argv[])
     printf("Running:   %s%s", config.GetName(config.mAlgorithm), (config.mMaxTime > 0) ? "..." : "\n");
     fflush(stdout);
     float time = render(config);
-    printf(" done in %.2f s\n", time);
+    std::string timeHumanReadable;
+    SecondsToHumanReadable(time, timeHumanReadable);
+    printf(" done in %s\n", timeHumanReadable.c_str());
 
     // Saves the image
     printf("Saving to: %s ... ", config.mOutputName.c_str());

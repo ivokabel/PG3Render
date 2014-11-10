@@ -15,10 +15,10 @@
 class InputImage
 {
 public:
-    InputImage(unsigned int width, unsigned int height)
+    InputImage(unsigned int aWidth, unsigned int aHeight)
     {
-        mWidth  = width;
-        mHeight = height;
+        mWidth  = aWidth;
+        mHeight = aHeight;
 
         mData = new Spectrum[mWidth * mHeight];
     }
@@ -32,34 +32,34 @@ public:
         mHeight = 0;
     }
 
-    Spectrum& ElementAt(unsigned int x, unsigned int y)
+    Spectrum& ElementAt(unsigned int aX, unsigned int aY)
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(x, 0, mWidth);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(y, 0, mHeight);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
 
-        return mData[mWidth*y + x];
+        return mData[mWidth*aY + aX];
     }
 
-    const Spectrum& ElementAt(unsigned int x, unsigned int y) const
+    const Spectrum& ElementAt(unsigned int aX, unsigned int aY) const
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(x, 0, mWidth);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(y, 0, mHeight);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
 
-        return mData[mWidth*y + x];
+        return mData[mWidth*aY + aX];
     }
 
-    Spectrum& ElementAt(unsigned int idx)
+    Spectrum& ElementAt(unsigned int aIdx)
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(idx, 0, mWidth*mHeight);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
-        return mData[idx];
+        return mData[aIdx];
     }
 
-    const Spectrum& ElementAt(unsigned int idx) const
+    const Spectrum& ElementAt(unsigned int aIdx) const
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(idx, 0, mWidth*mHeight);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
-        return mData[idx];
+        return mData[aIdx];
     }
 
     Vec2ui Size() const
@@ -86,7 +86,7 @@ class EnvironmentMap
 {
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
-    EnvironmentMap(const std::string filename, float rotate, float scale) :
+    EnvironmentMap(const std::string aFilename, float aRotate, float aScale) :
         mPlan2AngPdfCoeff(1.0f / (2.0f * PI_F * PI_F))
     {
         mImage = NULL;
@@ -94,8 +94,8 @@ public:
 
         try
         {
-            std::cout << "Loading:   Environment map '" << filename << "'" << std::endl;
-            mImage = LoadImage(filename.c_str(), rotate, scale);
+            std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
+            mImage = LoadImage(aFilename.c_str(), aRotate, aScale);
         }
         catch (...)
         {
@@ -116,16 +116,34 @@ public:
     Vec3f Sample(
         const Vec2f &aSamples,
         float       &oPdfW,
-        Spectrum    *oRadiance = NULL) const
+        Spectrum    *oRadiance = NULL,
+        float       *oSinMidTheta = NULL
+        ) const
     {
         PG3_DEBUG_ASSERT(mImage != NULL);
 
         const Vec2ui imageSize = mImage->Size();
         Vec2f uv;
-        float pdf;
+        Vec2ui segm;
+        float pdfW;
 
-        mDistribution->SampleContinuous(aSamples, uv, &pdf);
-        PG3_DEBUG_ASSERT(pdf > 0.f);
+        mDistribution->SampleContinuous(aSamples, uv, segm, &pdfW);
+        PG3_DEBUG_ASSERT(pdfW > 0.f);
+
+        const Vec3f direction = LatLong2Dir(uv);
+
+#ifdef PG3_DEBUG_ASSERT_ENABLED
+        {
+            Vec2f uvdbg = Dir2LatLong(direction);
+            PG3_DEBUG_ASSERT_FLOAT_EQUAL(uvdbg.y, uv.y, 1E-4f);
+            // the closer we get to the poles, the closer the points are in the x coordinate
+            float densityCompensation = uv.y * (1.0f - uv.y);
+            float distanceXDirect = fabs(uvdbg.x - uv.x);
+            float distanceXOverZero = -distanceXDirect + 1.0f;
+            float distanceX = std::min(distanceXDirect, distanceXOverZero) * densityCompensation;
+            PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(distanceX, 1E-7f);
+        }
+#endif
 
         // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
         // the angular PDF on the unit sphere over the appropriate trapezoid
@@ -138,27 +156,14 @@ public:
         //        uniform sampling of a corresponding segment on a sphere 
         //        - the closer we are to the poles, the denser the sampling will be 
         //        (even though the overall probability of the segment is correct).
-        //
         // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
-        oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta(uv.y);
-
-        const Vec3f direction = LatLong2Dir(uv);
-
-#ifdef PG3_DEBUG_ASSERT_ENABLED
-        {
-            Vec2f uvdbg = Dir2LatLong(direction);
-            PG3_DEBUG_ASSERT_FLOAT_EQUAL(uvdbg.y, uv.y, 1E-4f);
-            // the closer we get to the poles, the closer the points are in the x coordinate
-            float densityCompensation = uv.y * (1.0f - uv.y);
-            float distanceXDirect    = fabs(uvdbg.x - uv.x);
-            float distanceXOverZero  = -distanceXDirect + 1.0f;
-            float distanceX = std::min(distanceXDirect, distanceXOverZero) * densityCompensation;
-            PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(distanceX, 1E-7f);
-        }
-#endif
+        const float sinMidTheta = SinMidTheta(mImage, segm.y);
+        oPdfW = pdfW * mPlan2AngPdfCoeff / sinMidTheta;
+        if (oSinMidTheta != NULL)
+            *oSinMidTheta = sinMidTheta;
 
         if (oRadiance)
-            *oRadiance = LookupRadiance(uv, false);
+            *oRadiance = LookupRadiance(segm);
 
         return direction;
     }
@@ -167,20 +172,20 @@ public:
     // must be non-zero but not necessarily normalized.
     Spectrum Lookup(
         const Vec3f &aDirection, 
-        bool         bDoBilinFiltering,
+        bool         aDoBilinFiltering,
         float       *oPdfW = NULL) const
     {
         PG3_DEBUG_ASSERT(!aDirection.IsZero());
 
         const Vec3f normDir     = aDirection / aDirection.Length();
         const Vec2f uv          = Dir2LatLong(normDir);
-        const Spectrum radiance = LookupRadiance(uv, bDoBilinFiltering);
+        const Spectrum radiance = LookupRadiance(uv, aDoBilinFiltering);
 
         oPdfW; // unused parameter
         //if (oPdfW)
         //{
         //    Vec2f uv = Dir2LatLong(normDir);
-        //    *oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / sinMidTheta(uv[1]);
+        //    *oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv[1]);
         //    if (*oPdfW == 0.0f) radiance = Spectrum(0);
         //}
 
@@ -189,12 +194,12 @@ public:
 
 private:
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
-    InputImage* LoadImage(const char *filename, float rotate, float scale) const
+    InputImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
     {
-        rotate = FmodX(rotate, 1.0f);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(rotate, 0.0f, 1.0f);
+        aRotate = FmodX(aRotate, 1.0f);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aRotate, 0.0f, 1.0f);
 
-        Imf::RgbaInputFile file(filename, 1);
+        Imf::RgbaInputFile file(aFilename, 1);
         Imath::Box2i dw = file.dataWindow();
 
         int width   = dw.max.x - dw.min.x + 1;
@@ -207,7 +212,7 @@ private:
         InputImage* image = new InputImage(width, height);
 
         int c = 0;
-        int iRot = (int)(rotate * width);
+        int iRot = (int)(aRotate * width);
         for (unsigned int j = 0; j < image->Height(); j++)
         {
             for (unsigned int i = 0; i < image->Width(); i++)
@@ -215,9 +220,9 @@ private:
                 int x = i + iRot;
                 if (x >= width) x -= width;
                 image->ElementAt(x, j).SetSRGBLight(
-                    rgbaData[c].r * scale,
-                    rgbaData[c].g * scale,
-                    rgbaData[c].b * scale
+                    rgbaData[c].r * aScale,
+                    rgbaData[c].g * aScale,
+                    rgbaData[c].b * aScale
                     );
                 c++;
             }
@@ -230,14 +235,14 @@ private:
 
     // Generates a 2D distribution with latitude-longitude mapping 
     // based on the luminance of the provided environment map image
-    Distribution2D* ConvertImageToPdf(const InputImage* image) const
+    Distribution2D* ConvertImageToPdf(const InputImage* aImage) const
     {
         // Prepare source distribution data from the original environment map image data, 
         // i.e. convert image values so that the probability of a pixel within 
         // the lattitute-longitude parametrization is equal to the angular probability of 
         // the projected segment on a unit sphere.
 
-        const Vec2ui size   = image->Size();
+        const Vec2ui size   = aImage->Size();
         float *srcData      = new float[size.x * size.y];
 
         for (unsigned int row = 0; row < size.y; ++row)
@@ -245,15 +250,14 @@ private:
             // We compute the relative surface area of the current segment on the unit sphere.
             // We can ommit the height of the segment because it only changes the result 
             // by a multiplication constant and thus doesn't affect the shape of the resulting PDF.
-            const float segmAvgV    = ((float)row + 0.5f) / size.y;
-            const float sinAvgTheta = sinf(PI_F * segmAvgV);
+            const float sinAvgTheta = SinMidTheta(mImage, row);
 
             const unsigned int rowOffset = row * size.x;
 
             for (unsigned int column = 0; column < size.x; ++column)
             {
                 const float luminance = 
-                    Luminance(image->ElementAt(column, row));
+                    Luminance(aImage->ElementAt(column, row));
                 srcData[rowOffset + column] =
                     sinAvgTheta * luminance;
             }
@@ -299,11 +303,23 @@ private:
         return Vec2f(u, v);
     }
 
-    // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
-    PG3_PROFILING_NOINLINE 
-    Spectrum LookupRadiance(const Vec2f &uv, bool bDoBilinFiltering) const
+    // Returns radiance for the given segment of the image
+    Spectrum LookupRadiance(const Vec2ui &aSegm) const
     {
         PG3_DEBUG_ASSERT(mImage != NULL);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aSegm.x, 0u, mImage->Width());
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aSegm.y, 0u, mImage->Height());
+
+        return mImage->ElementAt(aSegm.x, aSegm.y);
+    }
+
+    // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
+    PG3_PROFILING_NOINLINE 
+    Spectrum LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
+    {
+        PG3_DEBUG_ASSERT(mImage != NULL);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.x, 0.0f, 1.0f);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.y, 0.0f, 1.0f);
 
         const Vec2ui imageSize = mImage->Size();
 
@@ -315,7 +331,7 @@ private:
             Clamp((unsigned int)xy.y, 0u, imageSize.y - 1));
 
         // TODO: bilinear filtering
-        bDoBilinFiltering;
+        aDoBilinFiltering;
 
 
 
@@ -343,20 +359,33 @@ private:
         //    + ty * ((1 - tx) * mImage->ElementAt(xi1, yi2) + tx * mImage->ElementAt(xi2, yi2));
     }
 
-    // The sine of latitude of the midpoint of a map pixel defined by the given v coordinate.
-    float sinMidTheta(const float v) const
+    // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
+    float SinMidTheta(const InputImage* aImage, const unsigned int aSegmY) const
     {
-        PG3_DEBUG_ASSERT(mImage != NULL);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(v, 0.0f, 1.0f);
+        PG3_DEBUG_ASSERT(aImage != NULL);
 
-        const float height  = (float)mImage->Height();
+        const unsigned int height = aImage->Height();
 
-        const int segment   = std::min((int)(v * height), (int)height - 1);
-        const float result  = sinf(PI_F * (segment + 0.5f) / height);
+        PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(aSegmY, height);
+
+        const float result = sinf(PI_F * (aSegmY + 0.5f) / height);
 
         PG3_DEBUG_ASSERT(result > 0.f && result <= 1.f);
 
         return result;
+    }
+
+    // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
+    float SinMidTheta(const InputImage* aImage, const float aV) const
+    {
+        PG3_DEBUG_ASSERT(aImage != NULL);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aV, 0.0f, 1.0f);
+        PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(aV, 1.0f);
+
+        const unsigned int height   = aImage->Height();
+        const unsigned int segment  = std::min((unsigned int)(aV * height), height - 1u);
+
+        return SinMidTheta(aImage, segment);
     }
 
     // This class is not copyable because of a const member.

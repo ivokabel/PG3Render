@@ -6,6 +6,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
 
 #define EPS_COSINE 1e-6f
 #define EPS_RAY    1e-3f
@@ -239,4 +241,40 @@ float PdfAtoW(
     const float aCosThere)
 {
     return aPdfA * Sqr(aDist) / std::abs(aCosThere);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Others
+
+void SecondsToHumanReadable(const float aSeconds, std::string &oResult)
+{
+    std::ostringstream outStream;
+
+    unsigned int tmp = (unsigned int)std::roundf(aSeconds);
+    if (tmp > 0)
+    {
+        unsigned int seconds = tmp % 60;
+        tmp /= 60;
+        unsigned int minutes = tmp % 60;
+        tmp /= 60;
+        unsigned int hours = tmp % 24;
+        tmp /= 24;
+        unsigned int days = tmp;
+
+        if (days > 0)
+            outStream << days << " d "; // " day" << ((days > 1) ? "s " : " ");
+        if (hours > 0)
+            outStream << hours << " h "; // " hour" << ((hours > 1) ? "s " : " ");
+        if (minutes > 0)
+            outStream << minutes << " m "; // " minute" << ((minutes > 1) ? "s " : " ");
+        if (seconds > 0)
+            outStream << seconds << " s "; // " second" << ((seconds > 1) ? "s " : " ");
+
+        outStream << "(" << std::fixed << std::setprecision(1) << aSeconds << " s)";
+    }
+    else
+        outStream << std::fixed << std::setprecision(2) << aSeconds << " s"; // " seconds";
+
+    oResult = outStream.str();
 }

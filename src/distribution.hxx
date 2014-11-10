@@ -30,18 +30,19 @@
 
 #pragma once
 
+#include "math.hxx"
+
 #include <algorithm>
 #include <vector>
-#include "math.hxx"
 
 // Representation of a probability density function over the interval [0,1]
 struct Distribution1D 
 {
 public:
-    Distribution1D(const float * const func, int n) :
-        mCount(n)
+    Distribution1D(const float * const aFunc, unsigned int aCount) :
+        mCount(aCount)
     {
-        PG3_DEBUG_ASSERT(n > 0);
+        PG3_DEBUG_ASSERT(aCount > 0);
 
         mPdf = new float[mCount];
         mCdf = new float[mCount+1];
@@ -49,10 +50,10 @@ public:
         // Compute integral of step function at $x_i$.
         // Note that the whole integral spans over the interval [0,1].
         mCdf[0] = 0.;
-        for (int i = 1; i < mCount + 1; ++i)
+        for (unsigned int i = 1; i < mCount + 1; ++i)
         {
-            PG3_DEBUG_ASSERT_VAL_NONNEGATIVE(func[i - 1]);
-            mCdf[i] = mCdf[i - 1] + func[i - 1] / mCount; // 1/mCount = size of a segment
+            PG3_DEBUG_ASSERT_VAL_NONNEGATIVE(aFunc[i - 1]);
+            mCdf[i] = mCdf[i - 1] + aFunc[i - 1] / mCount; // 1/mCount = size of a segment
         }
 
         // Transform step function integral into CDF
@@ -60,7 +61,7 @@ public:
         if (mFuncIntegral == 0.f) 
         {
             // The function is zero; use uniform PDF as a fallback
-            for (int i = 1; i < mCount + 1; ++i)
+            for (unsigned int i = 1; i < mCount + 1; ++i)
             {
                 mPdf[i-1] = 1.0f / mCount;
                 mCdf[i]   = (float)i / mCount;
@@ -68,9 +69,9 @@ public:
         }
         else 
         {
-            for (int i = 1; i < mCount + 1; ++i)
+            for (unsigned int i = 1; i < mCount + 1; ++i)
             {
-                mPdf[i - 1]  = func[i - 1] / mFuncIntegral;
+                mPdf[i - 1]  = aFunc[i - 1] / mFuncIntegral;
                 mCdf[i]     /= mFuncIntegral;
             }
         }
@@ -84,54 +85,55 @@ public:
     }
 
     PG3_PROFILING_NOINLINE
-    float SampleContinuous(float rndSample, float *pdf, int *segm = NULL) const 
+    void SampleContinuous(const float aRndSample, float &oX, unsigned int &oSegm, float &oPdf) const 
     {
         // Find surrounding CDF segments and _offset_
-        float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, rndSample);
-        int segment = Clamp(int(ptr-mCdf-1), 0, mCount - 1);
-        if (segm) *segm = segment;
+        float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
+        oSegm = Clamp(unsigned int(ptr-mCdf-1), 0u, mCount - 1u);
 
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(segment, 0, mCount - 1);
-        PG3_DEBUG_ASSERT(rndSample >= mCdf[segment] && (rndSample < mCdf[segment+1] || rndSample == 1.0f));
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(oSegm, 0, mCount - 1);
+        PG3_DEBUG_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
 
         // Fix the case when func ends with zeros
-        if (mCdf[segment] == mCdf[segment + 1])
+        if (mCdf[oSegm] == mCdf[oSegm + 1])
         {
-            PG3_DEBUG_ASSERT(rndSample == 1.0f);
+            PG3_DEBUG_ASSERT(aRndSample == 1.0f);
 
             do { 
-                segment--; 
-            } while (mCdf[segment] == mCdf[segment + 1] && segment > 0);
+                oSegm--; 
+            } while (mCdf[oSegm] == mCdf[oSegm + 1] && oSegm > 0);
 
-            PG3_DEBUG_ASSERT(mCdf[segment] != mCdf[segment + 1]);
+            PG3_DEBUG_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
         }
 
         // Compute offset within CDF segment
-        float offset = (rndSample - mCdf[segment]) / (mCdf[segment+1] - mCdf[segment]);
+        float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
         PG3_DEBUG_ASSERT_VALID_FLOAT(offset);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(offset, 0.0f, 1.0f);
+        // since the float random generator generates 1.0 from time to time, we need to ignore this one
+        //PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
         // Get the segment's constant PDF
-        if (pdf) 
-            *pdf = mPdf[segment];
-        PG3_DEBUG_ASSERT(mPdf[segment] > 0);
+        oPdf = mPdf[oSegm];
+        PG3_DEBUG_ASSERT(mPdf[oSegm] > 0);
 
         // Return $x\in{}[0,1]$ corresponding to sample
-        return (segment + offset) / mCount;
+        oX = (oSegm + offset) / mCount;
     }
 
     //PG3_PROFILING_NOINLINE
-    //int SampleDiscrete(float rndSample, float *probability) const
+    //int SampleDiscrete(float aRndSample, float *oProbability) const
     //{
     //    // Find surrounding CDF segments and _offset_
-    //    float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, rndSample);
+    //    float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
     //    int segment = std::max(0, int(ptr-mCdf-1));
 
     //    PG3_DEBUG_ASSERT(segment < mCount);
-    //    PG3_DEBUG_ASSERT(rndSample >= mCdf[segment] && rndSample < mCdf[segment+1]);
+    //    PG3_DEBUG_ASSERT(aRndSample >= mCdf[segment] && aRndSample < mCdf[segment+1]);
 
-    //    if (probability)
-    //        *probability = mPdf[segment] / mCount;
+    //    if (oProbability)
+    //        // pdf * size of segment
+    //        *oProbability = mPdf[segment] / mCount;
     //    return segment;
     //}
 
@@ -145,29 +147,30 @@ public:
 private:
     friend struct Distribution2D;
 
-    float       *mPdf, *mCdf;
-    float       mFuncIntegral;
-    const int   mCount;
+    float               *mPdf;
+    float               *mCdf;
+    float                mFuncIntegral;
+    const unsigned int   mCount;
 };
 
 struct Distribution2D
 {
 public:
-    Distribution2D(const float *func, int nu, int nv)
+    Distribution2D(const float *aFunc, int sCountU, int sCountV)
     {
-        pConditionalV.reserve(nv);
-        for (int v = 0; v < nv; ++v) 
+        pConditionalV.reserve(sCountV);
+        for (int v = 0; v < sCountV; ++v) 
         {
             // Compute conditional sampling distribution for $\tilde{v}$
-            pConditionalV.push_back(new Distribution1D(&func[v*nu], nu));
+            pConditionalV.push_back(new Distribution1D(&aFunc[v*sCountU], sCountU));
         }
 
         // Compute marginal sampling distribution $p[\tilde{v}]$
         std::vector<float> marginalFunc;
-        marginalFunc.reserve(nv);
-        for (int v = 0; v < nv; ++v)
+        marginalFunc.reserve(sCountV);
+        for (int v = 0; v < sCountV; ++v)
             marginalFunc.push_back(pConditionalV[v]->mFuncIntegral);
-        pMarginal = new Distribution1D(&marginalFunc[0], nv);
+        pMarginal = new Distribution1D(&marginalFunc[0], sCountV);
     }
 
     ~Distribution2D()
@@ -177,26 +180,26 @@ public:
             delete pConditionalV[i];
     }
 
-    void SampleContinuous(const Vec2f &rndSamples, Vec2f &uv, float *pdf) const
+    void SampleContinuous(const Vec2f &rndSamples, Vec2f &oUV, Vec2ui &oSegm, float *oPdf) const
     {
         float margPdf;
         float condPdf;
-        int v;
 
-        uv.y = pMarginal->SampleContinuous(rndSamples.x, &margPdf, &v);
-        uv.x = pConditionalV[v]->SampleContinuous(rndSamples.y, &condPdf);
+        pMarginal->SampleContinuous(rndSamples.x, oUV.y, oSegm.y, margPdf);
+        pConditionalV[oSegm.y]->SampleContinuous(rndSamples.y, oUV.x, oSegm.x, condPdf);
 
-        *pdf = margPdf * condPdf;
+        if (oPdf != NULL)
+            *oPdf = margPdf * condPdf;
     }
 
     PG3_PROFILING_NOINLINE
-    float Pdf(const Vec2f &uv) const
+    float Pdf(const Vec2f &aUV) const
     {
         // Find u and v segments
         int iu = 
-            Clamp((int)(uv.x * pConditionalV[0]->mCount), 0, pConditionalV[0]->mCount - 1);
+            Clamp((int)(aUV.x * pConditionalV[0]->mCount), 0, (int)pConditionalV[0]->mCount - 1);
         int iv = 
-            Clamp((int)(uv.y * pMarginal->mCount), 0, pMarginal->mCount - 1);
+            Clamp((int)(aUV.y * pMarginal->mCount), 0, (int)pMarginal->mCount - 1);
 
         // Compute probabilities
         return pConditionalV[iv]->mPdf[iu] * pMarginal->mPdf[iv];
