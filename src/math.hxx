@@ -5,8 +5,9 @@
 
 #include <cmath>
 // for portability issues
-#define PI_F     3.14159265358979f
-#define INV_PI_F (1.f / PI_F)
+#define PI_F        3.14159265358979f
+#define INV_PI_F    (1.f / PI_F)
+#define PI_DIV_2_F  1.5707963f
 
 template<typename T>
 T Sqr(const T& a) { return a*a; }
@@ -32,6 +33,43 @@ inline T Clamp(const T& n, const T& lower, const T& upper)
 {
     PG3_DEBUG_ASSERT(lower <= upper);
     return std::max(lower, std::min(n, upper));
+}
+
+// 50-year old atan approximation due to Hastings
+// Taken from http://lists.apple.com/archives/PerfOptimization-dev/2005/Jan/msg00051.html
+// |error| < 0.005
+PG3_PROFILING_NOINLINE
+float fast_atan2f(float y, float x)
+{
+    if (x == 0.0f)
+    {
+        if (y > 0.0f)
+            return PI_DIV_2_F;
+        if (y == 0.0f)
+            return 0.0f;
+        return -PI_DIV_2_F;
+    }
+
+    float atan;
+    const float z = y / x;
+    if (fabsf(z) < 1.0f)
+    {
+        atan = z / (1.0f + 0.28f*z*z);
+        if (x < 0.0f)
+        {
+            if (y < 0.0f)
+                return atan - PI_F;
+            return atan + PI_F;
+        }
+    }
+    else
+    {
+        atan = PI_DIV_2_F - z / (z*z + 0.28f);
+        if (y < 0.0f)
+            return atan - PI_F;
+    }
+
+    return atan;
 }
 
 template<typename T>

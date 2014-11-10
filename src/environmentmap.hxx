@@ -114,6 +114,7 @@ public:
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
     // Returns the sample PDF and optionally it's radiance.
+    PG3_PROFILING_NOINLINE
     Vec3f Sample(
         const Vec2f &aSamples,
         float       &oPdfW,
@@ -132,19 +133,6 @@ public:
         PG3_DEBUG_ASSERT(pdfW > 0.f);
 
         const Vec3f direction = LatLong2Dir(uv);
-
-#ifdef PG3_DEBUG_ASSERT_ENABLED
-        {
-            Vec2f uvdbg = Dir2LatLong(direction);
-            PG3_DEBUG_ASSERT_FLOAT_EQUAL(uvdbg.y, uv.y, 1E-4f);
-            // the closer we get to the poles, the closer the points are in the x coordinate
-            float densityCompensation = uv.y * (1.0f - uv.y);
-            float distanceXDirect = fabs(uvdbg.x - uv.x);
-            float distanceXOverZero = -distanceXDirect + 1.0f;
-            float distanceX = std::min(distanceXDirect, distanceXOverZero) * densityCompensation;
-            PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(distanceX, 1E-7f);
-        }
-#endif
 
         // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
         // the angular PDF on the unit sphere over the appropriate trapezoid
@@ -171,6 +159,7 @@ public:
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
     // must be non-zero but not necessarily normalized.
+    PG3_PROFILING_NOINLINE
     Spectrum Lookup(
         const Vec3f &aDirection, 
         bool         aDoBilinFiltering,
@@ -185,9 +174,9 @@ public:
         oPdfW; // unused parameter
         //if (oPdfW)
         //{
-        //    Vec2f uv = Dir2LatLong(normDir);
         //    *oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv[1]);
-        //    if (*oPdfW == 0.0f) radiance = Spectrum(0);
+        //    if (*oPdfW == 0.0f)
+        //        radiance = Spectrum(0);
         //}
 
         return radiance;
@@ -288,10 +277,10 @@ private:
     {
         PG3_DEBUG_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
 
-        // TODO: Use optimized formulae from Jarda's writeout
-
-        const float phi   = -atan2f(aDirection.y, aDirection.x); // we rotate in the opposite direction
-        const float theta = acosf(aDirection.z);
+        // minus sign because we rotate in the opposite direction
+        // fast_atan2f is 50 times faster than atan2f at the price of slightly horizontally distorted background
+        const float phi     = -fast_atan2f(aDirection.y, aDirection.x);
+        const float theta   = acosf(aDirection.z);
 
         // Convert from [-Pi,Pi] to [0,1]
         //const float uTemp = fmodf(phi * 0.5f * INV_PI_F, 1.0f);

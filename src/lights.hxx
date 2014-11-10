@@ -217,6 +217,7 @@ public:
     }
 
     // Returns amount of incoming radiance from the direction.
+    PG3_PROFILING_NOINLINE
     Spectrum GetEmmision(const Vec3f& aWig, bool bDoBilinFiltering = false) const
     {
         aWig; // unused parameter
@@ -238,6 +239,7 @@ public:
         return GetEmmision(-aWol);
     };
 
+    PG3_PROFILING_NOINLINE
     virtual Spectrum SampleIllumination(
         const Vec3f &aSurfPt, 
         const Frame &aFrame, 
@@ -270,10 +272,9 @@ public:
 
                 float pdf;
                 Spectrum radiance;
-                //float sinMidTheta; // debug
 
                 // Sample the environment map with the pdf proportional to luminance of the map
-                oWig        = mEnvMap->Sample(aRng.GetVec2f(), pdf, &radiance/*, &sinMidTheta*/);
+                oWig        = mEnvMap->Sample(aRng.GetVec2f(), pdf, &radiance);
                 oLightDist  = std::numeric_limits<float>::max();
 
                 const float cosThetaIn = Dot(oWig, aFrame.Normal());
@@ -285,38 +286,6 @@ public:
                 else
                 {
                     const Spectrum result = radiance * cosThetaIn / pdf;
-
-                    //// debug
-                    //float luminance = Luminance(radiance);
-                    ////printf("luminance %.12f / pdf %.12f = ", luminance, pdf);
-                    //float lumToPdfRatio = luminance / pdf;
-                    ////printf("%.14f\n", lumToPdfRatio);
-                    //float radianceMax = radiance.Max();
-                    //float resultMax = result.Max();
-                    //if (   (pdf < 0.00001f)
-                    //    || (radianceMax > 100.0f)
-                    //    || (resultMax > 100.f)
-                    //    || (lumToPdfRatio < 1.50) || (lumToPdfRatio >= 1.51)
-                    //    //|| (lumToPdfRatio < 12.4f) || (lumToPdfRatio >= 12.9f)
-                    //    //|| (lumToPdfRatio < 3.12) || (lumToPdfRatio >= 3.13)
-                    //    )
-                    //{
-                    //    PG3_WARNING(
-                    //        "\npdf %.8f < 0.00001f, or "
-                    //        "\nluminance %.6f "
-                    //        "\nlumToPdfRatio %.8f outside[1.50f, 1.51f), "
-                    //        //"\nlumToPdfRatio %.8f outside[12.4f, 12.9f), "
-                    //        //"\nlumToPdfRatio %.8f outside[3.1f, 3.2f), "
-                    //        "\nsinMidTheta %.12f, "
-                    //        //"\nradianceMax %.6f > 100.f, or "
-                    //        //"\nresultMax %.6f > 100.f, "
-                    //        //"\ncosThetaIn %.6f"
-                    //        ,
-                    //        pdf, luminance, lumToPdfRatio, sinMidTheta
-                    //        //, radianceMax, resultMax, cosThetaIn
-                    //        );
-                    //}
-
                     return result;
                 }
 
