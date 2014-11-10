@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "math.hxx"
+#include "types.hxx"
 
 class SRGBSpectrum;
     
@@ -77,7 +78,7 @@ public:
     // Make this instance zero
     SRGBSpectrum& Zero()
     {
-        for (int i = 0; i<3; i++)
+        for (uint32_t i = 0; i<3; i++)
             Get(i) = 0.0f;
         return *this;
     }

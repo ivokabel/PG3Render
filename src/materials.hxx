@@ -2,6 +2,7 @@
 
 #include "math.hxx"
 #include "spectrum.hxx"
+#include "types.hxx"
 
 class Material
 {

@@ -3,6 +3,7 @@
 #include "spectrum.hxx"
 #include "renderer.hxx"
 #include "rng.hxx"
+#include "types.hxx"
 
 #include <vector>
 #include <cmath>
@@ -14,25 +15,25 @@ class PathTracer : public AbstractRenderer
 public:
 
     PathTracer(
-        const Scene& aScene,
-        int aSeed = 1234
+        const Scene &aScene,
+        int32_t      aSeed = 1234
     ) :
         AbstractRenderer(aScene), mRng(aSeed)
     {}
 
-    virtual void RunIteration(int aIteration)
+    virtual void RunIteration(uint32_t aIteration)
     {
         aIteration; // unused parameter
 
-        const int resX = int(mScene.mCamera.mResolution.x);
-        const int resY = int(mScene.mCamera.mResolution.y);
+        const uint32_t resX = uint32_t(mScene.mCamera.mResolution.x);
+        const uint32_t resY = uint32_t(mScene.mCamera.mResolution.y);
 
-        for (int pixID = 0; pixID < resX * resY; pixID++)
+        for (uint32_t pixID = 0; pixID < resX * resY; pixID++)
         {
             //////////////////////////////////////////////////////////////////////////
             // Generate ray
-            const int x = pixID % resX;
-            const int y = pixID / resX;
+            const uint32_t x = pixID % resX;
+            const uint32_t y = pixID / resX;
 
             const Vec2f randomOffset = mRng.GetVec2f();
             const Vec2f basedCoords  = Vec2f(float(x), float(y));
@@ -61,7 +62,7 @@ public:
                 Spectrum LoDirect;
                 LoDirect.SetSRGBGreyLight(0.0f);
 
-                for (int i=0; i<mScene.GetLightCount(); i++)
+                for (uint32_t i=0; i<mScene.GetLightCount(); i++)
                 {
                     const AbstractLight* light = mScene.GetLightPtr(i);
                     PG3_DEBUG_ASSERT(light != 0);

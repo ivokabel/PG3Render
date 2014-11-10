@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include "math.hxx"
+#include "types.hxx"
 
 //////////////////////////////////////////////////////////////////////////
 // Ray casting
@@ -33,8 +34,8 @@ struct Isect
     Isect(float aMaxDist):dist(aMaxDist)
     {}
 
-    float dist;    //!< Distance to closest intersection (serves as ray.tmax)
-    int   matID;   //!< ID of intersected material
-    int   lightID; //!< ID of intersected light (if < 0, then none)
-    Vec3f normal;  //!< Normal at the intersection
+    float       dist;    //!< Distance to closest intersection (serves as ray.tmax)
+    int32_t     matID;   //!< ID of intersected material
+    int32_t     lightID; //!< ID of intersected light (if < 0, then none)
+    Vec3f       normal;  //!< Normal at the intersection
 };

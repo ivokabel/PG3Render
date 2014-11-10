@@ -4,6 +4,7 @@
 #include <cmath>
 #include "scene.hxx"
 #include "framebuffer.hxx"
+#include "types.hxx"
 
 class AbstractRenderer
 {
@@ -26,7 +27,7 @@ public:
     AbstractRenderer & operator=(const AbstractRenderer&) = delete;
     AbstractRenderer(const AbstractRenderer&) = delete;
 
-    virtual void RunIteration(int aIteration) = 0;
+    virtual void RunIteration(uint32_t aIteration) = 0;
 
     void GetFramebuffer(Framebuffer& oFramebuffer)
     {
@@ -46,7 +47,7 @@ public:
 
 protected:
 
-    int          mIterations;
+    uint32_t     mIterations;
     Framebuffer  mFramebuffer;
-    const Scene& mScene;
+    const Scene &mScene;
 };

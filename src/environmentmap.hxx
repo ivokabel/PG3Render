@@ -6,6 +6,7 @@
 #include "debugging.hxx"
 #include "math.hxx"
 #include "distribution.hxx"
+#include "types.hxx"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Adopted from SmallUPBP project and used as a reference for my own implementations.
@@ -15,7 +16,7 @@
 class InputImage
 {
 public:
-    InputImage(unsigned int aWidth, unsigned int aHeight)
+    InputImage(uint32_t aWidth, uint32_t aHeight)
     {
         mWidth  = aWidth;
         mHeight = aHeight;
@@ -32,7 +33,7 @@ public:
         mHeight = 0;
     }
 
-    Spectrum& ElementAt(unsigned int aX, unsigned int aY)
+    Spectrum& ElementAt(uint32_t aX, uint32_t aY)
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
@@ -40,7 +41,7 @@ public:
         return mData[mWidth*aY + aX];
     }
 
-    const Spectrum& ElementAt(unsigned int aX, unsigned int aY) const
+    const Spectrum& ElementAt(uint32_t aX, uint32_t aY) const
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
@@ -48,14 +49,14 @@ public:
         return mData[mWidth*aY + aX];
     }
 
-    Spectrum& ElementAt(unsigned int aIdx)
+    Spectrum& ElementAt(uint32_t aIdx)
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
         return mData[aIdx];
     }
 
-    const Spectrum& ElementAt(unsigned int aIdx) const
+    const Spectrum& ElementAt(uint32_t aIdx) const
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
@@ -67,19 +68,19 @@ public:
         return Vec2ui(mWidth, mHeight);
     }
 
-    unsigned int Width() const
+    uint32_t Width() const
     {
         return mWidth;
     }
 
-    unsigned int Height() const
+    uint32_t Height() const
     { 
         return mHeight; 
     }
 
-    Spectrum*       mData;
-    unsigned int    mWidth;
-    unsigned int    mHeight;
+    Spectrum    *mData;
+    uint32_t     mWidth;
+    uint32_t     mHeight;
 };
 
 class EnvironmentMap
@@ -202,8 +203,8 @@ private:
         Imf::RgbaInputFile file(aFilename, 1);
         Imath::Box2i dw = file.dataWindow();
 
-        int width   = dw.max.x - dw.min.x + 1;
-        int height  = dw.max.y - dw.min.y + 1;
+        int32_t width   = dw.max.x - dw.min.x + 1;
+        int32_t height  = dw.max.y - dw.min.y + 1;
         Imf::Rgba* rgbaData = new Imf::Rgba[height*width];
 
         file.setFrameBuffer(rgbaData - dw.min.x - dw.min.y * width, 1, width);
@@ -211,13 +212,13 @@ private:
 
         InputImage* image = new InputImage(width, height);
 
-        int c = 0;
-        int iRot = (int)(aRotate * width);
-        for (unsigned int j = 0; j < image->Height(); j++)
+        int32_t c = 0;
+        int32_t iRot = (int32_t)(aRotate * width);
+        for (uint32_t j = 0; j < image->Height(); j++)
         {
-            for (unsigned int i = 0; i < image->Width(); i++)
+            for (uint32_t i = 0; i < image->Width(); i++)
             {
-                int x = i + iRot;
+                int32_t x = i + iRot;
                 if (x >= width) x -= width;
                 image->ElementAt(x, j).SetSRGBLight(
                     rgbaData[c].r * aScale,
@@ -245,16 +246,16 @@ private:
         const Vec2ui size   = aImage->Size();
         float *srcData      = new float[size.x * size.y];
 
-        for (unsigned int row = 0; row < size.y; ++row)
+        for (uint32_t row = 0; row < size.y; ++row)
         {
             // We compute the relative surface area of the current segment on the unit sphere.
             // We can ommit the height of the segment because it only changes the result 
             // by a multiplication constant and thus doesn't affect the shape of the resulting PDF.
             const float sinAvgTheta = SinMidTheta(mImage, row);
 
-            const unsigned int rowOffset = row * size.x;
+            const uint32_t rowOffset = row * size.x;
 
-            for (unsigned int column = 0; column < size.x; ++column)
+            for (uint32_t column = 0; column < size.x; ++column)
             {
                 const float luminance = 
                     Luminance(aImage->ElementAt(column, row));
@@ -327,8 +328,8 @@ private:
         Vec2f xy = uv * Vec2f((float)imageSize.x, (float)imageSize.y);
 
         return mImage->ElementAt(
-            Clamp((unsigned int)xy.x, 0u, imageSize.x - 1),
-            Clamp((unsigned int)xy.y, 0u, imageSize.y - 1));
+            Clamp((uint32_t)xy.x, 0u, imageSize.x - 1),
+            Clamp((uint32_t)xy.y, 0u, imageSize.y - 1));
 
         // TODO: bilinear filtering
         aDoBilinFiltering;
@@ -340,17 +341,17 @@ private:
 
 
 
-        //int width = mImage->Width();
-        //int height = mImage->Height();
+        //int32_t width = mImage->Width();
+        //int32_t height = mImage->Height();
 
         //float xf = u * width;
         //float yf = v * height;
 
-        //int xi1 = Utils::clamp<int>((int)xf, 0, width - 1);
-        //int yi1 = Utils::clamp<int>((int)yf, 0, height - 1);
+        //int32_t xi1 = Utils::clamp<int32_t>((int32_t)xf, 0, width - 1);
+        //int32_t yi1 = Utils::clamp<int32_t>((int32_t)yf, 0, height - 1);
 
-        //int xi2 = xi1 == width - 1 ? xi1 : xi1 + 1;
-        //int yi2 = yi1 == height - 1 ? yi1 : yi1 + 1;
+        //int32_t xi2 = xi1 == width - 1 ? xi1 : xi1 + 1;
+        //int32_t yi2 = yi1 == height - 1 ? yi1 : yi1 + 1;
 
         //float tx = xf - (float)xi1;
         //float ty = yf - (float)yi1;
@@ -360,11 +361,11 @@ private:
     }
 
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
-    float SinMidTheta(const InputImage* aImage, const unsigned int aSegmY) const
+    float SinMidTheta(const InputImage* aImage, const uint32_t aSegmY) const
     {
         PG3_DEBUG_ASSERT(aImage != NULL);
 
-        const unsigned int height = aImage->Height();
+        const uint32_t height = aImage->Height();
 
         PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(aSegmY, height);
 
@@ -382,8 +383,8 @@ private:
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aV, 0.0f, 1.0f);
         PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(aV, 1.0f);
 
-        const unsigned int height   = aImage->Height();
-        const unsigned int segment  = std::min((unsigned int)(aV * height), height - 1u);
+        const uint32_t height   = aImage->Height();
+        const uint32_t segment  = std::min((uint32_t)(aV * height), height - 1u);
 
         return SinMidTheta(aImage, segment);
     }

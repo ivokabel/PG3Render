@@ -2,6 +2,7 @@
 
 #include "math.hxx"
 #include "ray.hxx"
+#include "types.hxx"
 
 #include <vector>
 #include <cmath>
@@ -35,7 +36,7 @@ public:
 
     virtual ~GeometryList()
     {
-        for (int i=0; i<(int)mGeometry.size(); i++)
+        for (uint32_t i=0; i<mGeometry.size(); i++)
             delete mGeometry[i];
     };
 
@@ -43,7 +44,7 @@ public:
     {
         bool anyIntersection = false;
 
-        for (int i=0; i<(int)mGeometry.size(); i++)
+        for (uint32_t i=0; i<mGeometry.size(); i++)
         {
             bool hit = mGeometry[i]->Intersect(aRay, oResult);
 
@@ -58,7 +59,7 @@ public:
         const Ray &aRay,
         Isect     &oResult) const
     {
-        for (int i=0; i<(int)mGeometry.size(); i++)
+        for (uint32_t i=0; i<mGeometry.size(); i++)
         {
             if (mGeometry[i]->IntersectP(aRay, oResult))
                 return true;
@@ -71,7 +72,7 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax)
     {
-        for (int i=0; i<(int)mGeometry.size(); i++)
+        for (uint32_t i=0; i<mGeometry.size(); i++)
             mGeometry[i]->GrowBBox(aoBBoxMin, aoBBoxMax);
     }
 
@@ -90,7 +91,7 @@ public:
         const Vec3f &p0,
         const Vec3f &p1,
         const Vec3f &p2,
-        int         aMatID)
+        int32_t      aMatID)
     {
         p[0] = p0;
         p[1] = p1;
@@ -136,9 +137,9 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax)
     {
-        for (int i=0; i<3; i++)
+        for (uint32_t i=0; i<3; i++)
         {
-            for (int j=0; j<3; j++)
+            for (uint32_t j=0; j<3; j++)
             {
                 aoBBoxMin.Get(j) = std::min(aoBBoxMin.Get(j), p[i].Get(j));
                 aoBBoxMax.Get(j) = std::max(aoBBoxMax.Get(j), p[i].Get(j));
@@ -148,9 +149,9 @@ public:
 
 public:
 
-    Vec3f p[3];
-    int   matID;
-    Vec3f mNormal;
+    Vec3f   p[3];
+    int32_t matID;
+    Vec3f   mNormal;
 };
 
 class Sphere : public AbstractGeometry
@@ -161,8 +162,8 @@ public:
     
     Sphere(
         const Vec3f &aCenter,
-        float       aRadius,
-        int         aMatID)
+        float        aRadius,
+        int32_t      aMatID)
     {
         center = aCenter;
         radius = aRadius;
@@ -217,17 +218,17 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax)
     {
-        for (int i=0; i<8; i++)
+        for (uint32_t i=0; i<8; i++)
         {
             Vec3f p = center;
             Vec3f half(radius);
 
-            for (int j=0; j<3; j++)
+            for (uint32_t j=0; j<3; j++)
                 if (i & (1 << j)) half.Get(j) = -half.Get(j);
             
             p += half;
 
-            for (int j=0; j<3; j++)
+            for (uint32_t j=0; j<3; j++)
             {
                 aoBBoxMin.Get(j) = std::min(aoBBoxMin.Get(j), p.Get(j));
                 aoBBoxMax.Get(j) = std::max(aoBBoxMax.Get(j), p.Get(j));
@@ -237,7 +238,7 @@ public:
 
 public:
 
-    Vec3f center;
-    float radius;
-    int   matID;
+    Vec3f   center;
+    float   radius;
+    int32_t matID;
 };

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <cmath>
-//#include "renderer.hxx"
+#include "types.hxx"
 
 #if defined(_MSC_VER)
 #   if (_MSC_VER < 1600)
@@ -16,11 +16,11 @@
 class Rng
 {
 public:
-    Rng(int aSeed = 1234):
+    Rng(int32_t aSeed = 1234):
         mRng(aSeed)
     {}
 
-    int GetInt()
+    int32_t GetInt()
     {
         return mDistInt(mRng);
     }
@@ -54,15 +54,15 @@ public:
 
 private:
 
-    std::mt19937_64 mRng;
-    std::uniform_int_distribution<int>    mDistInt;
-    std::uniform_int_distribution<uint>   mDistUint;
-    std::uniform_real_distribution<float> mDistFloat;
+    std::mt19937_64                         mRng;
+    std::uniform_int_distribution<int32_t>  mDistInt;
+    std::uniform_int_distribution<uint>     mDistUint;
+    std::uniform_real_distribution<float>   mDistFloat;
 };
 
 #else
 
-template<unsigned int rounds>
+template<uint32_t rounds>
 class TeaImplTemplate
 {
 public:
@@ -76,10 +76,10 @@ public:
 
     uint GetImpl(void)
     {
-        unsigned int sum=0;
-        const unsigned int delta=0x9e3779b9U;
+        uint32_t sum=0;
+        const uint32_t delta=0x9e3779b9U;
 
-        for (unsigned int i=0; i<rounds; i++)
+        for (uint32_t i=0; i<rounds; i++)
         {
             sum+=delta;
             mState0+=((mState1<<4)+0xa341316cU) ^ (mState1+sum) ^ ((mState1>>5)+0xc8013ea4U);
@@ -101,7 +101,7 @@ class RandomBase
 {
 public:
 
-    RandomBase(int aSeed = 1234)
+    RandomBase(int32_t aSeed = 1234)
     {
         mImpl.Reset(uint(aSeed), 5678);
     }

@@ -22,7 +22,7 @@
 
 float render(
     const Config &aConfig,
-    int *oUsedIterations = NULL)
+    uint32_t     *oUsedIterations = NULL)
 {
     SetProcessPriority();
 
@@ -34,7 +34,7 @@ float render(
     AbstractRendererPtr *renderers;
     renderers = new AbstractRendererPtr[aConfig.mNumThreads];
 
-    for (int i=0; i<aConfig.mNumThreads; i++)
+    for (uint32_t i=0; i<aConfig.mNumThreads; i++)
     {
         renderers[i] = CreateRenderer(aConfig, aConfig.mBaseSeed + i);
 
@@ -43,7 +43,7 @@ float render(
     }
 
     clock_t startT = clock();
-    int iter = 0;
+    int32_t iter = 0;
 
     // Rendering loop, when we have any time limit, use time-based loop,
     // otherwise go with required iterations
@@ -53,7 +53,7 @@ float render(
 #pragma omp parallel
         while (clock() < startT + aConfig.mMaxTime*CLOCKS_PER_SEC)
         {
-            int threadId = omp_get_thread_num();
+            int32_t threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(iter);
 
 #pragma omp atomic
@@ -63,11 +63,11 @@ float render(
     else
     {
         // Iterations based loop
-        int globalCounter = 0;
+        uint32_t globalCounter = 0;
 #pragma omp parallel for
         for (iter=0; iter < aConfig.mIterations; iter++)
         {
-            int threadId = omp_get_thread_num();
+            int32_t threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(iter);
 
             // Print progress bar
@@ -75,11 +75,11 @@ float render(
             {
                 globalCounter++;
                 const double progress   = (double)globalCounter / aConfig.mIterations;
-                const int barCount      = 20;
+                const int32_t barCount  = 20;
 
                 printf(
                     "\rProgress:  [");
-                for (int bar = 1; bar <= barCount; bar++)
+                for (uint32_t bar = 1; bar <= barCount; bar++)
                 {
                     const double barProgress = (double)bar / barCount;
                     if (barProgress <= progress)
@@ -99,12 +99,12 @@ float render(
         *oUsedIterations = iter+1;
 
     // Accumulate from all renderers into a common framebuffer
-    int usedRenderers = 0;
+    uint32_t usedRenderers = 0;
 
     // With very low number of iterations and high number of threads
     // not all created renderers had to have been used.
     // Those must not participate in accumulation.
-    for (int i=0; i<aConfig.mNumThreads; i++)
+    for (uint32_t i=0; i<aConfig.mNumThreads; i++)
     {
         if (!renderers[i]->WasUsed())
             continue;
@@ -127,7 +127,7 @@ float render(
     aConfig.mFramebuffer->Scale(1.f / usedRenderers);
 
     // Clean up renderers
-    for (int i=0; i<aConfig.mNumThreads; i++)
+    for (uint32_t i=0; i<aConfig.mNumThreads; i++)
         delete renderers[i];
 
     delete [] renderers;
@@ -138,7 +138,7 @@ float render(
 //////////////////////////////////////////////////////////////////////////
 // Main
 
-int main(int argc, const char *argv[])
+int32_t main(int32_t argc, const char *argv[])
 {
     // Warns when not using C++11 Mersenne Twister
     PrintRngWarning();

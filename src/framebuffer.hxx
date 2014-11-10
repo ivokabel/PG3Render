@@ -6,6 +6,7 @@
 #include <string.h>
 #include "spectrum.hxx"
 #include "utils.hxx"
+#include "types.hxx"
 
 class Framebuffer
 {
@@ -26,8 +27,8 @@ public:
         if (aSample.y < 0 || aSample.y >= mResolution.y)
             return;
 
-        int x = int(aSample.x);
-        int y = int(aSample.y);
+        int32_t x = int32_t(aSample.x);
+        int32_t y = int32_t(aSample.y);
 
         mRadiance[x + y * mResX] = mRadiance[x + y * mResX] + aRadiance;
     }
@@ -37,8 +38,8 @@ public:
     void Setup(const Vec2f& aResolution)
     {
         mResolution = aResolution;
-        mResX = int(aResolution.x);
-        mResY = int(aResolution.y);
+        mResX = int32_t(aResolution.x);
+        mResY = int32_t(aResolution.y);
         mRadiance.resize(mResX * mResY);
         Clear();
     }
@@ -69,9 +70,9 @@ public:
     {
         float lum = 0;
 
-        for (int y=0; y<mResY; y++)
+        for (int32_t y=0; y<mResY; y++)
         {
-            for (int x=0; x<mResX; x++)
+            for (int32_t x=0; x<mResX; x++)
             {
                 lum += Luminance(mRadiance[x + y*mResX]);
             }
@@ -96,14 +97,14 @@ public:
 
     //    Vec3f *ptr = &mRadiance[0];
 
-    //    for (int y=0; y<mResY; y++)
+    //    for (int32_t y=0; y<mResY; y++)
     //    {
-    //        for (int x=0; x<mResX; x++)
+    //        for (int32_t x=0; x<mResX; x++)
     //        {
     //            ptr = &mRadiance[x + y*mResX];
-    //            int r = int(std::pow(ptr->x, invGamma) * 255.f);
-    //            int g = int(std::pow(ptr->y, invGamma) * 255.f);
-    //            int b = int(std::pow(ptr->z, invGamma) * 255.f);
+    //            int32_t r = int32_t(std::pow(ptr->x, invGamma) * 255.f);
+    //            int32_t g = int32_t(std::pow(ptr->y, invGamma) * 255.f);
+    //            int32_t b = int32_t(std::pow(ptr->z, invGamma) * 255.f);
 
     //            ppm << std::min(255, std::max(0, r)) << " "
     //                << std::min(255, std::max(0, g)) << " "
@@ -129,22 +130,22 @@ public:
     // Saving BMP
     struct BmpHeader
     {
-        uint   mFileSize;        // Size of file in bytes
-        uint   mReserved01;      // 2x 2 reserved bytes
-        uint   mDataOffset;      // Offset in bytes where data can be found (54)
+        uint    mFileSize;        // Size of file in bytes
+        uint    mReserved01;      // 2x 2 reserved bytes
+        uint    mDataOffset;      // Offset in bytes where data can be found (54)
 
-        uint   mHeaderSize;      // 40B
-        int    mWidth;           // Width in pixels
-        int    mHeight;          // Height in pixels
+        uint    mHeaderSize;      // 40B
+        int32_t mWidth;           // Width in pixels
+        int32_t mHeight;          // Height in pixels
 
-        short  mColorPlates;     // Must be 1
-        short  mBitsPerPixel;    // We use 24bpp
-        uint   mCompression;     // We use BI_RGB ~ 0, uncompressed
-        uint   mImageSize;       // mWidth x mHeight x 3B
-        uint   mHorizRes;        // Pixels per meter (75dpi ~ 2953ppm)
-        uint   mVertRes;         // Pixels per meter (75dpi ~ 2953ppm)
-        uint   mPaletteColors;   // Not using palette - 0
-        uint   mImportantColors; // 0 - all are important
+        short   mColorPlates;     // Must be 1
+        short   mBitsPerPixel;    // We use 24bpp
+        uint    mCompression;     // We use BI_RGB ~ 0, uncompressed
+        uint    mImageSize;       // mWidth x mHeight x 3B
+        uint    mHorizRes;        // Pixels per meter (75dpi ~ 2953ppm)
+        uint    mVertRes;         // Pixels per meter (75dpi ~ 2953ppm)
+        uint    mPaletteColors;   // Not using palette - 0
+        uint    mImportantColors; // 0 - all are important
     };
 
     void SaveBMP(
@@ -172,9 +173,9 @@ public:
         bmp.write((char*)&header, sizeof(header));
 
         const float invGamma = 1.f / aGamma;
-        for (int y=0; y<mResY; y++)
+        for (int32_t y=0; y<mResY; y++)
         {
-            for (int x=0; x<mResX; x++)
+            for (int32_t x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
                 const Spectrum &spectrum = mRadiance[x + (mResY-y-1)*mResX];
@@ -208,9 +209,9 @@ public:
         hdr << "FORMAT=32-bit_rle_rgbe" << '\n' << '\n';
         hdr << "-Y " << mResY << " +X " << mResX << '\n';
 
-        for (int y=0; y<mResY; y++)
+        for (int32_t y=0; y<mResY; y++)
         {
-            for (int x=0; x<mResX; x++)
+            for (int32_t x=0; x<mResX; x++)
             {
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
@@ -222,7 +223,7 @@ public:
 
                 if (v >= 1e-32f)
                 {
-                    int e;
+                    int32_t e;
                     v = float(frexp(v, &e) * 256.f / v);
                     rgbe[0] = byte(sRGB.x * v);
                     rgbe[1] = byte(sRGB.y * v);
@@ -239,6 +240,6 @@ private:
 
     std::vector<Spectrum>   mRadiance;
     Vec2f                   mResolution;
-    int                     mResX;
-    int                     mResY;
+    int32_t                 mResX;
+    int32_t                 mResY;
 };

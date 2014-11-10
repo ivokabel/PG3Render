@@ -7,6 +7,7 @@
 #include "spectrum.hxx"
 #include "rng.hxx"
 #include "environmentmap.hxx"
+#include "types.hxx"
 
 //////////////////////////////////////////////////////////////////////////
 class AbstractLight

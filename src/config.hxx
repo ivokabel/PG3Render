@@ -12,6 +12,7 @@
 #include "scene.hxx"
 #include "eyelight.hxx"
 #include "pathtracer.hxx"
+#include "types.hxx"
 
 #include <omp.h>
 #include <string>
@@ -52,23 +53,23 @@ struct Config
     }
 
     const Scene *mScene;
-    Algorithm   mAlgorithm;
-    int         mIterations;
-    float       mMaxTime;
+    Algorithm    mAlgorithm;
+    int32_t      mIterations;
+    float        mMaxTime;
     Framebuffer *mFramebuffer;
-    int         mNumThreads;
-    int         mBaseSeed;
-    uint        mMaxPathLength;
-    uint        mMinPathLength;
-    std::string mDefOutputExtension;
-    std::string mOutputName;
-    Vec2i       mResolution;
+    uint32_t     mNumThreads;
+    int32_t      mBaseSeed;
+    uint         mMaxPathLength;
+    uint         mMinPathLength;
+    std::string  mDefOutputExtension;
+    std::string  mOutputName;
+    Vec2i        mResolution;
 };
 
 // Utility function, essentially a renderer factory
 AbstractRenderer* CreateRenderer(
-    const Config& aConfig,
-    const int     aSeed)
+    const Config&   aConfig,
+    const int32_t   aSeed)
 {
     const Scene& scene = *aConfig.mScene;
 
@@ -136,9 +137,9 @@ std::string DefaultFilename(
 
 // Utility function, gives length of array
 template <typename T, size_t N>
-inline int SizeOfArray( const T(&)[ N ] )
+inline int32_t SizeOfArray( const T(&)[ N ] )
 {
-    return int(N);
+    return int32_t(N);
 }
 
 void PrintRngWarning()
@@ -184,15 +185,15 @@ void PrintHelp(const char *argv[])
         argv[0]);
 
     printf("    -s  Selects the scene (default 0):\n");
-    for (int i = 0; i < SizeOfArray(g_SceneConfigs); i++)
+    for (int32_t i = 0; i < SizeOfArray(g_SceneConfigs); i++)
         printf("          %2d   %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
 
     printf("    -em Selects the environment map type (default 0; ignored if the scene doesn't use an environment map):\n");
-    for (int i = 0; i < Scene::kEMCount; i++)
+    for (int32_t i = 0; i < Scene::kEMCount; i++)
         printf("          %2d   %s\n", i, Scene::GetEnvMapName(i).c_str());
 
     printf("    -a  Selects the rendering algorithm (default pt):\n");
-    for (int i = 0; i < (int)Config::kAlgorithmCount; i++)
+    for (int32_t i = 0; i < (int32_t)Config::kAlgorithmCount; i++)
         printf("          %-3s  %s\n",
             Config::GetAcronym(Config::Algorithm(i)),
             Config::GetName(Config::Algorithm(i)));
@@ -206,7 +207,7 @@ void PrintHelp(const char *argv[])
 }
 
 // Parses command line, setting up config
-void ParseCommandline(int argc, const char *argv[], Config &oConfig)
+void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
     oConfig.mScene              = NULL;                     // [cmd] When NULL, renderer will not run
@@ -222,11 +223,11 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
     oConfig.mResolution         = Vec2i(512, 512);
     //oConfig.mFramebuffer      = NULL; // this is never set by any parameter
 
-    signed   int sceneID  = 0; // default 0
-    unsigned int envMapID = Scene::kEMDefault;
+    int32_t sceneID     = 0; // default 0
+    uint32_t envMapID   = Scene::kEMDefault;
 
     // Load arguments
-    for (int i=1; i<argc; i++)
+    for (int32_t i=1; i<argc; i++)
     {
         std::string arg(argv[i]);
 
@@ -308,7 +309,7 @@ void ParseCommandline(int argc, const char *argv[], Config &oConfig)
             }
 
             std::string alg(argv[i]);
-            for (int i=0; i<Config::kAlgorithmCount; i++)
+            for (int32_t i=0; i<Config::kAlgorithmCount; i++)
                 if (alg == Config::GetAcronym(Config::Algorithm(i)))
                     oConfig.mAlgorithm = Config::Algorithm(i);
 

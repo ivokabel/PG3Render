@@ -2,6 +2,7 @@
 
 #include "spectrum.hxx"
 #include "math.hxx"
+#include "types.hxx"
 
 #include <vector>
 #include <cmath>
@@ -251,16 +252,16 @@ void SecondsToHumanReadable(const float aSeconds, std::string &oResult)
 {
     std::ostringstream outStream;
 
-    unsigned int tmp = (unsigned int)std::roundf(aSeconds);
+    uint32_t tmp = (uint32_t)std::roundf(aSeconds);
     if (tmp > 0)
     {
-        unsigned int seconds = tmp % 60;
+        uint32_t seconds = tmp % 60;
         tmp /= 60;
-        unsigned int minutes = tmp % 60;
+        uint32_t minutes = tmp % 60;
         tmp /= 60;
-        unsigned int hours = tmp % 24;
+        uint32_t hours = tmp % 24;
         tmp /= 24;
-        unsigned int days = tmp;
+        uint32_t days = tmp;
 
         if (days > 0)
             outStream << days << " d "; // " day" << ((days > 1) ? "s " : " ");

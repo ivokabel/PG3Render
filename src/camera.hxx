@@ -4,6 +4,7 @@
 #include <cmath>
 #include "math.hxx"
 #include "ray.hxx"
+#include "types.hxx"
 
 class Camera
 {
@@ -50,12 +51,12 @@ public:
         mPixelArea = 4.f * Sqr(tanHalfAngle) / Sqr(aResolution.x);
     }
 
-    int RasterToIndex(const Vec2f &aPixelCoords) const
+    int32_t RasterToIndex(const Vec2f &aPixelCoords) const
     {
-        return int(std::floor(aPixelCoords.x) + std::floor(aPixelCoords.y) * mResolution.x);
+        return int32_t(std::floor(aPixelCoords.x) + std::floor(aPixelCoords.y) * mResolution.x);
     }
 
-    Vec2f IndexToRaster(const int &aPixelIndex) const
+    Vec2f IndexToRaster(const int32_t &aPixelIndex) const
     {
         const float y = std::floor(aPixelIndex / mResolution.x);
         const float x = float(aPixelIndex) - y * mResolution.x;

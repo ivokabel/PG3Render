@@ -6,6 +6,7 @@
 #include "spectrum.hxx"
 #include "renderer.hxx"
 #include "rng.hxx"
+#include "types.hxx"
 
 class EyeLight : public AbstractRenderer
 {
@@ -13,22 +14,22 @@ public:
 
     EyeLight(
         const Scene& aScene,
-        int aSeed = 1234
+        int32_t      aSeed = 1234
     ) :
         AbstractRenderer(aScene), mRng(aSeed)
     {}
 
-    virtual void RunIteration(int aIteration)
+    virtual void RunIteration(uint32_t aIteration)
     {
-        const int resX = int(mScene.mCamera.mResolution.x);
-        const int resY = int(mScene.mCamera.mResolution.y);
+        const int32_t resX = int32_t(mScene.mCamera.mResolution.x);
+        const int32_t resY = int32_t(mScene.mCamera.mResolution.y);
 
-        for (int pixID = 0; pixID < resX * resY; pixID++)
+        for (int32_t pixID = 0; pixID < resX * resY; pixID++)
         {
             //////////////////////////////////////////////////////////////////////////
             // Generate ray
-            const int x = pixID % resX;
-            const int y = pixID / resX;
+            const int32_t x = pixID % resX;
+            const int32_t y = pixID / resX;
 
             const Vec2f sample = Vec2f(float(x), float(y)) +
                 (aIteration == 1 ? Vec2f(0.5f) : mRng.GetVec2f());

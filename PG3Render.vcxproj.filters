@@ -83,5 +83,8 @@
     <ClInclude Include="src\process.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\types.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

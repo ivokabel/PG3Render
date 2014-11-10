@@ -11,6 +11,7 @@
 #include "camera.hxx"
 #include "materials.hxx"
 #include "lights.hxx"
+#include "types.hxx"
 
 #include <sstream>
 
@@ -39,7 +40,7 @@ public:
         if (hit)
         {
             oResult.lightID = -1;
-            std::map<int, int>::const_iterator it =
+            std::map<int32_t, int32_t>::const_iterator it =
                 mMaterial2Light.find(oResult.matID);
 
             if (it != mMaterial2Light.end())
@@ -64,26 +65,26 @@ public:
         return mGeometry->IntersectP(ray, isect);
     }
 
-    const Material& GetMaterial(const int aMaterialIdx) const
+    const Material& GetMaterial(const int32_t aMaterialIdx) const
     {
         return mMaterials[aMaterialIdx];
     }
 
-    int GetMaterialCount() const
+    int32_t GetMaterialCount() const
     {
-        return (int)mMaterials.size();
+        return (int32_t)mMaterials.size();
     }
 
 
-    const AbstractLight* GetLightPtr(int aLightIdx) const
+    const AbstractLight* GetLightPtr(int32_t aLightIdx) const
     {
-        aLightIdx = std::min<int>(aLightIdx, (int)mLights.size()-1);
+        aLightIdx = std::min<int32_t>(aLightIdx, (int32_t)mLights.size()-1);
         return mLights[aLightIdx];
     }
 
-    int GetLightCount() const
+    size_t GetLightCount() const
     {
-        return (int)mLights.size();
+        return mLights.size();
     }
 
     const BackgroundLight* GetBackground() const
@@ -708,7 +709,7 @@ public:
     Camera                      mCamera;
     std::vector<Material>       mMaterials;
     std::vector<AbstractLight*> mLights;
-    std::map<int, int>          mMaterial2Light;
+    std::map<int32_t, int32_t>  mMaterial2Light;
     BackgroundLight*            mBackground;
     // SceneSphere           mSceneSphere;
 
