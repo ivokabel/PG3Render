@@ -10,7 +10,10 @@
 #define PI_DIV_2_F  1.5707963f
 
 template<typename T>
-T Sqr(const T& a) { return a*a; }
+T Sqr(const T& a)
+{
+    return a*a;
+}
 
 float FmodX(float x, float y)
 {

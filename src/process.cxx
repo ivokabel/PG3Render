@@ -6,8 +6,8 @@ void SetProcessPriority()
 {
     if (!SetPriorityClass(
             GetCurrentProcess(), 
-            //IDLE_PRIORITY_CLASS
-            BELOW_NORMAL_PRIORITY_CLASS
+            IDLE_PRIORITY_CLASS
+            //BELOW_NORMAL_PRIORITY_CLASS
             //PROCESS_MODE_BACKGROUND_BEGIN
             ))
     {

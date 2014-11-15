@@ -134,6 +134,8 @@ public:
         kEMImgEnnis                     = 9,
         kEMImgSatellite                 = 10,
 
+        kEMImgNext                      = 11,
+
         kEMCount,
         kEMDefault                      = kEMConstBluish,
     };
@@ -473,6 +475,14 @@ public:
                     break;
                 }
 
+                case kEMImgNext:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+                        -0.12f, 0.5f);
+                    break;
+                }
+
                 default:
                     PG3_FATAL_ERROR("Unknown environment map type");
             }
@@ -536,6 +546,10 @@ public:
 
         case kEMImgSatellite:
             oName = "sattelite";
+            break;
+
+        case kEMImgNext:
+            oName = "next...";
             break;
 
         default:
