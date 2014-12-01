@@ -164,7 +164,7 @@ public:
         // Materials
 
         Material mat;
-        Spectrum diffuseReflectance, glossyReflectance;
+        SpectrumF diffuseReflectance, glossyReflectance;
 
         // 0) light1, will only emit
         mMaterials.push_back(mat);
@@ -332,7 +332,7 @@ public:
 
             // The whole ceiling emmits 25 Watts
             const float totalPower = 25.0f; // Flux, in Wats
-            Spectrum lightPower;
+            SpectrumF lightPower;
             lightPower.SetSRGBGreyLight(totalPower / 2.0f); // Each triangle emmits half of the flux
 
             AreaLight *light;
@@ -356,7 +356,7 @@ public:
 
             // The whole lightbox emmits 25 Watts
             const float totalPower = 25.0f; // Flux, in Wats
-            Spectrum lightPower;
+            SpectrumF lightPower;
             lightPower.SetSRGBGreyLight(totalPower / 2.0f); // Each triangle emmits half of the flux
 
             AreaLight *light;
@@ -376,7 +376,7 @@ public:
         {
             PointLight *light = new PointLight(Vec3f(0.0, -0.5, 1.0));
 
-            Spectrum lightPower;
+            SpectrumF lightPower;
             lightPower.SetSRGBGreyLight(50.f/*Watts*/);
             light->SetPower(lightPower);
 
@@ -391,7 +391,7 @@ public:
             {
                 case kEMConstBluish:
                 {
-                    Spectrum radiance;
+                    SpectrumF radiance;
                     radiance.SetSRGBLight(135 / 255.f, 206 / 255.f, 250 / 255.f);
                     light->SetConstantRadiance(radiance);
                     break;
@@ -399,7 +399,7 @@ public:
 
                 case kEMConstSRGBWhite:
                 {
-                    Spectrum radiance;
+                    SpectrumF radiance;
                     radiance.SetSRGBGreyLight(1.0f);
                     light->SetConstantRadiance(radiance);
                     break;

@@ -179,6 +179,7 @@ public:
 };
 
 typedef Vec3x<float>    Vec3f;
+typedef Vec3x<double>   Vec3d;
 typedef Vec3x<int32_t>  Vec3i;
 typedef Vec3x<uint32_t> Vec3ui;
 

@@ -21,7 +21,7 @@ public:
         mWidth  = aWidth;
         mHeight = aHeight;
 
-        mData = new Spectrum[mWidth * mHeight];
+        mData = new SpectrumF[mWidth * mHeight];
     }
 
     ~InputImage()
@@ -33,7 +33,7 @@ public:
         mHeight = 0;
     }
 
-    Spectrum& ElementAt(uint32_t aX, uint32_t aY)
+    SpectrumF& ElementAt(uint32_t aX, uint32_t aY)
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
@@ -41,7 +41,7 @@ public:
         return mData[mWidth*aY + aX];
     }
 
-    const Spectrum& ElementAt(uint32_t aX, uint32_t aY) const
+    const SpectrumF& ElementAt(uint32_t aX, uint32_t aY) const
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
@@ -49,14 +49,14 @@ public:
         return mData[mWidth*aY + aX];
     }
 
-    Spectrum& ElementAt(uint32_t aIdx)
+    SpectrumF& ElementAt(uint32_t aIdx)
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
         return mData[aIdx];
     }
 
-    const Spectrum& ElementAt(uint32_t aIdx) const
+    const SpectrumF& ElementAt(uint32_t aIdx) const
     {
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
@@ -78,7 +78,7 @@ public:
         return mHeight; 
     }
 
-    Spectrum    *mData;
+    SpectrumF   *mData;
     uint32_t     mWidth;
     uint32_t     mHeight;
 };
@@ -118,7 +118,7 @@ public:
     Vec3f Sample(
         const Vec2f &aSamples,
         float       &oPdfW,
-        Spectrum    *oRadiance = NULL,
+        SpectrumF   *oRadiance = NULL,
         float       *oSinMidTheta = NULL
         ) const
     {
@@ -160,23 +160,23 @@ public:
     // Gets radiance stored for the given direction and optionally its PDF. The direction
     // must be non-zero but not necessarily normalized.
     PG3_PROFILING_NOINLINE
-    Spectrum Lookup(
+    SpectrumF Lookup(
         const Vec3f &aDirection, 
         bool         aDoBilinFiltering,
         float       *oPdfW = NULL) const
     {
         PG3_DEBUG_ASSERT(!aDirection.IsZero());
 
-        const Vec3f normDir     = aDirection / aDirection.Length();
-        const Vec2f uv          = Dir2LatLong(normDir);
-        const Spectrum radiance = LookupRadiance(uv, aDoBilinFiltering);
+        const Vec3f normDir         = aDirection / aDirection.Length();
+        const Vec2f uv              = Dir2LatLong(normDir);
+        const SpectrumF radiance    = LookupRadiance(uv, aDoBilinFiltering);
 
         oPdfW; // unused parameter
         //if (oPdfW)
         //{
         //    *oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv[1]);
         //    if (*oPdfW == 0.0f)
-        //        radiance = Spectrum(0);
+        //        radiance = SpectrumF(0);
         //}
 
         return radiance;
@@ -246,8 +246,8 @@ private:
 
             for (uint32_t column = 0; column < size.x; ++column)
             {
-                const float luminance = 
-                    Luminance(aImage->ElementAt(column, row));
+                const float luminance =
+                    aImage->ElementAt(column, row).Luminance();
                 srcData[rowOffset + column] =
                     sinAvgTheta * luminance;
             }
@@ -294,7 +294,7 @@ private:
     }
 
     // Returns radiance for the given segment of the image
-    Spectrum LookupRadiance(const Vec2ui &aSegm) const
+    SpectrumF LookupRadiance(const Vec2ui &aSegm) const
     {
         PG3_DEBUG_ASSERT(mImage != NULL);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(aSegm.x, 0u, mImage->Width());
@@ -305,7 +305,7 @@ private:
 
     // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
     PG3_PROFILING_NOINLINE 
-    Spectrum LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
+    SpectrumF LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
     {
         PG3_DEBUG_ASSERT(mImage != NULL);
         PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.x, 0.0f, 1.0f);

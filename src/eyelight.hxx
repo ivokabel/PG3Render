@@ -42,7 +42,7 @@ public:
             {
                 float dotLN = Dot(isect.normal, -ray.dir);
 
-                Spectrum color;
+                SpectrumF color;
                 if (dotLN > 0)
                     color.SetSRGBGreyLight(dotLN);
                 else

@@ -16,7 +16,7 @@ public:
 
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: (outgoing radiance * geometric component) / PDF
-    virtual Spectrum SampleIllumination(
+    virtual SpectrumF SampleIllumination(
         const Vec3f &aSurfPt, 
         const Frame &aFrame, 
         Rng         &aRng,
@@ -25,7 +25,7 @@ public:
         ) const = 0;
 
     // Returns amount of outgoing radiance from the point in the direction
-    virtual Spectrum GetEmmision(
+    virtual SpectrumF GetEmmision(
         const Vec3f& aPt,
         const Vec3f& aWol) const = 0;
 };
@@ -55,7 +55,7 @@ public:
 
 
     // Returns amount of outgoing radiance from the point in the direction
-    virtual Spectrum GetEmmision(
+    virtual SpectrumF GetEmmision(
         const Vec3f& aPt,
         const Vec3f& aWol) const
     {
@@ -64,19 +64,19 @@ public:
         // We don't check the point since we expect it to be within the light surface
 
         if (aWol.z <= 0.)
-            return Spectrum().Zero();
+            return SpectrumF().Zero();
         else
             return mRadiance;
     };
 
-    virtual void SetPower(const Spectrum& aPower)
+    virtual void SetPower(const SpectrumF& aPower)
     {
         // Radiance = Flux/(Pi*Area)  [W * sr^-1 * m^2]
 
         mRadiance = aPower * (mInvArea / PI_F);
     }
 
-    virtual Spectrum SampleIllumination(
+    virtual SpectrumF SampleIllumination(
         const Vec3f &aSurfPt,
         const Frame &aFrame,
         Rng         &aRng,
@@ -117,12 +117,12 @@ public:
 
         // Compute "radiance * geometric component / PDF"
         if ((cosThetaIn <= 0) || (cosThetaOut <= 0))
-            return Spectrum().Zero();
+            return SpectrumF().Zero();
         else
         {
             const float geomComponent = (cosThetaIn * cosThetaOut) / distSqr;
             const float invPDF        = mArea;
-            const Spectrum result =
+            const SpectrumF result =
                   mRadiance
                 * geomComponent
                 * invPDF;
@@ -133,7 +133,7 @@ public:
 public:
     Vec3f       mP0, mE1, mE2;
     Frame       mFrame;
-    Spectrum    mRadiance;    // Spectral radiance
+    SpectrumF   mRadiance;    // Spectral radiance
     float       mArea;
     float       mInvArea;
 };
@@ -149,23 +149,23 @@ public:
         mPosition = aPosition;
     }
 
-    virtual void SetPower(const Spectrum& aPower)
+    virtual void SetPower(const SpectrumF& aPower)
     {
         mIntensity = aPower / (4 * PI_F);
     }
 
     // Returns amount of outgoing radiance in the direction.
     // The point parameter is unused - it is a heritage of the abstract light interface
-    virtual Spectrum GetEmmision(
+    virtual SpectrumF GetEmmision(
         const Vec3f& aPt,
         const Vec3f& aWol) const
     {
         aPt; aWol; // unused parameter
 
-        return Spectrum().Zero();
+        return SpectrumF().Zero();
     };
 
-    virtual Spectrum SampleIllumination(
+    virtual SpectrumF SampleIllumination(
         const Vec3f &aSurfPt,
         const Frame &aFrame,
         Rng         &aRng,
@@ -184,7 +184,7 @@ public:
         float cosTheta = Dot(aFrame.mZ, oWig);
 
         if (cosTheta <= 0)
-            return Spectrum().Zero();
+            return SpectrumF().Zero();
         else
             return mIntensity * cosTheta / distSqr;
     }
@@ -192,7 +192,7 @@ public:
 public:
 
     Vec3f       mPosition;
-    Spectrum    mIntensity;   // Spectral radiant intensity
+    SpectrumF   mIntensity;   // Spectral radiant intensity
 };
 
 
@@ -206,7 +206,7 @@ public:
         mConstantRadiance.Zero();
     }
 
-    virtual void SetConstantRadiance(const Spectrum& aRadiance)
+    virtual void SetConstantRadiance(const SpectrumF &aRadiance)
     {
         mConstantRadiance = aRadiance;
     }
@@ -218,7 +218,7 @@ public:
 
     // Returns amount of incoming radiance from the direction.
     PG3_PROFILING_NOINLINE
-    Spectrum GetEmmision(const Vec3f& aWig, bool bDoBilinFiltering = false) const
+    SpectrumF GetEmmision(const Vec3f& aWig, bool bDoBilinFiltering = false) const
     {
         aWig; // unused parameter
 
@@ -230,7 +230,7 @@ public:
 
     // Returns amount of outgoing radiance in the direction.
     // The point parameter is unused - it is an heritage of the abstract light interface
-    virtual Spectrum GetEmmision(
+    virtual SpectrumF GetEmmision(
         const Vec3f& aPt, 
         const Vec3f& aWol) const
     {
@@ -240,7 +240,7 @@ public:
     };
 
     PG3_PROFILING_NOINLINE
-    virtual Spectrum SampleIllumination(
+    virtual SpectrumF SampleIllumination(
         const Vec3f &aSurfPt, 
         const Frame &aFrame, 
         Rng         &aRng,
@@ -260,9 +260,9 @@ public:
                 float pdf;
                 Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
                 oWig = aFrame.ToWorld(wil);
-                const Spectrum radiance = mEnvMap->Lookup(oWig, false);
+                const SpectrumF radiance = mEnvMap->Lookup(oWig, false);
                 const float cosThetaIn = wil.z;
-                const Spectrum result =
+                const SpectrumF result =
                         radiance
                     * cosThetaIn
                     / pdf;
@@ -270,8 +270,8 @@ public:
 
             #else
 
-                float pdf;
-                Spectrum radiance;
+                float       pdf;
+                SpectrumF   radiance;
 
                 // Sample the environment map with the pdf proportional to luminance of the map
                 oWig        = mEnvMap->Sample(aRng.GetVec2f(), pdf, &radiance);
@@ -281,11 +281,11 @@ public:
                 if (cosThetaIn <= 0.0f)
                 {
                     // The sample is below the surface - no light contribution
-                    return Spectrum().Zero();
+                    return SpectrumF().Zero();
                 }
                 else
                 {
-                    const Spectrum result = radiance * cosThetaIn / pdf;
+                    const SpectrumF result = radiance * cosThetaIn / pdf;
                     return result;
                 }
 
@@ -301,7 +301,7 @@ public:
             oLightDist = std::numeric_limits<float>::max();
 
             const float cosThetaIn = wil.z;
-            const Spectrum result =
+            const SpectrumF result =
                 mConstantRadiance
                 * cosThetaIn
                 / pdf;
@@ -311,6 +311,6 @@ public:
 
 public:
 
-    Spectrum        mConstantRadiance;
+    SpectrumF       mConstantRadiance;
     EnvironmentMap *mEnvMap;
 };

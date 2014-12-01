@@ -20,14 +20,14 @@ public:
     }
 
     void Set(
-        const Spectrum& aDiffuseReflectance,
-        const Spectrum& aGlossyReflectance,
-        float aPhongExponent,
-        uint aDiffuse,
-        uint aGlossy)
+        const SpectrumF &aDiffuseReflectance,
+        const SpectrumF &aGlossyReflectance,
+        float            aPhongExponent,
+        uint             aDiffuse,
+        uint             aGlossy)
     {
-        mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : Spectrum().Zero();
-        mPhongReflectance   = aGlossy  ? aGlossyReflectance  : Spectrum().Zero();
+        mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : SpectrumF().Zero();
+        mPhongReflectance   = aGlossy  ? aGlossyReflectance  : SpectrumF().Zero();
         mPhongExponent      = aPhongExponent;
 
         if (aGlossy)
@@ -35,13 +35,13 @@ public:
             mDiffuseReflectance /= 2;
     }
 
-    Spectrum EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
+    SpectrumF EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
     {
         if (wil.z <= 0 && wol.z <= 0)
-            return Spectrum().Zero();
+            return SpectrumF().Zero();
 
         // Diffuse component
-        const Spectrum diffuseComponent(mDiffuseReflectance / PI_F); // TODO: Pre-compute
+        const SpectrumF diffuseComponent(mDiffuseReflectance / PI_F); // TODO: Pre-compute
 
         // Glossy component
         const float constComponent = (mPhongExponent + 2.0f) / (2.0f * PI_F); // TODO: Pre-compute
@@ -50,12 +50,12 @@ public:
         // in the retroreflection zone.
         const float thetaRCos = std::max(Dot(wrl, wol), 0.f); 
         const float poweredCos = powf(thetaRCos, mPhongExponent);
-        const Spectrum glossyComponent(mPhongReflectance * (constComponent * poweredCos));
+        const SpectrumF glossyComponent(mPhongReflectance * (constComponent * poweredCos));
 
         return diffuseComponent + glossyComponent;
     }
 
-    Spectrum    mDiffuseReflectance;
-    Spectrum    mPhongReflectance;
+    SpectrumF   mDiffuseReflectance;
+    SpectrumF   mPhongReflectance;
     float       mPhongExponent;
 };

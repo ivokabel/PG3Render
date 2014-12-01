@@ -13,19 +13,6 @@
 #define EPS_COSINE 1e-6f
 #define EPS_RAY    1e-3f
 
-// sRGB luminance
-// TODO: Move to Spectrum implementation
-float Luminance(const Spectrum& aSpectrum)
-{
-    SRGBSpectrum srgb;
-    aSpectrum.ConvertToSRGBSpectrum(srgb);
-
-    return
-        0.212671f * srgb.x +
-        0.715160f * srgb.y +
-        0.072169f * srgb.z;
-}
-
 float FresnelDielectric(
     float aCosInc,
     float mIOR)

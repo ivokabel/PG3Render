@@ -18,8 +18,8 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // Accumulation
     void AddRadiance(
-        const Vec2f& aSample,
-        const Spectrum& aRadiance)
+        const Vec2f     &aSample,
+        const SpectrumF &aRadiance)
     {
         if (aSample.x < 0 || aSample.x >= mResolution.x)
             return;
@@ -29,6 +29,9 @@ public:
 
         int32_t x = int32_t(aSample.x);
         int32_t y = int32_t(aSample.y);
+
+        // debug
+        SpectrumF dummy = aRadiance + aRadiance;
 
         mRadiance[x + y * mResX] = mRadiance[x + y * mResX] + aRadiance;
     }
@@ -46,7 +49,7 @@ public:
 
     void Clear()
     {
-        memset(&mRadiance[0], 0, sizeof(Spectrum) * mRadiance.size());
+        memset(&mRadiance[0], 0, sizeof(SpectrumF) * mRadiance.size());
     }
 
     void Add(const Framebuffer& aOther)
@@ -57,7 +60,7 @@ public:
 
     void Scale(float aScale)
     {
-        Spectrum scaleAttenuation;
+        SpectrumF scaleAttenuation;
         scaleAttenuation.SetGreyAttenuation(aScale);
 
         for (size_t i = 0; i < mRadiance.size(); i++)
@@ -74,7 +77,7 @@ public:
         {
             for (int32_t x=0; x<mResX; x++)
             {
-                lum += Luminance(mRadiance[x + y*mResX]);
+                lum += mRadiance[x + y*mResX].Luminance();
             }
         }
 
@@ -178,8 +181,8 @@ public:
             for (int32_t x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
-                const Spectrum &spectrum = mRadiance[x + (mResY-y-1)*mResX];
-                SRGBSpectrum sRGB;
+                const SpectrumF &spectrum = mRadiance[x + (mResY-y-1)*mResX];
+                SRGBSpectrumFloat sRGB;
                 spectrum.ConvertToSRGBSpectrum(sRGB);
 
                 typedef unsigned char byte;
@@ -216,8 +219,8 @@ public:
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
 
-                const Spectrum &spectrum = mRadiance[x + y*mResX];
-                SRGBSpectrum sRGB;
+                const SpectrumF &spectrum = mRadiance[x + y*mResX];
+                SRGBSpectrumFloat sRGB;
                 spectrum.ConvertToSRGBSpectrum(sRGB);
                 float v = sRGB.Max();;
 
@@ -238,7 +241,7 @@ public:
 
 private:
 
-    std::vector<Spectrum>   mRadiance;
+    std::vector<SpectrumF>  mRadiance;
     Vec2f                   mResolution;
     int32_t                 mResX;
     int32_t                 mResY;

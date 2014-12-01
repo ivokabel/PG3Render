@@ -59,7 +59,7 @@ public:
                 // into sub-integrals - one integral for each light source - and sum up 
                 // all the sub-results.
 
-                Spectrum LoDirect;
+                SpectrumF LoDirect;
                 LoDirect.SetSRGBGreyLight(0.0f);
 
                 for (uint32_t i=0; i<mScene.GetLightCount(); i++)
@@ -69,7 +69,7 @@ public:
 
                     // Choose a random sample on the light
                     Vec3f wig; float lightDist;
-                    Spectrum illumSample = light->SampleIllumination(surfPt, frame, mRng, wig, lightDist);
+                    SpectrumF illumSample = light->SampleIllumination(surfPt, frame, mRng, wig, lightDist);
                     
                     if (illumSample.Max() > 0.)
                     {
@@ -85,7 +85,7 @@ public:
                 // Emission
                 ///////////////////////////////////////////////////////////////////////////////////
 
-                Spectrum Le;
+                SpectrumF Le;
 
                 const AbstractLight *light = 
                     isect.lightID < 0 ? NULL : mScene.GetLightPtr(isect.lightID);
@@ -98,7 +98,7 @@ public:
                 // TODO: Indirect illumination
                 ///////////////////////////////////////////////////////////////////////////////////
 
-                Spectrum LoIndirect;
+                SpectrumF LoIndirect;
                 LoIndirect.Zero(); // debug
 
                 // ...
@@ -109,17 +109,17 @@ public:
 
                 // this illustrates how to pick-up the material properties of the intersected surface
                 const Material& mat = mScene.GetMaterial( isect.matID );
-                const Spectrum& rhoD = mat.mDiffuseReflectance;
+                const SpectrumF& rhoD = mat.mDiffuseReflectance;
 
                 // this illustrates how to pick-up the area source associated with the intersected surface
                 const AbstractLight *light = isect.lightID < 0 ?  0 : mScene.GetLightPtr( isect.lightID );
                 // we cannot do anything with the light because it has no interface right now
 
                 if (dotLN > 0)
-                    mFramebuffer.AddRadiance(sample, (rhoD/PI_F) * Spectrum(dotLN));
+                    mFramebuffer.AddRadiance(sample, (rhoD/PI_F) * SpectrumF(dotLN));
                 */
 
-                const Spectrum Lo = Le + LoDirect + LoIndirect;
+                const SpectrumF Lo = Le + LoDirect + LoIndirect;
 
                 mFramebuffer.AddRadiance(sample, Lo);
             }
@@ -128,7 +128,7 @@ public:
                 // No intersection - get light from the background
 
                 const BackgroundLight *backgroundLight = mScene.GetBackground();
-                Spectrum Le = backgroundLight->GetEmmision(ray.dir, true);
+                SpectrumF Le = backgroundLight->GetEmmision(ray.dir, true);
 
                 mFramebuffer.AddRadiance(sample, Le);
             }
