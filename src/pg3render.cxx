@@ -124,7 +124,7 @@ float render(
     }
 
     // Scale framebuffer by the number of used renderers
-    aConfig.mFramebuffer->Scale(1.f / usedRenderers);
+    aConfig.mFramebuffer->Scale(FramebufferFloat(1.) / usedRenderers);
 
     // Clean up renderers
     for (uint32_t i=0; i<aConfig.mNumThreads; i++)

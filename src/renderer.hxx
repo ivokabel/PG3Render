@@ -34,7 +34,7 @@ public:
         oFramebuffer = mFramebuffer;
 
         if (mIterations > 0)
-            oFramebuffer.Scale(1.f / mIterations);
+            oFramebuffer.Scale(FramebufferFloat(1.) / mIterations);
     }
 
     //! Whether this renderer was used at all

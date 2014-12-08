@@ -65,13 +65,10 @@ public:
     // sRGB luminance
     T Luminance() const
     {
-        //SRGBSpectrumFloat srgb;
-        //aSpectrum.ConvertToSRGBSpectrum(srgb);
-
         return
-            0.212671f * /*srgb.*/x +
-            0.715160f * /*srgb.*/y +
-            0.072169f * /*srgb.*/z;
+            0.212671f * x +
+            0.715160f * y +
+            0.072169f * z;
     }
 
 private:
@@ -104,6 +101,8 @@ typedef SRGBSpectrumX<double>   SRGBSpectrumDouble;
 // by memsetting the whole structure to 0. Used in framebuffer - if not possible, 
 // the affected code must be rewritten.
 
-typedef SRGBSpectrumFloat SpectrumF;
-//typedef SampledSpectrum8Float SpectrumF;
+typedef SRGBSpectrumFloat   SpectrumF;
+typedef SRGBSpectrumDouble  SpectrumD;
+//typedef SampledSpectrum8Float  SpectrumF;
+//typedef SampledSpectrum8Double SpectrumD;
 

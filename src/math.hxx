@@ -87,11 +87,11 @@ public:
     const T& Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
     T&       Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
 
-    // unary minus
+    // Unary minus
     Vec2x<T> operator-() const
     { Vec2x<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = -Get(i); return res; }
 
-    // binary operations
+    // Binary operations
     friend Vec2x<T> operator+(const Vec2x& a, const Vec2x& b)
     { Vec2x<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
     friend Vec2x<T> operator-(const Vec2x& a, const Vec2x& b)
@@ -131,6 +131,24 @@ public:
     Vec3x(T a):x(a),y(a),z(a){}
     Vec3x(T a, T b, T c):x(a),y(b),z(c){}
 
+    // For the double specialization of this template, we add the conversion constructor 
+    // from the float specialization. This is one way of allowing binary operators to accept
+    // one float and one double parameter while ensuring the whole operation is executed 
+    // in double precision. For instance, this is used during accumulation of float radiance values 
+    // in the double framebuffer.
+    template <
+        typename T2,
+        typename = typename
+            std::enable_if<
+                   std::is_same<double, T>::value
+                && std::is_same<float, T2>::value
+                >::type
+        >
+    Vec3x(const Vec3x<T2> &a)
+    {
+        for (uint32_t i = 0; i < 3; i++) Get(i) = (double)a.Get(i);
+    }
+
     const T& Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
     T&       Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
     Vec2x<T> GetXY() const    { return Vec2x<T>(x, y); }
@@ -144,11 +162,11 @@ public:
         return true;
     }
 
-    // unary minus
+    // Unary minus
     Vec3x<T> operator-() const
     { Vec3x<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = -Get(i); return res; }
 
-    // binary operations
+    // Binary operations
     friend Vec3x<T> operator+(const Vec3x& a, const Vec3x& b)
     { Vec3x<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
     friend Vec3x<T> operator-(const Vec3x& a, const Vec3x& b)

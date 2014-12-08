@@ -8,6 +8,17 @@
 #include "utils.hxx"
 #include "types.hxx"
 
+#define USE_DOUBLE_FRAMEBUFFER
+#ifdef USE_DOUBLE_FRAMEBUFFER
+typedef SpectrumD           FramebufferSpectrum;
+typedef SRGBSpectrumDouble  FramebufferSRGBSpectrum;
+typedef double              FramebufferFloat;
+#else
+typedef SpectrumF           FramebufferSpectrum;
+typedef SRGBSpectrumFloat   FramebufferSRGBSpectrum;
+typedef float               FramebufferFloat;
+#endif
+
 class Framebuffer
 {
 public:
@@ -30,10 +41,9 @@ public:
         int32_t x = int32_t(aSample.x);
         int32_t y = int32_t(aSample.y);
 
-        // debug
-        SpectrumF dummy = aRadiance + aRadiance;
-
-        mRadiance[x + y * mResX] = mRadiance[x + y * mResX] + aRadiance;
+        // For some reason the following line only works if I create a SpectrumF instance first
+        //mRadiance[x + y * mResX] = mRadiance[x + y * mResX] + aRadiance;
+        mRadiance[x + y * mResX] += aRadiance;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -49,7 +59,7 @@ public:
 
     void Clear()
     {
-        memset(&mRadiance[0], 0, sizeof(SpectrumF) * mRadiance.size());
+        memset(&mRadiance[0], 0, sizeof(FramebufferSpectrum) * mRadiance.size());
     }
 
     void Add(const Framebuffer& aOther)
@@ -58,9 +68,9 @@ public:
             mRadiance[i] = mRadiance[i] + aOther.mRadiance[i];
     }
 
-    void Scale(float aScale)
+    void Scale(FramebufferFloat aScale)
     {
-        SpectrumF scaleAttenuation;
+        FramebufferSpectrum scaleAttenuation;
         scaleAttenuation.SetGreyAttenuation(aScale);
 
         for (size_t i = 0; i < mRadiance.size(); i++)
@@ -69,17 +79,13 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Statistics
-    float TotalLuminance()
+    FramebufferFloat TotalLuminance()
     {
-        float lum = 0;
+        FramebufferFloat lum = 0.0;
 
         for (int32_t y=0; y<mResY; y++)
-        {
             for (int32_t x=0; x<mResX; x++)
-            {
                 lum += mRadiance[x + y*mResX].Luminance();
-            }
-        }
 
         return lum;
     }
@@ -175,26 +181,26 @@ public:
 
         bmp.write((char*)&header, sizeof(header));
 
-        const float invGamma = 1.f / aGamma;
+        const FramebufferFloat invGamma = (FramebufferFloat)1.f / aGamma;
         for (int32_t y=0; y<mResY; y++)
         {
             for (int32_t x=0; x<mResX; x++)
             {
                 // bmp is stored from bottom up
-                const SpectrumF &spectrum = mRadiance[x + (mResY-y-1)*mResX];
-                SRGBSpectrumFloat sRGB;
+                const FramebufferSpectrum &spectrum = mRadiance[x + (mResY-y-1)*mResX];
+                FramebufferSRGBSpectrum sRGB;
                 spectrum.ConvertToSRGBSpectrum(sRGB);
 
                 typedef unsigned char byte;
-                float gammaBgr[3];
-                gammaBgr[0] = std::pow(sRGB.z, invGamma) * 255.f;
-                gammaBgr[1] = std::pow(sRGB.y, invGamma) * 255.f;
-                gammaBgr[2] = std::pow(sRGB.x, invGamma) * 255.f;
+                FramebufferFloat gammaBgr[3];
+                gammaBgr[0] = std::pow(sRGB.z, invGamma) * FramebufferFloat(255.);
+                gammaBgr[1] = std::pow(sRGB.y, invGamma) * FramebufferFloat(255.);
+                gammaBgr[2] = std::pow(sRGB.x, invGamma) * FramebufferFloat(255.);
 
                 byte bgrB[3];
-                bgrB[0] = byte(std::min(255.f, std::max(0.f, gammaBgr[0])));
-                bgrB[1] = byte(std::min(255.f, std::max(0.f, gammaBgr[1])));
-                bgrB[2] = byte(std::min(255.f, std::max(0.f, gammaBgr[2])));
+                bgrB[0] = byte(std::min(FramebufferFloat(255.), std::max(FramebufferFloat(0.), gammaBgr[0])));
+                bgrB[1] = byte(std::min(FramebufferFloat(255.), std::max(FramebufferFloat(0.), gammaBgr[1])));
+                bgrB[2] = byte(std::min(FramebufferFloat(255.), std::max(FramebufferFloat(0.), gammaBgr[2])));
 
                 bmp.write((char*)&bgrB, sizeof(bgrB));
             }
@@ -219,15 +225,15 @@ public:
                 typedef unsigned char byte;
                 byte rgbe[4] = {0,0,0,0};
 
-                const SpectrumF &spectrum = mRadiance[x + y*mResX];
-                SRGBSpectrumFloat sRGB;
+                const FramebufferSpectrum &spectrum = mRadiance[x + y*mResX];
+                FramebufferSRGBSpectrum sRGB;
                 spectrum.ConvertToSRGBSpectrum(sRGB);
-                float v = sRGB.Max();;
+                FramebufferFloat v = sRGB.Max();
 
-                if (v >= 1e-32f)
+                if (v >= (FramebufferFloat)1e-32)
                 {
                     int32_t e;
-                    v = float(frexp(v, &e) * 256.f / v);
+                    v = frexp(v, &e) * FramebufferFloat(256.) / v;
                     rgbe[0] = byte(sRGB.x * v);
                     rgbe[1] = byte(sRGB.y * v);
                     rgbe[2] = byte(sRGB.z * v);
@@ -241,8 +247,8 @@ public:
 
 private:
 
-    std::vector<SpectrumF>  mRadiance;
-    Vec2f                   mResolution;
-    int32_t                 mResX;
-    int32_t                 mResY;
+    std::vector<FramebufferSpectrum>    mRadiance;
+    Vec2f                               mResolution;
+    int32_t                             mResX;
+    int32_t                             mResY;
 };
