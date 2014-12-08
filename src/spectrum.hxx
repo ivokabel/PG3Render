@@ -5,15 +5,15 @@
 
 // Implementation of Spectral Power Distribution in sRGB colourspace coordinates.
 template<typename T>
-class SRGBSpectrumX : public Vec3x<T>
+class SRGBSpectrumBase : public Vec3Base<T>
 {
 public:
 
-    SRGBSpectrumX() {};
+    SRGBSpectrumBase() {};
 
     // This constructor is needed to use the overloaded operators 
-    // from Vec3x, which return objects of type Vec3x.
-    SRGBSpectrumX(const Vec3x<T> &aVec) : Vec3x<T>(aVec) {};
+    // from Vec3Base, which return objects of type Vec3Base.
+    SRGBSpectrumBase(const Vec3Base<T> &aVec) : Vec3Base<T>(aVec) {};
 
     // Sets as light quantity which is grey in sRGB colourspace
     void SetSRGBGreyLight(T a)
@@ -44,10 +44,10 @@ public:
         z = b;
     };
 
-    // Converts the internal representation to SRGBSpectrumX.
+    // Converts the internal representation to SRGBSpectrumBase.
     // TODO: Make this a conversion operator to make things more fancy?
     // TODO: In spectral version: Where do we want to do gamut mapping?
-    void ConvertToSRGBSpectrum(SRGBSpectrumX &oSpectrum) const
+    void ConvertToSRGBSpectrum(SRGBSpectrumBase &oSpectrum) const
     {
         oSpectrum = *this;
     }
@@ -55,7 +55,7 @@ public:
     // Later: ConvertToSampledSpectrum8()?
 
     // Make this instance zero
-    SRGBSpectrumX& Zero()
+    SRGBSpectrumBase& Zero()
     {
         for (uint32_t i = 0; i<3; i++)
             Get(i) = 0.0f;
@@ -79,8 +79,8 @@ private:
 };
 
 // Specializations
-typedef SRGBSpectrumX<float>    SRGBSpectrumFloat;
-typedef SRGBSpectrumX<double>   SRGBSpectrumDouble;
+typedef SRGBSpectrumBase<float>     SRGBSpectrumF;
+typedef SRGBSpectrumBase<double>    SRGBSpectrumD;
 
 // The SpectrumX class stores a Spectral Power Distribution used for various physical quantities.
 // The two main usages are: light-related quantities (flux, irradiance, radiance, etc.) and 
@@ -101,8 +101,8 @@ typedef SRGBSpectrumX<double>   SRGBSpectrumDouble;
 // by memsetting the whole structure to 0. Used in framebuffer - if not possible, 
 // the affected code must be rewritten.
 
-typedef SRGBSpectrumFloat   SpectrumF;
-typedef SRGBSpectrumDouble  SpectrumD;
-//typedef SampledSpectrum8Float  SpectrumF;
-//typedef SampledSpectrum8Double SpectrumD;
+typedef SRGBSpectrumF   SpectrumF;
+typedef SRGBSpectrumD   SpectrumD;
+//typedef SampledSpectrum8F  SpectrumF;
+//typedef SampledSpectrum8D SpectrumD;
 

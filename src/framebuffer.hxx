@@ -10,13 +10,13 @@
 
 #define USE_DOUBLE_FRAMEBUFFER
 #ifdef USE_DOUBLE_FRAMEBUFFER
-typedef SpectrumD           FramebufferSpectrum;
-typedef SRGBSpectrumDouble  FramebufferSRGBSpectrum;
-typedef double              FramebufferFloat;
+typedef SpectrumD       FramebufferSpectrum;
+typedef SRGBSpectrumD   FramebufferSRGBSpectrum;
+typedef double          FramebufferFloat;
 #else
-typedef SpectrumF           FramebufferSpectrum;
-typedef SRGBSpectrumFloat   FramebufferSRGBSpectrum;
-typedef float               FramebufferFloat;
+typedef SpectrumF       FramebufferSpectrum;
+typedef SRGBSpectrumF   FramebufferSRGBSpectrum;
+typedef float           FramebufferFloat;
 #endif
 
 class Framebuffer
