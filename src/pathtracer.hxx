@@ -38,7 +38,9 @@ public:
 
             const Vec2f randomOffset = mRng.GetVec2f();
             const Vec2f basedCoords  = Vec2f(float(x), float(y));
+            const Vec2f basedCoordsBound = Vec2f(float(x), float(y));
             const Vec2f sample       = basedCoords + randomOffset;
+            //const Vec2f sample       = Clamp(basedCoords + randomOffset, basedCoords, ;
 
             Ray   ray = mScene.mCamera.GenerateRay(sample);
             Isect isect(1e36f);
@@ -173,12 +175,12 @@ public:
                 // we cannot do anything with the light because it has no interface right now
 
                 if (dotLN > 0)
-                    mFramebuffer.AddRadiance(sample, (rhoD/PI_F) * SpectrumF(dotLN));
+                    mFramebuffer.AddRadiance(x, y, (rhoD/PI_F) * SpectrumF(dotLN));
                 */
 
                 const SpectrumF Lo = Le + LoDirect + LoIndirect;
 
-                mFramebuffer.AddRadiance(sample, Lo);
+                mFramebuffer.AddRadiance(x, y, Lo);
             }
             else
             {
@@ -187,7 +189,7 @@ public:
                 const BackgroundLight *backgroundLight = mScene.GetBackground();
                 SpectrumF Le = backgroundLight->GetEmmision(ray.dir, true);
 
-                mFramebuffer.AddRadiance(sample, Le);
+                mFramebuffer.AddRadiance(x, y, Le);
             }
         }
 

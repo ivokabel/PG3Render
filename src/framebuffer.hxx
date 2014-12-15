@@ -28,18 +28,19 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Accumulation
+
     void AddRadiance(
-        const Vec2f     &aSample,
+        uint32_t        x,
+        uint32_t        y,
         const SpectrumF &aRadiance)
     {
-        if (aSample.x < 0 || aSample.x >= mResolution.x)
-            return;
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(x, 0, (uint32_t)mResolution.x);
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(y, 0, (uint32_t)mResolution.y);
 
-        if (aSample.y < 0 || aSample.y >= mResolution.y)
+        if (x < 0 || x >= mResolution.x)
             return;
-
-        int32_t x = int32_t(aSample.x);
-        int32_t y = int32_t(aSample.y);
+        if (y < 0 || y >= mResolution.y)
+            return;
 
         // For some reason the following line only works if I create a SpectrumF instance first
         //mRadiance[x + y * mResX] = mRadiance[x + y * mResX] + aRadiance;

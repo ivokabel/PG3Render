@@ -47,7 +47,7 @@ public:
                     color.SetSRGBGreyLight(dotLN);
                 else
                     color.SetSRGBLight(-dotLN, 0, 0);
-                mFramebuffer.AddRadiance(sample, color);
+                mFramebuffer.AddRadiance(x, y, color);
             }
         }
 
