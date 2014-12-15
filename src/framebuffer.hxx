@@ -28,7 +28,6 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Accumulation
-
     void AddRadiance(
         uint32_t        x,
         uint32_t        y,
