@@ -42,7 +42,7 @@ public:
         const Vec3f &aP1,
         const Vec3f &aP2)
     {
-        mRadiance.Zero();
+        mRadiance.MakeZero();
 
         mP0 = aP0;
         mE1 = aP1 - aP0;
@@ -66,7 +66,7 @@ public:
         // We don't check the point since we expect it to be within the light surface
 
         if (aWol.z <= 0.)
-            return SpectrumF().Zero();
+            return SpectrumF().MakeZero();
         else
             return mRadiance;
     };
@@ -119,7 +119,7 @@ public:
 
         // Compute "radiance * geometric component / PDF"
         if ((cosThetaIn <= 0) || (cosThetaOut <= 0))
-            return SpectrumF().Zero();
+            return SpectrumF().MakeZero();
         else
         {
             const float geomComponent = (cosThetaIn * cosThetaOut) / distSqr;
@@ -147,7 +147,7 @@ public:
 
     PointLight(const Vec3f& aPosition)
     {
-        mIntensity.Zero();
+        mIntensity.MakeZero();
         mPosition = aPosition;
     }
 
@@ -164,7 +164,7 @@ public:
     {
         aPt; aWol; // unused parameter
 
-        return SpectrumF().Zero();
+        return SpectrumF().MakeZero();
     };
 
     virtual SpectrumF SampleIllumination(
@@ -186,7 +186,7 @@ public:
         float cosTheta = Dot(aFrame.mZ, oWig);
 
         if (cosTheta <= 0)
-            return SpectrumF().Zero();
+            return SpectrumF().MakeZero();
         else
             return mIntensity * cosTheta / distSqr;
     }
@@ -205,7 +205,7 @@ public:
     BackgroundLight() :
         mEnvMap(NULL)
     {
-        mConstantRadiance.Zero();
+        mConstantRadiance.MakeZero();
     }
 
     virtual void SetConstantRadiance(const SpectrumF &aRadiance)
@@ -281,7 +281,7 @@ public:
                 if (cosThetaIn <= 0.0f)
                 {
                     // The sample is below the surface - no light contribution
-                    return SpectrumF().Zero();
+                    return SpectrumF().MakeZero();
                 }
                 else
                 {

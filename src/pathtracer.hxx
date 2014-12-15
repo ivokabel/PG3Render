@@ -119,7 +119,7 @@ public:
 
                             // We hit a geometry which is not a light source, 
                             // no direct light contribution for this sample
-                            LiLight.Zero();
+                            LiLight.MakeZero();
                         }
                     }
                     else
@@ -151,14 +151,14 @@ public:
                 if (light != NULL)
                     Le = light->GetEmmision(surfPt, wol);
                 else
-                    Le.Zero();
+                    Le.MakeZero();
 
                 ///////////////////////////////////////////////////////////////////////////////////
                 // TODO: Indirect illumination
                 ///////////////////////////////////////////////////////////////////////////////////
 
                 SpectrumF LoIndirect;
-                LoIndirect.Zero(); // debug
+                LoIndirect.MakeZero(); // debug
 
                 // ...
 

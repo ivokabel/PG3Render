@@ -292,7 +292,7 @@ public:
         return res;
     }
 
-    static Mat4f Zero() { Mat4f res(0); return res; }
+    static Mat4f MakeZero() { Mat4f res(0); return res; }
 
     static Mat4f Indetity()
     {

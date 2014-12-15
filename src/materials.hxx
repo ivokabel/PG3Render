@@ -34,8 +34,8 @@ public:
         uint             aDiffuse,
         uint             aGlossy)
     {
-        mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : SpectrumF().Zero();
-        mPhongReflectance   = aGlossy  ? aGlossyReflectance  : SpectrumF().Zero();
+        mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : SpectrumF().MakeZero();
+        mPhongReflectance   = aGlossy  ? aGlossyReflectance  : SpectrumF().MakeZero();
         mPhongExponent      = aPhongExponent;
 
         if (aGlossy)
@@ -46,7 +46,7 @@ public:
     SpectrumF EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
     {
         if (wil.z <= 0 && wol.z <= 0)
-            return SpectrumF().Zero();
+            return SpectrumF().MakeZero();
 
         // Diffuse component
         const SpectrumF diffuseComponent(mDiffuseReflectance / PI_F); // TODO: Pre-compute
@@ -79,7 +79,7 @@ public:
         oWog;
 
         // debug
-        brdfSample.mSample.Zero();
+        brdfSample.mSample.MakeZero();
 
         // Compute scalar diff and spec reflectances (later: pre-compute?)
 

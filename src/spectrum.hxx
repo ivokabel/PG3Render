@@ -55,7 +55,7 @@ public:
     // Later: ConvertToSampledSpectrum8()?
 
     // Make this instance zero
-    SRGBSpectrumBase& Zero()
+    SRGBSpectrumBase& MakeZero()
     {
         for (uint32_t i = 0; i<3; i++)
             Get(i) = 0.0f;
