@@ -107,9 +107,11 @@ uint g_SceneConfigs[] =
     // 10
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse,
     // 11
+    Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresGlossy,
+    // 12
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
 
-    // 12
+    // 13
     Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
 };
 

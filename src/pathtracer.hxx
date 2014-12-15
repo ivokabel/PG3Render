@@ -88,9 +88,10 @@ public:
 #elif defined DIRECT_ILLUMINATION_SAMPLE_BRDF_ONLY
 
                 // Sample BRDF
-                Vec3f wig;
+                Vec3f wil;
                 BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, frame, wol, brdfSample, wig);
+                mat.SampleBrdf(mRng, wol, brdfSample, wil);
+                Vec3f wig = frame.ToWorld(wil);
 
                 if (brdfSample.mSample.Max() > 0.)
                 {
@@ -108,7 +109,10 @@ public:
                             // We hit light source geometry, get outgoing radiance
                             const Vec3f lightPt = brdfRay.org + brdfRay.dir * brdfIsect.dist;
                             const AbstractLight *light = mScene.GetLightPtr(brdfIsect.lightID);
-                            LiLight = light->GetEmmision(lightPt, -wol);
+                            Frame frame;
+                            frame.SetFromZ(brdfIsect.normal);
+                            const Vec3f ligthWol = frame.ToLocal(-brdfRay.dir);
+                            LiLight = light->GetEmmision(lightPt, ligthWol);
                         }
                         else
                         {

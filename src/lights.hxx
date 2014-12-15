@@ -61,7 +61,7 @@ public:
         const Vec3f& aPt,
         const Vec3f& aWol) const
     {
-        aPt; aWol; // unused parameters
+        aPt; // unused parameter
 
         // We don't check the point since we expect it to be within the light surface
 

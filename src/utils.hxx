@@ -12,11 +12,12 @@
 
 #define EPS_COSINE          1e-6f
 #define EPS_RAY             1e-3f
-// Dynamic version (chooses from [EPS_RAY, 2*EPS_RAY])
+// Dynamic version (chooses from [EPS_RAY, N*EPS_RAY])
+// eps + n * (1-cos) * eps = (1 + n * (1-cos)) * eps
 // The smaller the cosine is, the larger epsilon we use to avoid 
 // numerical problems, e.g. causing self-intersection when shooting rays from a surface,
 // while starting as close to the surface as possible to avoid light leaks
-#define EPS_RAY_COS(_cos)   ((2.0f - (_cos)) * EPS_RAY)
+#define EPS_RAY_COS(_cos)   ((1.f + 2.f * (1.f - (_cos))) * EPS_RAY)
 
 float FresnelDielectric(
     float aCosInc,
@@ -33,9 +34,7 @@ float FresnelDielectric(
         etaIncOverEtaTrans = mIOR;
     }
     else
-    {
         etaIncOverEtaTrans = 1.f / mIOR;
-    }
 
     const float sinTrans2 = Sqr(etaIncOverEtaTrans) * (1.f - Sqr(aCosInc));
     const float cosTrans = std::sqrt(std::max(0.f, 1.f - sinTrans2));
@@ -70,9 +69,7 @@ Vec3f SamplePowerCosHemisphereW(
     const float term3 = std::sqrt(1.f - term2 * term2);
 
     if (oPdfW)
-    {
         *oPdfW = (aPower + 1.f) * std::pow(term2, aPower) * (0.5f * INV_PI_F);
-    }
 
     return Vec3f(
         std::cos(term1) * term3,
@@ -161,9 +158,7 @@ Vec3f SampleCosHemisphereW(
         std::sqrt(aSamples.y));
 
     if (oPdfW)
-    {
         *oPdfW = ret.z * INV_PI_F;
-    }
 
     return ret;
 }
@@ -200,10 +195,8 @@ Vec3f SampleUniformSphereW(
         1.f - 2.f * aSamples.y);
 
     if (oPdfSA)
-    {
         //*oPdfSA = 1.f / (4.f * PI_F);
         *oPdfSA = INV_PI_F * 0.25f;
-    }
 
     return ret;
 }
