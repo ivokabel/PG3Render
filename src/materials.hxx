@@ -2,7 +2,15 @@
 
 #include "math.hxx"
 #include "spectrum.hxx"
+#include "rng.hxx"
 #include "types.hxx"
+
+class BRDFSample
+{
+public:
+    SpectrumF   mSample;    // (BRDF component attenuation * cosine) / (PDF * component probability)
+    float       mThetaInCos;
+};
 
 class Material
 {
@@ -53,6 +61,59 @@ public:
         const SpectrumF glossyComponent(mPhongReflectance * (constComponent * poweredCos));
 
         return diffuseComponent + glossyComponent;
+    }
+
+    // TODO
+    // Used in the two-step MC estimator of the angular version of the rendering equation. 
+    // It first randomly chooses a BRDF component and then it samples a random direction 
+    // for this component.
+    void SampleBrdf(
+        Rng         &aRng,
+        const Frame &aFrame,
+        const Vec3f &oWog,
+        BRDFSample  &brdfSample,
+        Vec3f       &oWig
+        ) const
+    {
+        // unused params
+        oWog;
+
+        // debug
+        brdfSample.mSample.Zero();
+
+        // Compute scalar diff and spec reflectances (later: pre-compute?)
+
+        // Choose a component based on diffuse and specular reflectance
+
+        // If diffuse
+
+            // cosine-weighted sampling: local direction and pdf
+            float pdf;
+            Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
+            oWig = aFrame.ToWorld(wil);
+
+            brdfSample.mThetaInCos = wil.z;
+            PG3_DEBUG_ASSERT_VAL_NONNEGATIVE(brdfSample.mThetaInCos);
+
+            // Compute the resulting sample:
+            //    BRDF (constant) * cos
+            //  / (pdf * probability of diffuse component (diffuse luminance))
+            brdfSample.mSample =
+                  ((mDiffuseReflectance / PI_F)/*TODO: Pre-compute*/ * brdfSample.mThetaInCos)
+                / (pdf * 1.0f/*debug*/);
+
+        // else if specular
+
+            // sample phong lobe: local direction and pdf
+
+            // evaluate phong lobe
+
+            // compute the resulting sample: 
+                // BRDF
+                // /
+                // (pdf * probability of specular component (specular luminance))
+
+        // convert incoming direction to world coords
     }
 
     SpectrumF   mDiffuseReflectance;

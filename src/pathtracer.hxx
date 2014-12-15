@@ -4,6 +4,7 @@
 #include "renderer.hxx"
 #include "rng.hxx"
 #include "types.hxx"
+#include "hardsettings.hxx"
 
 #include <vector>
 #include <cmath>
@@ -40,8 +41,7 @@ public:
             const Vec2f sample       = basedCoords + randomOffset;
 
             Ray   ray = mScene.mCamera.GenerateRay(sample);
-            Isect isect;
-            isect.dist = 1e36f;
+            Isect isect(1e36f);
 
             if (mScene.Intersect(ray, isect))
             {
@@ -55,12 +55,14 @@ public:
                 // Direct illumination
                 ///////////////////////////////////////////////////////////////////////////////////
 
+                SpectrumF LoDirect;
+                LoDirect.SetSRGBGreyLight(0.0f);
+
+#if defined DIRECT_ILLUMINATION_SAMPLE_LIGHTS_ONLY
+
                 // We split the planar integral over the surface of all light sources 
                 // into sub-integrals - one integral for each light source - and sum up 
                 // all the sub-results.
-
-                SpectrumF LoDirect;
-                LoDirect.SetSRGBGreyLight(0.0f);
 
                 for (uint32_t i=0; i<mScene.GetLightCount(); i++)
                 {
@@ -80,6 +82,61 @@ public:
                             LoDirect += illumSample * mat.EvalBrdf(frame.ToLocal(wig), wol);
                     }
                 }
+
+#elif defined DIRECT_ILLUMINATION_SAMPLE_BRDF_ONLY
+
+                // Sample BRDF
+                Vec3f wig;
+                BRDFSample brdfSample;
+                mat.SampleBrdf(mRng, frame, wol, brdfSample, wig);
+
+                if (brdfSample.mSample.Max() > 0.)
+                {
+                    SpectrumF LiLight;
+
+                    // Get radiance from the direction
+
+                    const float rayMin = EPS_RAY_COS(brdfSample.mThetaInCos);
+                    const Ray brdfRay(surfPt, wig, rayMin);
+                    Isect brdfIsect(1e36f);
+                    if (mScene.Intersect(brdfRay, brdfIsect))
+                    {
+                        if (brdfIsect.lightID >= 0)
+                        {
+                            // We hit light source geometry, get outgoing radiance
+                            const Vec3f lightPt = brdfRay.org + brdfRay.dir * brdfIsect.dist;
+                            const AbstractLight *light = mScene.GetLightPtr(brdfIsect.lightID);
+                            LiLight = light->GetEmmision(lightPt, -wol);
+                        }
+                        else
+                        {
+                            //debug
+                            printf("\nSelf-hit: cos=%.6f, 1-cos=%.6f, rayMin=%.6f\n",
+                                   brdfSample.mThetaInCos, 1.0f - brdfSample.mThetaInCos, rayMin);
+                            fflush(stdout);
+
+                            // We hit a geometry which is not a light source, 
+                            // no direct light contribution for this sample
+                            LiLight.Zero();
+                        }
+                    }
+                    else
+                    {
+                        // No geometry intersection, get radiance from background
+                        const BackgroundLight *backgroundLight = mScene.GetBackground();
+                        LiLight = backgroundLight->GetEmmision(wig);
+                    }
+
+                    // Compute the MC estimator. 
+                    // The BRDF sample already contains 
+                    //  (BRDF component attenuation * cosine) / (PDF * component probability)
+                    // All what's left is to multiply it by radiance from the direction
+                    LoDirect = brdfSample.mSample * LiLight;
+                }
+
+#else // MIS
+                PG3_FATAL_ERROR("Not implemented!");
+#endif
 
                 ///////////////////////////////////////////////////////////////////////////////////
                 // Emission

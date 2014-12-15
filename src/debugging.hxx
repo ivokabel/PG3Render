@@ -60,6 +60,7 @@ void pg3_exit();
         break; \
     }
 
+// Uncomment this to activate the asserts in the debug mode
 #ifdef _DEBUG
 #define PG3_DEBUG_ASSERT_ENABLED
 #endif

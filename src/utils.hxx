@@ -10,8 +10,13 @@
 #include <sstream>
 #include <iomanip>
 
-#define EPS_COSINE 1e-6f
-#define EPS_RAY    1e-3f
+#define EPS_COSINE          1e-6f
+#define EPS_RAY             1e-3f
+// Dynamic version (chooses from [EPS_RAY, 2*EPS_RAY])
+// The smaller the cosine is, the larger epsilon we use to avoid 
+// numerical problems, e.g. causing self-intersection when shooting rays from a surface,
+// while starting as close to the surface as possible to avoid light leaks
+#define EPS_RAY_COS(_cos)   ((2.0f - (_cos)) * EPS_RAY)
 
 float FresnelDielectric(
     float aCosInc,

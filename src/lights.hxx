@@ -1,13 +1,15 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
-#include <cassert>
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
 #include "environmentmap.hxx"
 #include "types.hxx"
+#include "hardsettings.hxx"
+
+#include <vector>
+#include <cmath>
+#include <cassert>
 
 //////////////////////////////////////////////////////////////////////////
 class AbstractLight
@@ -250,11 +252,9 @@ public:
     {
         aSurfPt; // unused parameter
 
-        #define USE_EM_IMPORTANCE_SAMPLING
-
         if (mEnvMap != NULL)
         {
-            #ifndef USE_EM_IMPORTANCE_SAMPLING
+            #ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
 
                 // Debug: Sample the hemisphere in the normal direction in a cosine-weighted fashion
                 float pdf;

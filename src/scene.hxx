@@ -1,10 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <string>
-#include <vector>
-#include <map>
-#include <cmath>
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "geometry.hxx"
@@ -12,7 +7,13 @@
 #include "materials.hxx"
 #include "lights.hxx"
 #include "types.hxx"
+#include "debugging.hxx"
 
+#include <algorithm>
+#include <string>
+#include <vector>
+#include <map>
+#include <cmath>
 #include <sstream>
 
 class Scene
@@ -78,6 +79,8 @@ public:
 
     const AbstractLight* GetLightPtr(int32_t aLightIdx) const
     {
+        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aLightIdx, 0, (int32_t)(mLights.size() - 1));
+
         aLightIdx = std::min<int32_t>(aLightIdx, (int32_t)mLights.size()-1);
         return mLights[aLightIdx];
     }

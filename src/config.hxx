@@ -160,13 +160,12 @@ void PrintInfo(const Config &config)
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
     printf("Config:    "
         "%d threads, "
-#ifndef _DEBUG
+#if !defined _DEBUG
         "release"
-#else
-#ifndef PG3_DEBUG_ASSERT_ENABLED
-        "debug"
-#endif
+#elif defined PG3_DEBUG_ASSERT_ENABLED
         "debug with assertions"
+#else
+        "debug"
 #endif
         "\n",
         config.mNumThreads
