@@ -113,6 +113,17 @@ public:
     friend T Dot(const Vec2Base& a, const Vec2Base& b)
     { T res(0); for (uint32_t i=0; i<2; i++) res += a.Get(i) * b.Get(i); return res; }
 
+    //friend Vec2Base Clamp(const Vec2Base& val, const Vec2Base& lower, const Vec2Base& upper)
+    //{
+    //    Vec2Base<T> res;
+    //    for (uint32_t i = 0; i < 2; i++)
+    //    {
+    //        PG3_DEBUG_ASSERT(lower.Get(i) <= upper.Get(i));
+    //        res.Get(i) = std::max(lower.Get(i), std::min(val.Get(i), upper.Get(i)));
+    //    }
+    //    return res;
+    //}
+
 public:
 
     T x, y;
