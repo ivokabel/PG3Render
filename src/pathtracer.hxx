@@ -116,11 +116,6 @@ public:
                         }
                         else
                         {
-                            //debug
-                            printf("\nSelf-hit: cos=%.6f, 1-cos=%.6f, rayMin=%.6f\n",
-                                   brdfSample.mThetaInCos, 1.0f - brdfSample.mThetaInCos, rayMin);
-                            fflush(stdout);
-
                             // We hit a geometry which is not a light source, 
                             // no direct light contribution for this sample
                             LiLight.MakeZero();
@@ -130,7 +125,10 @@ public:
                     {
                         // No geometry intersection, get radiance from background
                         const BackgroundLight *backgroundLight = mScene.GetBackground();
-                        LiLight = backgroundLight->GetEmmision(wig);
+                        if (backgroundLight != NULL)
+                            LiLight = backgroundLight->GetEmmision(wig);
+                        else
+                            LiLight.MakeZero(); // No background light
                     }
 
                     // Compute the MC estimator. 
