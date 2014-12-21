@@ -87,28 +87,29 @@ AbstractRenderer* CreateRenderer(
 // Scene configurations
 uint g_SceneConfigs[] = 
 {
+    // 0,1
     Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
+    // 2,3
     Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
+    // 4,5
     Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
+    // 6,7
     Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    // 8
+    // 8,9
     Scene::kLightEnv | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse,
-    // 9
     Scene::kLightEnv | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
 
-    // 10
+    // 10, 11, 12
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse,
-    // 11
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresGlossy,
-    // 12
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
 
     // 13
