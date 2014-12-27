@@ -48,9 +48,9 @@ public:
             if (mScene.Intersect(ray, isect))
             {
                 const Vec3f surfPt = ray.org + ray.dir * isect.dist;
-                Frame frame;
-                frame.SetFromZ(isect.normal);
-                const Vec3f wol = frame.ToLocal(-ray.dir);
+                Frame surfFrame;
+                surfFrame.SetFromZ(isect.normal);
+                const Vec3f wol = surfFrame.ToLocal(-ray.dir);
                 const Material& mat = mScene.GetMaterial(isect.matID);
 
                 ///////////////////////////////////////////////////////////////////////////////////
@@ -58,9 +58,9 @@ public:
                 ///////////////////////////////////////////////////////////////////////////////////
 
                 SpectrumF LoDirect;
-                LoDirect.SetSRGBGreyLight(0.0f);
+                LoDirect.MakeZero();
 
-#if defined DIRECT_ILLUMINATION_SAMPLE_LIGHTS_ONLY
+#if defined DIRECT_ILLUMINATION_SAMPLE_LIGHTS_ONLY_ALLLIGHTS
 
                 // We split the planar integral over the surface of all light sources 
                 // into sub-integrals - one integral for each light source - and sum up 
@@ -72,16 +72,96 @@ public:
                     PG3_DEBUG_ASSERT(light != 0);
 
                     // Choose a random sample on the light
-                    Vec3f wig; float lightDist;
-                    SpectrumF illumSample = light->SampleIllumination(surfPt, frame, mRng, wig, lightDist);
+                    LightSample lightSample;
+                    light->SampleIllumination(surfPt, surfFrame, mRng, lightSample);
                     
-                    if (illumSample.Max() > 0.)
+                    if (lightSample.mSample.Max() > 0.)
                     {
                         // The illumination sample already contains 
                         // (outgoing radiance * geometric component) / PDF
                         // All what's left is to evaluate visibility and multiply by BRDF
-                        if ( ! mScene.Occluded(surfPt, wig, lightDist) )
-                            LoDirect += illumSample * mat.EvalBrdf(frame.ToLocal(wig), wol);
+                        if (!mScene.Occluded(surfPt, lightSample.mWig, lightSample.mDist))
+                            LoDirect += 
+                                  lightSample.mSample 
+                                * mat.EvalBrdf(surfFrame.ToLocal(lightSample.mWig), wol);
+                    }
+                }
+
+#elif defined DIRECT_ILLUMINATION_SAMPLE_LIGHTS_SINGLESAMPLE
+
+                // We split the planar integral over the surface of all light sources 
+                // into sub-integrals - one integral for each light source - and estimate 
+                // the sum of all the sub-results using a (discrete, second-level) MC estimator.
+
+                int32_t chosenLightId   = -1;
+                float lightProbability  = 0.f;
+
+                // Pick one of the light sources randomly
+                // (proportionally to their estimated contribution)
+                const size_t lightCount = mScene.GetLightCount();
+                if (lightCount == 0)
+                    chosenLightId = -1;
+                else if (lightCount == 1)
+                {
+                    // If there's just one light, we skip the unnecessary picking process
+                    chosenLightId    = 0;
+                    lightProbability = 1.f;
+                }
+                else
+                {
+                    // Non-normalized CDF for all light sources
+                    // TODO: Make it a PT's memeber to avoid unnecessary allocations?
+                    std::vector<float> lightContrPseudoCdf(lightCount + 1); 
+
+                    // Estimate the contribution of all available light sources
+                    float estimatesSum = 0.f;
+                    lightContrPseudoCdf[0] = 0.f;
+                    for (uint32_t i = 0; i < lightCount; i++)
+                    {
+                        const AbstractLight* light = mScene.GetLightPtr(i);
+                        PG3_DEBUG_ASSERT(light != 0);
+
+                        // Choose a random sample on the light
+                        estimatesSum +=
+                            //1.f; // debug
+                            light->EstimateContribution(surfPt, surfFrame, mRng);
+                        lightContrPseudoCdf[i + 1] = estimatesSum;
+                    }
+
+                    if (estimatesSum > 0.f)
+                    {
+                        // Pick a light
+                        const float rndVal = mRng.GetFloat() * estimatesSum;
+                        uint32_t lightId = 0;
+                        // TODO: Use std::find to find the chosen light?
+                        for (; (rndVal > lightContrPseudoCdf[lightId + 1]) && (lightId < lightCount); lightId++);
+                        chosenLightId    = (int32_t)lightId;
+                        lightProbability = 
+                            (lightContrPseudoCdf[lightId + 1] - lightContrPseudoCdf[lightId]) / estimatesSum;
+                    }
+                    else
+                        chosenLightId = -1;
+                }
+
+                // Sample the chosen light
+                if (chosenLightId >= 0)
+                {
+                    // Choose a random sample on the light
+                    const AbstractLight* light = mScene.GetLightPtr(chosenLightId);
+                    PG3_DEBUG_ASSERT(light != 0);
+                    LightSample lightSample;
+                    light->SampleIllumination(surfPt, surfFrame, mRng, lightSample);
+                    
+                    if (lightSample.mSample.Max() > 0.)
+                    {
+                        // The illumination sample already contains 
+                        // (outgoing radiance * geometric component) / PDF
+                        // All what's left is to evaluate visibility and multiply by BRDF
+                        if (!mScene.Occluded(surfPt, lightSample.mWig, lightSample.mDist))
+                            LoDirect += 
+                                  lightSample.mSample 
+                                * mat.EvalBrdf(surfFrame.ToLocal(lightSample.mWig), wol)
+                                / lightProbability;
                     }
                 }
 
@@ -91,7 +171,7 @@ public:
                 Vec3f wil;
                 BRDFSample brdfSample;
                 mat.SampleBrdf(mRng, wol, brdfSample, wil);
-                Vec3f wig = frame.ToWorld(wil);
+                Vec3f wig = surfFrame.ToWorld(wil);
 
                 if (brdfSample.mSample.Max() > 0.)
                 {

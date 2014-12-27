@@ -563,8 +563,8 @@ public:
         {
             //*oAcronym = std::to_string(aEnvironmentMapType);
             std::ostringstream outStream;
-            outStream.width(2);
-            outStream.fill('0');
+            //outStream.width(2);
+            //outStream.fill('0');
             outStream << aEnvironmentMapType;
             *oAcronym = outStream.str();
         }
@@ -655,10 +655,10 @@ public:
             name    += "point light";
             acronym += "p";
         }
-        else if ((aBoxMask & kLightEnv) == kLightEnv)
+        
+        if ((aBoxMask & kLightEnv) == kLightEnv)
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
-
             name    += "env. light";
             acronym += "e";
 
@@ -728,7 +728,6 @@ public:
     std::vector<AbstractLight*> mLights;
     std::map<int32_t, int32_t>  mMaterial2Light;
     BackgroundLight*            mBackground;
-    // SceneSphere           mSceneSphere;
 
     std::string           mSceneName;
     std::string           mSceneAcronym;

@@ -115,7 +115,7 @@ public:
         //PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
         // Get the segment's constant PDF
-        oPdf = mPdf[oSegm];
+        oPdf = mPdf[oSegm]; // TODO: Use cdf for pdf computations? May save non-local memory accesses
         PG3_DEBUG_ASSERT(mPdf[oSegm] > 0);
 
         // Return $x\in{}[0,1]$ corresponding to sample

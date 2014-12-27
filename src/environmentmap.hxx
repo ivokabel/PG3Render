@@ -167,7 +167,7 @@ public:
     {
         PG3_DEBUG_ASSERT(!aDirection.IsZero());
 
-        const Vec3f normDir         = aDirection / aDirection.Length();
+        const Vec3f normDir         = aDirection / aDirection.Length(); // TODO: Is this really necessary
         const Vec2f uv              = Dir2LatLong(normDir);
         const SpectrumF radiance    = LookupRadiance(uv, aDoBilinFiltering);
 
@@ -180,6 +180,17 @@ public:
         //}
 
         return radiance;
+    }
+
+    float PdfW(const Vec3f &aDirection) const
+    {
+        PG3_DEBUG_ASSERT(mDistribution != NULL);
+
+        const Vec3f normDir = aDirection / aDirection.Length(); // TODO: Is this really necessary
+        const Vec2f uv      = Dir2LatLong(normDir);
+
+        //return mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv.y);
+        return mDistribution->Pdf(uv);
     }
 
 private:
