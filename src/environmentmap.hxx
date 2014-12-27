@@ -35,30 +35,30 @@ public:
 
     SpectrumF& ElementAt(uint32_t aX, uint32_t aY)
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
+        PG3_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
+        PG3_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
 
         return mData[mWidth*aY + aX];
     }
 
     const SpectrumF& ElementAt(uint32_t aX, uint32_t aY) const
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
+        PG3_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
+        PG3_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
 
         return mData[mWidth*aY + aX];
     }
 
     SpectrumF& ElementAt(uint32_t aIdx)
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
+        PG3_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
         return mData[aIdx];
     }
 
     const SpectrumF& ElementAt(uint32_t aIdx) const
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
+        PG3_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
         return mData[aIdx];
     }
@@ -122,7 +122,7 @@ public:
         float       *oSinMidTheta = NULL
         ) const
     {
-        PG3_DEBUG_ASSERT(mImage != NULL);
+        PG3_ASSERT(mImage != NULL);
 
         const Vec2ui imageSize = mImage->Size();
         Vec2f uv;
@@ -130,7 +130,7 @@ public:
         float pdfW;
 
         mDistribution->SampleContinuous(aSamples, uv, segm, &pdfW);
-        PG3_DEBUG_ASSERT(pdfW > 0.f);
+        PG3_ASSERT(pdfW > 0.f);
 
         const Vec3f direction = LatLong2Dir(uv);
 
@@ -165,7 +165,7 @@ public:
         bool         aDoBilinFiltering,
         float       *oPdfW = NULL) const
     {
-        PG3_DEBUG_ASSERT(!aDirection.IsZero());
+        PG3_ASSERT(!aDirection.IsZero());
 
         const Vec3f normDir         = aDirection / aDirection.Length(); // TODO: Is this really necessary
         const Vec2f uv              = Dir2LatLong(normDir);
@@ -184,7 +184,7 @@ public:
 
     float PdfW(const Vec3f &aDirection) const
     {
-        PG3_DEBUG_ASSERT(mDistribution != NULL);
+        PG3_ASSERT(mDistribution != NULL);
 
         const Vec3f normDir = aDirection / aDirection.Length(); // TODO: Is this really necessary
         const Vec2f uv      = Dir2LatLong(normDir);
@@ -198,7 +198,7 @@ private:
     InputImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
     {
         aRotate = FmodX(aRotate, 1.0f);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aRotate, 0.0f, 1.0f);
+        PG3_ASSERT_VAL_IN_RANGE(aRotate, 0.0f, 1.0f);
 
         Imf::RgbaInputFile file(aFilename, 1);
         Imath::Box2i dw = file.dataWindow();
@@ -271,8 +271,8 @@ private:
     PG3_PROFILING_NOINLINE
     Vec3f LatLong2Dir(const Vec2f &uv) const
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.x, 0.f, 1.f);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.y, 0.f, 1.f);
+        PG3_ASSERT_VAL_IN_RANGE(uv.x, 0.f, 1.f);
+        PG3_ASSERT_VAL_IN_RANGE(uv.y, 0.f, 1.f);
 
         const float phi   = -(uv.x - 0.5f) * 2 * PI_F; // we rotate in the opposite direction
         const float theta = uv.y * PI_F;
@@ -286,7 +286,7 @@ private:
     PG3_PROFILING_NOINLINE
     Vec2f Dir2LatLong(const Vec3f &aDirection) const
     {
-        PG3_DEBUG_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
+        PG3_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
 
         // minus sign because we rotate in the opposite direction
         // fast_atan2f is 50 times faster than atan2f at the price of slightly horizontally distorted background
@@ -307,9 +307,9 @@ private:
     // Returns radiance for the given segment of the image
     SpectrumF LookupRadiance(const Vec2ui &aSegm) const
     {
-        PG3_DEBUG_ASSERT(mImage != NULL);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aSegm.x, 0u, mImage->Width());
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aSegm.y, 0u, mImage->Height());
+        PG3_ASSERT(mImage != NULL);
+        PG3_ASSERT_VAL_IN_RANGE(aSegm.x, 0u, mImage->Width());
+        PG3_ASSERT_VAL_IN_RANGE(aSegm.y, 0u, mImage->Height());
 
         return mImage->ElementAt(aSegm.x, aSegm.y);
     }
@@ -318,9 +318,9 @@ private:
     PG3_PROFILING_NOINLINE 
     SpectrumF LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
     {
-        PG3_DEBUG_ASSERT(mImage != NULL);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.x, 0.0f, 1.0f);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(uv.y, 0.0f, 1.0f);
+        PG3_ASSERT(mImage != NULL);
+        PG3_ASSERT_VAL_IN_RANGE(uv.x, 0.0f, 1.0f);
+        PG3_ASSERT_VAL_IN_RANGE(uv.y, 0.0f, 1.0f);
 
         const Vec2ui imageSize = mImage->Size();
 
@@ -363,15 +363,15 @@ private:
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
     float SinMidTheta(const InputImage* aImage, const uint32_t aSegmY) const
     {
-        PG3_DEBUG_ASSERT(aImage != NULL);
+        PG3_ASSERT(aImage != NULL);
 
         const uint32_t height = aImage->Height();
 
-        PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(aSegmY, height);
+        PG3_ASSERT_FLOAT_LESS_THAN(aSegmY, height);
 
         const float result = sinf(PI_F * (aSegmY + 0.5f) / height);
 
-        PG3_DEBUG_ASSERT(result > 0.f && result <= 1.f);
+        PG3_ASSERT(result > 0.f && result <= 1.f);
 
         return result;
     }
@@ -379,9 +379,9 @@ private:
     // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
     float SinMidTheta(const InputImage* aImage, const float aV) const
     {
-        PG3_DEBUG_ASSERT(aImage != NULL);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aV, 0.0f, 1.0f);
-        PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(aV, 1.0f);
+        PG3_ASSERT(aImage != NULL);
+        PG3_ASSERT_VAL_IN_RANGE(aV, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_LESS_THAN(aV, 1.0f);
 
         const uint32_t height   = aImage->Height();
         const uint32_t segment  = std::min((uint32_t)(aV * height), height - 1u);

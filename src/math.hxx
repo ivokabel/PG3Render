@@ -21,7 +21,7 @@ float FmodX(float x, float y)
     if (result < 0.0f)
         result += y;
 
-    PG3_DEBUG_ASSERT_VAL_IN_RANGE(result, 0.0f, y);
+    PG3_ASSERT_VAL_IN_RANGE(result, 0.0f, y);
 
     return result;
 }
@@ -34,7 +34,7 @@ typedef unsigned uint;
 template <typename T>
 inline T Clamp(const T& n, const T& lower, const T& upper)
 {
-    PG3_DEBUG_ASSERT(lower <= upper);
+    PG3_ASSERT(lower <= upper);
     return std::max(lower, std::min(n, upper));
 }
 
@@ -118,7 +118,7 @@ public:
     //    Vec2Base<T> res;
     //    for (uint32_t i = 0; i < 2; i++)
     //    {
-    //        PG3_DEBUG_ASSERT(lower.Get(i) <= upper.Get(i));
+    //        PG3_ASSERT(lower.Get(i) <= upper.Get(i));
     //        res.Get(i) = std::max(lower.Get(i), std::min(val.Get(i), upper.Get(i)));
     //    }
     //    return res;

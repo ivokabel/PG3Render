@@ -69,7 +69,7 @@ public:
                 for (uint32_t i=0; i<mScene.GetLightCount(); i++)
                 {
                     const AbstractLight* light = mScene.GetLightPtr(i);
-                    PG3_DEBUG_ASSERT(light != 0);
+                    PG3_ASSERT(light != 0);
 
                     // Choose a random sample on the light
                     LightSample lightSample;
@@ -119,7 +119,7 @@ public:
                     for (uint32_t i = 0; i < lightCount; i++)
                     {
                         const AbstractLight* light = mScene.GetLightPtr(i);
-                        PG3_DEBUG_ASSERT(light != 0);
+                        PG3_ASSERT(light != 0);
 
                         // Choose a random sample on the light
                         estimatesSum +=
@@ -148,7 +148,7 @@ public:
                 {
                     // Choose a random sample on the light
                     const AbstractLight* light = mScene.GetLightPtr(chosenLightId);
-                    PG3_DEBUG_ASSERT(light != 0);
+                    PG3_ASSERT(light != 0);
                     LightSample lightSample;
                     light->SampleIllumination(surfPt, surfFrame, mRng, lightSample);
                     

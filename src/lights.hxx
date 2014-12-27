@@ -112,16 +112,16 @@ public:
             + baryCoords.y * P2
             + (1.0f - baryCoords.x - baryCoords.y) * mP0;
 
-#ifdef PG3_DEBUG_ASSERT_ENABLED
+#ifdef PG3_ASSERT_ENABLED
         // Weak sanity check: the point must be within the min-max boundaries of the triangle vertices
         const float minX = std::min(std::min(mP0.x, P1.x), P2.x);
         const float maxX = std::max(std::max(mP0.x, P1.x), P2.x);
         const float minY = std::min(std::min(mP0.y, P1.y), P2.y);
         const float maxY = std::max(std::max(mP0.y, P1.y), P2.y);
-        PG3_DEBUG_ASSERT(samplePoint.x >= minX);
-        PG3_DEBUG_ASSERT(samplePoint.x <= maxX);
-        PG3_DEBUG_ASSERT(samplePoint.y >= minY);
-        PG3_DEBUG_ASSERT(samplePoint.y <= maxY);
+        PG3_ASSERT(samplePoint.x >= minX);
+        PG3_ASSERT(samplePoint.x <= maxX);
+        PG3_ASSERT(samplePoint.y >= minY);
+        PG3_ASSERT(samplePoint.y <= maxY);
 #endif
 
         ComputeSample(aSurfPt, samplePoint, aFrame, oSample);

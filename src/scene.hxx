@@ -79,7 +79,7 @@ public:
 
     const AbstractLight* GetLightPtr(int32_t aLightIdx) const
     {
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(aLightIdx, 0, (int32_t)(mLights.size() - 1));
+        PG3_ASSERT_VAL_IN_RANGE(aLightIdx, 0, (int32_t)(mLights.size() - 1));
 
         aLightIdx = std::min<int32_t>(aLightIdx, (int32_t)mLights.size()-1);
         return mLights[aLightIdx];

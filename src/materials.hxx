@@ -118,7 +118,7 @@ public:
             float pdf;
             oWil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
             brdfSample.mThetaInCos = oWil.z;
-            PG3_DEBUG_ASSERT_VAL_NONNEGATIVE(brdfSample.mThetaInCos);
+            PG3_ASSERT_VAL_NONNEGATIVE(brdfSample.mThetaInCos);
 
             // Compute the two-step MC estimator sample
             brdfSample.mSample =

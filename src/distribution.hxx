@@ -43,7 +43,7 @@ public:
     Distribution1D(const float * const aFunc, uint32_t aCount) :
         mCount(aCount)
     {
-        PG3_DEBUG_ASSERT(aCount > 0);
+        PG3_ASSERT(aCount > 0);
 
         mPdf = new float[mCount];
         mCdf = new float[mCount+1];
@@ -53,7 +53,7 @@ public:
         mCdf[0] = 0.;
         for (uint32_t i = 1; i < mCount + 1; ++i)
         {
-            PG3_DEBUG_ASSERT_VAL_NONNEGATIVE(aFunc[i - 1]);
+            PG3_ASSERT_VAL_NONNEGATIVE(aFunc[i - 1]);
             mCdf[i] = mCdf[i - 1] + aFunc[i - 1] / mCount; // 1/mCount = size of a segment
         }
 
@@ -76,7 +76,7 @@ public:
                 mCdf[i]     /= mFuncIntegral;
             }
         }
-        PG3_DEBUG_ASSERT_FLOAT_EQUAL(mCdf[mCount], 1.0f, 1e-7F);
+        PG3_ASSERT_FLOAT_EQUAL(mCdf[mCount], 1.0f, 1e-7F);
     }
 
     ~Distribution1D()
@@ -92,31 +92,31 @@ public:
         float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
         oSegm = Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
 
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(oSegm, 0, mCount - 1);
-        PG3_DEBUG_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
+        PG3_ASSERT_VAL_IN_RANGE(oSegm, 0, mCount - 1);
+        PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
 
         // Fix the case when func ends with zeros
         if (mCdf[oSegm] == mCdf[oSegm + 1])
         {
-            PG3_DEBUG_ASSERT(aRndSample == 1.0f);
+            PG3_ASSERT(aRndSample == 1.0f);
 
             do { 
                 oSegm--; 
             } while (mCdf[oSegm] == mCdf[oSegm + 1] && oSegm > 0);
 
-            PG3_DEBUG_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
+            PG3_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
         }
 
         // Compute offset within CDF segment
         float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
-        PG3_DEBUG_ASSERT_VALID_FLOAT(offset);
-        PG3_DEBUG_ASSERT_VAL_IN_RANGE(offset, 0.0f, 1.0f);
+        PG3_ASSERT_VALID_FLOAT(offset);
+        PG3_ASSERT_VAL_IN_RANGE(offset, 0.0f, 1.0f);
         // since the float random generator generates 1.0 from time to time, we need to ignore this one
-        //PG3_DEBUG_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
+        //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
         // Get the segment's constant PDF
         oPdf = mPdf[oSegm]; // TODO: Use cdf for pdf computations? May save non-local memory accesses
-        PG3_DEBUG_ASSERT(mPdf[oSegm] > 0);
+        PG3_ASSERT(mPdf[oSegm] > 0);
 
         // Return $x\in{}[0,1]$ corresponding to sample
         oX = (oSegm + offset) / mCount;
@@ -129,8 +129,8 @@ public:
     //    float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
     //    int32_t segment = std::max(0, int32_t(ptr-mCdf-1));
 
-    //    PG3_DEBUG_ASSERT(segment < mCount);
-    //    PG3_DEBUG_ASSERT(aRndSample >= mCdf[segment] && aRndSample < mCdf[segment+1]);
+    //    PG3_ASSERT(segment < mCount);
+    //    PG3_ASSERT(aRndSample >= mCdf[segment] && aRndSample < mCdf[segment+1]);
 
     //    if (oProbability)
     //        // pdf * size of segment

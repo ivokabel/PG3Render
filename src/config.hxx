@@ -168,10 +168,11 @@ void PrintInfo(const Config &config)
         "%d threads, "
 #if !defined _DEBUG
         "release"
-#elif defined PG3_DEBUG_ASSERT_ENABLED
-        "debug with assertions"
 #else
         "debug"
+#endif
+#ifdef PG3_ASSERT_ENABLED
+        " with assertions"
 #endif
         "\n",
         config.mNumThreads
