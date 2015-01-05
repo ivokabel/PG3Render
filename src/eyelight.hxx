@@ -19,8 +19,12 @@ public:
         AbstractRenderer(aScene), mRng(aSeed)
     {}
 
-    virtual void RunIteration(uint32_t aIteration)
+    virtual void RunIteration(
+        const Algorithm     aAlgorithm,
+        uint32_t            aIteration)
     {
+        aAlgorithm; // unused param
+
         const int32_t resX = int32_t(mScene.mCamera.mResolution.x);
         const int32_t resY = int32_t(mScene.mCamera.mResolution.y);
 

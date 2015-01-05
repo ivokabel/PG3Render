@@ -8,8 +8,11 @@
 class BRDFSample
 {
 public:
-    SpectrumF   mSample;    // (BRDF component attenuation * cosine) / (PDF * component probability)
-    float       mThetaInCos;
+    SpectrumF   mSample;            // BRDF component attenuation * cosine theta_in
+
+    float       mPdfW;              // Angular PDF of the sample
+    float       mCompProbability;   // Probability of picking the additive BRDF component which generated this sample
+    Vec3f       mWil;               // Chosen incoming direction
 };
 
 class Material
@@ -86,8 +89,7 @@ public:
     void SampleBrdf(
         Rng         &aRng,
         const Vec3f &aWol,
-        BRDFSample  &brdfSample,
-        Vec3f       &oWil
+        BRDFSample  &oBrdfSample
         ) const
     {
         // Compute scalar reflectances
@@ -100,9 +102,12 @@ public:
                                            // (part of the glossy lobe can be under the surface).
         const float totalReflectance = (diffuseReflectance + glossyReflectance);
 
-        if (totalReflectance < 0.0001) // TODO
+        if (totalReflectance < 1E-5) // TODO
         {
-            brdfSample.mSample.MakeZero();
+            oBrdfSample.mSample.MakeZero();
+            oBrdfSample.mWil                = Vec3f(0.f, 0.f, 1.f);
+            oBrdfSample.mPdfW               = INV_PI_F; // FIXME: Is this OK?
+            oBrdfSample.mCompProbability    = 1.f;
             return;
         }
 
@@ -112,46 +117,38 @@ public:
         {
             // Diffuse component
 
-            const float componentProbability = diffuseReflectance / totalReflectance;
+            oBrdfSample.mCompProbability = diffuseReflectance / totalReflectance;
 
             // Cosine-weighted sampling
-            float pdf;
-            oWil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
-            brdfSample.mThetaInCos = oWil.z;
-            PG3_ASSERT_VAL_NONNEGATIVE(brdfSample.mThetaInCos);
+            oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
+            PG3_ASSERT_VAL_NONNEGATIVE(oBrdfSample.mWil.z);
 
-            // Compute the two-step MC estimator sample
-            brdfSample.mSample =
-                  (EvalDiffuseComponent() * brdfSample.mThetaInCos)
-                / (pdf * componentProbability);
+            const float thetaCosIn = oBrdfSample.mWil.z;
+            oBrdfSample.mSample = EvalDiffuseComponent() * thetaCosIn;
         }
         else
         {
             // Specular component
 
-            const float componentProbability = 1.f - diffuseReflectance / totalReflectance;
+            oBrdfSample.mCompProbability = 1.f - diffuseReflectance / totalReflectance;
 
-            // Sample phong lobe in canonical coordinate system (around normal)
-            float pdf;
-            const Vec3f canonicalSample = SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent, &pdf);
+            // Sample phong lobe in the canonical coordinate system (around normal)
+            const Vec3f canonicalSample = 
+                SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent, &oBrdfSample.mPdfW);
 
             // Rotate sample to mirror-reflection
             Frame lobeFrame;
             const Vec3f wrl = ReflectLocal(aWol);
             lobeFrame.SetFromZ(wrl);
-            oWil = lobeFrame.ToWorld(canonicalSample);
-            brdfSample.mThetaInCos = std::max(oWil.z, 0.f);
+            oBrdfSample.mWil = lobeFrame.ToWorld(canonicalSample);
 
-            if (brdfSample.mThetaInCos > 0.0f)
-            {
-                // Above surface: Evaluate the Phong lobe and compute the two-step MC estimator sample
-                brdfSample.mSample =
-                      (EvalGlossyComponent(oWil, aWol) * brdfSample.mThetaInCos)
-                    / (pdf * componentProbability);
-            }
+            const float thetaCosIn = oBrdfSample.mWil.z;
+            if (thetaCosIn > 0.0f)
+                // Above surface: Evaluate the Phong lobe
+                oBrdfSample.mSample = EvalGlossyComponent(oBrdfSample.mWil, aWol) * thetaCosIn;
             else
                 // Below surface: The sample is valid, it just has zero contribution
-                brdfSample.mSample.MakeZero();
+                oBrdfSample.mSample.MakeZero();
         }
     }
 

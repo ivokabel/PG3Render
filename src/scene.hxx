@@ -561,20 +561,20 @@ public:
 
         if (oAcronym)
         {
-            //*oAcronym = std::to_string(aEnvironmentMapType);
-            std::ostringstream outStream;
+            *oAcronym = std::to_string(aEnvironmentMapType);
+            //std::ostringstream outStream;
             //outStream.width(2);
             //outStream.fill('0');
-            outStream << aEnvironmentMapType;
-            *oAcronym = outStream.str();
+            //outStream << aEnvironmentMapType;
+            //*oAcronym = outStream.str();
         }
 
         return oName;
     }
 
     static std::string GetSceneName(
-        uint        aBoxMask,
-        uint        aEnvironmentMapType = kEMInvalid,
+        uint         aBoxMask,
+        uint         aEnvironmentMapType = kEMInvalid,
         std::string *oAcronym = NULL)
     {
         std::string name;

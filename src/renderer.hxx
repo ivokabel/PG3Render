@@ -6,6 +6,17 @@
 #include "framebuffer.hxx"
 #include "types.hxx"
 
+enum Algorithm
+{
+    kEyeLight,
+    kDirectIllumBRDFSampling,
+    kDirectIllumLightSamplingAll,
+    kDirectIllumLightSamplingSingle,
+    kDirectIllumMIS,
+    kPathTracing,
+    kAlgorithmCount
+};
+
 class AbstractRenderer
 {
 public:
@@ -27,7 +38,9 @@ public:
     AbstractRenderer & operator=(const AbstractRenderer&) = delete;
     AbstractRenderer(const AbstractRenderer&) = delete;
 
-    virtual void RunIteration(uint32_t aIteration) = 0;
+    virtual void RunIteration(
+        const Algorithm     aAlgorithm,
+        uint32_t            aIteration) = 0;
 
     void GetFramebuffer(Framebuffer& oFramebuffer)
     {

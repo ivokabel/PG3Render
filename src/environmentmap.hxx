@@ -172,12 +172,13 @@ public:
         const SpectrumF radiance    = LookupRadiance(uv, aDoBilinFiltering);
 
         oPdfW; // unused parameter
-        //if (oPdfW)
-        //{
-        //    *oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv[1]);
-        //    if (*oPdfW == 0.0f)
-        //        radiance = SpectrumF(0);
-        //}
+        if (oPdfW)
+        {
+            PG3_FATAL_ERROR("Compute pdf of lookup");
+            //*oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv[1]);
+            //if (*oPdfW == 0.0f)
+            //    radiance = SpectrumF(0);
+        }
 
         return radiance;
     }

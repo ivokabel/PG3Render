@@ -48,7 +48,7 @@ void pg3_exit();
     }
 
 // Uncomment this to activate all asserts in the code
-#define PG3_ASSERT_ENABLED
+//#define PG3_ASSERT_ENABLED
 
 #ifdef PG3_ASSERT_ENABLED
     #define PG3_ASSERT(__expr) \

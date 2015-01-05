@@ -13,6 +13,7 @@
 #include "eyelight.hxx"
 #include "pathtracer.hxx"
 #include "types.hxx"
+#include "hardsettings.hxx"
 
 #include <omp.h>
 #include <string>
@@ -22,22 +23,19 @@
 // Renderer configuration, holds algorithm, scene, and all other settings
 struct Config
 {
-    enum Algorithm
-    {
-        kEyeLight,
-        kPathTracing,
-        kAlgorithmCount
-    };
-
     static const char* GetName(Algorithm aAlgorithm)
     {
-        static const char* algorithmNames[7] =
+        static const char* algorithmNames[kAlgorithmCount] =
         {
             "eye light",
+            "direct illumination - BRDF sampling",
+            "direct illumination - light sampling (all)",
+            "direct illumination - light sampling (single sample)",
+            "direct illumination - multiple importance sampling",
             "path tracing"
         };
 
-        if (aAlgorithm < 0 || aAlgorithm > 1)
+        if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
             return "unknown algorithm";
 
         return algorithmNames[aAlgorithm];
@@ -45,10 +43,11 @@ struct Config
 
     static const char* GetAcronym(Algorithm aAlgorithm)
     {
-        static const char* algorithmNames[7] = { "el", "pt" };
+        static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "pt" };
 
-        if (aAlgorithm < 0 || aAlgorithm > 1)
+        if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
             return "unknown";
+
         return algorithmNames[aAlgorithm];
     }
 
@@ -75,9 +74,13 @@ AbstractRenderer* CreateRenderer(
 
     switch(aConfig.mAlgorithm)
     {
-    case Config::kEyeLight:
+    case kEyeLight:
         return new EyeLight(scene, aSeed);
-    case Config::kPathTracing:
+    case kDirectIllumLightSamplingAll:
+    case kDirectIllumLightSamplingSingle:
+    case kDirectIllumBRDFSampling:
+    case kDirectIllumMIS:
+    case kPathTracing:
         return new PathTracer(scene, aSeed);
     default:
         PG3_FATAL_ERROR("Unknown algorithm!!");
@@ -121,21 +124,43 @@ uint g_SceneConfigs[] =
 
 std::string DefaultFilename(
     const uint              aSceneConfig,
-    const Config          & aConfig
+    const Config          & aConfig,
+    std::string             aOutputNameTrail
     )
 {
     aSceneConfig; // unused parameter
 
     std::string filename;
 
-    // We use scene acronym
+    // Scene acronym
     filename += aConfig.mScene->mSceneAcronym;
 
-    // We add acronym of the used algorithm
+    // Acronym of the used algorithm
     filename += "_";
     filename += Config::GetAcronym(aConfig.mAlgorithm);
 
-    // And it will be written in the chosen format
+    // Debug info
+#ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
+    if (   (aConfig.mAlgorithm >= kDirectIllumLightSamplingAll)
+        && (aConfig.mAlgorithm <= kDirectIllumMIS))
+    {
+        filename += "_emcw";
+    }
+#endif
+
+    // Sample count
+    filename += "_";
+    filename += std::to_string(aConfig.mIterations);
+    filename += "s";
+
+    // Custom trail text
+    if (!aOutputNameTrail.empty())
+    {
+        filename += "_";
+        filename += aOutputNameTrail;
+    }
+
+    // The chosen otuput format extension
     filename += "." + aConfig.mDefOutputExtension;
 
     return filename;
@@ -187,27 +212,29 @@ void PrintHelp(const char *argv[])
 {
     printf("\n");
     printf(
-        "Usage: %s [ -s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | -e <def_output_ext> | -o <output_name> | -j <threads_count> ]\n\n", 
+        "Usage: %s [ -s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | -e <def_output_ext> | -o <output_name> | -ot <output_trail> | -j <threads_count> ]\n\n", 
         argv[0]);
 
     printf("    -s  Selects the scene (default 0):\n");
     for (int32_t i = 0; i < SizeOfArray(g_SceneConfigs); i++)
-        printf("          %2d   %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
+        printf("          %2d    %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
 
     printf("    -em Selects the environment map type (default 0; ignored if the scene doesn't use an environment map):\n");
     for (int32_t i = 0; i < Scene::kEMCount; i++)
-        printf("          %2d   %s\n", i, Scene::GetEnvMapName(i).c_str());
+        printf("          %2d    %s\n", i, Scene::GetEnvMapName(i).c_str());
 
     printf("    -a  Selects the rendering algorithm (default pt):\n");
-    for (int32_t i = 0; i < (int32_t)Config::kAlgorithmCount; i++)
-        printf("          %-3s  %s\n",
-            Config::GetAcronym(Config::Algorithm(i)),
-            Config::GetName(Config::Algorithm(i)));
+    for (int32_t i = 0; i < (int32_t)kAlgorithmCount; i++)
+        printf("          %-4s  %s\n",
+            Config::GetAcronym(Algorithm(i)),
+            Config::GetName(Algorithm(i)));
 
     printf("    -t  Number of seconds to run the algorithm\n");
     printf("    -i  Number of iterations to run the algorithm (default 1)\n");
     printf("    -e  Extension of the default output file: bmp or hdr (default bmp)\n");
     printf("    -o  User specified output name, with extension .bmp or .hdr (default .bmp)\n");
+    printf("    -ot Trail text to be added at the end the output file name\n");
+    printf("        (only used to alter a default filename; '_' is pasted automatically before the trail).\n");
     printf("    -j  Number of threads (\"jobs\") to be used\n");
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
 }
@@ -217,7 +244,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
     oConfig.mScene              = NULL;                     // [cmd] When NULL, renderer will not run
-    oConfig.mAlgorithm          = Config::kAlgorithmCount;  // [cmd]
+    oConfig.mAlgorithm          = kAlgorithmCount;          // [cmd]
     oConfig.mIterations         = 1;                        // [cmd]
     oConfig.mMaxTime            = -1.f;                     // [cmd]
     oConfig.mDefOutputExtension = "bmp";                    // [cmd]
@@ -231,6 +258,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
+    std::string outputNameTrail;
 
     // Load arguments
     for (int32_t i=1; i<argc; i++)
@@ -315,11 +343,11 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             }
 
             std::string alg(argv[i]);
-            for (int32_t i=0; i<Config::kAlgorithmCount; i++)
-                if (alg == Config::GetAcronym(Config::Algorithm(i)))
-                    oConfig.mAlgorithm = Config::Algorithm(i);
+            for (int32_t i=0; i<kAlgorithmCount; i++)
+                if (alg == Config::GetAcronym(Algorithm(i)))
+                    oConfig.mAlgorithm = Algorithm(i);
 
-            if (oConfig.mAlgorithm == Config::kAlgorithmCount)
+            if (oConfig.mAlgorithm == kAlgorithmCount)
             {
                 printf("Invalid <algorithm> argument, please see help (-h)\n");
                 return;
@@ -400,13 +428,27 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 return;
             }
         }
+        else if (arg == "-ot") // output file name trail text
+        {
+            if (++i == argc)
+            {
+                printf("Missing <output_trail> argument, please see help (-h)\n");
+                return;
+            }
+
+            outputNameTrail = argv[i];
+
+            if (outputNameTrail.length() == 0)
+            {
+                printf("Invalid <output_trail> argument, please see help (-h)\n");
+                return;
+            }
+        }
     }
 
     // Check algorithm was selected
-    if (oConfig.mAlgorithm == Config::kAlgorithmCount)
-    {
-        oConfig.mAlgorithm = Config::kPathTracing;
-    }
+    if (oConfig.mAlgorithm == kAlgorithmCount)
+        oConfig.mAlgorithm = kPathTracing;
 
     // Load scene
     Scene *scene = new Scene;
@@ -417,7 +459,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     // If no output name is chosen, create a default one
     if (oConfig.mOutputName.length() == 0)
     {
-        oConfig.mOutputName = DefaultFilename(g_SceneConfigs[sceneID], oConfig);
+        oConfig.mOutputName = DefaultFilename(g_SceneConfigs[sceneID], oConfig, outputNameTrail);
     }
 
     // Check if output name has valid extension (.bmp or .hdr) and if not add .bmp

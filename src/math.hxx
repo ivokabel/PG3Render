@@ -9,6 +9,8 @@
 #define INV_PI_F    (1.f / PI_F)
 #define PI_DIV_2_F  1.5707963f
 
+#define INFINITY_F  (std::numeric_limits<float>::infinity())
+
 template<typename T>
 T Sqr(const T& a)
 {

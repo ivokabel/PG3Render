@@ -15,9 +15,14 @@
 class LightSample
 {
 public:
-    // containts (outgoing radiance * geometric component) / PDF or its equivalent (e.g. for point lights)
+    // (outgoing radiance * cosine theta_in) or it's equivalent (e.g. for point lights)
+    // Note that this structure is designed for the angular version of the rendering equation 
+    // to allow easy combination of multiple sampling strategies in multiple-importance schema.
     SpectrumF   mSample;
 
+    float       mPdfW;              // Angular PDF. Equals infinity for point lights.
+    float       mLightProbability;  // Probability of picking the light source which generated this sample
+                                    // Should equal 1.0 if there's just one light source in the scene
     Vec3f       mWig;
     float       mDist;
 };
@@ -28,7 +33,7 @@ class AbstractLight
 public:
 
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
-    // point on the light source surface it computes: (outgoing radiance * geometric component) / PDF
+    // point on the light source surface it computes: outgoing radiance * geometric component
     virtual void SampleIllumination(
         const Vec3f &aSurfPt, 
         const Frame &aFrame, 
@@ -152,9 +157,9 @@ public:
         ComputeSample(aSurfPt, P1,  aFrame, sample1);
         ComputeSample(aSurfPt, P2,  aFrame, sample2);
         return
-            (   sample0.mSample.Luminance()
-              + sample1.mSample.Luminance()
-              + sample2.mSample.Luminance())
+            (   sample0.mSample.Luminance() / sample0.mPdfW
+              + sample1.mSample.Luminance() / sample1.mPdfW
+              + sample2.mSample.Luminance() / sample2.mPdfW)
             / 3.f;
     }
 
@@ -166,25 +171,26 @@ private:
         LightSample &oSample
         ) const
     {
-        // Direction, distance
-        oSample.mWig         = aSamplePt - aSurfPt;
-        const float distSqr  = oSample.mWig.LenSqr();
-        oSample.mDist        = sqrt(distSqr);
-        oSample.mWig        /= oSample.mDist;
-
-        // Prepare geometric component: (out cosine * in cosine) / distance^2
+        oSample.mWig = aSamplePt - aSurfPt;
+        const float distSqr = oSample.mWig.LenSqr();
+        oSample.mDist = sqrt(distSqr);
+        oSample.mWig /= oSample.mDist;
         const float cosThetaOut = -Dot(mFrame.mZ, oSample.mWig); // for two-sided light use absf()
-        const float cosThetaIn  =  Dot(aSurfFrame.mZ, oSample.mWig);
+        const float cosThetaIn = Dot(aSurfFrame.mZ, oSample.mWig);
 
-        // Compute "radiance * geometric component / PDF"
-        if ((cosThetaIn <= 0) || (cosThetaOut <= 0))
-            oSample.mSample.MakeZero();
+        if ((cosThetaIn > 0.f) && (cosThetaOut > 0.f))
+            // Planar version: BRDF * Li * ((cos_in * cos_out) / dist^2)
+            // Angular version:
+            oSample.mSample = mRadiance * cosThetaIn;
         else
-        {
-            const float geomComp = (cosThetaIn * cosThetaOut) / distSqr;
-            const float invPDF   = mArea;
-            oSample.mSample = mRadiance * geomComp * invPDF;
-        }
+            oSample.mSample.MakeZero();
+
+        // Angular PDF. We use low epsilon boundary to avoid division by very small PDFs.
+        const float absCosThetaOut = abs(cosThetaOut);
+        oSample.mPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), EPS_DIST);
+        PG3_ASSERT(oSample.mPdfW >= EPS_DIST);
+
+        oSample.mLightProbability = 1.0f;
     }
 
 public:
@@ -231,7 +237,7 @@ public:
     {
         aRng; // unused param
 
-        SampleIllumination(aSurfPt, aFrame, oSample);
+        ComputeIllumination(aSurfPt, aFrame, oSample);
     }
 
     virtual float EstimateContribution(
@@ -243,29 +249,30 @@ public:
         aRng; // unused param
 
         LightSample sample;
-        SampleIllumination(aSurfPt, aFrame, sample);
+        ComputeIllumination(aSurfPt, aFrame, sample);
         return sample.mSample.Luminance();
     }
 
 private:
-    void SampleIllumination(
+    void ComputeIllumination(
         const Vec3f &aSurfPt,
         const Frame &aFrame,
         LightSample &oSample
         ) const
     {
-        oSample.mWig = mPosition - aSurfPt;
+        oSample.mWig  = mPosition - aSurfPt;
         const float distSqr = oSample.mWig.LenSqr();
         oSample.mDist = sqrt(distSqr);
-
         oSample.mWig /= oSample.mDist;
 
-        float cosTheta = Dot(aFrame.mZ, oSample.mWig);
-
-        if (cosTheta <= 0)
-            oSample.mSample.MakeZero();
-        else
+        const float cosTheta = Dot(aFrame.mZ, oSample.mWig);
+        if (cosTheta > 0.f)
             oSample.mSample = mIntensity * cosTheta / distSqr;
+        else
+            oSample.mSample.MakeZero();
+
+        oSample.mPdfW               = INFINITY_F;
+        oSample.mLightProbability   = 1.0f;
     }
 
 public:
@@ -330,28 +337,24 @@ public:
 
         if (mEnvMap != NULL)
         {
-            #ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
-
-                SampleCosHemisphere(aRng, aFrame, oSample, NULL);
-
+            #ifdef ENVMAP_USE_IMPORTANCE_SAMPLING
+                SampleEnvMap(aRng, aFrame, oSample);
             #else
-
-                float pdf;
-                SampleEnvMap(aRng, aFrame, oSample, pdf);
-
+                SampleCosHemisphere(aRng, aFrame, oSample);
             #endif
         }
         else
         {
+            // Constant environment illumination
             // Sample the hemisphere in the normal direction in a cosine-weighted fashion
-            float pdf;
-            Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &pdf);
+            Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
+            oSample.mLightProbability = 1.0f;
 
             oSample.mWig    = aFrame.ToWorld(wil);
             oSample.mDist   = std::numeric_limits<float>::max();
 
             const float cosThetaIn = wil.z;
-            oSample.mSample = mConstantRadiance * cosThetaIn / pdf;
+            oSample.mSample = mConstantRadiance * cosThetaIn;
         }
     }
 
@@ -377,14 +380,14 @@ public:
             {
                 // Strategy 1: Sample the hemisphere in the cosine-weighted fashion
                 LightSample sample1;
-                float pdf1Cos;
-                SampleCosHemisphere(aRng, aFrame, sample1, &pdf1Cos, false);
-                const float pdf1EM = EMPdfW(sample1.mWig);
+                SampleCosHemisphere(aRng, aFrame, sample1);
+                const float pdf1Cos = sample1.mPdfW;
+                const float pdf1EM  = EMPdfW(sample1.mWig);
 
                 // Strategy 2: Sample the environment map alone
                 LightSample sample2;
-                float pdf2EM;
-                SampleEnvMap(aRng, aFrame, sample2, pdf2EM, false);
+                SampleEnvMap(aRng, aFrame, sample2);
+                const float pdf2EM  = sample2.mPdfW;
                 const float pdf2Cos = CosHemispherePdfW(aFrame.Normal(), sample2.mWig);
 
                 // Combine the two samples via MIS (balanced heuristics)
@@ -412,47 +415,38 @@ public:
     void SampleCosHemisphere(
         Rng         &aRng,
         const Frame &aFrame,
-        LightSample &oSample,
-        float       *oPdf,
-        bool         aDivideByPdf = true) const
+        LightSample &oSample) const
     {
-        Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), oPdf);
+        Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
+        oSample.mLightProbability = 1.0f;
 
         oSample.mWig = aFrame.ToWorld(wil);
         oSample.mDist = std::numeric_limits<float>::max();
 
         const SpectrumF radiance = mEnvMap->Lookup(oSample.mWig, false);
-        if (aDivideByPdf)
-            oSample.mSample = radiance * PI_F /*instead of: cosThetaIn / oPdf = cos / (cos / Pi) = Pi*/;
-        else
-        {
-            const float cosThetaIn = wil.z;
-            oSample.mSample = radiance * cosThetaIn;
-        }
+        const float cosThetaIn   = wil.z;
+        oSample.mSample = radiance * cosThetaIn;
     }
 
     // Sample the environment map with the pdf proportional to luminance of the map
     void SampleEnvMap(
         Rng         &aRng,
         const Frame &aFrame,
-        LightSample &oSample,
-        float       &oPdf,
-        bool         aDivideByPdf = true) const
+        LightSample &oSample) const
     {
         PG3_ASSERT(mEnvMap != NULL);
 
         SpectrumF radiance;
 
         // Sample the environment map with the pdf proportional to luminance of the map
-        oSample.mWig = mEnvMap->Sample(aRng.GetVec2f(), oPdf, &radiance);
-        oSample.mDist = std::numeric_limits<float>::max();
+        oSample.mWig                = mEnvMap->Sample(aRng.GetVec2f(), oSample.mPdfW, &radiance);
+        oSample.mDist               = std::numeric_limits<float>::max();
+        oSample.mLightProbability   = 1.0f;
 
         const float cosThetaIn = Dot(oSample.mWig, aFrame.Normal());
         if (cosThetaIn <= 0.0f)
             // The sample is below the surface - no light contribution
             oSample.mSample.MakeZero();
-        else if (aDivideByPdf)
-            oSample.mSample = radiance * cosThetaIn / oPdf;
         else
             oSample.mSample = radiance * cosThetaIn;
     }

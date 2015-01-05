@@ -54,7 +54,7 @@ float render(
         while (clock() < startT + aConfig.mMaxTime*CLOCKS_PER_SEC)
         {
             int32_t threadId = omp_get_thread_num();
-            renderers[threadId]->RunIteration(iter);
+            renderers[threadId]->RunIteration(aConfig.mAlgorithm, iter);
 
 #pragma omp atomic
             iter++; // counts number of iterations
@@ -68,7 +68,7 @@ float render(
         for (iter=0; iter < aConfig.mIterations; iter++)
         {
             int32_t threadId = omp_get_thread_num();
-            renderers[threadId]->RunIteration(iter);
+            renderers[threadId]->RunIteration(aConfig.mAlgorithm, iter);
 
             // Print progress bar
 #pragma omp critical
