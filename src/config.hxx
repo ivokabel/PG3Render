@@ -107,15 +107,15 @@ uint g_SceneConfigs[] =
     Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
     // 8,9
-    Scene::kLightEnv | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse,
-    Scene::kLightEnv | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
+    Scene::kLightEnv     | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse,
+    Scene::kLightEnv     | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
 
-    // 10, 11, 12
+    // EM testing: 10, 11, 12
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse,
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresGlossy,
     Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
 
-    // 13, 14, 15, 16
+    // Multiple lights: 13, 14, 15, 16
                          Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightPoint | Scene::kLightBox |                    Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
@@ -150,8 +150,22 @@ std::string DefaultFilename(
 
     // Sample count
     filename += "_";
-    filename += std::to_string(aConfig.mIterations);
-    filename += "s";
+    if (aConfig.mMaxTime > 0)
+    {
+        //filename += std::to_string(aConfig.mMaxTime);
+        std::ostringstream outStream;
+        outStream.width(2);
+        outStream.fill('0');
+        outStream << aConfig.mMaxTime;
+        filename += outStream.str();
+
+        filename += "sec";
+    }
+    else
+    {
+        filename += std::to_string(aConfig.mIterations);
+        filename += "s";
+    }
 
     // Custom trail text
     if (!aOutputNameTrail.empty())

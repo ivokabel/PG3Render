@@ -5,6 +5,8 @@
 #include "rng.hxx"
 #include "types.hxx"
 
+#define MATERIAL_BLOCKER_EPSILON    1e-5
+
 class BRDFSample
 {
 public:
@@ -84,6 +86,7 @@ public:
         return diffuseComponent + glossyComponent;
     }
 
+    // Generates a radnom BRDF sample.
     // It first randomly chooses a BRDF component and then it samples a random direction 
     // for this component.
     void SampleBrdf(
@@ -92,7 +95,7 @@ public:
         BRDFSample  &oBrdfSample
         ) const
     {
-        // Compute scalar reflectances
+        // Compute scalar reflectances. Replicated in GetPdfW()!
         const float diffuseReflectance = GetDiffuseReflectance();
         const float cosThetaOut = std::max(aWol.z, 0.f);
         const float glossyReflectance = 
@@ -102,12 +105,12 @@ public:
                                            // (part of the glossy lobe can be under the surface).
         const float totalReflectance = (diffuseReflectance + glossyReflectance);
 
-        if (totalReflectance < 1E-5) // TODO
+        if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
         {
+            // Diffuse fallback for blocker materials
             oBrdfSample.mSample.MakeZero();
-            oBrdfSample.mWil                = Vec3f(0.f, 0.f, 1.f);
-            oBrdfSample.mPdfW               = INV_PI_F; // FIXME: Is this OK?
-            oBrdfSample.mCompProbability    = 1.f;
+            oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
+            oBrdfSample.mCompProbability = 1.f;
             return;
         }
 
@@ -132,13 +135,13 @@ public:
 
             oBrdfSample.mCompProbability = 1.f - diffuseReflectance / totalReflectance;
 
-            // Sample phong lobe in the canonical coordinate system (around normal)
+            // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample = 
                 SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent, &oBrdfSample.mPdfW);
 
             // Rotate sample to mirror-reflection
-            Frame lobeFrame;
             const Vec3f wrl = ReflectLocal(aWol);
+            Frame lobeFrame;
             lobeFrame.SetFromZ(wrl);
             oBrdfSample.mWil = lobeFrame.ToWorld(canonicalSample);
 
@@ -150,6 +153,39 @@ public:
                 // Below surface: The sample is valid, it just has zero contribution
                 oBrdfSample.mSample.MakeZero();
         }
+    }
+
+    float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const
+    {
+        // Compute scalar reflectances. Replicated in SampleBrdf()!
+        const float diffuseReflectance = GetDiffuseReflectance();
+        const float cosThetaOut = std::max(aWol.z, 0.f);
+        const float glossyReflectance =
+              GetGlossyReflectance()
+            * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
+                                           // Cheap, but relatively good approximation of actual glossy reflectance
+                                           // (part of the glossy lobe can be under the surface).
+        const float totalReflectance = (diffuseReflectance + glossyReflectance);
+
+        if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
+            // Diffuse fallback for blocker materials
+            return CosHemispherePdfW(aWil);
+
+        // Rotate the outgoing direction back to canonical lobe coordinates (lobe around normal)
+        const Vec3f wrl = ReflectLocal(aWol);
+        Frame lobeFrame;
+        lobeFrame.SetFromZ(wrl);
+        const Vec3f wiCanonical = lobeFrame.ToLocal(aWil);
+
+        // Sum up both components' PDFs
+        const float diffuseProbability = diffuseReflectance / totalReflectance;
+        const float glossyProbability  = 1.f - diffuseProbability;
+        return
+              diffuseProbability * CosHemispherePdfW(aWil)
+            + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
     SpectrumF   mDiffuseReflectance;

@@ -36,21 +36,25 @@ public:
     // point on the light source surface it computes: outgoing radiance * geometric component
     virtual void SampleIllumination(
         const Vec3f &aSurfPt, 
-        const Frame &aFrame, 
+        const Frame &aSurfFrame, 
         Rng         &aRng,
         LightSample &oSample
         ) const = 0;
 
     // Returns amount of outgoing radiance from the point in the direction
     virtual SpectrumF GetEmmision(
-        const Vec3f& aPt,
-        const Vec3f& aWol) const = 0;
+        const Vec3f &aLightPt,
+        const Vec3f &aWol,
+        const Vec3f &aSurfPt,
+              float *oPdfW,
+        const Frame &aSurfFrame
+        ) const = 0;
 
     // Returns an estimate of light contribution of this light-source to the given point.
     // Used for picking one of all available light sources when doing light-source sampling.
     virtual float EstimateContribution(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         Rng         &aRng
         ) const = 0;
 };
@@ -78,15 +82,29 @@ public:
         mFrame.SetFromZ(normal);
     }
 
-
     // Returns amount of outgoing radiance from the point in the direction
     virtual SpectrumF GetEmmision(
-        const Vec3f& aPt,
-        const Vec3f& aWol) const
+        const Vec3f &aLightPt,
+        const Vec3f &aWol,
+        const Vec3f &aSurfPt,
+              float *oPdfW,
+        const Frame &aSurfFrame
+        ) const
     {
-        aPt; // unused parameter
+        aSurfFrame; // unused param
 
         // We don't check the point since we expect it to be within the light surface
+
+        if (oPdfW != NULL)
+        {
+            // Angular PDF. We use low epsilon boundary to avoid division by very small PDFs.
+            // Replicated in ComputeSample()!
+            Vec3f wig = aLightPt - aSurfPt;
+            const float distSqr = wig.LenSqr();
+            wig /= sqrt(distSqr);
+            const float absCosThetaOut = abs(Dot(mFrame.mZ, wig));
+            *oPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), EPS_DIST);
+        }
 
         if (aWol.z <= 0.)
             return SpectrumF().MakeZero();
@@ -103,7 +121,7 @@ public:
 
     virtual void SampleIllumination(
         const Vec3f &aSurfPt, 
-        const Frame &aFrame, 
+        const Frame &aSurfFrame, 
         Rng         &aRng,
         LightSample &oSample
         ) const
@@ -129,16 +147,20 @@ public:
         PG3_ASSERT(samplePoint.y <= maxY);
 #endif
 
-        ComputeSample(aSurfPt, samplePoint, aFrame, oSample);
+        ComputeSample(aSurfPt, samplePoint, aSurfFrame, oSample);
     }
 
     virtual float EstimateContribution(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         Rng         &aRng
         ) const
     {
         aRng; // unused param
+
+        // TODO: The result has to be cached because the estimate is computed twice 
+        //       for the same point during MIS (once when picking a light randomly and 
+        //       once when computing the probability of picking a light after BRDF sampling).
 
         // Doesn't work: 
         // Estimate the contribution using a "sample" in the centre of gravity of the triangle
@@ -147,15 +169,15 @@ public:
         //    // (mP0 + P1 + P2) / 3.0f
         //    // (mP0 + mP0 + mE1 + mP0 + mE2) / 3.0f
         //    // mP0 + (mE1 + mE2) / 3.0f
-        //    mP0 + (mE1 + mE2) / 3.0f; // TODO: Pre-compute
+        //    mP0 + (mE1 + mE2) / 3.0f;
 
         // Combine the estimate from all vertices of the triangle
         const Vec3f P1 = mP0 + mE1;
         const Vec3f P2 = mP0 + mE2;
         LightSample sample0, sample1, sample2;
-        ComputeSample(aSurfPt, mP0, aFrame, sample0);
-        ComputeSample(aSurfPt, P1,  aFrame, sample1);
-        ComputeSample(aSurfPt, P2,  aFrame, sample2);
+        ComputeSample(aSurfPt, mP0, aSurfFrame, sample0);
+        ComputeSample(aSurfPt, P1,  aSurfFrame, sample1);
+        ComputeSample(aSurfPt, P2,  aSurfFrame, sample2);
         return
             (   sample0.mSample.Luminance() / sample0.mPdfW
               + sample1.mSample.Luminance() / sample1.mPdfW
@@ -171,6 +193,8 @@ private:
         LightSample &oSample
         ) const
     {
+        // Replicated in GetEmmision()!
+
         oSample.mWig = aSamplePt - aSurfPt;
         const float distSqr = oSample.mWig.LenSqr();
         oSample.mDist = sqrt(distSqr);
@@ -180,14 +204,14 @@ private:
 
         if ((cosThetaIn > 0.f) && (cosThetaOut > 0.f))
             // Planar version: BRDF * Li * ((cos_in * cos_out) / dist^2)
-            // Angular version:
-            oSample.mSample = mRadiance * cosThetaIn;
+            oSample.mSample = mRadiance * cosThetaIn; // Angular version
         else
             oSample.mSample.MakeZero();
 
         // Angular PDF. We use low epsilon boundary to avoid division by very small PDFs.
         const float absCosThetaOut = abs(cosThetaOut);
         oSample.mPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), EPS_DIST);
+
         PG3_ASSERT(oSample.mPdfW >= EPS_DIST);
 
         oSample.mLightProbability = 1.0f;
@@ -220,43 +244,54 @@ public:
     // Returns amount of outgoing radiance in the direction.
     // The point parameter is unused - it is a heritage of the abstract light interface
     virtual SpectrumF GetEmmision(
-        const Vec3f& aPt,
-        const Vec3f& aWol) const
+        const Vec3f &aLightPt,
+        const Vec3f &aWol,
+        const Vec3f &aSurfPt,
+              float *oPdfW,
+        const Frame &aSurfFrame
+        ) const
     {
-        aPt; aWol; // unused parameter
+        aSurfPt; aLightPt; aSurfFrame; aWol; // unused parameter
+
+        if (oPdfW != NULL)
+            *oPdfW = INFINITY_F;
 
         return SpectrumF().MakeZero();
     };
 
     virtual void SampleIllumination(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         Rng         &aRng,
         LightSample &oSample
         ) const
     {
         aRng; // unused param
 
-        ComputeIllumination(aSurfPt, aFrame, oSample);
+        ComputeIllumination(aSurfPt, aSurfFrame, oSample);
     }
 
     virtual float EstimateContribution(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         Rng         &aRng
         ) const
     {
         aRng; // unused param
 
+        // TODO: The result has to be cached because the estimate is computed twice 
+        //       for the same point during MIS (once when picking a light randomly and 
+        //       once when computing the probability of picking a light after BRDF sampling).
+
         LightSample sample;
-        ComputeIllumination(aSurfPt, aFrame, sample);
+        ComputeIllumination(aSurfPt, aSurfFrame, sample);
         return sample.mSample.Luminance();
     }
 
 private:
     void ComputeIllumination(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         LightSample &oSample
         ) const
     {
@@ -265,7 +300,7 @@ private:
         oSample.mDist = sqrt(distSqr);
         oSample.mWig /= oSample.mDist;
 
-        const float cosTheta = Dot(aFrame.mZ, oSample.mWig);
+        const float cosTheta = Dot(aSurfFrame.mZ, oSample.mWig);
         if (cosTheta > 0.f)
             oSample.mSample = mIntensity * cosTheta / distSqr;
         else
@@ -303,32 +338,42 @@ public:
     }
 
     // Returns amount of incoming radiance from the direction.
-    PG3_PROFILING_NOINLINE
-    SpectrumF GetEmmision(const Vec3f& aWig, bool bDoBilinFiltering = false) const
+    SpectrumF GetEmmision(
+        const Vec3f &aWig,
+              bool   bDoBilinFiltering,
+              float *oPdfW,
+        const Frame &aSurfFrame
+        ) const
     {
-        aWig; // unused parameter
-
         if (mEnvMap != NULL)
-            return mEnvMap->Lookup(aWig, bDoBilinFiltering);
+            return mEnvMap->Lookup(aWig, bDoBilinFiltering, oPdfW);
         else
+        {
+            if (oPdfW != NULL)
+                *oPdfW = CosHemispherePdfW(aSurfFrame.Normal(), aWig);
             return mConstantRadiance;
+        }
     };
 
     // Returns amount of outgoing radiance in the direction.
     // The point parameter is unused - it is an heritage of the abstract light interface
     virtual SpectrumF GetEmmision(
-        const Vec3f& aPt, 
-        const Vec3f& aWol) const
+        const Vec3f &aLightPt,
+        const Vec3f &aWol,
+        const Vec3f &aSurfPt,
+              float *oPdfW,
+        const Frame &aSurfFrame
+        ) const
     {
-        aPt; // unused parameter
+        aSurfPt;  aLightPt; // unused params
 
-        return GetEmmision(-aWol);
+        return GetEmmision(-aWol, false, oPdfW, aSurfFrame);
     };
 
     PG3_PROFILING_NOINLINE
     virtual void SampleIllumination(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         Rng         &aRng,
         LightSample &oSample
         ) const
@@ -338,9 +383,9 @@ public:
         if (mEnvMap != NULL)
         {
             #ifdef ENVMAP_USE_IMPORTANCE_SAMPLING
-                SampleEnvMap(aRng, aFrame, oSample);
+                SampleEnvMap(aRng, aSurfFrame, oSample);
             #else
-                SampleCosHemisphere(aRng, aFrame, oSample);
+                SampleCosHemisphere(aRng, aSurfFrame, oSample);
             #endif
         }
         else
@@ -350,7 +395,7 @@ public:
             Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
             oSample.mLightProbability = 1.0f;
 
-            oSample.mWig    = aFrame.ToWorld(wil);
+            oSample.mWig    = aSurfFrame.ToWorld(wil);
             oSample.mDist   = std::numeric_limits<float>::max();
 
             const float cosThetaIn = wil.z;
@@ -360,11 +405,15 @@ public:
 
     virtual float EstimateContribution(
         const Vec3f &aSurfPt,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         Rng         &aRng
         ) const
     {
         aSurfPt; // unused param
+
+        // TODO: The result has to be cached because the estimate is computed twice 
+        //       for the same point during MIS (once when picking a light randomly and 
+        //       once when computing the probability of picking a light after BRDF sampling).
 
         if (mEnvMap != NULL)
         {
@@ -380,15 +429,15 @@ public:
             {
                 // Strategy 1: Sample the hemisphere in the cosine-weighted fashion
                 LightSample sample1;
-                SampleCosHemisphere(aRng, aFrame, sample1);
+                SampleCosHemisphere(aRng, aSurfFrame, sample1);
                 const float pdf1Cos = sample1.mPdfW;
                 const float pdf1EM  = EMPdfW(sample1.mWig);
 
                 // Strategy 2: Sample the environment map alone
                 LightSample sample2;
-                SampleEnvMap(aRng, aFrame, sample2);
+                SampleEnvMap(aRng, aSurfFrame, sample2);
                 const float pdf2EM  = sample2.mPdfW;
-                const float pdf2Cos = CosHemispherePdfW(aFrame.Normal(), sample2.mWig);
+                const float pdf2Cos = CosHemispherePdfW(aSurfFrame.Normal(), sample2.mWig);
 
                 // Combine the two samples via MIS (balanced heuristics)
                 const float part1 =
@@ -414,13 +463,13 @@ public:
     // Sample the hemisphere in the normal direction in a cosine-weighted fashion
     void SampleCosHemisphere(
         Rng         &aRng,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         LightSample &oSample) const
     {
         Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
         oSample.mLightProbability = 1.0f;
 
-        oSample.mWig = aFrame.ToWorld(wil);
+        oSample.mWig = aSurfFrame.ToWorld(wil);
         oSample.mDist = std::numeric_limits<float>::max();
 
         const SpectrumF radiance = mEnvMap->Lookup(oSample.mWig, false);
@@ -431,7 +480,7 @@ public:
     // Sample the environment map with the pdf proportional to luminance of the map
     void SampleEnvMap(
         Rng         &aRng,
-        const Frame &aFrame,
+        const Frame &aSurfFrame,
         LightSample &oSample) const
     {
         PG3_ASSERT(mEnvMap != NULL);
@@ -443,7 +492,7 @@ public:
         oSample.mDist               = std::numeric_limits<float>::max();
         oSample.mLightProbability   = 1.0f;
 
-        const float cosThetaIn = Dot(oSample.mWig, aFrame.Normal());
+        const float cosThetaIn = Dot(oSample.mWig, aSurfFrame.Normal());
         if (cosThetaIn <= 0.0f)
             // The sample is below the surface - no light contribution
             oSample.mSample.MakeZero();
@@ -454,6 +503,7 @@ public:
     float EMPdfW(const Vec3f &aDirection) const
     {
         PG3_ASSERT(mEnvMap != NULL);
+        PG3_ASSERT(!aDirection.IsZero());
 
         return mEnvMap->PdfW(aDirection);
     }

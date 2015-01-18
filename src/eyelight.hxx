@@ -36,7 +36,7 @@ public:
             const int32_t y = pixID / resX;
 
             const Vec2f sample = Vec2f(float(x), float(y)) +
-                (aIteration == 1 ? Vec2f(0.5f) : mRng.GetVec2f());
+                (aIteration == 0 ? Vec2f(0.5f) : mRng.GetVec2f());
 
             Ray   ray = mScene.mCamera.GenerateRay(sample);
             Isect isect;

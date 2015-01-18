@@ -127,10 +127,10 @@ public:
         const Vec2ui imageSize = mImage->Size();
         Vec2f uv;
         Vec2ui segm;
-        float pdfW;
+        float pdf;
 
-        mDistribution->SampleContinuous(aSamples, uv, segm, &pdfW);
-        PG3_ASSERT(pdfW > 0.f);
+        mDistribution->SampleContinuous(aSamples, uv, segm, &pdf);
+        PG3_ASSERT(pdf > 0.f);
 
         const Vec3f direction = LatLong2Dir(uv);
 
@@ -147,7 +147,7 @@ public:
         //        (even though the overall probability of the segment is correct).
         // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
         const float sinMidTheta = SinMidTheta(mImage, segm.y);
-        oPdfW = pdfW * mPlan2AngPdfCoeff / sinMidTheta;
+        oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta;
         if (oSinMidTheta != NULL)
             *oSinMidTheta = sinMidTheta;
 
@@ -163,19 +163,22 @@ public:
     SpectrumF Lookup(
         const Vec3f &aDirection, 
         bool         aDoBilinFiltering,
-        float       *oPdfW = NULL) const
+        float       *oPdfW = NULL
+        ) const
     {
+        PG3_ASSERT(mDistribution != NULL);
         PG3_ASSERT(!aDirection.IsZero());
 
         const Vec3f normDir         = aDirection / aDirection.Length(); // TODO: Is this really necessary
         const Vec2f uv              = Dir2LatLong(normDir);
         const SpectrumF radiance    = LookupRadiance(uv, aDoBilinFiltering);
 
-        oPdfW; // unused parameter
         if (oPdfW)
         {
-            PG3_FATAL_ERROR("Compute pdf of lookup");
-            //*oPdfW = mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv[1]);
+            *oPdfW = mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
+
+            PG3_ASSERT((*oPdfW == 0.f) == radiance.IsZero());
+
             //if (*oPdfW == 0.0f)
             //    radiance = SpectrumF(0);
         }
@@ -190,8 +193,7 @@ public:
         const Vec3f normDir = aDirection / aDirection.Length(); // TODO: Is this really necessary
         const Vec2f uv      = Dir2LatLong(normDir);
 
-        //return mPlan2AngPdfCoeff * mDistribution->Pdf(uv) / SinMidTheta(mImage, uv.y);
-        return mDistribution->Pdf(uv);
+        return mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
     }
 
 private:

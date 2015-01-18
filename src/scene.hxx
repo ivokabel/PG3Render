@@ -21,7 +21,8 @@ class Scene
 public:
     Scene() :
         mGeometry(NULL),
-        mBackground(NULL)
+        mBackground(NULL),
+        mBackgroundLightId(-1)
     {}
 
     ~Scene()
@@ -94,6 +95,13 @@ public:
     {
         return mBackground;
     }
+
+    int32_t GetBackgroundLightId() const
+    {
+        return mBackgroundLightId;
+    }
+
+    
 
     //////////////////////////////////////////////////////////////////////////
     // Loads a Cornell Box scene
@@ -494,6 +502,7 @@ public:
             {
                 mLights.push_back(light);
                 mBackground = light;
+                mBackgroundLightId = mLights.size() - 1;
             }
         }
     }
@@ -728,6 +737,7 @@ public:
     std::vector<AbstractLight*> mLights;
     std::map<int32_t, int32_t>  mMaterial2Light;
     BackgroundLight*            mBackground;
+    int32_t                     mBackgroundLightId;
 
     std::string           mSceneName;
     std::string           mSceneAcronym;

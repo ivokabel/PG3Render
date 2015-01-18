@@ -62,7 +62,7 @@ Vec3f ReflectLocal(const Vec3f& aVector)
 
 Vec3f SamplePowerCosHemisphereW(
     const Vec2f  &aSamples,
-    const float  aPower,
+    const float   aPower,
     float        *oPdfW)
 {
     const float term1 = 2.f * PI_F * aSamples.x;
@@ -81,13 +81,21 @@ Vec3f SamplePowerCosHemisphereW(
 float PowerCosHemispherePdfW(
     const Vec3f  &aNormal,
     const Vec3f  &aDirection,
-    const float  aPower)
+    const float   aPower)
 {
     const float cosTheta = std::max(0.f, Dot(aNormal, aDirection));
 
     return (aPower + 1.f) * std::pow(cosTheta, aPower) * (INV_PI_F * 0.5f);
 }
 
+float PowerCosHemispherePdfW(
+    const Vec3f  &aDirectionLocal,
+    const float   aPower)
+{
+    const float cosTheta = std::max(0.f, aDirectionLocal.z);
+
+    return (aPower + 1.f) * std::pow(cosTheta, aPower) * (INV_PI_F * 0.5f);
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Disc sampling
@@ -169,6 +177,12 @@ float CosHemispherePdfW(
     const Vec3f  &aDirection)
 {
     return std::max(0.f, Dot(aNormal, aDirection)) * INV_PI_F;
+}
+
+float CosHemispherePdfW(
+    const Vec3f  &aDirectionLocal)
+{
+    return std::max(0.f, aDirectionLocal.z) * INV_PI_F;
 }
 
 // Sample Triangle
