@@ -13,6 +13,7 @@ enum Algorithm
     kDirectIllumLightSamplingAll,
     kDirectIllumLightSamplingSingle,
     kDirectIllumMIS,
+    //kIndirectIllum,
     kPathTracing,
     kAlgorithmCount
 };

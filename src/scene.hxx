@@ -502,7 +502,7 @@ public:
             {
                 mLights.push_back(light);
                 mBackground = light;
-                mBackgroundLightId = mLights.size() - 1;
+                mBackgroundLightId = (int32_t)(mLights.size() - 1);
             }
         }
     }
