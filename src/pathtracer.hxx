@@ -300,16 +300,20 @@ public:
                 uint32_t lightId = 0;
                 // TODO: Use std::find to find the chosen light?
                 for (; (rndVal > lightContrPseudoCdf[lightId + 1]) && (lightId < lightCount); lightId++);
-                oChosenLightId = (int32_t)lightId;
+                oChosenLightId    = (int32_t)lightId;
                 oLightProbability =
                     (lightContrPseudoCdf[lightId + 1] - lightContrPseudoCdf[lightId]) / estimatesSum;
+
+                PG3_ASSERT_VAL_IN_RANGE(oChosenLightId, 0, (int32_t)(lightCount - 1));
             }
             else
             {
                 // Pick a light uniformly
                 const float rndVal = mRng.GetFloat();
-                oChosenLightId = (int32_t)(rndVal * lightCount);
+                oChosenLightId    = std::min((int32_t)(rndVal * lightCount), (int32_t)(lightCount - 1));
                 oLightProbability = 1.f / lightCount;
+
+                PG3_ASSERT_VAL_IN_RANGE(oChosenLightId, 0, (int32_t)(lightCount - 1));
             }
         }
     }

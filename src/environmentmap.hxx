@@ -169,8 +169,7 @@ public:
         PG3_ASSERT(mDistribution != NULL);
         PG3_ASSERT(!aDirection.IsZero());
 
-        const Vec3f normDir         = aDirection / aDirection.Length(); // TODO: Is this really necessary
-        const Vec2f uv              = Dir2LatLong(normDir);
+        const Vec2f uv              = Dir2LatLong(aDirection);
         const SpectrumF radiance    = LookupRadiance(uv, aDoBilinFiltering);
 
         if (oPdfW)
@@ -190,9 +189,7 @@ public:
     {
         PG3_ASSERT(mDistribution != NULL);
 
-        const Vec3f normDir = aDirection / aDirection.Length(); // TODO: Is this really necessary
-        const Vec2f uv      = Dir2LatLong(normDir);
-
+        const Vec2f uv = Dir2LatLong(aDirection);
         return mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
     }
 
@@ -384,7 +381,6 @@ private:
     {
         PG3_ASSERT(aImage != NULL);
         PG3_ASSERT_VAL_IN_RANGE(aV, 0.0f, 1.0f);
-        PG3_ASSERT_FLOAT_LESS_THAN(aV, 1.0f);
 
         const uint32_t height   = aImage->Height();
         const uint32_t segment  = std::min((uint32_t)(aV * height), height - 1u);
