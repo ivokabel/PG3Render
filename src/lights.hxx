@@ -17,7 +17,7 @@ class LightSample
 public:
     // (outgoing radiance * cosine theta_in) or it's equivalent (e.g. for point lights)
     // Note that this structure is designed for the angular version of the rendering equation 
-    // to allow easy combination of multiple sampling strategies in multiple-importance schema.
+    // to allow convenient combination of multiple sampling strategies in multiple-importance schema.
     SpectrumF   mSample;
 
     float       mPdfW;              // Angular PDF. Equals infinity for point lights.

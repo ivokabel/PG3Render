@@ -407,12 +407,40 @@ public:
 
         const Vec3f wil = aSurfFrame.ToLocal(aLightSample.mWig);
 
+        // Since the BRDF sampling only works for planar and angular light sources, we can't use 
+        // the multiple importance sampling scheme for the whole reflectance integral. We split 
+        // the integral into two parts - one for planar and angular light sources, and one 
+        // for point light sources. The first part can be handled by both BRDF and light 
+        // sampling strategies; therefore, we can combine the two with MIS. The second part 
+        // (point lights) can only be hadled by the light sampling strategy.
+        //
+        // We could separate the two computations completely, what whould result in computing 
+        // separate sets of light samples for each of the two integrals, but we can use 
+        // one light sampling routine to generate samples for both integrals in one place 
+        // to make things easier for us (but maybe a little bit confusing at first sight).
+        //
+        // If we chose an area or angular light, we compute the MIS-ed part and for point 
+        // light sampling it means that we generated an empty sample. Vice versa, if we chose 
+        // a point light, we compute non-zero estimator for the point lights integral and 
+        // for the MIS-ed integral this means we generated and empty sample. PDFs from 
+        // the light sampling routine can be used directly without any adaptation 
+        // in both computations.
+        //
+        // TODO: If we look at each of the two integral parts separtately, it is obvious, 
+        //       that chosing a light source using a strategy which sometimes choses "no light"
+        //       causes worse estimator performance than a technique which always choses a light.
+        //       However, estimating the first and the second part separately will require 
+        //       filtering a proper set of lights when choosing a light and also when computing 
+        //       the probability of picking one.
+
         if (aLightSample.mPdfW != INFINITY_F)
         {
-            // Get pdf of the BRDF sampling technique for the light direction
+            // Planar or angular light source was chosen
+
+            // PDF of the BRDF sampling technique for the chosen light direction
             const float brdfPdfW = aMat.GetPdfW(aWol, wil);
 
-            // Planar or angular light sources - compute multiple importance sampling MC estimator.
+            // MIS MC estimator
             oLightBuffer +=
                   aLightSample.mSample
                 * aMat.EvalBrdf(wil, aWol)
@@ -420,17 +448,14 @@ public:
         }
         else
         {
-            // Point light - the contribution of a single light is computed 
-            // analytically (without MC estimation), there is only one MC 
-            // estimation left - the estimation of the sum of contributions 
-            // of all light sources.
-            // The contribution of point lights should be computed separately from MIS conputation.
+            // Point light was chosen
+
+            // The contribution of a single light is computed analytically, there is only one 
+            // MC estimation left - the estimation of the sum of contributions of all light sources.
             oLightBuffer +=
                   aLightSample.mSample
                 * aMat.EvalBrdf(wil, aWol)
                 / aLightSample.mLightProbability;
-
-            PG3_FATAL_ERROR("Point lights should be computed outside MIS!");
         }
     }
 
@@ -461,18 +486,12 @@ public:
 
         PG3_ASSERT(lightPdfW > 0.f);
         PG3_ASSERT(lightPickingProbability > 0.f);
+        PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
-        if (lightPdfW != INFINITY_F)
-        {
-            // Compute multiple importance sampling MC estimator. 
-            oLightBuffer +=
-                  (aBrdfSample.mSample * LiLight) // FIXME: the sample contains only one component, will it work with MIS???
-                / (aBrdfSample.mPdfW * aBrdfSample.mCompProbability + lightPdfW * lightPickingProbability);
-        }
-        else
-        {
-            PG3_FATAL_ERROR("Point lights should be computed outside MIS!");
-        }
+        // Compute multiple importance sampling MC estimator. 
+        oLightBuffer +=
+              (aBrdfSample.mSample * LiLight) // FIXME: the sample contains only one component, will it work with MIS???
+            / (aBrdfSample.mPdfW * aBrdfSample.mCompProbability + lightPdfW * lightPickingProbability);
     }
 
     Rng     mRng;
