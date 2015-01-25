@@ -48,7 +48,7 @@ void pg3_exit();
     }
 
 // Uncomment this to activate all asserts in the code
-//#define PG3_ASSERT_ENABLED
+#define PG3_ASSERT_ENABLED
 
 #ifdef PG3_ASSERT_ENABLED
     #define PG3_ASSERT(__expr) \
@@ -83,6 +83,9 @@ void pg3_exit();
 
 #define PG3_ASSERT_FLOAT_LESS_THAN(_val1, _val2) \
     PG3_ASSERT((_val1) < (_val2))
+
+#define PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(_val1, _val2) \
+    PG3_ASSERT((_val1) <= (_val2))
 
 // noinline for profiling purposes - it helps to better visualise a low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE

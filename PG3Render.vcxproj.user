@@ -1,19 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-i 10000 -a pt -s 10 -em 3 -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i 100 -a dbs -s 2 -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerDebuggerType>Auto</LocalDebuggerDebuggerType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-i 10000 -a pt -s 10 -em 3 -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i 100 -a dbs -s 2 -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-i 10000 -a pt -s 10 -em 3 -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i 100 -a dbs -s 2 -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-i 10000 -a pt -s 10 -em 3 -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i 100 -a dbs -s 2 -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
