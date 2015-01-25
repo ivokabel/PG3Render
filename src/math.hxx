@@ -82,47 +82,46 @@ class Vec2Base
 {
 public:
 
-    Vec2Base(){}
-    Vec2Base(T a):x(a),y(a){}
-    Vec2Base(T a, T b):x(a),y(b){}
+    Vec2Base() {}
+    Vec2Base(T a) : x(a),y(a) {}
+    Vec2Base(T a, T b) : x(a),y(b) {}
 
     const T& Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
     T&       Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
 
     // Unary minus
     Vec2Base<T> operator-() const
-    { Vec2Base<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = -Get(i); return res; }
+    { Vec2Base<T> res; res.x = -x; res.y = -y; return res; }
 
     // Binary operations
     friend Vec2Base<T> operator+(const Vec2Base& a, const Vec2Base& b)
-    { Vec2Base<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
+    { Vec2Base<T> res; res.x = a.x + b.x; res.y = a.y + b.y; return res; }
     friend Vec2Base<T> operator-(const Vec2Base& a, const Vec2Base& b)
-    { Vec2Base<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = a.Get(i) - b.Get(i); return res; }
+    { Vec2Base<T> res; res.x = a.x - b.x; res.y = a.y - b.y; return res; }
     friend Vec2Base<T> operator*(const Vec2Base& a, const Vec2Base& b)
-    { Vec2Base<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = a.Get(i) * b.Get(i); return res; }
+    { Vec2Base<T> res; res.x = a.x * b.x; res.y = a.y * b.y; return res; }
     friend Vec2Base<T> operator/(const Vec2Base& a, const Vec2Base& b)
-    { Vec2Base<T> res; for (uint32_t i=0; i<2; i++) res.Get(i) = a.Get(i) / b.Get(i); return res; }
+    { Vec2Base<T> res; res.x = a.x / b.x; res.y = a.y / b.y; return res; }
 
     Vec2Base<T>& operator+=(const Vec2Base& a)
-    { for (uint32_t i=0; i<2; i++) Get(i) += a.Get(i); return *this;}
+    { x += a.x; y += a.y; return *this; }
     Vec2Base<T>& operator-=(const Vec2Base& a)
-    { for (uint32_t i=0; i<2; i++) Get(i) -= a.Get(i); return *this;}
+    { x -= a.x; y -= a.y; return *this; }
     Vec2Base<T>& operator*=(const Vec2Base& a)
-    { for (uint32_t i=0; i<2; i++) Get(i) *= a.Get(i); return *this;}
+    { x *= a.x; y *= a.y; return *this; }
     Vec2Base<T>& operator/=(const Vec2Base& a)
-    { for (uint32_t i=0; i<2; i++) Get(i) /= a.Get(i); return *this;}
+    { x /= a.x; y /= a.y; return *this; }
 
     friend T Dot(const Vec2Base& a, const Vec2Base& b)
-    { T res(0); for (uint32_t i=0; i<2; i++) res += a.Get(i) * b.Get(i); return res; }
+    { return a.x * b.x + a.y * b.y; }
 
     //friend Vec2Base Clamp(const Vec2Base& val, const Vec2Base& lower, const Vec2Base& upper)
     //{
+    //    PG3_ASSERT(lower.x <= upper.x);
+    //    PG3_ASSERT(lower.y <= upper.y);
     //    Vec2Base<T> res;
-    //    for (uint32_t i = 0; i < 2; i++)
-    //    {
-    //        PG3_ASSERT(lower.Get(i) <= upper.Get(i));
-    //        res.Get(i) = std::max(lower.Get(i), std::min(val.Get(i), upper.Get(i)));
-    //    }
+    //    res.x = std::max(lower.x, std::min(val.x, upper.x));
+    //    res.y = std::max(lower.y, std::min(val.y, upper.y));
     //    return res;
     //}
 
@@ -140,15 +139,15 @@ class Vec3Base
 {
 public:
 
-    Vec3Base(){}
-    Vec3Base(T a):x(a),y(a),z(a){}
-    Vec3Base(T a, T b, T c):x(a),y(b),z(c){}
+    Vec3Base() {}
+    Vec3Base(T a) : x(a),y(a),z(a) {}
+    Vec3Base(T a, T b, T c) : x(a),y(b),z(c) {}
 
     // For the double specialization of this template, we add the conversion constructor 
     // from the float specialization. This is one way of allowing binary operators to accept
     // one float and one double parameter while ensuring the whole operation is executed 
-    // in double precision. For instance, this is used during accumulation of float radiance values 
-    // in the double framebuffer.
+    // in double precision. This is, for instance, used during accumulation of float radiance 
+    // values in the double framebuffer.
     template <
         typename T2,
         typename = typename
@@ -157,49 +156,43 @@ public:
                 && std::is_same<float, T2>::value
                 >::type
         >
-    Vec3Base(const Vec3Base<T2> &a)
-    {
-        for (uint32_t i = 0; i < 3; i++) Get(i) = (double)a.Get(i);
-    }
+    Vec3Base(const Vec3Base<T2> &a) :
+        x(static_cast<double>(a.x)),
+        y(static_cast<double>(a.y)),
+        z(static_cast<double>(a.z)) {}
 
     const T&    Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
     T&          Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
     Vec2Base<T> GetXY() const         { return Vec2Base<T>(x, y); }
+
     T           Max()   const         { T res = Get(0); for (uint32_t i=1; i<3; i++) res = std::max(res, Get(i)); return res;}
-    
-    bool        IsZero() const
-    {
-        for (uint32_t i=0; i<3; i++)
-            if (Get(i) != 0)
-                return false;
-        return true;
-    }
+    bool        IsZero() const        { return (x == 0) && (x == 0) && (z == 0); }
 
     // Unary minus
     Vec3Base<T> operator-() const
-    { Vec3Base<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = -Get(i); return res; }
+    { Vec3Base<T> res; res.x = -x; res.y = -y; res.z = -z; return res; }
 
     // Binary operations
     friend Vec3Base<T> operator+(const Vec3Base& a, const Vec3Base& b)
-    { Vec3Base<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = a.Get(i) + b.Get(i); return res; }
+    { Vec3Base<T> res; res.x = a.x + b.x; res.y = a.y + b.y; res.z = a.z + b.z; return res; }
     friend Vec3Base<T> operator-(const Vec3Base& a, const Vec3Base& b)
-    { Vec3Base<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = a.Get(i) - b.Get(i); return res; }
+    { Vec3Base<T> res; res.x = a.x - b.x; res.y = a.y - b.y; res.z = a.z - b.z; return res; }
     friend Vec3Base<T> operator*(const Vec3Base& a, const Vec3Base& b)
-    { Vec3Base<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = a.Get(i) * b.Get(i); return res; }
+    { Vec3Base<T> res; res.x = a.x * b.x; res.y = a.y * b.y; res.z = a.z * b.z; return res; }
     friend Vec3Base<T> operator/(const Vec3Base& a, const Vec3Base& b)
-    { Vec3Base<T> res; for (uint32_t i=0; i<3; i++) res.Get(i) = a.Get(i) / b.Get(i); return res; }
+    { Vec3Base<T> res; res.x = a.x / b.x; res.y = a.y / b.y; res.z = a.z / b.z; return res; }
 
     Vec3Base<T>& operator+=(const Vec3Base& a)
-    { for (uint32_t i=0; i<3; i++) Get(i) += a.Get(i); return *this;}
+    { x += a.x; y += a.y; z += a.z; return *this; }
     Vec3Base<T>& operator-=(const Vec3Base& a)
-    { for (uint32_t i=0; i<3; i++) Get(i) -= a.Get(i); return *this;}
+    { x -= a.x; y -= a.y; z -= a.z; return *this; }
     Vec3Base<T>& operator*=(const Vec3Base& a)
-    { for (uint32_t i=0; i<3; i++) Get(i) *= a.Get(i); return *this;}
+    { x *= a.x; y *= a.y; z *= a.z; return *this; }
     Vec3Base<T>& operator/=(const Vec3Base& a)
-    { for (uint32_t i=0; i<3; i++) Get(i) /= a.Get(i); return *this;}
+    { x /= a.x; y /= a.y; z /= a.z; return *this; }
 
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
-    { T res(0); for (uint32_t i=0; i<3; i++) res += a.Get(i) * b.Get(i); return res; }
+    { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
     float    LenSqr() const   { return Dot(*this, *this);   }
     float    Length() const   { return std::sqrt(LenSqr()); }
