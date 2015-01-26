@@ -165,8 +165,8 @@ public:
     T&          Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
     Vec2Base<T> GetXY() const         { return Vec2Base<T>(x, y); }
 
-    T           Max()   const         { T res = Get(0); for (uint32_t i=1; i<3; i++) res = std::max(res, Get(i)); return res;}
-    bool        IsZero() const        { return (x == 0) && (x == 0) && (z == 0); }
+    T           Max()   const         { return std::max(std::max(x, y), z); }
+    bool        IsZero() const        { return (x == 0) && (y == 0) && (z == 0); }
 
     // Unary minus
     Vec3Base<T> operator-() const
