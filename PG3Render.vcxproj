@@ -193,6 +193,10 @@
     <ClInclude Include="src\types.hxx" />
     <ClInclude Include="src\utils.hxx" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="testing\full_test.sh" />
+    <None Include="testing\launcher.bat" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

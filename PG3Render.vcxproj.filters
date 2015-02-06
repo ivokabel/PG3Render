@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Scripts">
+      <UniqueIdentifier>{dd7a6f1a-7a5e-4ac8-9ab8-369be5724f66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\pg3render.cxx">
@@ -89,5 +92,13 @@
     <ClInclude Include="src\hardsettings.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="testing\full_test.sh">
+      <Filter>Scripts</Filter>
+    </None>
+    <None Include="testing\launcher.bat">
+      <Filter>Scripts</Filter>
+    </None>
   </ItemGroup>
 </Project>
