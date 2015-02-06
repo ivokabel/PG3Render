@@ -175,16 +175,21 @@ int32_t main(int32_t argc, const char *argv[])
     printf(" done in %s\n", timeHumanReadable.c_str());
 
     // Saves the image
-    printf("Saving to: %s ... ", config.mOutputName.c_str());
-    std::string extension = config.mOutputName.substr(config.mOutputName.length() - 3, 3);
+    std::string fullOutputPath;
+    if (!config.mOutputDirectory.empty())
+        fullOutputPath = config.mOutputDirectory + "\\" + config.mOutputName;
+    else
+        fullOutputPath = config.mOutputName;
+    printf("Saving to: %s ... ", fullOutputPath.c_str());
+    std::string extension = fullOutputPath.substr(fullOutputPath.length() - 3, 3);
     if (extension == "bmp")
     {
-        fbuffer.SaveBMP(config.mOutputName.c_str(), 2.2f /*gamma*/);
+        fbuffer.SaveBMP(fullOutputPath.c_str(), 2.2f /*gamma*/);
         printf("done\n");
     }
     else if (extension == "hdr")
     {
-        fbuffer.SaveHDR(config.mOutputName.c_str());
+        fbuffer.SaveHDR(fullOutputPath.c_str());
         printf("done\n");
     }
     else

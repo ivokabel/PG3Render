@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cstdlib>
 
 //#define EPS_COSINE          1e-6f
 #define EPS_RAY             1e-3f
@@ -278,4 +279,30 @@ void SecondsToHumanReadable(const float aSeconds, std::string &oResult)
         outStream << std::fixed << std::setprecision(2) << aSeconds << " s"; // " seconds";
 
     oResult = outStream.str();
+}
+
+bool GetFileName(const char *aPath, std::string &oResult)
+{
+    //char path_buffer[_MAX_PATH];
+    //char drive[_MAX_DRIVE];
+    //char dir[_MAX_DIR];
+    char fname[_MAX_FNAME];
+    char ext[_MAX_EXT];
+    errno_t err;
+
+    err = _splitpath_s(aPath, NULL, 0, NULL, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
+    if (err != 0)
+    {
+        //printf("Error splitting the path. Error code %d.\n", err);
+        return false;
+    }
+    //printf("Path extracted with _splitpath_s:\n");
+    //printf("  Drive: %s\n", drive);
+    //printf("  Dir: %s\n", dir);
+    //printf("  Filename: %s\n", fname);
+    //printf("  Ext: %s\n", ext);
+
+    oResult  = fname;
+    oResult += ext;
+    return true;
 }

@@ -62,6 +62,7 @@ struct Config
     uint         mMinPathLength;
     std::string  mDefOutputExtension;
     std::string  mOutputName;
+    std::string  mOutputDirectory;
     Vec2i        mResolution;
 };
 
@@ -227,10 +228,18 @@ void PrintInfo(const Config &config)
 
 void PrintHelp(const char *argv[])
 {
+    std::string filename;
+    if (!GetFileName(argv[0], filename))
+        filename = argv[0];
+
     printf("\n");
     printf(
-        "Usage: %s [ -s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | -e <def_output_ext> | -o <output_name> | -ot <output_trail> | -j <threads_count> ]\n\n", 
-        argv[0]);
+        "Usage: %s [ "
+        "-s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | "
+        "-e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | "
+        "-j <threads_count>"
+        " ]\n\n", 
+        filename.c_str());
 
     printf("    -s  Selects the scene (default 0):\n");
     for (int32_t i = 0; i < SizeOfArray(g_SceneConfigs); i++)
@@ -249,6 +258,7 @@ void PrintHelp(const char *argv[])
     printf("    -t  Number of seconds to run the algorithm\n");
     printf("    -i  Number of iterations to run the algorithm (default 1)\n");
     printf("    -e  Extension of the default output file: bmp or hdr (default bmp)\n");
+    printf("    -od User specified directory for the output, whose existence is not checked (default \"\")\n");
     printf("    -o  User specified output name, with extension .bmp or .hdr (default .bmp)\n");
     printf("    -ot Trail text to be added at the end the output file name\n");
     printf("        (only used to alter a default filename; '_' is pasted automatically before the trail).\n");
@@ -266,6 +276,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mMaxTime            = -1.f;                     // [cmd]
     oConfig.mDefOutputExtension = "bmp";                    // [cmd]
     oConfig.mOutputName         = "";                       // [cmd]
+    oConfig.mOutputDirectory    = "";                       // [cmd]
     oConfig.mNumThreads         = 0;
     oConfig.mBaseSeed           = 1234;
     oConfig.mMaxPathLength      = 10;
@@ -442,6 +453,22 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (oConfig.mOutputName.length() == 0)
             {
                 printf("Invalid <output_name> argument, please see help (-h)\n");
+                return;
+            }
+        }
+        else if (arg == "-od") // custom output directory
+        {
+            if (++i == argc)
+            {
+                printf("Missing <output_directory> argument, please see help (-h)\n");
+                return;
+            }
+
+            oConfig.mOutputDirectory = argv[i];
+
+            if (oConfig.mOutputDirectory.length() == 0)
+            {
+                printf("Invalid <output_directory> argument, please see help (-h)\n");
                 return;
             }
         }
