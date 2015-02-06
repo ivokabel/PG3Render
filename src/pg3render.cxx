@@ -42,7 +42,8 @@ float render(
         renderers[i]->mMinPathLength = aConfig.mMinPathLength;
     }
 
-    clock_t startT = clock();
+    const float startT = (float)clock();
+    const float endT   = startT + aConfig.mMaxTime*CLOCKS_PER_SEC;
     int32_t iter = 0;
 
     // Rendering loop, when we have any time limit, use time-based loop,
@@ -51,10 +52,18 @@ float render(
     {
         // Time based loop
 #pragma omp parallel
-        while (clock() < startT + aConfig.mMaxTime*CLOCKS_PER_SEC)
+        while (clock() < endT)
         {
             int32_t threadId = omp_get_thread_num();
             renderers[threadId]->RunIteration(aConfig.mAlgorithm, iter);
+
+            // Print progress bar
+#pragma omp critical
+            {
+                const float currentClock = (float)clock();
+                const float progress = (float)((currentClock - startT) / (endT - startT));
+                PrintProgressBars(20, progress);
+            }
 
 #pragma omp atomic
             iter++; // counts number of iterations
@@ -74,26 +83,13 @@ float render(
 #pragma omp critical
             {
                 globalCounter++;
-                const double progress   = (double)globalCounter / aConfig.mIterations;
-                const int32_t barCount  = 20;
-
-                printf(
-                    "\rProgress:  [");
-                for (uint32_t bar = 1; bar <= barCount; bar++)
-                {
-                    const double barProgress = (double)bar / barCount;
-                    if (barProgress <= progress)
-                        printf("|");
-                    else
-                        printf(".");
-                }
-                printf("] %.1f%%", 100.0 * progress);
-                fflush(stdout);
+                const float progress = (float)globalCounter / aConfig.mIterations;
+                PrintProgressBars(20, progress);
             }
         }
     }
 
-    clock_t endT = clock();
+    clock_t realEndT = clock();
 
     if (oUsedIterations)
         *oUsedIterations = iter+1;
@@ -132,7 +128,7 @@ float render(
 
     delete [] renderers;
 
-    return float(endT - startT) / CLOCKS_PER_SEC;
+    return float(realEndT - startT) / CLOCKS_PER_SEC;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -160,15 +156,13 @@ int32_t main(int32_t argc, const char *argv[])
         config.mNumThreads  = std::max(1, omp_get_num_procs());
 
     // Print what we are doing
-    PrintInfo(config);
+    PrintConfiguration(config);
 
     // Sets up framebuffer and number of threads
     Framebuffer fbuffer;
     config.mFramebuffer = &fbuffer;
 
     // Renders the image
-    printf("Running:   %s%s", config.GetName(config.mAlgorithm), (config.mMaxTime > 0) ? "..." : "\n");
-    fflush(stdout);
     float time = render(config);
     std::string timeHumanReadable;
     SecondsToHumanReadable(time, timeHumanReadable);

@@ -306,3 +306,25 @@ bool GetFileName(const char *aPath, std::string &oResult)
     oResult += ext;
     return true;
 }
+
+void PrintProgressBars(const uint32_t aBarCount, float aProgress)
+{
+    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aProgress, 0.0f);
+
+    aProgress = Clamp(aProgress, 0.f, 1.f);
+
+    printf("\rProgress:  [");
+
+    for (uint32_t bar = 1; bar <= aBarCount; bar++)
+    {
+        const float barProgress = (float)bar / aBarCount;
+        if (barProgress <= aProgress)
+            printf("|");
+        else
+            printf(".");
+    }
+
+    printf("] %.1f%%", 100.0 * aProgress);
+
+    fflush(stdout);
+}

@@ -202,28 +202,36 @@ void PrintRngWarning()
 #endif
 }
 
-void PrintInfo(const Config &config)
+void PrintConfiguration(const Config &config)
 {
     printf("PG3Render\n");
 
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
-    printf("Config:    "
-        "%d threads, "
-#if !defined _DEBUG
-        "release"
-#else
-        "debug"
-#endif
-#ifdef PG3_ASSERT_ENABLED
-        " with assertions"
-#endif
-        "\n",
-        config.mNumThreads
-        );
+    printf("Algorithm: %s\n", config.GetName(config.mAlgorithm));
     if (config.mMaxTime > 0)
         printf("Target:    %g seconds render time\n", config.mMaxTime);
     else
         printf("Target:    %d iteration(s)\n", config.mIterations);
+
+    if (!config.mOutputDirectory.empty())
+        printf("Out dir:   %s\n", config.mOutputDirectory.c_str());
+    printf("Out name:  %s\n", config.mOutputName.c_str());
+
+    printf("Config:    "
+        "%d threads, "
+        #if !defined _DEBUG
+            "release"
+        #else
+            "debug"
+        #endif
+        #ifdef PG3_ASSERT_ENABLED
+            " with assertions"
+        #endif
+        "\n",
+        config.mNumThreads
+        );
+
+    fflush(stdout);
 }
 
 void PrintHelp(const char *argv[])
