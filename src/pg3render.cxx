@@ -151,7 +151,7 @@ int32_t main(int32_t argc, const char *argv[])
     if (config.mScene == NULL)
     {
         // debug
-        getchar(); // Wait for pressing the enter key on the command line
+        //getchar(); // Wait for pressing the enter key on the command line
         return 1;
     }
 
@@ -199,6 +199,6 @@ int32_t main(int32_t argc, const char *argv[])
     delete config.mScene;
 
     // debug
-    getchar(); // Wait for pressing the enter key on the command line
+    //getchar(); // Wait for pressing the enter key on the command line
     return 0;
 }
