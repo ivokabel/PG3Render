@@ -95,12 +95,12 @@ public:
 
         try
         {
-            std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
+            //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
             mImage = LoadImage(aFilename.c_str(), aRotate, aScale);
         }
         catch (...)
         {
-            PG3_FATAL_ERROR("Environment map load failed!");
+            PG3_FATAL_ERROR("Environment map load failed! \"%s\"", aFilename.c_str());
         }
 
         mDistribution = ConvertImageToPdf(mImage);

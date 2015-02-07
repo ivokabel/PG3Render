@@ -136,10 +136,10 @@ float render(
 
 int32_t main(int32_t argc, const char *argv[])
 {
-    // Warns when not using C++11 Mersenne Twister
+    // Warn when not using C++11 Mersenne Twister
     PrintRngWarning();
 
-    // Setups config based on command line
+    // Setup config based on command line
     Config config;
     ParseCommandline(argc, argv, config);
 
@@ -158,17 +158,17 @@ int32_t main(int32_t argc, const char *argv[])
     // Print what we are doing
     PrintConfiguration(config);
 
-    // Sets up framebuffer and number of threads
+    // Set up framebuffer and number of threads
     Framebuffer fbuffer;
     config.mFramebuffer = &fbuffer;
 
-    // Renders the image
+    // Render the image
     float time = render(config);
     std::string timeHumanReadable;
     SecondsToHumanReadable(time, timeHumanReadable);
     printf(" done in %s\n", timeHumanReadable.c_str());
 
-    // Saves the image
+    // Save the image
     std::string fullOutputPath;
     if (!config.mOutputDirectory.empty())
         fullOutputPath = config.mOutputDirectory + "\\" + config.mOutputName;

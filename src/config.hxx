@@ -290,7 +290,6 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mMaxPathLength      = 10;
     oConfig.mMinPathLength      = 0;
     oConfig.mResolution         = Vec2i(512, 512);
-    //oConfig.mFramebuffer      = NULL; // this is never set by any parameter
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
