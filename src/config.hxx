@@ -57,6 +57,7 @@ struct Config
     float        mMaxTime;
     Framebuffer *mFramebuffer;
     uint32_t     mNumThreads;
+    bool         mQuietMode;
     int32_t      mBaseSeed;
     uint         mMaxPathLength;
     uint         mMinPathLength;
@@ -204,6 +205,9 @@ void PrintRngWarning()
 
 void PrintConfiguration(const Config &config)
 {
+    if (config.mQuietMode)
+        return;
+
     printf("PG3Render\n");
 
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
@@ -245,7 +249,7 @@ void PrintHelp(const char *argv[])
         "Usage: %s [ "
         "-s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | "
         "-e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | "
-        "-j <threads_count>"
+        "-j <threads_count> | -q"
         " ]\n\n", 
         filename.c_str());
 
@@ -271,6 +275,7 @@ void PrintHelp(const char *argv[])
     printf("    -ot Trail text to be added at the end the output file name\n");
     printf("        (only used to alter a default filename; '_' is pasted automatically before the trail).\n");
     printf("    -j  Number of threads (\"jobs\") to be used\n");
+    printf("    -q  Quiet mode - doesn't print anything except for warnings and errors\n");
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
 }
 
@@ -286,6 +291,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mOutputName         = "";                       // [cmd]
     oConfig.mOutputDirectory    = "";                       // [cmd]
     oConfig.mNumThreads         = 0;
+    oConfig.mQuietMode          = false;
     oConfig.mBaseSeed           = 1234;
     oConfig.mMaxPathLength      = 10;
     oConfig.mMinPathLength      = 0;
@@ -327,6 +333,10 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf("Invalid <threads_count> argument, please see help (-h)\n");
                 return;
             }
+        }
+        else if (arg == "-q") // quiet mode
+        {
+            oConfig.mQuietMode = true;
         }
         else if (arg == "-s") // scene to load
         {

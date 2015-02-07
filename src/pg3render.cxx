@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////
 // The main rendering function, renders what is in aConfig
 
-float render(
+float Render(
     const Config &aConfig,
     uint32_t     *oUsedIterations = NULL)
 {
@@ -60,9 +60,12 @@ float render(
             // Print progress bar
 #pragma omp critical
             {
-                const float currentClock = (float)clock();
-                const float progress = (float)((currentClock - startT) / (endT - startT));
-                PrintProgressBars(20, progress);
+                if (!aConfig.mQuietMode)
+                {
+                    const float currentClock = (float)clock();
+                    const float progress = (float)((currentClock - startT) / (endT - startT));
+                    PrintProgressBars(20, progress);
+                }
             }
 
 #pragma omp atomic
@@ -83,8 +86,11 @@ float render(
 #pragma omp critical
             {
                 globalCounter++;
-                const float progress = (float)globalCounter / aConfig.mIterations;
-                PrintProgressBars(20, progress);
+                if (!aConfig.mQuietMode)
+                {
+                    const float progress = (float)globalCounter / aConfig.mIterations;
+                    PrintProgressBars(20, progress);
+                }
             }
         }
     }
@@ -163,10 +169,11 @@ int32_t main(int32_t argc, const char *argv[])
     config.mFramebuffer = &fbuffer;
 
     // Render the image
-    float time = render(config);
+    float time = Render(config);
     std::string timeHumanReadable;
     SecondsToHumanReadable(time, timeHumanReadable);
-    printf(" done in %s\n", timeHumanReadable.c_str());
+    if (!config.mQuietMode)
+        printf(" done in %s\n", timeHumanReadable.c_str());
 
     // Save the image
     std::string fullOutputPath;
@@ -174,17 +181,20 @@ int32_t main(int32_t argc, const char *argv[])
         fullOutputPath = config.mOutputDirectory + "\\" + config.mOutputName;
     else
         fullOutputPath = config.mOutputName;
-    printf("Saving to: %s ... ", fullOutputPath.c_str());
+    if (!config.mQuietMode)
+        printf("Saving to: %s ... ", fullOutputPath.c_str());
     std::string extension = fullOutputPath.substr(fullOutputPath.length() - 3, 3);
     if (extension == "bmp")
     {
         fbuffer.SaveBMP(fullOutputPath.c_str(), 2.2f /*gamma*/);
-        printf("done\n");
+        if (!config.mQuietMode)
+            printf("done\n");
     }
     else if (extension == "hdr")
     {
         fbuffer.SaveHDR(fullOutputPath.c_str());
-        printf("done\n");
+        if (!config.mQuietMode)
+            printf("done\n");
     }
     else
         printf("Used unknown extension %s\n", extension.c_str());
