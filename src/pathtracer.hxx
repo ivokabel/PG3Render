@@ -255,8 +255,16 @@ public:
                 oLight.MakeZero(); // No background light
         }
 
+        PG3_ASSERT(oLight.IsZero() || (lightId >= 0));
+
         if ((oLightProbability != NULL) && (lightId >= 0))
+        {
             LightPickingProbability(aSurfPt, aSurfFrame, lightId, *oLightProbability);
+            // TODO: Uncomment this once proper environment map estimate is implemented.
+            //       Now there can be zero contribution estimate (and therefore zero picking probability)
+            //       even if the actual contribution is non-zero.
+            //PG3_ASSERT(oLight.IsZero() || (*oLightProbability > 0.f));
+        }
     }
 
     // Pick one of the light sources randomly (proportionally to their estimated contribution)
@@ -354,8 +362,10 @@ public:
             }
 
             if (estimatesSum > 0.f)
+            {
                 // Proportional probability
                 oLightProbability = lightEstimate / estimatesSum;
+            }
             else
                 // Uniform probability
                 oLightProbability = 1.f / lightCount;
@@ -489,7 +499,10 @@ public:
             return;
 
         PG3_ASSERT(lightPdfW > 0.f);
-        PG3_ASSERT(lightPickingProbability > 0.f);
+        // TODO: Uncomment this once proper environment map estimate is implemented.
+        //       Now there can be zero contribution estimate (and therefore zero picking probability)
+        //       even if the actual contribution is non-zero.
+        //PG3_ASSERT(lightPickingProbability > 0.f);
         PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
         // Compute multiple importance sampling MC estimator. 
