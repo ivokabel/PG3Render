@@ -10,7 +10,7 @@ TESTING_DIR_WIN=".\\testing"
 FULL_TEST_OUTPUT_DIR=$TESTING_DIR"/full_test_output"
 FULL_TEST_OUTPUT_DIR_WIN=$TESTING_DIR_WIN"\\full_test_output"
 
-ITERATIONS_COUNT=1
+ITERATIONS_COUNT=100
 SHORT_OUTPUT=true
 
 TEST_COUNT_TOTAL=0
@@ -103,6 +103,6 @@ done
 
 echo
 echo "The script has finished."
-echo "Success: $TEST_COUNT_SUCCESSFUL out of $TEST_COUNT_TOTAL"
+echo "Success: $TEST_COUNT_SUCCESSFUL/$TEST_COUNT_TOTAL"
 
 read
