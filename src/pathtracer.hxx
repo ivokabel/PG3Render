@@ -498,7 +498,6 @@ public:
             // Zero direct radiance is coming from this direction
             return;
 
-        PG3_ASSERT(lightPdfW > 0.f);
         // TODO: Uncomment this once proper environment map estimate is implemented.
         //       Now there can be zero contribution estimate (and therefore zero picking probability)
         //       even if the actual contribution is non-zero.
