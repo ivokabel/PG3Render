@@ -88,11 +88,11 @@ cd "$PG3RENDER_BASE_DIR"
 rm -f "$FULL_TEST_OUTPUT_DIR"/*.hdr "$FULL_TEST_OUTPUT_DIR"/*.bmp
 #read
 
-scenes_with_em="6 7 8 9 10 11 12 13 15 16 17"
-for scene in `seq 0 17`;
+scenes_with_em="6 7 8 9 10 11 12 13 15 16 17 18"
+for scene in `seq 0 18`;
 do
     if [[ $scenes_with_em =~ (^| )$scene($| ) ]]; then
-        for em in `seq 0 10`;
+        for em in `seq 0 11`;
         do
             run_rendering_set $scene $em
         done

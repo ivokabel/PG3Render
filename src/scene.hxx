@@ -144,8 +144,7 @@ public:
         kEMImgPlayaSunrise              = 8,
         kEMImgEnnis                     = 9,
         kEMImgSatellite                 = 10,
-
-        kEMImgNext                      = 11,
+        kEMImgPeaceGardensDusk          = 11,
 
         kEMCount,
         kEMDefault                      = kEMConstBluish,
@@ -486,7 +485,7 @@ public:
                     break;
                 }
 
-                case kEMImgNext:
+                case kEMImgPeaceGardensDusk:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
@@ -560,8 +559,8 @@ public:
             oName = "sattelite";
             break;
 
-        case kEMImgNext:
-            oName = "next...";
+        case kEMImgPeaceGardensDusk:
+            oName = "Peace Gardens - Dusk";
             break;
 
         default:
