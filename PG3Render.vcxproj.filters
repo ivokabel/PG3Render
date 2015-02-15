@@ -100,5 +100,8 @@
     <None Include="testing\launcher.bat">
       <Filter>Scripts</Filter>
     </None>
+    <None Include="testing\custom_batch.sh">
+      <Filter>Scripts</Filter>
+    </None>
   </ItemGroup>
 </Project>

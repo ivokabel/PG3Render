@@ -194,6 +194,7 @@
     <ClInclude Include="src\utils.hxx" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="testing\custom_batch.sh" />
     <None Include="testing\full_test.sh" />
     <None Include="testing\launcher.bat" />
   </ItemGroup>
