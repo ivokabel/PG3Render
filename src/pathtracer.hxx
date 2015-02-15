@@ -20,7 +20,10 @@ public:
         int32_t      aSeed = 1234
     ) :
         AbstractRenderer(aScene), mRng(aSeed)
-    {}
+    {
+        mLightContribLastIsectIds.resize(aScene.GetLightCount(), 0u);
+        mLightContribEstimsCache.resize(aScene.GetLightCount(), 0.f);
+    }
 
     virtual void RunIteration(
         const Algorithm     aAlgorithm,
@@ -48,6 +51,8 @@ public:
 
             if (mScene.Intersect(ray, isect))
             {
+                mCurrentIsectId++;
+
                 const Vec3f surfPt = ray.org + ray.dir * isect.dist;
                 Frame surfFrame;
                 surfFrame.SetFromZ(isect.normal);
@@ -239,6 +244,10 @@ public:
                 // We hit a geometry which is not a light source, 
                 // no direct light contribution for this sample
                 oLight.MakeZero();
+
+                // TODO: Indirect radiance
+                //mCurrentIsectId++;
+                //recursion...
             }
         }
         else
@@ -258,6 +267,10 @@ public:
 
         if ((oLightProbability != NULL) && (lightId >= 0))
         {
+            // Note: We compute light picking probability only in case we hit a light source 
+            //       and then we don't recursively compute indirect radiance; therefore, we don't 
+            //       increase the intersection ID (mCurrentIsectId). That's why cached data 
+            //       for light picking probability computation are still valid.
             LightPickingProbability(aSurfPt, aSurfFrame, lightId, *oLightProbability);
             // TODO: Uncomment this once proper environment map estimate is implemented.
             //       Now there can be zero contribution estimate (and therefore zero picking probability)
@@ -296,7 +309,14 @@ public:
                 const AbstractLight* light = mScene.GetLightPtr(i);
                 PG3_ASSERT(light != 0);
 
-                estimatesSum += light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
+                if (mLightContribLastIsectIds[i] != mCurrentIsectId)
+                {
+                    // Update light contribution cache
+                    mLightContribEstimsCache[i]  = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
+                    mLightContribLastIsectIds[i] = mCurrentIsectId;
+                }
+
+                estimatesSum += mLightContribEstimsCache[i];
                 lightContrPseudoCdf[i + 1] = estimatesSum;
             }
 
@@ -354,7 +374,14 @@ public:
                 const AbstractLight* light = mScene.GetLightPtr(i);
                 PG3_ASSERT(light != 0);
 
-                const float estimate = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
+                if (mLightContribLastIsectIds[i] != mCurrentIsectId)
+                {
+                    // Update light contribution cache
+                    mLightContribEstimsCache[i]  = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
+                    mLightContribLastIsectIds[i] = mCurrentIsectId;
+                }
+
+                const float estimate = mLightContribEstimsCache[i];
                 if (i == aLightId)
                     lightEstimate = estimate;
                 estimatesSum += estimate;
@@ -509,5 +536,7 @@ public:
             / (aBrdfSample.mPdfW * aBrdfSample.mCompProbability + lightPdfW * lightPickingProbability);
     }
 
-    Rng     mRng;
+    Rng                     mRng;
+    std::vector<uint32_t>   mLightContribLastIsectIds;
+    std::vector<float>      mLightContribEstimsCache;
 };
