@@ -117,7 +117,7 @@ public:
         const float v2d = Dot(v2, aRay.dir);
 
         if (((v0d < 0.f)  && (v1d < 0.f)  && (v2d < 0.f)) ||
-           ((v0d >= 0.f) && (v1d >= 0.f) && (v2d >= 0.f)))
+            ((v0d >= 0.f) && (v1d >= 0.f) && (v2d >= 0.f)))
         {
             const float distance = Dot(mNormal, ao) / Dot(mNormal, aRay.dir);
 

@@ -108,7 +108,7 @@ public:
         }
 
         // Compute offset within CDF segment
-        float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
+        const float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
         PG3_ASSERT_VALID_FLOAT(offset);
         PG3_ASSERT_VAL_IN_RANGE(offset, 0.0f, 1.0f);
         // since the float random generator generates 1.0 from time to time, we need to ignore this one

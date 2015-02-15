@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+// Uncomment this to activate all asserts in the code
+//#define PG3_ASSERT_ENABLED
+
 void pg3_exit();
 
 #define PG3_WARNING( _message, ... ) \
@@ -46,9 +49,6 @@ void pg3_exit();
         \
         pg3_exit(); \
     }
-
-// Uncomment this to activate all asserts in the code
-#define PG3_ASSERT_ENABLED
 
 #ifdef PG3_ASSERT_ENABLED
 
