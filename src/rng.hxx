@@ -25,7 +25,7 @@ public:
         return mDistInt(mRng);
     }
 
-    uint GetUint()
+    uint32_t GetUint()
     {
         return mDistUint(mRng);
     }
@@ -56,7 +56,7 @@ private:
 
     std::mt19937_64                         mRng;
     std::uniform_int_distribution<int32_t>  mDistInt;
-    std::uniform_int_distribution<uint>     mDistUint;
+    std::uniform_int_distribution<uint32_t> mDistUint;
     std::uniform_real_distribution<float>   mDistFloat;
 };
 
@@ -67,14 +67,14 @@ class TeaImplTemplate
 {
 public:
     void Reset(
-        uint aSeed0,
-        uint aSeed1)
+        uint32_t aSeed0,
+        uint32_t aSeed1)
     {
         mState0 = aSeed0;
         mState1 = aSeed1;
     }
 
-    uint GetImpl(void)
+    uint32_t GetImpl(void)
     {
         uint32_t sum=0;
         const uint32_t delta=0x9e3779b9U;
@@ -91,7 +91,7 @@ public:
 
 private:
 
-    uint mState0, mState1;
+    uint32_t mState0, mState1;
 };
 
 typedef TeaImplTemplate<6>  TeaImpl;
@@ -103,10 +103,10 @@ public:
 
     RandomBase(int32_t aSeed = 1234)
     {
-        mImpl.Reset(uint(aSeed), 5678);
+        mImpl.Reset(uint32_t(aSeed), 5678);
     }
 
-    uint  GetUint()
+    uint32_t GetUint()
     {
         return getImpl();
     }
@@ -134,23 +134,23 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     void StoreState(
-        uint *oState1,
-        uint *oState2)
+        uint32_t *oState1,
+        uint32_t *oState2)
     {
         mImpl.StoreState(oState1, oState2);
     }
 
     void LoadState(
-        uint aState1,
-        uint aState2,
-        uint aDimension)
+        uint32_t aState1,
+        uint32_t aState2,
+        uint32_t aDimension)
     {
         mImpl.LoadState(aState1, aState2, aDimension);
     }
 
 protected:
 
-    uint getImpl(void)
+    uint32_t getImpl(void)
     {
         return mImpl.GetImpl();
     }

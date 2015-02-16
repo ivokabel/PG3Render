@@ -139,22 +139,22 @@ public:
     // Saving BMP
     struct BmpHeader
     {
-        uint    mFileSize;        // Size of file in bytes
-        uint    mReserved01;      // 2x 2 reserved bytes
-        uint    mDataOffset;      // Offset in bytes where data can be found (54)
+        uint32_t    mFileSize;        // Size of file in bytes
+        uint32_t    mReserved01;      // 2x 2 reserved bytes
+        uint32_t    mDataOffset;      // Offset in bytes where data can be found (54)
 
-        uint    mHeaderSize;      // 40B
-        int32_t mWidth;           // Width in pixels
-        int32_t mHeight;          // Height in pixels
+        uint32_t    mHeaderSize;      // 40B
+        int32_t     mWidth;           // Width in pixels
+        int32_t     mHeight;          // Height in pixels
 
-        short   mColorPlates;     // Must be 1
-        short   mBitsPerPixel;    // We use 24bpp
-        uint    mCompression;     // We use BI_RGB ~ 0, uncompressed
-        uint    mImageSize;       // mWidth x mHeight x 3B
-        uint    mHorizRes;        // Pixels per meter (75dpi ~ 2953ppm)
-        uint    mVertRes;         // Pixels per meter (75dpi ~ 2953ppm)
-        uint    mPaletteColors;   // Not using palette - 0
-        uint    mImportantColors; // 0 - all are important
+        short       mColorPlates;     // Must be 1
+        short       mBitsPerPixel;    // We use 24bpp
+        uint32_t    mCompression;     // We use BI_RGB ~ 0, uncompressed
+        uint32_t    mImageSize;       // mWidth x mHeight x 3B
+        uint32_t    mHorizRes;        // Pixels per meter (75dpi ~ 2953ppm)
+        uint32_t    mVertRes;         // Pixels per meter (75dpi ~ 2953ppm)
+        uint32_t    mPaletteColors;   // Not using palette - 0
+        uint32_t    mImportantColors; // 0 - all are important
     };
 
     void SaveBMP(
@@ -164,12 +164,12 @@ public:
         std::ofstream bmp(aFilename, std::ios::binary);
         BmpHeader header;
         bmp.write("BM", 2);
-        header.mFileSize   = uint(sizeof(BmpHeader) + 2) + mResX * mResX * 3;
-        header.mReserved01 = 0;
-        header.mDataOffset = uint(sizeof(BmpHeader) + 2);
-        header.mHeaderSize = 40;
-        header.mWidth      = mResX;
-        header.mHeight     = mResY;
+        header.mFileSize        = uint32_t(sizeof(BmpHeader) + 2) + mResX * mResX * 3;
+        header.mReserved01      = 0;
+        header.mDataOffset      = uint32_t(sizeof(BmpHeader) + 2);
+        header.mHeaderSize      = 40;
+        header.mWidth           = mResX;
+        header.mHeight          = mResY;
         header.mColorPlates     = 1;
         header.mBitsPerPixel    = 24;
         header.mCompression     = 0;

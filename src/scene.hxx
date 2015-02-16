@@ -152,8 +152,8 @@ public:
 
     void LoadCornellBox(
         const Vec2i &aResolution,
-        uint aBoxMask = kDefault,
-        uint aEnvironmentMapType = kEMDefault
+        uint32_t aBoxMask = kDefault,
+        uint32_t aEnvironmentMapType = kEMDefault
         )
     {
         mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
@@ -507,7 +507,7 @@ public:
     }
 
     static std::string GetEnvMapName(
-        uint        aEnvironmentMapType,
+        uint32_t     aEnvironmentMapType,
         std::string *oAcronym = NULL
         )
     {
@@ -581,8 +581,8 @@ public:
     }
 
     static std::string GetSceneName(
-        uint         aBoxMask,
-        uint         aEnvironmentMapType = kEMInvalid,
+        uint32_t     aBoxMask,
+        uint32_t     aEnvironmentMapType = kEMInvalid,
         std::string *oAcronym = NULL)
     {
         std::string name;

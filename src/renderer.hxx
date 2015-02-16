@@ -57,8 +57,8 @@ public:
 
 public:
 
-    uint         mMaxPathLength;
-    uint         mMinPathLength;
+    uint32_t    mMaxPathLength;
+    uint32_t    mMinPathLength;
 
 protected:
 

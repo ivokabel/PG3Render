@@ -59,8 +59,8 @@ struct Config
     uint32_t     mNumThreads;
     bool         mQuietMode;
     int32_t      mBaseSeed;
-    uint         mMaxPathLength;
-    uint         mMinPathLength;
+    uint32_t     mMaxPathLength;
+    uint32_t     mMinPathLength;
     std::string  mDefOutputExtension;
     std::string  mOutputName;
     std::string  mOutputDirectory;
@@ -90,7 +90,7 @@ AbstractRenderer* CreateRenderer(
 }
 
 // Scene configurations
-uint g_SceneConfigs[] = 
+uint32_t g_SceneConfigs[] = 
 {
     // Point light: 0,1
     Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
@@ -129,7 +129,7 @@ uint g_SceneConfigs[] =
 };
 
 std::string DefaultFilename(
-    const uint              aSceneConfig,
+    const uint32_t          aSceneConfig,
     const Config          & aConfig,
     std::string             aOutputNameTrail
     )

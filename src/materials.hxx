@@ -36,8 +36,8 @@ public:
         const SpectrumF &aDiffuseReflectance,
         const SpectrumF &aGlossyReflectance,
         float            aPhongExponent,
-        uint             aDiffuse,
-        uint             aGlossy)
+        uint32_t         aDiffuse,
+        uint32_t         aGlossy)
     {
         mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : SpectrumF().MakeZero();
         mPhongReflectance   = aGlossy  ? aGlossyReflectance  : SpectrumF().MakeZero();

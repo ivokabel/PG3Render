@@ -28,7 +28,7 @@ float FmodX(float x, float y)
     return result;
 }
 
-typedef unsigned uint;
+//typedef unsigned uint;
 
 //////////////////////////////////////////////////////////////////////////
 // Math section
