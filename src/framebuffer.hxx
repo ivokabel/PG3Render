@@ -33,8 +33,8 @@ public:
         uint32_t        y,
         const SpectrumF &aRadiance)
     {
-        PG3_ASSERT_VAL_IN_RANGE(x, 0, (uint32_t)mResolution.x);
-        PG3_ASSERT_VAL_IN_RANGE(y, 0, (uint32_t)mResolution.y);
+        PG3_ASSERT_INTEGER_IN_RANGE(x, 0, (uint32_t)mResolution.x);
+        PG3_ASSERT_INTEGER_IN_RANGE(y, 0, (uint32_t)mResolution.y);
 
         if (x < 0 || x >= mResolution.x)
             return;

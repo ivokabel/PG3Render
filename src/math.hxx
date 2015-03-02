@@ -23,7 +23,7 @@ float FmodX(float x, float y)
     if (result < 0.0f)
         result += y;
 
-    PG3_ASSERT_VAL_IN_RANGE(result, 0.0f, y);
+    PG3_ASSERT_FLOAT_IN_RANGE(result, 0.0f, y);
 
     return result;
 }

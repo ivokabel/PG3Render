@@ -100,8 +100,11 @@ void pg3_exit();
 #define PG3_ASSERT_VAL_NONNEGATIVE(_val) \
     PG3_ASSERT((_val) >= 0)
 
-#define PG3_ASSERT_VAL_IN_RANGE(_val, _low, _up) \
-    PG3_ASSERT(((_val) >= (_low)) && ((_val) <= (_up)))
+#define PG3_ASSERT_FLOAT_IN_RANGE(_val, _low, _up) \
+    PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%.12f <= %.12f <= %.12f", (_low), (_val), (_up))
+
+#define PG3_ASSERT_INTEGER_IN_RANGE(_val, _low, _up) \
+    PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%d <= %d <= %d", (_low), (_val), (_up))
 
 #define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius) \
     PG3_ASSERT(fabs((_val1) - (_val2)) <= (_radius))

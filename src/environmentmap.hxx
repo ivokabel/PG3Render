@@ -35,30 +35,30 @@ public:
 
     SpectrumF& ElementAt(uint32_t aX, uint32_t aY)
     {
-        PG3_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
-        PG3_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
+        PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
+        PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
 
         return mData[mWidth*aY + aX];
     }
 
     const SpectrumF& ElementAt(uint32_t aX, uint32_t aY) const
     {
-        PG3_ASSERT_VAL_IN_RANGE(aX, 0, mWidth);
-        PG3_ASSERT_VAL_IN_RANGE(aY, 0, mHeight);
+        PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
+        PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
 
         return mData[mWidth*aY + aX];
     }
 
     SpectrumF& ElementAt(uint32_t aIdx)
     {
-        PG3_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
+        PG3_ASSERT_INTEGER_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
         return mData[aIdx];
     }
 
     const SpectrumF& ElementAt(uint32_t aIdx) const
     {
-        PG3_ASSERT_VAL_IN_RANGE(aIdx, 0, mWidth*mHeight);
+        PG3_ASSERT_INTEGER_IN_RANGE(aIdx, 0, mWidth*mHeight);
 
         return mData[aIdx];
     }
@@ -198,7 +198,7 @@ private:
     InputImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
     {
         aRotate = FmodX(aRotate, 1.0f);
-        PG3_ASSERT_VAL_IN_RANGE(aRotate, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aRotate, 0.0f, 1.0f);
 
         Imf::RgbaInputFile file(aFilename, 1);
         Imath::Box2i dw = file.dataWindow();
@@ -271,8 +271,8 @@ private:
     PG3_PROFILING_NOINLINE
     Vec3f LatLong2Dir(const Vec2f &uv) const
     {
-        PG3_ASSERT_VAL_IN_RANGE(uv.x, 0.f, 1.f);
-        PG3_ASSERT_VAL_IN_RANGE(uv.y, 0.f, 1.f);
+        PG3_ASSERT_FLOAT_IN_RANGE(uv.x, 0.f, 1.f);
+        PG3_ASSERT_FLOAT_IN_RANGE(uv.y, 0.f, 1.f);
 
         const float phi   = -(uv.x - 0.5f) * 2 * PI_F; // we rotate in the opposite direction
         const float theta = uv.y * PI_F;
@@ -308,8 +308,8 @@ private:
     SpectrumF LookupRadiance(const Vec2ui &aSegm) const
     {
         PG3_ASSERT(mImage != NULL);
-        PG3_ASSERT_VAL_IN_RANGE(aSegm.x, 0u, mImage->Width());
-        PG3_ASSERT_VAL_IN_RANGE(aSegm.y, 0u, mImage->Height());
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
 
         return mImage->ElementAt(aSegm.x, aSegm.y);
     }
@@ -319,8 +319,8 @@ private:
     SpectrumF LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
     {
         PG3_ASSERT(mImage != NULL);
-        PG3_ASSERT_VAL_IN_RANGE(uv.x, 0.0f, 1.0f);
-        PG3_ASSERT_VAL_IN_RANGE(uv.y, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(uv.x, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(uv.y, 0.0f, 1.0f);
 
         const Vec2ui imageSize = mImage->Size();
 
@@ -380,7 +380,7 @@ private:
     float SinMidTheta(const InputImage* aImage, const float aV) const
     {
         PG3_ASSERT(aImage != NULL);
-        PG3_ASSERT_VAL_IN_RANGE(aV, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aV, 0.0f, 1.0f);
 
         const uint32_t height   = aImage->Height();
         const uint32_t segment  = std::min((uint32_t)(aV * height), height - 1u);

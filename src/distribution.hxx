@@ -92,7 +92,7 @@ public:
         float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
         oSegm = Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
 
-        PG3_ASSERT_VAL_IN_RANGE(oSegm, 0, mCount - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mCount - 1);
         PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
 
         // Fix the case when func ends with zeros
@@ -110,7 +110,7 @@ public:
         // Compute offset within CDF segment
         const float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
         PG3_ASSERT_VALID_FLOAT(offset);
-        PG3_ASSERT_VAL_IN_RANGE(offset, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
         // since the float random generator generates 1.0 from time to time, we need to ignore this one
         //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
