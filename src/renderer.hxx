@@ -4,30 +4,17 @@
 #include <cmath>
 #include "scene.hxx"
 #include "framebuffer.hxx"
+#include "config.hxx"
 #include "types.hxx"
-
-enum Algorithm
-{
-    kEyeLight,
-    kDirectIllumBRDFSampling,
-    kDirectIllumLightSamplingAll,
-    kDirectIllumLightSamplingSingle,
-    kDirectIllumMIS,
-    //kIndirectIllum,
-    kPathTracing,
-    kAlgorithmCount
-};
 
 class AbstractRenderer
 {
 public:
 
-    AbstractRenderer(const Scene& aScene) : mScene(aScene)
+    AbstractRenderer(const Config &aConfig) : mConfig(aConfig)
     {
-        mMinPathLength = 0;
-        mMaxPathLength = 2;
         mIterations = 0;
-        mFramebuffer.Setup(aScene.mCamera.mResolution);
+        mFramebuffer.Setup(mConfig.mScene->mCamera.mResolution);
         mCurrentIsectId = 0;
     }
 
@@ -55,18 +42,13 @@ public:
     //! Whether this renderer was used at all
     bool WasUsed() const { return mIterations > 0; }
 
-public:
-
-    uint32_t    mMaxPathLength;
-    uint32_t    mMinPathLength;
-
 protected:
 
-    uint32_t     mIterations;
-    Framebuffer  mFramebuffer;
-    const Scene &mScene;
+    uint32_t         mIterations;
+    Framebuffer      mFramebuffer;
+    const Config    &mConfig;
 
     // Intersection counter to determine whether cached intersecton data are still valid.
     // Used for light source contribution estimates (later used for light picking probabilities).
-    uint32_t     mCurrentIsectId;
+    uint32_t         mCurrentIsectId;
 };

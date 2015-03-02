@@ -5,6 +5,7 @@
 #include "framebuffer.hxx"
 #include "scene.hxx"
 #include "eyelight.hxx"
+#include "directillumination.hxx"
 #include "pathtracer.hxx"
 #include "config.hxx"
 #include "process.hxx"
@@ -16,6 +17,31 @@
 #include <cmath>
 #include <cstdlib>
 #include <time.h>
+
+// Renderer factory
+AbstractRenderer* CreateRenderer(
+    const Config&   aConfig,
+    const int32_t   aSeed)
+{
+    switch (aConfig.mAlgorithm)
+    {
+    case kEyeLight:
+        return new EyeLight(aConfig, aSeed);
+
+    case kDirectIllumLightSamplingAll:
+    case kDirectIllumLightSamplingSingle:
+    case kDirectIllumBRDFSampling:
+    case kDirectIllumMIS:
+        return new DirectIllumination(aConfig, aSeed);
+
+    case kPathTracingNaive:
+    case kPathTracingNEEMIS:
+        return new PathTracer(aConfig, aSeed);
+
+    default:
+        PG3_FATAL_ERROR("Unknown algorithm!!");
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // The main rendering function, renders what is in aConfig
@@ -35,12 +61,7 @@ float Render(
     renderers = new AbstractRendererPtr[aConfig.mNumThreads];
 
     for (uint32_t i=0; i<aConfig.mNumThreads; i++)
-    {
         renderers[i] = CreateRenderer(aConfig, aConfig.mBaseSeed + i);
-
-        renderers[i]->mMaxPathLength = aConfig.mMaxPathLength;
-        renderers[i]->mMinPathLength = aConfig.mMinPathLength;
-    }
 
     const float startT = (float)clock();
     const float endT   = startT + aConfig.mMaxTime*CLOCKS_PER_SEC;
@@ -148,12 +169,10 @@ int32_t main(int32_t argc, const char *argv[])
     // Setup config based on command line
     Config config;
     ParseCommandline(argc, argv, config);
-
-    // When some error has been encountered, exit
     if (config.mScene == NULL)
     {
-        // debug
-        //getchar(); // Wait for pressing the enter key on the command line
+        // When some error has been encountered, exit
+        //getchar(); // debug // Wait for pressing the enter key on the command line
         return 1;
     }
 

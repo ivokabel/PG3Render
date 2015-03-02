@@ -1,17 +1,11 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
-#include <time.h>
-#include <cstdlib>
 #include "math.hxx"
 #include "ray.hxx"
 #include "geometry.hxx"
 #include "camera.hxx"
 #include "framebuffer.hxx"
 #include "scene.hxx"
-#include "eyelight.hxx"
-#include "pathtracer.hxx"
 #include "types.hxx"
 #include "hardsettings.hxx"
 
@@ -19,6 +13,22 @@
 #include <string>
 #include <set>
 #include <sstream>
+#include <vector>
+#include <cmath>
+#include <time.h>
+#include <cstdlib>
+
+enum Algorithm
+{
+    kEyeLight,
+    kDirectIllumBRDFSampling,
+    kDirectIllumLightSamplingAll,
+    kDirectIllumLightSamplingSingle,
+    kDirectIllumMIS,
+    kPathTracingNaive,
+    kPathTracingNEEMIS,
+    kAlgorithmCount
+};
 
 // Renderer configuration, holds algorithm, scene, and all other settings
 struct Config
@@ -32,7 +42,8 @@ struct Config
             "direct illumination - light sampling (all)",
             "direct illumination - light sampling (single sample)",
             "direct illumination - multiple importance sampling",
-            "path tracing"
+            "naive path tracing",
+            "path tracing (next event estimate, multiple importance sampling)",
         };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
@@ -43,7 +54,7 @@ struct Config
 
     static const char* GetAcronym(Algorithm aAlgorithm)
     {
-        static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "pt" };
+        static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "ptn", "ptnm" };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
             return "unknown";
@@ -52,42 +63,22 @@ struct Config
     }
 
     const Scene *mScene;
+
     Algorithm    mAlgorithm;
+    uint32_t     mMaxPathLength;    // Only used for path-based algorithms
+    uint32_t     mMinPathLength;    // dtto
+
     int32_t      mIterations;
     float        mMaxTime;
     Framebuffer *mFramebuffer;
     uint32_t     mNumThreads;
     bool         mQuietMode;
     int32_t      mBaseSeed;
-    uint32_t     mMaxPathLength;
-    uint32_t     mMinPathLength;
     std::string  mDefOutputExtension;
     std::string  mOutputName;
     std::string  mOutputDirectory;
     Vec2i        mResolution;
 };
-
-// Utility function, essentially a renderer factory
-AbstractRenderer* CreateRenderer(
-    const Config&   aConfig,
-    const int32_t   aSeed)
-{
-    const Scene& scene = *aConfig.mScene;
-
-    switch(aConfig.mAlgorithm)
-    {
-    case kEyeLight:
-        return new EyeLight(scene, aSeed);
-    case kDirectIllumLightSamplingAll:
-    case kDirectIllumLightSamplingSingle:
-    case kDirectIllumBRDFSampling:
-    case kDirectIllumMIS:
-    case kPathTracing:
-        return new PathTracer(scene, aSeed);
-    default:
-        PG3_FATAL_ERROR("Unknown algorithm!!");
-    }
-}
 
 // Scene configurations
 uint32_t g_SceneConfigs[] = 
@@ -138,15 +129,29 @@ std::string DefaultFilename(
 
     std::string filename;
 
-    // Scene acronym
     filename += aConfig.mScene->mSceneAcronym;
 
-    // Acronym of the used algorithm
+    // Algorithm acronym
     filename += "_";
     filename += Config::GetAcronym(aConfig.mAlgorithm);
 
-    // Debug info
+    // Path length
+    if (   (aConfig.mAlgorithm == kPathTracingNaive)
+        || (aConfig.mAlgorithm == kPathTracingNEEMIS))
+    {
+        filename += "_";
+        if (aConfig.mMaxPathLength == 0)
+            filename += "rr";
+        else
+            filename +=
+                  "pl"
+                + std::to_string(aConfig.mMinPathLength)
+                + "-"
+                + std::to_string(aConfig.mMaxPathLength);
+    }
+
 #ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
+    // Debug info
     if (   (aConfig.mAlgorithm >= kDirectIllumLightSamplingAll)
         && (aConfig.mAlgorithm <= kDirectIllumMIS))
     {
@@ -212,7 +217,17 @@ void PrintConfiguration(const Config &config)
     printf("PG3Render\n");
 
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
-    printf("Algorithm: %s\n", config.GetName(config.mAlgorithm));
+    printf("Algorithm: %s", config.GetName(config.mAlgorithm));
+    if (   (config.mAlgorithm == kPathTracingNaive)
+        || (config.mAlgorithm == kPathTracingNEEMIS))
+    {
+        if (config.mMaxPathLength == 0)
+            printf(", Russian roulette path ending");
+        else
+            printf(", path lengths interval: %d-%d", config.mMinPathLength, config.mMaxPathLength);
+    }
+    printf("\n");
+
     if (config.mMaxTime > 0)
         printf("Target:    %g seconds render time\n", config.mMaxTime);
     else
@@ -248,35 +263,37 @@ void PrintHelp(const char *argv[])
     printf("\n");
     printf(
         "Usage: %s [ "
-        "-s <scene_id> | -em <env_map_type> | -a <algorithm> | -t <time> | -i <iterations> | "
-        "-e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | "
-        "-j <threads_count> | -q"
-        " ]\n\n", 
+        "-s <scene_id> | -em <env_map_type> | -a <algorithm> | -minpl <min_path_length> | -maxpl <max_path_length> | -t <time> | -i <iterations> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ]\n\n", 
         filename.c_str());
 
-    printf("    -s  Selects the scene (default 0):\n");
+    printf("    -s     Selects the scene (default 0):\n");
     for (int32_t i = 0; i < SizeOfArray(g_SceneConfigs); i++)
         printf("          %2d    %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
 
-    printf("    -em Selects the environment map type (default 0; ignored if the scene doesn't use an environment map):\n");
+    printf("    -em    Selects the environment map type (default 0; ignored if the scene doesn't use an environment map):\n");
     for (int32_t i = 0; i < Scene::kEMCount; i++)
         printf("          %2d    %s\n", i, Scene::GetEnvMapName(i).c_str());
 
-    printf("    -a  Selects the rendering algorithm (default pt):\n");
+    printf("    -a     Selects the rendering algorithm (default ptnm):\n");
     for (int32_t i = 0; i < (int32_t)kAlgorithmCount; i++)
         printf("          %-4s  %s\n",
             Config::GetAcronym(Algorithm(i)),
             Config::GetName(Algorithm(i)));
+    printf("    -maxpl Maximum path length. Only valid for path tracers.\n");
+    printf("           0 means no hard limit - paths are ended using Russian roulette (default behaviour)\n");
+    printf("    -minpl Minimum path length. Must be greater than 0 and not greater then maximum path length.\n");
+    printf("           Must not be set if Russian roulette is used for ending paths. Only valid for path tracers.\n");
+    printf("           Default is 1.\n");
 
-    printf("    -t  Number of seconds to run the algorithm\n");
-    printf("    -i  Number of iterations to run the algorithm (default 1)\n");
-    printf("    -e  Extension of the default output file: bmp or hdr (default bmp)\n");
-    printf("    -od User specified directory for the output, whose existence is not checked (default \"\")\n");
-    printf("    -o  User specified output name, with extension .bmp or .hdr (default .bmp)\n");
-    printf("    -ot Trail text to be added at the end the output file name\n");
-    printf("        (only used to alter a default filename; '_' is pasted automatically before the trail).\n");
-    printf("    -j  Number of threads (\"jobs\") to be used\n");
-    printf("    -q  Quiet mode - doesn't print anything except for warnings and errors\n");
+    printf("    -t     Number of seconds to run the algorithm\n");
+    printf("    -i     Number of iterations to run the algorithm (default 1)\n");
+    printf("    -e     Extension of the default output file: bmp or hdr (default bmp)\n");
+    printf("    -od    User specified directory for the output, whose existence is not checked (default \"\")\n");
+    printf("    -o     User specified output name, with extension .bmp or .hdr (default .bmp)\n");
+    printf("    -ot    Trail text to be added at the end the output file name\n");
+    printf("           (only used to alter a default filename; '_' is pasted automatically before the trail).\n");
+    printf("    -j     Number of threads (\"jobs\") to be used\n");
+    printf("    -q     Quiet mode - doesn't print anything except for warnings and errors\n");
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
 }
 
@@ -285,7 +302,11 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
     oConfig.mScene              = NULL;                     // [cmd] When NULL, renderer will not run
+
     oConfig.mAlgorithm          = kAlgorithmCount;          // [cmd]
+    oConfig.mMinPathLength      = 1;                        // [cmd]
+    oConfig.mMaxPathLength      = 0;                        // [cmd]
+
     oConfig.mIterations         = 1;                        // [cmd]
     oConfig.mMaxTime            = -1.f;                     // [cmd]
     oConfig.mDefOutputExtension = "bmp";                    // [cmd]
@@ -294,8 +315,6 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mNumThreads         = 0;
     oConfig.mQuietMode          = false;
     oConfig.mBaseSeed           = 1234;
-    oConfig.mMaxPathLength      = 10;
-    oConfig.mMinPathLength      = 0;
     oConfig.mResolution         = Vec2i(512, 512);
 
     int32_t sceneID     = 0; // default 0
@@ -322,7 +341,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <threads_count> argument, please see help (-h)\n");
+                printf("Error: Missing <threads_count> argument, please see help (-h)\n");
                 return;
             }
 
@@ -331,7 +350,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || oConfig.mNumThreads <= 0)
             {
-                printf("Invalid <threads_count> argument, please see help (-h)\n");
+                printf("Error: Invalid <threads_count> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -343,7 +362,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <scene_id> argument, please see help (-h)\n");
+                printf("Error: Missing <scene_id> argument, please see help (-h)\n");
                 return;
             }
 
@@ -352,7 +371,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || sceneID < 0 || sceneID >= SizeOfArray(g_SceneConfigs))
             {
-                printf("Invalid <scene_id> argument, please see help (-h)\n");
+                printf("Error: Invalid <scene_id> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -360,13 +379,14 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <environment_map_id> argument, please see help (-h)\n");
+                printf("Error: Missing <environment_map_id> argument, please see help (-h)\n");
                 return;
             }
 
             if ((g_SceneConfigs[sceneID] & Scene::kLightEnv) == 0)
             {
                 printf(
+                    "\n"
                     "Warning: You specified an environment map; however, "
                     "the scene was either not set yet or it doesn't use an environment map.\n\n");
             }
@@ -376,7 +396,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || envMapID < 0 || envMapID >= Scene::kEMCount)
             {
-                printf("Invalid <environment_map_id> argument, please see help (-h)\n");
+                printf("Error: Invalid <environment_map_id> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -384,7 +404,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <algorithm> argument, please see help (-h)\n");
+                printf("Error: Missing <algorithm> argument, please see help (-h)\n");
                 return;
             }
 
@@ -395,15 +415,73 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (oConfig.mAlgorithm == kAlgorithmCount)
             {
-                printf("Invalid <algorithm> argument, please see help (-h)\n");
+                printf("Error: Invalid <algorithm> argument, please see help (-h)\n");
                 return;
             }
+        }
+        else if (arg == "-maxpl") // maximal path length
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <max_path_length> argument, please see help (-h)\n");
+                return;
+            }
+
+            if (   (oConfig.mAlgorithm != kPathTracingNaive)
+                && (oConfig.mAlgorithm != kPathTracingNEEMIS))
+            {
+                printf(
+                    "\n"
+                    "Warning: You specified maximal path length; however, "
+                    "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
+            }
+
+            int32_t tmpPathLength;
+            std::istringstream iss(argv[i]);
+            iss >> tmpPathLength;
+
+            if (iss.fail() || tmpPathLength < 0)
+            {
+                printf("Error: Invalid <max_path_length> argument, please see help (-h)\n");
+                return;
+            }
+
+            oConfig.mMaxPathLength = tmpPathLength;
+        }
+        else if (arg == "-minpl") // minimal path length
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <min_path_length> argument, please see help (-h)\n");
+                return;
+            }
+
+            if (   (oConfig.mAlgorithm != kPathTracingNaive)
+                && (oConfig.mAlgorithm != kPathTracingNEEMIS))
+            {
+                printf(
+                    "\n"
+                    "Warning: You specified minimal path length; however, "
+                    "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
+            }
+
+            int32_t tmpPathLength;
+            std::istringstream iss(argv[i]);
+            iss >> tmpPathLength;
+
+            if (iss.fail() || tmpPathLength < 1)
+            {
+                printf("Error: Invalid <min_path_length> argument, please see help (-h)\n");
+                return;
+            }
+
+            oConfig.mMinPathLength = tmpPathLength;
         }
         else if (arg == "-i") // number of iterations to run
         {
             if (++i == argc)
             {
-                printf("Missing <iterations> argument, please see help (-h)\n");
+                printf("Error: Missing <iterations> argument, please see help (-h)\n");
                 return;
             }
 
@@ -412,7 +490,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || oConfig.mIterations < 1)
             {
-                printf("Invalid <iterations> argument, please see help (-h)\n");
+                printf("Error: Invalid <iterations> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -420,7 +498,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <time> argument, please see help (-h)\n");
+                printf("Error: Missing <time> argument, please see help (-h)\n");
                 return;
             }
 
@@ -429,7 +507,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || oConfig.mMaxTime < 0)
             {
-                printf("Invalid <time> argument, please see help (-h)\n");
+                printf("Error: Invalid <time> argument, please see help (-h)\n");
                 return;
             }
 
@@ -439,7 +517,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <default_output_extension> argument, please see help (-h)\n");
+                printf("Error: Missing <default_output_extension> argument, please see help (-h)\n");
                 return;
             }
 
@@ -448,13 +526,14 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (oConfig.mDefOutputExtension != "bmp" && oConfig.mDefOutputExtension != "hdr")
             {
                 printf(
-                    "The <default_output_extension> argument \"%s\" is neither \"bmp\" nor \"hdr\". Using \"bmp\".\n", 
+                    "\n"
+                    "Warning: The <default_output_extension> argument \"%s\" is neither \"bmp\" nor \"hdr\". Using \"bmp\".\n\n",
                     oConfig.mDefOutputExtension.c_str());
                 oConfig.mDefOutputExtension = "bmp";
             }
             else if (oConfig.mDefOutputExtension.length() == 0)
             {
-                printf("Invalid <default_output_extension> argument, please see help (-h)\n");
+                printf("Error: Invalid <default_output_extension> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -462,7 +541,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <output_name> argument, please see help (-h)\n");
+                printf("Error: Missing <output_name> argument, please see help (-h)\n");
                 return;
             }
 
@@ -470,7 +549,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (oConfig.mOutputName.length() == 0)
             {
-                printf("Invalid <output_name> argument, please see help (-h)\n");
+                printf("Error: Invalid <output_name> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -478,7 +557,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <output_directory> argument, please see help (-h)\n");
+                printf("Error: Missing <output_directory> argument, please see help (-h)\n");
                 return;
             }
 
@@ -486,7 +565,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (oConfig.mOutputDirectory.length() == 0)
             {
-                printf("Invalid <output_directory> argument, please see help (-h)\n");
+                printf("Error: Invalid <output_directory> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -494,7 +573,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             if (++i == argc)
             {
-                printf("Missing <output_trail> argument, please see help (-h)\n");
+                printf("Error: Missing <output_trail> argument, please see help (-h)\n");
                 return;
             }
 
@@ -502,7 +581,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (outputNameTrail.length() == 0)
             {
-                printf("Invalid <output_trail> argument, please see help (-h)\n");
+                printf("Error: Invalid <output_trail> argument, please see help (-h)\n");
                 return;
             }
         }
@@ -510,7 +589,23 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
     // Check algorithm was selected
     if (oConfig.mAlgorithm == kAlgorithmCount)
-        oConfig.mAlgorithm = kPathTracing;
+        oConfig.mAlgorithm = kPathTracingNEEMIS;
+
+    // Check path lengths settings
+    if ((oConfig.mMaxPathLength == 0) && (oConfig.mMinPathLength != 1))
+    {
+        printf(
+            "Error: Minimum path length different from 1 is set while Russian roulette is used for ending paths, "
+            "please see help (-h)\n");
+        return;
+    }
+    if ((oConfig.mMaxPathLength != 0) && (oConfig.mMinPathLength > oConfig.mMaxPathLength))
+    {
+        printf(
+            "Error: Minimum path length (%d) is larger than maximum path length (%d), please see help (-h)\n",
+            oConfig.mMinPathLength, oConfig.mMaxPathLength);
+        return;
+    }
 
     // Load scene
     Scene *scene = new Scene;

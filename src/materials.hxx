@@ -188,6 +188,23 @@ public:
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
+    float GetReflectanceEstimate(
+        const Vec3f &aWol
+        ) const
+    {
+        // Compute scalar reflectances. Replicated in SampleBrdf() and GetPdfW()!
+        const float diffuseReflectance = GetDiffuseReflectance();
+        const float cosThetaOut = std::max(aWol.z, 0.f);
+        const float glossyReflectance =
+              GetGlossyReflectance()
+            * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
+                                           // Cheap, but relatively good approximation of actual glossy reflectance
+                                           // (part of the glossy lobe can be under the surface).
+        const float totalReflectance = (diffuseReflectance + glossyReflectance);
+
+        return totalReflectance;
+    }
+
     SpectrumF   mDiffuseReflectance;
     SpectrumF   mPhongReflectance;
     float       mPhongExponent;

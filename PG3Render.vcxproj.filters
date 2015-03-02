@@ -92,6 +92,12 @@
     <ClInclude Include="src\hardsettings.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\directillumination.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pathtracerbase.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

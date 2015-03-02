@@ -12,15 +12,17 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-"$PG3RENDER" -a dmis -i 100 -s 5         -od ".\output images" -ot "non_cached_contribs_x64" -e hdr
+"$PG3RENDER" -a ptn -i 10000  -s 2 -od ".\output images" -ot "ClampedRR" -e hdr
 echo
-"$PG3RENDER" -a dmis -i 100 -s 7  -em 9  -od ".\output images" -ot "non_cached_contribs_x64" -e hdr
+"$PG3RENDER" -a ptn -i 10000  -s 3 -od ".\output images" -ot "ClampedRR" -e hdr
 echo
-"$PG3RENDER" -a dmis -i 100 -s 7  -em 11 -od ".\output images" -ot "non_cached_contribs_x64" -e hdr
+"$PG3RENDER" -a ptn -i 10000  -s 4 -od ".\output images" -ot "ClampedRR" -e hdr
 echo
-"$PG3RENDER" -a dmis -i 100 -s 17 -em 9  -od ".\output images" -ot "non_cached_contribs_x64" -e hdr
+"$PG3RENDER" -a ptn -i 10000  -s 5 -od ".\output images" -ot "ClampedRR" -e hdr
 echo
-"$PG3RENDER" -a dmis -i 100 -s 18 -em 9  -od ".\output images" -ot "non_cached_contribs_x64" -e hdr
+"$PG3RENDER" -a ptn -i 10000  -s 6 -od ".\output images" -ot "ClampedRR" -e hdr
+echo
+"$PG3RENDER" -a ptn -i 10000  -s 7 -od ".\output images" -ot "ClampedRR" -e hdr
 echo
 
 echo

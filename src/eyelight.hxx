@@ -13,10 +13,10 @@ class EyeLight : public AbstractRenderer
 public:
 
     EyeLight(
-        const Scene& aScene,
-        int32_t      aSeed = 1234
+        const Config    &aConfig,
+        int32_t          aSeed = 1234
     ) :
-        AbstractRenderer(aScene), mRng(aSeed)
+        AbstractRenderer(aConfig), mRng(aSeed)
     {}
 
     virtual void RunIteration(
@@ -25,8 +25,8 @@ public:
     {
         aAlgorithm; // unused param
 
-        const int32_t resX = int32_t(mScene.mCamera.mResolution.x);
-        const int32_t resY = int32_t(mScene.mCamera.mResolution.y);
+        const int32_t resX = int32_t(mConfig.mScene->mCamera.mResolution.x);
+        const int32_t resY = int32_t(mConfig.mScene->mCamera.mResolution.y);
 
         for (int32_t pixID = 0; pixID < resX * resY; pixID++)
         {
@@ -38,11 +38,11 @@ public:
             const Vec2f sample = Vec2f(float(x), float(y)) +
                 (aIteration == 0 ? Vec2f(0.5f) : mRng.GetVec2f());
 
-            Ray   ray = mScene.mCamera.GenerateRay(sample);
+            Ray   ray = mConfig.mScene->mCamera.GenerateRay(sample);
             Isect isect;
             isect.dist = 1e36f;
 
-            if (mScene.Intersect(ray, isect))
+            if (mConfig.mScene->Intersect(ray, isect))
             {
                 float dotLN = Dot(isect.normal, -ray.dir);
 
