@@ -77,17 +77,15 @@ public:
                 if ((mMaxPathLength > 0) && (pathLength >= mMaxPathLength))
                     return;
 
-                // Russian roulette
+                // Russian roulette (based on reflectance of the whole BRDF)
                 float reflectanceEstimate = 1.0f;
                 if (mMaxPathLength == 0)
                 {
-                    //reflectanceEstimate = mat.GetReflectanceEstimate(wol);
                     reflectanceEstimate = Clamp(mat.GetReflectanceEstimate(wol), 0.0f, 1.0f);
                     const float rnd = mRng.GetFloat();
                     if (rnd > reflectanceEstimate)
                         return;
                 }
-                //PG3_ASSERT_FLOAT_IN_RANGE(reflectanceEstimate, 0.0f, 1.0f);
 
                 // Sample BRDF
                 BRDFSample brdfSample;

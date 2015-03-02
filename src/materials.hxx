@@ -133,7 +133,7 @@ public:
         {
             // Specular component
 
-            oBrdfSample.mCompProbability = 1.f - diffuseReflectance / totalReflectance;
+            oBrdfSample.mCompProbability = glossyReflectance / totalReflectance;
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample = 
