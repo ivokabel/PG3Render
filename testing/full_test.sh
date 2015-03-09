@@ -11,7 +11,7 @@ TESTING_DIR_WIN=".\\testing"
 FULL_TEST_OUTPUT_DIR=$TESTING_DIR"/full_test_output"
 FULL_TEST_OUTPUT_DIR_WIN=$TESTING_DIR_WIN"\\full_test_output"
 
-ITERATIONS_COUNT=100
+ITERATIONS_COUNT=20
 SHORT_OUTPUT=true
 
 TEST_COUNT_TOTAL=0
@@ -93,7 +93,7 @@ scenes_with_em="6 7 8 9 10 11 12 13 15 16 17 18"
 for scene in `seq 0 18`;
 do
     if [[ $scenes_with_em =~ (^| )$scene($| ) ]]; then
-        for em in `seq 0 11`;
+        for em in `seq 0 5`; #11`;
         do
             run_rendering_set $scene $em
         done
