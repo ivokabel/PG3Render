@@ -118,7 +118,7 @@ public:
             const AbstractLight *light =
                 isect.lightID < 0 ? NULL : mConfig.mScene->GetLightPtr(isect.lightID);
             if (light != NULL)
-                Le = light->GetEmmision(surfPt, wol, Vec3f(), NULL, Frame()); // last 2 params are not used
+                Le = light->GetEmmision(surfPt, wol, Vec3f());
             else
                 Le.MakeZero();
 
@@ -133,7 +133,7 @@ public:
             // No intersection - get radiance from the background
             const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
             if (backgroundLight != NULL)
-                oRadiance = backgroundLight->GetEmmision(aRay.dir, true, NULL, Frame());
+                oRadiance = backgroundLight->GetEmmision(aRay.dir, true);
             else
                 oRadiance.MakeZero(); // No background light
         }

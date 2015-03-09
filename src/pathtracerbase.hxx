@@ -93,7 +93,7 @@ public:
                 Frame frame;
                 frame.SetFromZ(brdfIsect.normal);
                 const Vec3f ligthWol = frame.ToLocal(-brdfRay.dir);
-                oLight = light->GetEmmision(lightPt, ligthWol, aSurfPt, oPdfW, aSurfFrame);
+                oLight = light->GetEmmision(lightPt, ligthWol, aSurfPt, oPdfW, &aSurfFrame);
 
                 lightId = brdfIsect.lightID;
             }
@@ -114,7 +114,7 @@ public:
             const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
             if (backgroundLight != NULL)
             {
-                oLight = backgroundLight->GetEmmision(wig, false, oPdfW, aSurfFrame);
+                oLight = backgroundLight->GetEmmision(wig, false, oPdfW, &aSurfFrame);
                 lightId = mConfig.mScene->GetBackgroundLightId();
             }
             else

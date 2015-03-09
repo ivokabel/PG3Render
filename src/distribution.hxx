@@ -141,7 +141,7 @@ public:
     // This class is not copyable because of a const member.
     // If we don't delete the assignment operator and copy constructor 
     // explicitly, the compiler may complain about not being able 
-    // to create default implementations.
+    // to create their default implementations.
     Distribution1D & operator=(const Distribution1D&) = delete;
     Distribution1D(const Distribution1D&) = delete;
 

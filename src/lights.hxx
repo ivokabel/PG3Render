@@ -46,8 +46,8 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW,
-        const Frame &aSurfFrame
+              float *oPdfW = NULL,
+        const Frame *aSurfFrame = NULL
         ) const = 0;
 
     // Returns an estimate of light contribution of this light-source to the given point.
@@ -87,8 +87,8 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW,
-        const Frame &aSurfFrame
+              float *oPdfW = NULL,
+        const Frame *aSurfFrame = NULL
         ) const
     {
         aSurfFrame; // unused param
@@ -236,8 +236,8 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW,
-        const Frame &aSurfFrame
+              float *oPdfW = NULL,
+        const Frame *aSurfFrame = NULL
         ) const
     {
         aSurfPt; aLightPt; aSurfFrame; aWol; // unused parameter
@@ -330,16 +330,16 @@ public:
     SpectrumF GetEmmision(
         const Vec3f &aWig,
               bool   bDoBilinFiltering,
-              float *oPdfW,
-        const Frame &aSurfFrame
+              float *oPdfW = NULL,
+        const Frame *aSurfFrame = NULL
         ) const
     {
         if (mEnvMap != NULL)
             return mEnvMap->Lookup(aWig, bDoBilinFiltering, oPdfW);
         else
         {
-            if (oPdfW != NULL)
-                *oPdfW = CosHemispherePdfW(aSurfFrame.Normal(), aWig);
+            if ((oPdfW != NULL) && (aSurfFrame != NULL))
+                *oPdfW = CosHemispherePdfW(aSurfFrame->Normal(), aWig);
             return mConstantRadiance;
         }
     };
@@ -350,8 +350,8 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW,
-        const Frame &aSurfFrame
+              float *oPdfW = NULL,
+        const Frame *aSurfFrame = NULL
         ) const
     {
         aSurfPt;  aLightPt; // unused params

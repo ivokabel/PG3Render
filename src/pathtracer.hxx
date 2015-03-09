@@ -65,7 +65,7 @@ public:
                     const AbstractLight *light = mConfig.mScene->GetLightPtr(isect.lightID);
                     if (light != NULL)
                         oRadiance +=
-                              light->GetEmmision(surfPt, wol, Vec3f(), NULL, Frame()) // last 2 params are not used
+                              light->GetEmmision(surfPt, wol, Vec3f())
                             * pathThroughput;
                 }
 
@@ -115,7 +115,7 @@ public:
                     const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
                     if (backgroundLight != NULL)
                         oRadiance +=
-                              backgroundLight->GetEmmision(currentRay.dir, true, NULL, Frame())
+                              backgroundLight->GetEmmision(currentRay.dir, true)
                             * pathThroughput;
                 }
 

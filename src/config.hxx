@@ -83,19 +83,19 @@ struct Config
 // Scene configurations
 uint32_t g_SceneConfigs[] = 
 {
-    // Point light: 0,1
+    // Point light, box: 0,1
     Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    // Ceiling light: 2,3
+    // Ceiling light, box: 2,3
     Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    // Light box: 4,5
+    // Light box, box: 4,5
     Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
-    // Environment map: 6,7
+    // Environment map, box: 6,7
     Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
     Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
 
@@ -595,7 +595,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     if ((oConfig.mMaxPathLength == 0) && (oConfig.mMinPathLength != 1))
     {
         printf(
-            "Error: Minimum path length different from 1 is set while Russian roulette is used for ending paths, "
+            "Error: Minimum path length different from 1 is set while Russian roulette was requested for ending paths, "
             "please see help (-h)\n");
         return;
     }
