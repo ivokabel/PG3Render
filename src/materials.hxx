@@ -77,7 +77,7 @@ public:
 
     SpectrumF EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
     {
-        if (wil.z <= 0 && wol.z <= 0)
+        if (wil.z <= 0.f && wol.z <= 0.f)
             return SpectrumF().MakeZero();
 
         const SpectrumF diffuseComponent = EvalDiffuseComponent();
@@ -131,7 +131,7 @@ public:
         }
         else
         {
-            // Specular component
+            // Glossy component
 
             oBrdfSample.mCompProbability = glossyReflectance / totalReflectance;
 
@@ -188,18 +188,33 @@ public:
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
-    float GetReflectanceEstimate(
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    float GetRRContinuationProb(
         const Vec3f &aWol
         ) const
     {
-        // Compute scalar reflectances. Replicated in SampleBrdf() and GetPdfW()!
-        const float diffuseReflectance = GetDiffuseReflectance();
+        // For conversion to scalar form we combine two strategies: maximum component value 
+        // with weighted "luminance". The "luminance" strategy minimizes noise in colour 
+        // channels which human eye is most sensitive to; however, it doesn't work well for paths
+        // which mainly contribute with less important channels (e.g. blue in sRGB). 
+        // In such cases, the paths can have very small probability of survival even if they 
+        // transfers the less important channels with no attenuation which leads to blue or,
+        // less often, red fireflies. Maximum channel strategy removes those fireflies completely,
+        // but tends to prefer less important channels too much and doesn't cut paths 
+        // with blocking combinations of attenuations like (1,0,0)*(0,1,0).
+        // It seems that a combination of both works pretty well.
+        const float diffuseReflectance =
+              0.25f * mDiffuseReflectance.Luminance()
+            + 0.75f * mDiffuseReflectance.Max();
         const float cosThetaOut = std::max(aWol.z, 0.f);
         const float glossyReflectance =
-              GetGlossyReflectance()
+              (   0.25f * mPhongReflectance.Luminance()
+                + 0.75f * mPhongReflectance.Max())
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
+                                           // Replicated in SampleBrdf() and GetPdfW()!
         const float totalReflectance = (diffuseReflectance + glossyReflectance);
 
         return totalReflectance;

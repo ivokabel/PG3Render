@@ -81,7 +81,7 @@ public:
                 float reflectanceEstimate = 1.0f;
                 if (mMaxPathLength == 0)
                 {
-                    reflectanceEstimate = Clamp(mat.GetReflectanceEstimate(wol), 0.0f, 1.0f);
+                    reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
                     const float rnd = mRng.GetFloat();
                     if (rnd > reflectanceEstimate)
                         return;
