@@ -471,7 +471,9 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || tmpPathLength < 1)
             {
-                printf("Error: Invalid <min_path_length> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <min_path_length> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return;
             }
 
