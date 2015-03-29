@@ -204,13 +204,14 @@ public:
         // but tends to prefer less important channels too much and doesn't cut paths 
         // with blocking combinations of attenuations like (1,0,0)*(0,1,0).
         // It seems that a combination of both works pretty well.
+        const float blendCoeff = 0.15f;
         const float diffuseReflectance =
-              0.25f * mDiffuseReflectance.Luminance()
-            + 0.75f * mDiffuseReflectance.Max();
+              blendCoeff         * mDiffuseReflectance.Luminance()
+            + (1.f - blendCoeff) * mDiffuseReflectance.Max();
         const float cosThetaOut = std::max(aWol.z, 0.f);
         const float glossyReflectance =
-              (   0.25f * mPhongReflectance.Luminance()
-                + 0.75f * mPhongReflectance.Max())
+              (   blendCoeff         * mPhongReflectance.Luminance()
+                + (1.f - blendCoeff) * mPhongReflectance.Max())
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
