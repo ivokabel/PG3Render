@@ -12,25 +12,30 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-#"$PG3RENDER" -a ptn -i 100000  -s 2 -od ".\output images" -e hdr
+#"$PG3RENDER" -a ptnm -i 70000  -s 0 -od ".\output images" -e hdr
 #echo
-#"$PG3RENDER" -a ptn -i 100000  -s 3 -od ".\output images" -e hdr
+#"$PG3RENDER" -a ptnm -i 150000 -s 1 -od ".\output images" -e hdr
 #echo
-#"$PG3RENDER" -a ptn -i 500000  -s 4 -od ".\output images" -e hdr
+#"$PG3RENDER" -a ptnm -i 80000  -s 2 -od ".\output images" -e hdr
 #echo
-#"$PG3RENDER" -a ptn -i 500000  -s 5 -od ".\output images" -e hdr
+#"$PG3RENDER" -a ptnm -i 150000 -s 3 -od ".\output images" -e hdr
 #echo
-#"$PG3RENDER" -a ptn -i 100000  -s 6 -od ".\output images" -e hdr
+#"$PG3RENDER" -a ptnm -i 80000  -s 4 -od ".\output images" -e hdr
 #echo
-#"$PG3RENDER" -a ptn -i 100000  -s 7 -od ".\output images" -e hdr
+#"$PG3RENDER" -a ptnm -i 150000 -s 5 -od ".\output images" -e hdr
+#echo
+#"$PG3RENDER" -a ptnm -i 20000  -s 6 -od ".\output images" -e hdr
+#echo
+#"$PG3RENDER" -a ptnm -i 50000  -s 7 -od ".\output images" -e hdr
 #echo
 
-"$PG3RENDER" -a ptn -t 150 -s 5 -maxpl 100 -od ".\output images" -e hdr
+"$PG3RENDER" -a dbs  -i   1 -s 12 -od ".\output images" -e hdr
 echo
-"$PG3RENDER" -a ptn -t 150 -s 5 -rr        -od ".\output images" -e hdr
+"$PG3RENDER" -a dbs  -i  10 -s 12 -od ".\output images" -e hdr
+echo
+"$PG3RENDER" -a dbs  -i 100 -s 12 -od ".\output images" -e hdr
 echo
 
 echo
 echo "The script has finished."
-
 read

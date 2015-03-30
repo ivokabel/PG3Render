@@ -102,10 +102,6 @@ public:
                 // We hit a geometry which is not a light source, 
                 // no direct light contribution for this sample
                 oLight.MakeZero();
-
-                // TODO: Indirect radiance
-                //mCurrentIsectId++;
-                //recursion...
             }
         }
         else
@@ -138,9 +134,9 @@ public:
     }
 
     bool SampleLightsSingle(
-        const Vec3f &aSurfPt, 
-        const Frame &aSurfFrame, 
-        LightSample &oLightSample)
+        const Vec3f         &aSurfPt, 
+        const Frame         &aSurfFrame, 
+        LightSampleActive   &oLightSample)
     {
         // We split the planar integral over the surface of all light sources 
         // into sub-integrals - one integral for each light source - and estimate 
@@ -285,12 +281,12 @@ public:
     }
 
     void AddSingleLightSampleContribution(
-        const LightSample   &aLightSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-        const Vec3f         &aWol,
-        const Material      &aMat,
-              SpectrumF     &oLightBuffer)
+        const LightSampleActive &aLightSample,
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame, 
+        const Vec3f             &aWol,
+        const Material          &aMat,
+              SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
             // The light emmits zero radiance in this direction
@@ -317,12 +313,12 @@ public:
     }
 
     void AddMISLightSampleContribution(
-        const LightSample   &aLightSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-        const Vec3f         &aWol,
-        const Material      &aMat,
-              SpectrumF     &oLightBuffer)
+        const LightSampleActive &aLightSample,
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame, 
+        const Vec3f             &aWol,
+        const Material          &aMat,
+              SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
             // The light emmits zero radiance in this direction
@@ -348,7 +344,7 @@ public:
         // If we chose an area or angular light, we compute the MIS-ed part and for point 
         // light sampling it means that we generated an empty sample. Vice versa, if we chose 
         // a point light, we compute non-zero estimator for the point lights integral and 
-        // for the MIS-ed integral this means we generated and empty sample. PDFs from 
+        // for the MIS-ed integral this means we generated an empty sample. PDFs from 
         // the light sampling routine can be used directly without any adaptation 
         // in both computations.
         //
@@ -385,7 +381,7 @@ public:
         }
     }
 
-    void AddMISBrdfSampleContribution(
+    void AddDirectIllumMISBrdfSampleContribution(
         const BRDFSample    &aBrdfSample,
         const Vec3f         &aSurfPt,
         const Frame         &aSurfFrame,

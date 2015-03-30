@@ -114,6 +114,10 @@ public:
             return;
         }
 
+        PG3_ASSERT_FLOAT_IN_RANGE(
+            diffuseReflectance / totalReflectance + glossyReflectance / totalReflectance,
+            0.0f, 1.00001f);
+
         // Choose a component based on diffuse and specular reflectance
         const float randomVal = aRng.GetFloat() * totalReflectance;
         if (randomVal < diffuseReflectance)
@@ -182,7 +186,8 @@ public:
 
         // Sum up both components' PDFs
         const float diffuseProbability = diffuseReflectance / totalReflectance;
-        const float glossyProbability  = 1.f - diffuseProbability;
+        const float glossyProbability  = glossyReflectance  / totalReflectance;
+        PG3_ASSERT_FLOAT_IN_RANGE(diffuseProbability + glossyProbability, 0.0f, 1.00001f);
         return
               diffuseProbability * CosHemispherePdfW(aWil)
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
