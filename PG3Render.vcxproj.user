@@ -1,20 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-a dbs -i 1000 -s 7 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-a dmis -i 1 -s 12 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>Auto</LocalDebuggerDebuggerType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-a dbs -i 1000 -s 7 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-a dmis -i 1 -s 12 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-a dbs -i 1000 -s 7 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-a dmis -i 1 -s 12 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-a dbs -i 1000 -s 7 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-a dmis -i 1 -s 12 -od ".\output images" -e hdr</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
