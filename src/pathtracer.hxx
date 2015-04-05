@@ -131,7 +131,7 @@ protected:
 
                 pathThroughput *=
                         brdfSample.mSample
-                      / (  brdfSample.mPdfW * brdfSample.mCompProbability // Monte Carlo est.
+                      / (  brdfSample.mPdfW /** brdfSample.mCompProbability*/ // Monte Carlo est.
                          * reflectanceEstimate);                          // Russian roulette (optional)
 
                 pathLength++;
@@ -268,7 +268,7 @@ protected:
                     // Compute multiple importance sampling MC estimator. 
                     oReflectedRadianceEstimate +=
                           (brdfSample.mSample * brdfEmmittedRadiance) // FIXME: sample contains only one component, will it work with MIS???
-                        / (   (   brdfSample.mPdfW * brdfSample.mCompProbability
+                        / (   (   brdfSample.mPdfW /** brdfSample.mCompProbability*/
                                 + brdfLightPdfW * brdfLightPickingProb)
                             * reflectanceEstimate); // Russian roulette
                 }
@@ -279,7 +279,7 @@ protected:
                     oReflectedRadianceEstimate +=
                           (brdfSample.mSample * brdfReflectedRadianceEstimate)
                         / (   brdfSample.mPdfW
-                            * brdfSample.mCompProbability
+                            /** brdfSample.mCompProbability*/
                             * reflectanceEstimate); // Russian roulette
                 }
             }

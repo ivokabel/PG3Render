@@ -10,10 +10,10 @@
 class BRDFSample
 {
 public:
-    SpectrumF   mSample;            // BRDF component attenuation * cosine theta_in
+    SpectrumF   mSample;            // BRDF attenuation * cosine theta_in
 
     float       mPdfW;              // Angular PDF of the sample
-    float       mCompProbability;   // Probability of picking the additive BRDF component which generated this sample
+    //float       mCompProbability;   // Probability of picking the additive BRDF component which generated this sample
     Vec3f       mWil;               // Chosen incoming direction
 };
 
@@ -96,52 +96,52 @@ public:
         ) const
     {
         // Compute scalar reflectances. Replicated in GetPdfW()!
-        const float diffuseReflectance = GetDiffuseReflectance();
+        const float diffuseReflectanceEst = GetDiffuseReflectance();
         const float cosThetaOut = std::max(aWol.z, 0.f);
-        const float glossyReflectance = 
+        const float glossyReflectanceEst = 
               GetGlossyReflectance()
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
-        const float totalReflectance = (diffuseReflectance + glossyReflectance);
+        const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
         if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
         {
             // Diffuse fallback for blocker materials
             oBrdfSample.mSample.MakeZero();
             oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
-            oBrdfSample.mCompProbability = 1.f;
+            //oBrdfSample.mCompProbability = 1.f;
             return;
         }
 
         PG3_ASSERT_FLOAT_IN_RANGE(
-            diffuseReflectance / totalReflectance + glossyReflectance / totalReflectance,
-            0.0f, 1.00001f);
+            diffuseReflectanceEst / totalReflectance + glossyReflectanceEst / totalReflectance,
+            0.0f, 1.001f);
 
-        // Choose a component based on diffuse and specular reflectance
+        // Choose a component sampling strategy based on diffuse and specular reflectance
         const float randomVal = aRng.GetFloat() * totalReflectance;
-        if (randomVal < diffuseReflectance)
+        if (randomVal < diffuseReflectanceEst)
         {
             // Diffuse component
 
-            oBrdfSample.mCompProbability = diffuseReflectance / totalReflectance;
+            //oBrdfSample.mCompProbability = diffuseReflectanceEst / totalReflectance;
 
             // Cosine-weighted sampling
-            oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
+            oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f());
             PG3_ASSERT_VAL_NONNEGATIVE(oBrdfSample.mWil.z);
 
-            const float thetaCosIn = oBrdfSample.mWil.z;
-            oBrdfSample.mSample = EvalDiffuseComponent() * thetaCosIn;
+            //const float thetaCosIn = oBrdfSample.mWil.z;
+            //oBrdfSample.mSample = EvalDiffuseComponent() * thetaCosIn;
         }
         else
         {
             // Glossy component
 
-            oBrdfSample.mCompProbability = glossyReflectance / totalReflectance;
+            //oBrdfSample.mCompProbability = glossyReflectanceEst / totalReflectance;
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample = 
-                SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent, &oBrdfSample.mPdfW);
+                SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oBrdfSample.mPdfW*/);
 
             // Rotate sample to mirror-reflection
             const Vec3f wrl = ReflectLocal(aWol);
@@ -149,30 +149,40 @@ public:
             lobeFrame.SetFromZ(wrl);
             oBrdfSample.mWil = lobeFrame.ToWorld(canonicalSample);
 
-            const float thetaCosIn = oBrdfSample.mWil.z;
-            if (thetaCosIn > 0.0f)
-                // Above surface: Evaluate the Phong lobe
-                oBrdfSample.mSample = EvalGlossyComponent(oBrdfSample.mWil, aWol) * thetaCosIn;
-            else
-                // Below surface: The sample is valid, it just has zero contribution
-                oBrdfSample.mSample.MakeZero();
+            //const float thetaCosIn = oBrdfSample.mWil.z;
+            //if (thetaCosIn > 0.0f)
+            //    // Above surface: Evaluate the Phong lobe
+            //    oBrdfSample.mSample = EvalGlossyComponent(oBrdfSample.mWil, aWol) * thetaCosIn;
+            //else
+            //    // Below surface: The sample is valid, it just has zero contribution
+            //    oBrdfSample.mSample.MakeZero();
         }
+
+        // Get whole PDF value
+        oBrdfSample.mPdfW = 
+            GetPdfW(aWol, oBrdfSample.mWil, diffuseReflectanceEst, glossyReflectanceEst);
+
+        const float thetaCosIn = oBrdfSample.mWil.z;
+        if (thetaCosIn > 0.0f)
+            // Above surface: Evaluate the whole BRDF
+            oBrdfSample.mSample = EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+        else
+            // Below surface: The sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
     }
 
     float GetPdfW(
         const Vec3f &aWol,
-        const Vec3f &aWil
+        const Vec3f &aWil,
+        const float diffuseReflectanceEst,
+        const float glossyReflectanceEst
         ) const
     {
-        // Compute scalar reflectances. Replicated in SampleBrdf()!
-        const float diffuseReflectance = GetDiffuseReflectance();
-        const float cosThetaOut = std::max(aWol.z, 0.f);
-        const float glossyReflectance =
-              GetGlossyReflectance()
-            * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
-                                           // Cheap, but relatively good approximation of actual glossy reflectance
-                                           // (part of the glossy lobe can be under the surface).
-        const float totalReflectance = (diffuseReflectance + glossyReflectance);
+        const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
+
+        PG3_ASSERT_FLOAT_IN_RANGE(diffuseReflectanceEst, 0.0f, 1.001f);
+        PG3_ASSERT_FLOAT_IN_RANGE(glossyReflectanceEst,  0.0f, 1.001f);
+        PG3_ASSERT_FLOAT_IN_RANGE(totalReflectance,      0.0f, 1.001f);
 
         if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
             // Diffuse fallback for blocker materials
@@ -185,12 +195,29 @@ public:
         const Vec3f wiCanonical = lobeFrame.ToLocal(aWil);
 
         // Sum up both components' PDFs
-        const float diffuseProbability = diffuseReflectance / totalReflectance;
-        const float glossyProbability  = glossyReflectance  / totalReflectance;
-        PG3_ASSERT_FLOAT_IN_RANGE(diffuseProbability + glossyProbability, 0.0f, 1.00001f);
+        const float diffuseProbability = diffuseReflectanceEst / totalReflectance;
+        const float glossyProbability  = glossyReflectanceEst  / totalReflectance;
+        PG3_ASSERT_FLOAT_IN_RANGE(diffuseProbability + glossyProbability, 0.0f, 1.001f);
         return
               diffuseProbability * CosHemispherePdfW(aWil)
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
+    }
+
+    float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const
+    {
+        // Compute scalar reflectances. Replicated in SampleBrdf()!
+        const float diffuseReflectanceEst = GetDiffuseReflectance();
+        const float cosThetaOut = std::max(aWol.z, 0.f);
+        const float glossyReflectanceEst =
+              GetGlossyReflectance()
+            * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
+                                           // Cheap, but relatively good approximation of actual glossy reflectance
+                                           // (part of the glossy lobe can be under the surface).
+
+        return GetPdfW(aWol, aWil, diffuseReflectanceEst, glossyReflectanceEst);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -210,18 +237,18 @@ public:
         // with blocking combinations of attenuations like (1,0,0)*(0,1,0).
         // It seems that a combination of both works pretty well.
         const float blendCoeff = 0.15f;
-        const float diffuseReflectance =
+        const float diffuseReflectanceEst =
               blendCoeff         * mDiffuseReflectance.Luminance()
             + (1.f - blendCoeff) * mDiffuseReflectance.Max();
         const float cosThetaOut = std::max(aWol.z, 0.f);
-        const float glossyReflectance =
+        const float glossyReflectanceEst =
               (   blendCoeff         * mPhongReflectance.Luminance()
                 + (1.f - blendCoeff) * mPhongReflectance.Max())
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
                                            // Replicated in SampleBrdf() and GetPdfW()!
-        const float totalReflectance = (diffuseReflectance + glossyReflectance);
+        const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
         return totalReflectance;
     }
