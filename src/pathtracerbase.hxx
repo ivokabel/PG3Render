@@ -414,8 +414,8 @@ public:
 
         // Compute multiple importance sampling MC estimator. 
         oLightBuffer +=
-              (aBrdfSample.mSample * LiLight) // FIXME: the sample contains only one component, will it work with MIS???
-            / (aBrdfSample.mPdfW /** aBrdfSample.mCompProbability*/ + lightPdfW * lightPickingProbability);
+              (aBrdfSample.mSample * LiLight)
+            / (aBrdfSample.mPdfW + lightPdfW * lightPickingProbability);
     }
 
 protected:

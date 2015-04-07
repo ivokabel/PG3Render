@@ -131,8 +131,8 @@ protected:
 
                 pathThroughput *=
                         brdfSample.mSample
-                      / (  brdfSample.mPdfW /** brdfSample.mCompProbability*/ // Monte Carlo est.
-                         * reflectanceEstimate);                          // Russian roulette (optional)
+                      / (  brdfSample.mPdfW         // Monte Carlo est.
+                         * reflectanceEstimate);    // Russian roulette (optional)
 
                 pathLength++;
             }
@@ -251,6 +251,8 @@ protected:
                 const float rayMin = EPS_RAY_COS(brdfSample.mWil.z);
                 const Ray   brdfRay(surfPt, wig, rayMin);
 
+                PG3_ASSERT(brdfSample.mPdfW != INFINITY_F); // Dirac pulse BRDFs not yet supported
+
                 EstimateIncomingRadiancePTNeeMis(
                     brdfRay, aPathLength + 1,
                     brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
@@ -267,8 +269,8 @@ protected:
 
                     // Compute multiple importance sampling MC estimator. 
                     oReflectedRadianceEstimate +=
-                          (brdfSample.mSample * brdfEmmittedRadiance) // FIXME: sample contains only one component, will it work with MIS???
-                        / (   (   brdfSample.mPdfW /** brdfSample.mCompProbability*/
+                          (brdfSample.mSample * brdfEmmittedRadiance)
+                        / (   (   brdfSample.mPdfW
                                 + brdfLightPdfW * brdfLightPickingProb)
                             * reflectanceEstimate); // Russian roulette
                 }
@@ -279,7 +281,6 @@ protected:
                     oReflectedRadianceEstimate +=
                           (brdfSample.mSample * brdfReflectedRadianceEstimate)
                         / (   brdfSample.mPdfW
-                            /** brdfSample.mCompProbability*/
                             * reflectanceEstimate); // Russian roulette
                 }
             }

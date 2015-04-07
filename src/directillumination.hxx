@@ -80,8 +80,8 @@ public:
 
                     // Compute the two-step MC estimator. 
                     LoDirect =
-                        (brdfSample.mSample * LiLight)
-                        / (brdfSample.mPdfW /** brdfSample.mCompProbability*/);
+                          (brdfSample.mSample * LiLight)
+                        / brdfSample.mPdfW;
                 }
             }
             else if (aAlgorithm == kDirectIllumMIS)

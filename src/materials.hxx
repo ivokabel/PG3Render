@@ -12,8 +12,16 @@ class BRDFSample
 public:
     SpectrumF   mSample;            // BRDF attenuation * cosine theta_in
 
-    float       mPdfW;              // Angular PDF of the sample
-    //float       mCompProbability;   // Probability of picking the additive BRDF component which generated this sample
+    // Angular PDF of the sample. In finite BRDF cases, it contains the whole PDF of all finite
+    // components and is already pre-multiplied by probability of this case.
+    float       mPdfW;
+
+    // Probability of picking the additive BRDF component which generated this sample.
+    // The component can be an infinite pdf (dirac impulse) BRDF, e.g. Fresnel, 
+    //or total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
+    // Inifinite components' contributions are computed outside MIS mechanism.
+    float       mCompProbability;
+
     Vec3f       mWil;               // Chosen incoming direction
 };
 
@@ -98,7 +106,7 @@ public:
         // Compute scalar reflectances. Replicated in GetPdfW()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
         const float cosThetaOut = std::max(aWol.z, 0.f);
-        const float glossyReflectanceEst = 
+        const float glossyReflectanceEst =
               GetGlossyReflectance()
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
@@ -110,34 +118,25 @@ public:
             // Diffuse fallback for blocker materials
             oBrdfSample.mSample.MakeZero();
             oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
-            //oBrdfSample.mCompProbability = 1.f;
+            oBrdfSample.mCompProbability = 1.f;
             return;
         }
 
         PG3_ASSERT_FLOAT_IN_RANGE(
             diffuseReflectanceEst / totalReflectance + glossyReflectanceEst / totalReflectance,
-            0.0f, 1.001f);
+            0.0f, 1.01f);
 
         // Choose a component sampling strategy based on diffuse and specular reflectance
         const float randomVal = aRng.GetFloat() * totalReflectance;
         if (randomVal < diffuseReflectanceEst)
         {
-            // Diffuse component
-
-            //oBrdfSample.mCompProbability = diffuseReflectanceEst / totalReflectance;
-
-            // Cosine-weighted sampling
+            // Diffuse, cosine-weighted sampling
             oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f());
             PG3_ASSERT_VAL_NONNEGATIVE(oBrdfSample.mWil.z);
-
-            //const float thetaCosIn = oBrdfSample.mWil.z;
-            //oBrdfSample.mSample = EvalDiffuseComponent() * thetaCosIn;
         }
         else
         {
-            // Glossy component
-
-            //oBrdfSample.mCompProbability = glossyReflectanceEst / totalReflectance;
+            // Glossy component sampling
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample = 
@@ -148,15 +147,9 @@ public:
             Frame lobeFrame;
             lobeFrame.SetFromZ(wrl);
             oBrdfSample.mWil = lobeFrame.ToWorld(canonicalSample);
-
-            //const float thetaCosIn = oBrdfSample.mWil.z;
-            //if (thetaCosIn > 0.0f)
-            //    // Above surface: Evaluate the Phong lobe
-            //    oBrdfSample.mSample = EvalGlossyComponent(oBrdfSample.mWil, aWol) * thetaCosIn;
-            //else
-            //    // Below surface: The sample is valid, it just has zero contribution
-            //    oBrdfSample.mSample.MakeZero();
         }
+
+        oBrdfSample.mCompProbability = 1.f;
 
         // Get whole PDF value
         oBrdfSample.mPdfW = 
@@ -182,7 +175,8 @@ public:
 
         PG3_ASSERT_FLOAT_IN_RANGE(diffuseReflectanceEst, 0.0f, 1.001f);
         PG3_ASSERT_FLOAT_IN_RANGE(glossyReflectanceEst,  0.0f, 1.001f);
-        PG3_ASSERT_FLOAT_IN_RANGE(totalReflectance,      0.0f, 1.001f);
+        // TODO: Uncomment when there are only energy conserving materials in the scene
+        //PG3_ASSERT_FLOAT_IN_RANGE(totalReflectance,      0.0f, 1.001f);
 
         if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
             // Diffuse fallback for blocker materials
@@ -197,6 +191,7 @@ public:
         // Sum up both components' PDFs
         const float diffuseProbability = diffuseReflectanceEst / totalReflectance;
         const float glossyProbability  = glossyReflectanceEst  / totalReflectance;
+        
         PG3_ASSERT_FLOAT_IN_RANGE(diffuseProbability + glossyProbability, 0.0f, 1.001f);
         return
               diffuseProbability * CosHemispherePdfW(aWil)
