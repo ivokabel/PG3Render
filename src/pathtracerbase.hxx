@@ -134,9 +134,9 @@ public:
     }
 
     bool SampleLightsSingle(
-        const Vec3f     &aSurfPt, 
-        const Frame     &aSurfFrame, 
-        LightSample     &oLightSample)
+        const Vec3f         &aSurfPt, 
+        const Frame         &aSurfFrame, 
+        LightSampleActive   &oLightSample)
     {
         // We split the planar integral over the surface of all light sources 
         // into sub-integrals - one integral for each light source - and estimate 
@@ -281,12 +281,12 @@ public:
     }
 
     void AddSingleLightSampleContribution(
-        const LightSample   &aLightSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-        const Vec3f         &aWol,
-        const Material      &aMat,
-              SpectrumF     &oLightBuffer)
+        const LightSampleActive &aLightSample,
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame, 
+        const Vec3f             &aWol,
+        const Material          &aMat,
+              SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
             // The light emmits zero radiance in this direction
@@ -313,12 +313,12 @@ public:
     }
 
     void AddMISLightSampleContribution(
-        const LightSample   &aLightSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-        const Vec3f         &aWol,
-        const Material      &aMat,
-              SpectrumF     &oLightBuffer)
+        const LightSampleActive &aLightSample,
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame, 
+        const Vec3f             &aWol,
+        const Material          &aMat,
+              SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
             // The light emmits zero radiance in this direction
