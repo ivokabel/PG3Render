@@ -54,7 +54,7 @@ struct Config
 
     static const char* GetAcronym(Algorithm aAlgorithm)
     {
-        static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "ptn", "ptnm" };
+        static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "ptn", "pt" };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
             return "unknown";
@@ -274,7 +274,7 @@ void PrintHelp(const char *argv[])
     for (int32_t i = 0; i < Scene::kEMCount; i++)
         printf("          %2d    %s\n", i, Scene::GetEnvMapName(i).c_str());
 
-    printf("    -a     Selects the rendering algorithm (default ptnm):\n");
+    printf("    -a     Selects the rendering algorithm (default pt):\n");
     for (int32_t i = 0; i < (int32_t)kAlgorithmCount; i++)
         printf("          %-4s  %s\n",
             Config::GetAcronym(Algorithm(i)),
