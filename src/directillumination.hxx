@@ -48,7 +48,7 @@ public:
                     PG3_ASSERT(light != 0);
 
                     // Choose a random sample on the light
-                    LightSampleActive lightSample;
+                    LightSample lightSample;
                     light->SampleIllumination(surfPt, surfFrame, mRng, lightSample);
 
                     AddSingleLightSampleContribution(
@@ -58,7 +58,7 @@ public:
             }
             else if (aAlgorithm == kDirectIllumLightSamplingSingle)
             {
-                LightSampleActive lightSample;
+                LightSample lightSample;
                 if (SampleLightsSingle(surfPt, surfFrame, lightSample))
                     AddSingleLightSampleContribution(
                     lightSample, surfPt, surfFrame, wol, mat,
@@ -89,7 +89,7 @@ public:
                 // Multiple importance sampling
 
                 // Generate one sample by sampling the lights
-                LightSampleActive lightSample;
+                LightSample lightSample;
                 if (SampleLightsSingle(surfPt, surfFrame, lightSample))
                 {
                     AddMISLightSampleContribution(
