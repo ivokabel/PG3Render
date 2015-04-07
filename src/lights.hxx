@@ -13,7 +13,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 // Used for generating samples on a light source
-class LightSampleActive
+class LightSample
 {
 public:
     // (outgoing radiance * cosine theta_in) or it's equivalent (e.g. for point lights)
@@ -28,18 +28,6 @@ public:
     float       mDist;
 };
 
-////////////////////////////////////////////////////////////////////////////
-//// Used just for obtaining data from a light source (for instance, after generating a BRDF sample)
-//class LightSamplePassive
-//{
-//public:
-//    SpectrumF    mRadiance;         // Outgoing radiance
-//
-//    float       *mPdfW;             // Angular PDF. Equals infinity for point lights.
-//    float       *mLightProbability; // Probability of picking the light source which generated this sample
-//                                    // Should equal 1.0 if there's just one light source in the scene
-//};
-
 //////////////////////////////////////////////////////////////////////////
 class AbstractLight
 {
@@ -48,10 +36,10 @@ public:
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: outgoing radiance * geometric component
     virtual void SampleIllumination(
-        const Vec3f         &aSurfPt, 
-        const Frame         &aSurfFrame, 
-        Rng                 &aRng,
-        LightSampleActive   &oSample
+        const Vec3f     &aSurfPt, 
+        const Frame     &aSurfFrame, 
+        Rng             &aRng,
+        LightSample     &oSample
         ) const = 0;
 
     // Returns amount of outgoing radiance from the point in the direction
@@ -133,10 +121,10 @@ public:
     }
 
     virtual void SampleIllumination(
-        const Vec3f         &aSurfPt, 
-        const Frame         &aSurfFrame, 
-        Rng                 &aRng,
-        LightSampleActive   &oSample
+        const Vec3f     &aSurfPt, 
+        const Frame     &aSurfFrame, 
+        Rng             &aRng,
+        LightSample     &oSample
         ) const
     {
         // Sample the whole triangle surface
@@ -177,7 +165,7 @@ public:
         const Vec3f P1 = mP0 + mE1;
         const Vec3f P2 = mP0 + mE2;
         const Vec3f P3 = mP0 + 0.33f * mE1 + 0.33f * mE2; // centre of mass
-        LightSampleActive sample0, sample1, sample2, sample3;
+        LightSample sample0, sample1, sample2, sample3;
         ComputeSample(aSurfPt, mP0, aSurfFrame, sample0);
         ComputeSample(aSurfPt, P1,  aSurfFrame, sample1);
         ComputeSample(aSurfPt, P2,  aSurfFrame, sample2);
@@ -193,10 +181,10 @@ public:
 
 private:
     void ComputeSample(
-        const Vec3f         &aSurfPt,
-        const Vec3f         &aSamplePt,
-        const Frame         &aSurfFrame,
-        LightSampleActive   &oSample
+        const Vec3f     &aSurfPt,
+        const Vec3f     &aSamplePt,
+        const Frame     &aSurfFrame,
+        LightSample     &oSample
         ) const
     {
         // Replicated in GetEmmision()!
@@ -266,10 +254,10 @@ public:
     };
 
     virtual void SampleIllumination(
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame,
-        Rng                 &aRng,
-        LightSampleActive   &oSample
+        const Vec3f     &aSurfPt,
+        const Frame     &aSurfFrame,
+        Rng             &aRng,
+        LightSample     &oSample
         ) const
     {
         aRng; // unused param
@@ -285,20 +273,16 @@ public:
     {
         aRng; // unused param
 
-        // TODO: The result has to be cached because the estimate is computed twice 
-        //       for the same point during MIS (once when picking a light randomly and 
-        //       once when computing the probability of picking a light after BRDF sampling).
-
-        LightSampleActive sample;
+        LightSample sample;
         ComputeIllumination(aSurfPt, aSurfFrame, sample);
         return sample.mSample.Luminance();
     }
 
 private:
     void ComputeIllumination(
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame,
-        LightSampleActive   &oSample
+        const Vec3f     &aSurfPt,
+        const Frame     &aSurfFrame,
+        LightSample     &oSample
         ) const
     {
         oSample.mWig  = mPosition - aSurfPt;
@@ -378,10 +362,10 @@ public:
 
     PG3_PROFILING_NOINLINE
     virtual void SampleIllumination(
-        const Vec3f         &aSurfPt, 
-        const Frame         &aSurfFrame, 
-        Rng                 &aRng,
-        LightSampleActive   &oSample
+        const Vec3f     &aSurfPt, 
+        const Frame     &aSurfFrame, 
+        Rng             &aRng,
+        LightSample     &oSample
         ) const
     {
         aSurfPt; // unused parameter
@@ -434,13 +418,13 @@ public:
             for (uint32_t round = 0; round < count; round++)
             {
                 // Strategy 1: Sample the hemisphere in the cosine-weighted fashion
-                LightSampleActive sample1;
+                LightSample sample1;
                 SampleCosHemisphere(aRng, aSurfFrame, sample1);
                 const float pdf1Cos = sample1.mPdfW;
                 const float pdf1EM  = EMPdfW(sample1.mWig);
 
                 // Strategy 2: Sample the environment map alone
-                LightSampleActive sample2;
+                LightSample sample2;
                 SampleEnvMap(aRng, aSurfFrame, sample2);
                 const float pdf2EM  = sample2.mPdfW;
                 const float pdf2Cos = CosHemispherePdfW(aSurfFrame.Normal(), sample2.mWig);
@@ -468,9 +452,9 @@ public:
 
     // Sample the hemisphere in the normal direction in a cosine-weighted fashion
     void SampleCosHemisphere(
-        Rng                 &aRng,
-        const Frame         &aSurfFrame,
-        LightSampleActive   &oSample) const
+        Rng             &aRng,
+        const Frame     &aSurfFrame,
+        LightSample     &oSample) const
     {
         Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
         oSample.mLightProbability = 1.0f;
@@ -485,9 +469,9 @@ public:
 
     // Sample the environment map with the pdf proportional to luminance of the map
     void SampleEnvMap(
-        Rng                 &aRng,
-        const Frame         &aSurfFrame,
-        LightSampleActive   &oSample) const
+        Rng             &aRng,
+        const Frame     &aSurfFrame,
+        LightSample     &oSample) const
     {
         PG3_ASSERT(mEnvMap != NULL);
 

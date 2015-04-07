@@ -218,7 +218,7 @@ protected:
             // ...if one more step is allowed
             if ((aPathLength + 1) >= mMinPathLength)
             {
-                LightSampleActive lightSample;
+                LightSample lightSample;
                 if (SampleLightsSingle(surfPt, surfFrame, lightSample))
                 {
                     AddMISLightSampleContribution(
