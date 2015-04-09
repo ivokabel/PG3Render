@@ -275,13 +275,19 @@ protected:
                             * reflectanceEstimate); // Russian roulette
                 }
 
-                // Simple MC for reflected light
+                // Simple MC for indirect light
                 if (!brdfReflectedRadianceEstimate.IsZero())
                 {
-                    oReflectedRadianceEstimate +=
+                    SpectrumF indirectRadianceEstimate =
                           (brdfSample.mSample * brdfReflectedRadianceEstimate)
                         / (   brdfSample.mPdfW
                             * reflectanceEstimate); // Russian roulette
+
+                    // Clip fireflies
+                    if (mIndirectIllumClipping > 0.f)
+                        indirectRadianceEstimate.ClipProportionally(mIndirectIllumClipping);
+
+                    oReflectedRadianceEstimate += indirectRadianceEstimate;
                 }
             }
         }

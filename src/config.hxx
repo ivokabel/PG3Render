@@ -67,6 +67,7 @@ struct Config
     Algorithm    mAlgorithm;
     uint32_t     mMaxPathLength;    // Only used for path-based algorithms
     uint32_t     mMinPathLength;    // dtto
+    float        mIndirectIllumClipping;    // Only used in the NEE MIS path tracer
 
     int32_t      mIterations;
     float        mMaxTime;
@@ -150,6 +151,16 @@ std::string DefaultFilename(
                 + std::to_string(aConfig.mMaxPathLength);
     }
 
+    // Indirect illumination clipping
+    if ((aConfig.mAlgorithm == kPathTracingNEEMIS) && (aConfig.mIndirectIllumClipping > 0.f))
+    {
+        filename += "_iic";
+        std::ostringstream outStream;
+        outStream.precision(1);
+        outStream << std::fixed << aConfig.mIndirectIllumClipping;
+        filename += outStream.str();
+    }
+
 #ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
     // Debug info
     if (   (aConfig.mAlgorithm >= kDirectIllumLightSamplingAll)
@@ -226,6 +237,8 @@ void PrintConfiguration(const Config &config)
         else
             printf(", path lengths interval: %d-%d", config.mMinPathLength, config.mMaxPathLength);
     }
+    if ((config.mAlgorithm == kPathTracingNEEMIS) && (config.mIndirectIllumClipping > 0.f))
+        printf(", indirect illumination clipping: %.2f", config.mIndirectIllumClipping);
     printf("\n");
 
     if (config.mMaxTime > 0)
@@ -263,7 +276,7 @@ void PrintHelp(const char *argv[])
     printf("\n");
     printf(
         "Usage: %s [ "
-        "-s <scene_id> | -em <env_map_type> | -a <algorithm> | -minpl <min_path_length> | -maxpl <max_path_length> | -t <time> | -i <iterations> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ]\n\n", 
+        "-s <scene_id> | -a <algorithm> | -t <time> | -i <iterations> | -minpl <min_path_length> | -maxpl <max_path_length> | -iic <indirect_illum_clipping_value> | -em <env_map_type> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ]\n\n", 
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -284,6 +297,8 @@ void PrintHelp(const char *argv[])
     printf("    -minpl Minimum path length. Must be greater than 0 and not greater then maximum path length.\n");
     printf("           Must not be set if Russian roulette is used for ending paths. Only valid for path tracers.\n");
     printf("           Default is 1.\n");
+    printf("    -iic   Maximal allowed value for indirect illumination estimates. 0 means no clipping (default).\n");
+    printf("           Only valid for path tracer (pt).\n");
 
     printf("    -t     Number of seconds to run the algorithm\n");
     printf("    -i     Number of iterations to run the algorithm (default 1)\n");
@@ -301,21 +316,22 @@ void PrintHelp(const char *argv[])
 void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
-    oConfig.mScene              = NULL;                     // [cmd] When NULL, renderer will not run
+    oConfig.mScene                  = NULL;                     // [cmd] When NULL, renderer will not run
 
-    oConfig.mAlgorithm          = kAlgorithmCount;          // [cmd]
-    oConfig.mMinPathLength      = 1;                        // [cmd]
-    oConfig.mMaxPathLength      = 0;                        // [cmd]
+    oConfig.mAlgorithm              = kAlgorithmCount;          // [cmd]
+    oConfig.mMinPathLength          = 1;                        // [cmd]
+    oConfig.mMaxPathLength          = 0;                        // [cmd]
+    oConfig.mIndirectIllumClipping  = 0.f;                      // [cmd]
 
-    oConfig.mIterations         = 1;                        // [cmd]
-    oConfig.mMaxTime            = -1.f;                     // [cmd]
-    oConfig.mDefOutputExtension = "bmp";                    // [cmd]
-    oConfig.mOutputName         = "";                       // [cmd]
-    oConfig.mOutputDirectory    = "";                       // [cmd]
-    oConfig.mNumThreads         = 0;
-    oConfig.mQuietMode          = false;
-    oConfig.mBaseSeed           = 1234;
-    oConfig.mResolution         = Vec2i(512, 512);
+    oConfig.mIterations             = 1;                        // [cmd]
+    oConfig.mMaxTime                = -1.f;                     // [cmd]
+    oConfig.mDefOutputExtension     = "bmp";                    // [cmd]
+    oConfig.mOutputName             = "";                       // [cmd]
+    oConfig.mOutputDirectory        = "";                       // [cmd]
+    oConfig.mNumThreads             = 0;
+    oConfig.mQuietMode              = false;
+    oConfig.mBaseSeed               = 1234;
+    oConfig.mResolution             = Vec2i(512, 512);
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
@@ -478,6 +494,36 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             }
 
             oConfig.mMinPathLength = tmpPathLength;
+        }
+        else if (arg == "-iic") // indirect illumination clipping value
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <indirect_illum_clipping_value> argument, please see help (-h)\n");
+                return;
+            }
+
+            if (oConfig.mAlgorithm != kPathTracingNEEMIS)
+            {
+                printf(
+                    "\n"
+                    "Warning: You specified maximal allowed value for indirect illumination estimate; however, "
+                    "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
+            }
+
+            float tmpVal;
+            std::istringstream iss(argv[i]);
+            iss >> tmpVal;
+
+            if (iss.fail() || tmpVal < 0.f)
+            {
+                printf(
+                    "Error: Invalid <indirect_illum_clipping_value> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
+                return;
+            }
+
+            oConfig.mIndirectIllumClipping = tmpVal;
         }
         else if (arg == "-i") // number of iterations to run
         {

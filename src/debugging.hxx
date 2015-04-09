@@ -3,7 +3,7 @@
 #include <iostream>
 
 // Uncomment this to activate all asserts in the code
-#define PG3_ASSERT_ENABLED
+//#define PG3_ASSERT_ENABLED
 
 void pg3_exit();
 

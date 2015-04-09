@@ -168,6 +168,19 @@ public:
     T           Max()   const         { return std::max(std::max(x, y), z); }
     bool        IsZero() const        { return (x == 0) && (y == 0) && (z == 0); }
 
+    Vec3Base<T>& ClipProportionally(const float aMaxAllowedVal)
+    {
+        const float maxVal = Max();
+        if (maxVal > aMaxAllowedVal)
+        {
+            const float scale = aMaxAllowedVal / maxVal;
+            x *= scale;
+            y *= scale;
+            z *= scale;
+        }
+        return *this;
+    }
+
     // Unary minus
     Vec3Base<T> operator-() const
     { Vec3Base<T> res; res.x = -x; res.y = -y; res.z = -z; return res; }

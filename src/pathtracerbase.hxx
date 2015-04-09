@@ -21,7 +21,8 @@ public:
     ) :
         AbstractRenderer(aConfig), mRng(aSeed),
         mMinPathLength(aConfig.mMinPathLength),
-        mMaxPathLength(aConfig.mMaxPathLength)
+        mMaxPathLength(aConfig.mMaxPathLength),
+        mIndirectIllumClipping(aConfig.mIndirectIllumClipping)
     {
         mLightContribLastIsectIds.resize(aConfig.mScene->GetLightCount(), 0u);
         mLightContribEstimsCache.resize(aConfig.mScene->GetLightCount(), 0.f);
@@ -425,4 +426,5 @@ protected:
 
     uint32_t                mMinPathLength;
     uint32_t                mMaxPathLength;
+    float                   mIndirectIllumClipping;
 };
