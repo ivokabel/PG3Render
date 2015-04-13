@@ -307,9 +307,11 @@ bool GetFileName(const char *aPath, std::string &oResult)
     return true;
 }
 
-void PrintProgressBar(const uint32_t aBarCount, float aProgress)
+void PrintProgressBarCommon(float aProgress)
 {
     PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aProgress, 0.0f);
+
+    const uint32_t aBarCount = 30;
 
     aProgress = Clamp(aProgress, 0.f, 1.f);
 
@@ -325,6 +327,23 @@ void PrintProgressBar(const uint32_t aBarCount, float aProgress)
     }
 
     printf("] %.1f%%", 100.0 * aProgress);
+}
+
+void PrintProgressBarIterations(float aProgress, uint32_t aIterations)
+{
+    PrintProgressBarCommon(aProgress);
+
+    printf(" (%d iter%s)", aIterations, (aIterations != 1) ? "s" : "");
 
     fflush(stdout);
 }
+
+void PrintProgressBarTime(float aProgress, float aTime)
+{
+    PrintProgressBarCommon(aProgress);
+
+    printf(" (%.1f sec)", aTime);
+
+    fflush(stdout);
+}
+

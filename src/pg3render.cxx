@@ -71,6 +71,9 @@ float Render(
     // otherwise go with required iterations
     if (aConfig.mMaxTime > 0)
     {
+        if (!aConfig.mQuietMode)
+            PrintProgressBarTime(0.f, 0.f);
+
         // Time based loop
 #pragma omp parallel
         while (clock() < endT)
@@ -85,7 +88,7 @@ float Render(
                 {
                     const float currentClock = (float)clock();
                     const float progress = (float)((currentClock - startT) / (endT - startT));
-                    PrintProgressBar(20, progress);
+                    PrintProgressBarTime(progress, (currentClock - startT) / CLOCKS_PER_SEC);
                 }
             }
 
@@ -95,6 +98,9 @@ float Render(
     }
     else
     {
+        if (!aConfig.mQuietMode)
+            PrintProgressBarIterations(0.f, 0);
+
         // Iterations based loop
         uint32_t globalCounter = 0;
 #pragma omp parallel for
@@ -110,7 +116,7 @@ float Render(
                 if (!aConfig.mQuietMode)
                 {
                     const float progress = (float)globalCounter / aConfig.mIterations;
-                    PrintProgressBar(20, progress);
+                    PrintProgressBarIterations(progress, globalCounter);
                 }
             }
         }
