@@ -15,7 +15,7 @@ public:
         const Vec3f &aForward,
         const Vec3f &aUp,
         const Vec2f &aResolution,
-        float       aHorizontalFOV)
+        float       aHorizontalFOVDeg)
     {
         const Vec3f forward = Normalize(aForward);
         const Vec3f up      = Normalize(Cross(aUp, -forward));
@@ -35,7 +35,14 @@ public:
         worldToCamera.SetRow(1, left,     -pos.y);
         worldToCamera.SetRow(2, -forward, -pos.z);
 
-        const Mat4f perspective = Mat4f::Perspective(aHorizontalFOV, 0.1f, 10000.f);
+        const float halfHorzFOVRad = DegToRad(0.5f * aHorizontalFOVDeg);
+
+        const float pixelSize =
+            std::tan(halfHorzFOVRad) / (0.5f * aResolution.x);
+        const float verticalFOV =
+            RadToDeg(2.f * std::atan(pixelSize * 0.5f * aResolution.y));
+
+        const Mat4f perspective = Mat4f::Perspective(aHorizontalFOVDeg, verticalFOV, 0.1f, 10000.f);
         const Mat4f worldToNScreen = perspective * worldToCamera;
         const Mat4f nscreenToWorld = Invert(worldToNScreen);
 
@@ -47,7 +54,7 @@ public:
             Mat4f::Translate(Vec3f(-1.f, -1.f, 0)) *
             Mat4f::Scale(Vec3f(2.f / aResolution.x, 2.f / aResolution.y, 0));
 
-        const float tanHalfAngle = std::tan(aHorizontalFOV * PI_F / 360.f);
+        const float tanHalfAngle = std::tan(halfHorzFOVRad);
         mPixelArea = 4.f * Sqr(tanHalfAngle) / Sqr(aResolution.x);
     }
 

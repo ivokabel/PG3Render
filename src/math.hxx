@@ -11,6 +11,19 @@
 
 #define INFINITY_F  (std::numeric_limits<float>::infinity())
 
+//////////////////////////////////////////////////////////////////////////
+// Math section
+
+float DegToRad(float deg)
+{
+    return (deg / 360.f) * (2.f * PI_F);
+}
+
+float RadToDeg(float rad)
+{
+    return 360.f * (rad / (2.f * PI_F));
+}
+
 template<typename T>
 T Sqr(const T& a)
 {
@@ -27,11 +40,6 @@ float FmodX(float x, float y)
 
     return result;
 }
-
-//typedef unsigned uint;
-
-//////////////////////////////////////////////////////////////////////////
-// Math section
 
 template <typename T>
 inline T Clamp(const T& n, const T& lower, const T& upper)
@@ -326,18 +334,24 @@ public:
     }
 
     static Mat4f Perspective(
-        float aFov,
+        float aFovX,
+        float aFovY,
         float aNear,
         float aFar)
     {
+        PG3_ASSERT_FLOAT_LESS_THAN(0.f, aNear);
+        PG3_ASSERT_FLOAT_LESS_THAN(aNear, aFar);
+
         // Camera points towards -z.  0 < near < far.
         // Matrix maps z range [-near, -far] to [-1, 1], after homogeneous division.
-        float f = 1.f / (std::tan(aFov * PI_F / 360.0f));
-        float d = 1.f / (aNear - aFar);
+
+        const float fx = 1.f / std::tan(DegToRad(0.5f * aFovX));
+        const float fy = 1.f / std::tan(DegToRad(0.5f * aFovY));
+        const float d  = 1.f / (aNear - aFar);
 
         Mat4f r;
-        r.m00 = f;    r.m01 = 0.0f; r.m02 = 0.0f;               r.m03 = 0.0f;
-        r.m10 = 0.0f; r.m11 = -f;   r.m12 = 0.0f;               r.m13 = 0.0f;
+        r.m00 = fx;   r.m01 = 0.0f; r.m02 = 0.0f;               r.m03 = 0.0f;
+        r.m10 = 0.0f; r.m11 = -fy;  r.m12 = 0.0f;               r.m13 = 0.0f;
         r.m20 = 0.0f; r.m21 = 0.0f; r.m22 = (aNear + aFar) * d; r.m23 = 2.0f * aNear * aFar * d;
         r.m30 = 0.0f; r.m31 = 0.0f; r.m32 = -1.0f;              r.m33 = 0.0f;
 
