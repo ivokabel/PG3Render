@@ -35,7 +35,7 @@ AbstractRenderer* CreateRenderer(
         return new DirectIllumination(aConfig, aSeed);
 
     case kPathTracingNaive:
-    case kPathTracingNEEMIS:
+    case kPathTracing:
         return new PathTracer(aConfig, aSeed);
 
     default:

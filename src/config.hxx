@@ -26,7 +26,7 @@ enum Algorithm
     kDirectIllumLightSamplingSingle,
     kDirectIllumMIS,
     kPathTracingNaive,
-    kPathTracingNEEMIS,
+    kPathTracing,
     kAlgorithmCount
 };
 
@@ -138,7 +138,7 @@ std::string DefaultFilename(
 
     // Path length
     if (   (aConfig.mAlgorithm == kPathTracingNaive)
-        || (aConfig.mAlgorithm == kPathTracingNEEMIS))
+        || (aConfig.mAlgorithm == kPathTracing))
     {
         filename += "_";
         if (aConfig.mMaxPathLength == 0)
@@ -152,7 +152,7 @@ std::string DefaultFilename(
     }
 
     // Indirect illumination clipping
-    if ((aConfig.mAlgorithm == kPathTracingNEEMIS) && (aConfig.mIndirectIllumClipping > 0.f))
+    if ((aConfig.mAlgorithm == kPathTracing) && (aConfig.mIndirectIllumClipping > 0.f))
     {
         filename += "_iic";
         std::ostringstream outStream;
@@ -230,14 +230,14 @@ void PrintConfiguration(const Config &config)
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
     printf("Algorithm: %s", config.GetName(config.mAlgorithm));
     if (   (config.mAlgorithm == kPathTracingNaive)
-        || (config.mAlgorithm == kPathTracingNEEMIS))
+        || (config.mAlgorithm == kPathTracing))
     {
         if (config.mMaxPathLength == 0)
             printf(", Russian roulette path ending");
         else
             printf(", path lengths interval: %d-%d", config.mMinPathLength, config.mMaxPathLength);
     }
-    if ((config.mAlgorithm == kPathTracingNEEMIS) && (config.mIndirectIllumClipping > 0.f))
+    if ((config.mAlgorithm == kPathTracing) && (config.mIndirectIllumClipping > 0.f))
         printf(", indirect illumination clipping: %.2f", config.mIndirectIllumClipping);
     printf("\n");
 
@@ -444,7 +444,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             }
 
             if (   (oConfig.mAlgorithm != kPathTracingNaive)
-                && (oConfig.mAlgorithm != kPathTracingNEEMIS))
+                && (oConfig.mAlgorithm != kPathTracing))
             {
                 printf(
                     "\n"
@@ -473,7 +473,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             }
 
             if (   (oConfig.mAlgorithm != kPathTracingNaive)
-                && (oConfig.mAlgorithm != kPathTracingNEEMIS))
+                && (oConfig.mAlgorithm != kPathTracing))
             {
                 printf(
                     "\n"
@@ -503,7 +503,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 return;
             }
 
-            if (oConfig.mAlgorithm != kPathTracingNEEMIS)
+            if (oConfig.mAlgorithm != kPathTracing)
             {
                 printf(
                     "\n"
@@ -637,7 +637,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
     // Check algorithm was selected
     if (oConfig.mAlgorithm == kAlgorithmCount)
-        oConfig.mAlgorithm = kPathTracingNEEMIS;
+        oConfig.mAlgorithm = kPathTracing;
 
     // Check path lengths settings
     if ((oConfig.mMaxPathLength == 0) && (oConfig.mMinPathLength != 1))

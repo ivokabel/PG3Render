@@ -48,7 +48,7 @@ public:
             // Simple path tracer
             EstimateIncomingRadiancePTNaive(aRay, oRadiance);
         }
-        else if (aAlgorithm == kPathTracingNEEMIS)
+        else if (aAlgorithm == kPathTracing)
         {
             // Path tracer with next event estimate and MIS for direct illumination
             SpectrumF emmittedRadiance;
