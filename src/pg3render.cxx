@@ -85,7 +85,7 @@ float Render(
                 {
                     const float currentClock = (float)clock();
                     const float progress = (float)((currentClock - startT) / (endT - startT));
-                    PrintProgressBars(20, progress);
+                    PrintProgressBar(20, progress);
                 }
             }
 
@@ -110,7 +110,7 @@ float Render(
                 if (!aConfig.mQuietMode)
                 {
                     const float progress = (float)globalCounter / aConfig.mIterations;
-                    PrintProgressBars(20, progress);
+                    PrintProgressBar(20, progress);
                 }
             }
         }

@@ -307,7 +307,7 @@ bool GetFileName(const char *aPath, std::string &oResult)
     return true;
 }
 
-void PrintProgressBars(const uint32_t aBarCount, float aProgress)
+void PrintProgressBar(const uint32_t aBarCount, float aProgress)
 {
     PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aProgress, 0.0f);
 
