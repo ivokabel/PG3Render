@@ -137,7 +137,7 @@ protected:
         SpectrumF       &oReflectedRadianceEstimate,
         const Frame     *aSurfFrame = NULL, // Only needed when you to compute PDF of a const env. light source sample
         float           *oEmmittedLightPdfW = NULL,
-        float           *oEmmittedLightPickingProb = NULL
+        int32_t         *oLightID = NULL
         )
     {
         PG3_ASSERT((mMaxPathLength == 0) || (aPathLength <= mMaxPathLength));
@@ -164,19 +164,8 @@ protected:
                 {
                     oEmmittedRadiance +=
                         light->GetEmmision(surfPt, wol, aRay.org, oEmmittedLightPdfW, aSurfFrame);
-
-                    if ((oEmmittedLightPickingProb != NULL) && (aSurfFrame != NULL))
-                    {
-                        // Note: We compute light picking probability before illumination 
-                        // computation of a next surface point starta; therefore, we don't 
-                        // increase the intersection ID (mCurrentIsectId) and cached data 
-                        // for light picking probability computation are still valid.
-                        LightPickingProbability(aRay.org, *aSurfFrame, isect.lightID, *oEmmittedLightPickingProb);
-                        // TODO: Uncomment this once proper environment map estimate is implemented.
-                        //       Now there can be zero contribution estimate (and therefore zero picking probability)
-                        //       even if the actual contribution is non-zero.
-                        //PG3_ASSERT(emmittedLightSample.mRadiance.IsZero() || (*oLightProbability > 0.f));
-                    }
+                    if (oLightID != NULL)
+                        *oLightID = isect.lightID;
                 }
             }
 
@@ -191,7 +180,7 @@ protected:
             mCurrentIsectId++;
 
             // Generate one sample by sampling the lights for direct illumination
-            // ...if one more step is allowed
+            // ...if one more path step is allowed
             if ((aPathLength + 1) >= mMinPathLength)
             {
                 LightSample lightSample;
@@ -221,7 +210,7 @@ protected:
                 SpectrumF   brdfEmmittedRadiance;
                 SpectrumF   brdfReflectedRadianceEstimate;
                 float       brdfLightPdfW = 0.f;
-                float       brdfLightPickingProb = 0.f;
+                int32_t     brdfLightId = -1;
 
                 const Vec3f wig = surfFrame.ToWorld(brdfSample.mWil);
                 const float rayMin = EPS_RAY_COS(brdfSample.mWil.z);
@@ -232,11 +221,15 @@ protected:
                 EstimateIncomingRadiancePTNeeMis(
                     brdfRay, aPathLength + 1,
                     brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
-                    &surfFrame, &brdfLightPdfW, &brdfLightPickingProb);
+                    &surfFrame, &brdfLightPdfW, &brdfLightId);
 
                 // MIS for direct light
-                if (!brdfEmmittedRadiance.IsZero())
+                if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
                 {
+                    // TODO: Provide local cache for light picking probability computations
+                    float brdfLightPickingProb = 0.f;
+                    LightPickingProbability(surfPt, surfFrame, brdfLightId, brdfLightPickingProb);
+
                     // TODO: Uncomment this once proper environment map estimate is implemented.
                     //       Now there can be zero contribution estimate (and therefore zero picking probability)
                     //       even if the actual contribution is non-zero.
@@ -273,24 +266,12 @@ protected:
             if (aPathLength >= mMinPathLength)
             {
                 const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
-                const int32_t backgroundLightId = mConfig.mScene->GetBackgroundLightId();
                 if (backgroundLight != NULL)
                 {
                     oEmmittedRadiance +=
                         backgroundLight->GetEmmision(aRay.dir, true, oEmmittedLightPdfW, aSurfFrame);
-
-                    if ((oEmmittedLightPickingProb != NULL) && (aSurfFrame != NULL))
-                    {
-                        LightPickingProbability(
-                            aRay.org, 
-                            *aSurfFrame, 
-                            backgroundLightId, 
-                            *oEmmittedLightPickingProb);
-                        // TODO: Uncomment this once proper environment map estimate is implemented.
-                        //       Now there can be zero contribution estimate (and therefore zero picking probability)
-                        //       even if the actual contribution is non-zero.
-                        //PG3_ASSERT(emmittedLightSample.mRadiance.IsZero() || (*oLightProbability > 0.f));
-                    }
+                    if (oLightID != NULL)
+                        *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }
             }
         }
