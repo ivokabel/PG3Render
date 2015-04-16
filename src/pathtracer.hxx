@@ -4,30 +4,6 @@
 
 class PathTracer : public PathTracerBase
 {
-protected:
-
-    //class PTNeeMisContext
-    //{
-    //public:
-    //    PTNeeMisContext(const Ray &aRay, uint32_t aPathLength) :
-    //        mRay(aRay), mPathLength(aPathLength) {};
-
-    //    // Input parameters
-    //    const Ray       &mRay;
-    //    const uint32_t   mPathLength;
-
-    //    // Output
-    //    SpectrumF        mLe;
-    //    SpectrumF        mLr;
-
-    //    // This class is not copyable because of a const member.
-    //    // If we don't delete the assignment operator and copy constructor 
-    //    // explicitly, the compiler may complain about not being able 
-    //    // to create their default implementations.
-    //    PTNeeMisContext & operator=(const PTNeeMisContext&) = delete;
-    //    PTNeeMisContext(const PTNeeMisContext&) = delete;
-    //};
-
 public:
 
     PathTracer(
