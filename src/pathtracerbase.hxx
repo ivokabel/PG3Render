@@ -13,6 +13,22 @@
 
 class PathTracerBase : public AbstractRenderer
 {
+protected:
+    class LightSamplingContext
+    {
+    public:
+        LightSamplingContext() : mValid(false) {};
+
+        void InitIfNeeded(size_t aLightCount)
+        {
+            if (!mValid)
+                mLightContribEstimsCache.resize(aLightCount, 0.f);
+        }
+
+        std::vector<float>      mLightContribEstimsCache;
+        bool                    mValid;
+    };
+
 public:
 
     PathTracerBase(
@@ -23,10 +39,7 @@ public:
         mMinPathLength(aConfig.mMinPathLength),
         mMaxPathLength(aConfig.mMaxPathLength),
         mIndirectIllumClipping(aConfig.mIndirectIllumClipping)
-    {
-        mLightContribLastIsectIds.resize(aConfig.mScene->GetLightCount(), 0u);
-        mLightContribEstimsCache.resize(aConfig.mScene->GetLightCount(), 0.f);
-    }
+    {}
 
     virtual void EstimateIncomingRadiance(
         const Algorithm      aAlgorithm,
@@ -70,12 +83,13 @@ public:
     };
 
     void GetDirectRadianceFromDirection(
-        const Vec3f     &aSurfPt,
-        const Frame     &aSurfFrame,
-        const Vec3f     &aWil,
-              SpectrumF &oLight,
-              float     *oPdfW = NULL,
-              float     *oLightProbability = NULL
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame,
+        const Vec3f                 &aWil,
+              LightSamplingContext  &aContext,
+              SpectrumF             &oLight,
+              float                 *oPdfW = NULL,
+              float                 *oLightProbability = NULL
         )
     {
         int32_t lightId = -1;
@@ -126,7 +140,7 @@ public:
             //       and then we don't recursively compute indirect radiance; therefore, we don't 
             //       increase the intersection ID (mCurrentIsectId). That's why cached data 
             //       for light picking probability computation are still valid.
-            LightPickingProbability(aSurfPt, aSurfFrame, lightId, *oLightProbability);
+            LightPickingProbability(aSurfPt, aSurfFrame, lightId, aContext, *oLightProbability);
             // TODO: Uncomment this once proper environment map estimate is implemented.
             //       Now there can be zero contribution estimate (and therefore zero picking probability)
             //       even if the actual contribution is non-zero.
@@ -135,9 +149,11 @@ public:
     }
 
     bool SampleLightsSingle(
-        const Vec3f     &aSurfPt, 
-        const Frame     &aSurfFrame, 
-        LightSample     &oLightSample)
+        const Vec3f                 &aSurfPt, 
+        const Frame                 &aSurfFrame, 
+              LightSamplingContext  &aContext,
+              LightSample           &oLightSample
+        )
     {
         // We split the planar integral over the surface of all light sources 
         // into sub-integrals - one integral for each light source - and estimate 
@@ -145,7 +161,7 @@ public:
 
         int32_t chosenLightId   = -1;
         float lightProbability  = 0.f;
-        PickSingleLight(aSurfPt, aSurfFrame, chosenLightId, lightProbability);
+        PickSingleLight(aSurfPt, aSurfFrame, aContext, chosenLightId, lightProbability);
 
         // Sample the chosen light
         if (chosenLightId >= 0)
@@ -164,10 +180,11 @@ public:
 
     // Pick one of the light sources randomly (proportionally to their estimated contribution)
     void PickSingleLight(
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-              int32_t       &oChosenLightId, 
-              float         &oLightProbability)
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame, 
+              LightSamplingContext  &aContext,
+              int32_t               &oChosenLightId, 
+              float                 &oLightProbability)
     {
         const size_t lightCount = mConfig.mScene->GetLightCount();
         if (lightCount == 0)
@@ -187,21 +204,21 @@ public:
             // Estimate the contribution of all available light sources
             float estimatesSum = 0.f;
             lightContrPseudoCdf[0] = 0.f;
+            aContext.InitIfNeeded(lightCount);
             for (uint32_t i = 0; i < lightCount; i++)
             {
                 const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
                 PG3_ASSERT(light != 0);
 
-                if (mLightContribLastIsectIds[i] != mCurrentIsectId)
-                {
-                    // Update light contribution cache
-                    mLightContribEstimsCache[i]  = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
-                    mLightContribLastIsectIds[i] = mCurrentIsectId;
-                }
+                if (!aContext.mValid)
+                    // Fill light contribution cache
+                    aContext.mLightContribEstimsCache[i] =
+                        light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
 
-                estimatesSum += mLightContribEstimsCache[i];
+                estimatesSum += aContext.mLightContribEstimsCache[i];
                 lightContrPseudoCdf[i + 1] = estimatesSum;
             }
+            aContext.mValid = true;
 
             if (estimatesSum > 0.f)
             {
@@ -230,10 +247,11 @@ public:
 
     // Computes probability of picking the specified light source
     void LightPickingProbability(
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-              uint32_t       aLightId, 
-              float         &oLightProbability)
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame, 
+              uint32_t               aLightId, 
+              LightSamplingContext  &aContext,
+              float                 &oLightProbability)
     {
         const size_t lightCount = mConfig.mScene->GetLightCount();
 
@@ -252,23 +270,23 @@ public:
             // Estimate the contribution of all available light sources
             float estimatesSum  = 0.f;
             float lightEstimate = 0.f;
+            aContext.InitIfNeeded(lightCount);
             for (uint32_t i = 0; i < lightCount; i++)
             {
                 const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
                 PG3_ASSERT(light != 0);
 
-                if (mLightContribLastIsectIds[i] != mCurrentIsectId)
-                {
-                    // Update light contribution cache
-                    mLightContribEstimsCache[i]  = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
-                    mLightContribLastIsectIds[i] = mCurrentIsectId;
-                }
+                if (!aContext.mValid)
+                    // Fill light contribution cache
+                    aContext.mLightContribEstimsCache[i] =
+                        light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
 
-                const float estimate = mLightContribEstimsCache[i];
+                const float estimate = aContext.mLightContribEstimsCache[i];
                 if (i == aLightId)
                     lightEstimate = estimate;
                 estimatesSum += estimate;
             }
+            aContext.mValid = true;
 
             if (estimatesSum > 0.f)
             {
@@ -383,10 +401,11 @@ public:
     }
 
     void AddDirectIllumMISBrdfSampleContribution(
-        const BRDFSample    &aBrdfSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame,
-              SpectrumF     &oLightBuffer)
+        const BRDFSample            &aBrdfSample,
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame,
+              LightSamplingContext  &aContext,
+              SpectrumF             &oLightBuffer)
     {
         if (aBrdfSample.mSample.Max() <= 0.f)
             // The material is a complete blocker in this direction
@@ -399,6 +418,7 @@ public:
             aSurfPt,
             aSurfFrame,
             aBrdfSample.mWil,
+            aContext,
             LiLight,
             &lightPdfW,
             &lightPickingProbability);
@@ -421,8 +441,6 @@ public:
 
 protected:
     Rng                     mRng;
-    std::vector<uint32_t>   mLightContribLastIsectIds;
-    std::vector<float>      mLightContribEstimsCache;
 
     uint32_t                mMinPathLength;
     uint32_t                mMaxPathLength;

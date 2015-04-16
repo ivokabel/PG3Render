@@ -145,6 +145,8 @@ protected:
         oEmmittedRadiance.MakeZero();
         oReflectedRadianceEstimate.MakeZero();
 
+        LightSamplingContext lightSamplingContext;
+
         Isect isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
         {
@@ -184,7 +186,7 @@ protected:
             if ((aPathLength + 1) >= mMinPathLength)
             {
                 LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSample))
+                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingContext, lightSample))
                 {
                     AddMISLightSampleContribution(
                         lightSample, surfPt, surfFrame, wol, mat,
@@ -226,9 +228,10 @@ protected:
                 // MIS for direct light
                 if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
                 {
-                    // TODO: Provide local cache for light picking probability computations
                     float brdfLightPickingProb = 0.f;
-                    LightPickingProbability(surfPt, surfFrame, brdfLightId, brdfLightPickingProb);
+                    LightPickingProbability(
+                        surfPt, surfFrame, brdfLightId, lightSamplingContext,
+                        brdfLightPickingProb);
 
                     // TODO: Uncomment this once proper environment map estimate is implemented.
                     //       Now there can be zero contribution estimate (and therefore zero picking probability)
