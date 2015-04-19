@@ -145,7 +145,7 @@ protected:
         oEmmittedRadiance.MakeZero();
         oReflectedRadianceEstimate.MakeZero();
 
-        LightSamplingContext lightSamplingContext;
+        LightSamplingContext lightSamplingCtx(mConfig.mScene->GetLightCount());
 
         Isect isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
@@ -186,7 +186,7 @@ protected:
             if ((aPathLength + 1) >= mMinPathLength)
             {
                 LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingContext, lightSample))
+                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
                 {
                     AddMISLightSampleContribution(
                         lightSample, surfPt, surfFrame, wol, mat,
@@ -230,7 +230,7 @@ protected:
                 {
                     float brdfLightPickingProb = 0.f;
                     LightPickingProbability(
-                        surfPt, surfFrame, brdfLightId, lightSamplingContext,
+                        surfPt, surfFrame, brdfLightId, lightSamplingCtx,
                         brdfLightPickingProb);
 
                     // TODO: Uncomment this once proper environment map estimate is implemented.

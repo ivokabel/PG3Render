@@ -18,7 +18,7 @@ public:
               SpectrumF     &oRadiance
         )
     {
-        LightSamplingContext  lightSamplingContext;
+        LightSamplingContext lightSamplingCtx(mConfig.mScene->GetLightCount());
 
         Isect isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
@@ -61,7 +61,7 @@ public:
             else if (aAlgorithm == kDirectIllumLightSamplingSingle)
             {
                 LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingContext, lightSample))
+                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
                     AddSingleLightSampleContribution(
                         lightSample, surfPt, surfFrame, wol, mat,
                         LoDirect);
@@ -78,7 +78,7 @@ public:
                         surfPt,
                         surfFrame,
                         brdfSample.mWil,
-                        lightSamplingContext,
+                        lightSamplingCtx,
                         LiLight);
 
                     // Compute the two-step MC estimator. 
@@ -93,7 +93,7 @@ public:
 
                 // Generate one sample by sampling the lights
                 LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingContext, lightSample))
+                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
                 {
                     AddMISLightSampleContribution(
                         lightSample, surfPt, surfFrame, wol, mat,
@@ -104,7 +104,7 @@ public:
                 BRDFSample brdfSample;
                 mat.SampleBrdf(mRng, wol, brdfSample);
                 AddDirectIllumMISBrdfSampleContribution(
-                    brdfSample, surfPt, surfFrame, lightSamplingContext,
+                    brdfSample, surfPt, surfFrame, lightSamplingCtx,
                     LoDirect);
             }
             else

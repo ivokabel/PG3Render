@@ -17,13 +17,10 @@ protected:
     class LightSamplingContext
     {
     public:
-        LightSamplingContext() : mValid(false) {};
-
-        void InitIfNeeded(size_t aLightCount)
-        {
-            if (!mValid)
-                mLightContribEstimsCache.resize(aLightCount, 0.f);
-        }
+        LightSamplingContext(size_t aLightCount) :
+            mLightContribEstimsCache(aLightCount, 0.f),
+            mValid(false)
+        {};
 
         std::vector<float>      mLightContribEstimsCache;
         bool                    mValid;
@@ -201,10 +198,11 @@ public:
             // TODO: Make it a PT's memeber to avoid unnecessary allocations?
             std::vector<float> lightContrPseudoCdf(lightCount + 1);
 
+            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+
             // Estimate the contribution of all available light sources
             float estimatesSum = 0.f;
             lightContrPseudoCdf[0] = 0.f;
-            aContext.InitIfNeeded(lightCount);
             for (uint32_t i = 0; i < lightCount; i++)
             {
                 const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
@@ -267,10 +265,11 @@ public:
         }
         else
         {
+            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+
             // Estimate the contribution of all available light sources
             float estimatesSum  = 0.f;
             float lightEstimate = 0.f;
-            aContext.InitIfNeeded(lightCount);
             for (uint32_t i = 0; i < lightCount; i++)
             {
                 const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
