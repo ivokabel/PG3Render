@@ -4,7 +4,7 @@
 # Settings
 ###################################################################################################
 
-ITERATIONS_COUNT=4
+ITERATIONS_COUNT=16
 SHORT_OUTPUT=true
 
 TESTING_DIR="./testing"
@@ -75,7 +75,7 @@ run_rendering_set () {
         run_single_render dlsa   $1
         run_single_render dmis   $1
         run_single_render "ptn " $1
-        run_single_render pt     $1
+        run_single_render "pt  " $1
     else
         if [ "$SHORT_OUTPUT" != "true" ]; then
             echo "Rendering scene $1, em $2"
@@ -86,7 +86,7 @@ run_rendering_set () {
         run_single_render_em dlsa   $1 $2
         run_single_render_em dmis   $1 $2
         run_single_render_em "ptn " $1 $2
-        run_single_render_em pt     $1 $2
+        run_single_render_em "pt  " $1 $2
     fi
 }
 

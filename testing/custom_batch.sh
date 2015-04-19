@@ -12,11 +12,15 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-"$PG3RENDER" -a dbs   -i 4  -s 12 -em 1 -od ".\output images" -e hdr
+"$PG3RENDER" -a pt         -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
 echo
-"$PG3RENDER" -a dlss  -i 4  -s 12 -em 1 -od ".\output images" -e hdr
+"$PG3RENDER" -a pt -iic 20 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
 echo
-"$PG3RENDER" -a dmis  -i 4  -s 12 -em 1 -od ".\output images" -e hdr
+"$PG3RENDER" -a pt -iic 15 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
+echo
+"$PG3RENDER" -a pt -iic 10 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
+echo
+"$PG3RENDER" -a pt -iic  5 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
 echo
 
 echo
