@@ -15,7 +15,6 @@ public:
     {
         mIterations = 0;
         mFramebuffer.Setup(mConfig.mScene->mCamera.mResolution);
-        mCurrentIsectId = 0;
     }
 
     virtual ~AbstractRenderer(){}
@@ -47,8 +46,4 @@ protected:
     uint32_t         mIterations;
     Framebuffer      mFramebuffer;
     const Config    &mConfig;
-
-    // Intersection counter to determine whether cached intersecton data are still valid.
-    // Used for light source contribution estimates (later used for light picking probabilities).
-    uint32_t         mCurrentIsectId;
 };

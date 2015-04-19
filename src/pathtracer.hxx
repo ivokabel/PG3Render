@@ -179,8 +179,6 @@ protected:
             if ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength))
                 return;
 
-            mCurrentIsectId++;
-
             // Generate one sample by sampling the lights for direct illumination
             // ...if one more path step is allowed
             if ((aPathLength + 1) >= mMinPathLength)

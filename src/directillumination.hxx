@@ -23,8 +23,6 @@ public:
         Isect isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
         {
-            mCurrentIsectId++;
-
             const Vec3f surfPt = aRay.org + aRay.dir * isect.dist;
             Frame surfFrame;
             surfFrame.SetFromZ(isect.normal);

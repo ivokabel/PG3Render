@@ -133,10 +133,6 @@ public:
 
         if ((oLightProbability != NULL) && (lightId >= 0))
         {
-            // Note: We compute light picking probability only in case we hit a light source 
-            //       and then we don't recursively compute indirect radiance; therefore, we don't 
-            //       increase the intersection ID (mCurrentIsectId). That's why cached data 
-            //       for light picking probability computation are still valid.
             LightPickingProbability(aSurfPt, aSurfFrame, lightId, aContext, *oLightProbability);
             // TODO: Uncomment this once proper environment map estimate is implemented.
             //       Now there can be zero contribution estimate (and therefore zero picking probability)
