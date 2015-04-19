@@ -29,7 +29,7 @@ public:
             // Path tracer with next event estimate and MIS for direct illumination
             SpectrumF emmittedRadiance;
             SpectrumF reflectedRadianceEstimate;
-            EstimateIncomingRadiancePTNeeMis(aRay, 1, emmittedRadiance, reflectedRadianceEstimate);
+            EstimateIncomingRadiancePT(aRay, 1, emmittedRadiance, reflectedRadianceEstimate);
             oRadiance = emmittedRadiance + reflectedRadianceEstimate;
         }
         else
@@ -130,7 +130,7 @@ protected:
         }
     }
 
-    void EstimateIncomingRadiancePTNeeMis(
+    void EstimateIncomingRadiancePT(
         const Ray       &aRay,
         const uint32_t   aPathLength,
         SpectrumF       &oEmmittedRadiance,
@@ -179,16 +179,20 @@ protected:
             if ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength))
                 return;
 
-            // Generate one sample by sampling the lights for direct illumination
+            // Generate requested amount of samples by sampling lights for direct illumination
             // ...if one more path step is allowed
             if ((aPathLength + 1) >= mMinPathLength)
             {
-                LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
+                const uint32_t lightSamplesCount = 1;// 2;
+                for (uint32_t sampleNum = 0; sampleNum < lightSamplesCount; sampleNum++)
                 {
-                    AddMISLightSampleContribution(
-                        lightSample, surfPt, surfFrame, wol, mat,
-                        oReflectedRadianceEstimate);
+                    LightSample lightSample;
+                    if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
+                    {
+                        AddMISLightSampleContribution(
+                            lightSample, lightSamplesCount, surfPt, surfFrame, wol, mat,
+                            oReflectedRadianceEstimate);
+                    }
                 }
             }
 
@@ -218,7 +222,7 @@ protected:
 
                 PG3_ASSERT(brdfSample.mPdfW != INFINITY_F); // Dirac pulse BRDFs not yet supported
 
-                EstimateIncomingRadiancePTNeeMis(
+                EstimateIncomingRadiancePT(
                     brdfRay, aPathLength + 1,
                     brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
                     &surfFrame, &brdfLightPdfW, &brdfLightId);
@@ -238,11 +242,12 @@ protected:
                     PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
                     // Compute multiple importance sampling MC estimator. 
+                    const float lightPdf = brdfLightPdfW * brdfLightPickingProb;
                     oReflectedRadianceEstimate +=
                           (brdfSample.mSample * brdfEmmittedRadiance)
-                        / (   (   brdfSample.mPdfW
-                                + brdfLightPdfW * brdfLightPickingProb)
-                            * reflectanceEstimate); // Russian roulette
+                        * MISWeight2(brdfSample.mPdfW, 1, lightPdf, 1) // MIS
+                        / brdfSample.mPdfW      // MC
+                        / reflectanceEstimate;  // Russian roulette
                 }
 
                 // Simple MC for indirect light

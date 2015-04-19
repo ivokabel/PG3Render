@@ -328,6 +328,7 @@ public:
 
     void AddMISLightSampleContribution(
         const LightSample   &aLightSample,
+        const uint32_t       aLightSamplesCount,
         const Vec3f         &aSurfPt,
         const Frame         &aSurfFrame, 
         const Vec3f         &aWol,
@@ -373,14 +374,13 @@ public:
         {
             // Planar or angular light source was chosen
 
-            // PDF of the BRDF sampling technique for the chosen light direction
-            const float brdfPdfW = aMat.GetPdfW(aWol, wil);
-
             // MIS MC estimator
+            const float brdfPdfW = aMat.GetPdfW(aWol, wil);
+            const float lightPdf = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
-                  aLightSample.mSample
-                * aMat.EvalBrdf(wil, aWol)
-                / (aLightSample.mPdfW * aLightSample.mLightProbability + brdfPdfW);
+                  (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                * MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, 1)
+                / lightPdf;
         }
         else
         {
@@ -431,7 +431,45 @@ public:
         // Compute multiple importance sampling MC estimator. 
         oLightBuffer +=
               (aBrdfSample.mSample * LiLight)
-            / (aBrdfSample.mPdfW + lightPdfW * lightPickingProbability);
+            * MISWeight2(aBrdfSample.mPdfW, 1, lightPdfW * lightPickingProbability, 1)
+            / aBrdfSample.mPdfW;
+    }
+
+    float MISWeight2(
+        const float         aStrategy1Pdf,
+        const uint32_t      aStrategy1Count,
+        const float         aStrategy2Pdf,
+        const uint32_t      aStrategy2Count
+        )
+    {
+        return MISWeight2Balanced(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
+        //return MISWeight2Power(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
+    }
+
+    float MISWeight2Balanced(
+        const float         aStrategy1Pdf,
+        const uint32_t      aStrategy1Count,
+        const float         aStrategy2Pdf,
+        const uint32_t      aStrategy2Count
+        )
+    {
+        return
+              aStrategy1Pdf
+            / (aStrategy1Count * aStrategy1Pdf + aStrategy2Count * aStrategy2Pdf);
+    }
+
+    float MISWeight2Power(
+        const float         aStrategy1Pdf,
+        const uint32_t      aStrategy1Count,
+        const float         aStrategy2Pdf,
+        const uint32_t      aStrategy2Count
+        )
+    {
+        const float aStrategy1PdfSqr = aStrategy1Pdf * aStrategy1Pdf;
+        const float aStrategy2PdfSqr = aStrategy2Pdf * aStrategy2Pdf;
+        return
+              aStrategy1PdfSqr
+            / (aStrategy1Count * aStrategy1PdfSqr + aStrategy2Count * aStrategy2PdfSqr);
     }
 
 protected:

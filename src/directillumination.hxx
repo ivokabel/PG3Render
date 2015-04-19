@@ -94,7 +94,7 @@ public:
                 if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
                 {
                     AddMISLightSampleContribution(
-                        lightSample, surfPt, surfFrame, wol, mat,
+                        lightSample, 1, surfPt, surfFrame, wol, mat,
                         LoDirect);
                 }
 
