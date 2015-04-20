@@ -1,20 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 5 -t 180 -sm 1 -slb 1 -sl 1</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 2 -i 10 -sm  1 -slb 1 -sl 1.0 -j 1</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerDebuggerType>Auto</LocalDebuggerDebuggerType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 5 -t 180 -sm 1 -slb 1 -sl 1</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 2 -i 10 -sm  1 -slb 1 -sl 1.0 -j 1</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 5 -t 180 -sm 1 -slb 1 -sl 1</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 2 -i 10 -sm  1 -slb 1 -sl 1.0 -j 1</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 5 -t 180 -sm 1 -slb 1 -sl 1</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-od ".\output images" -e hdr -a pt -s 2 -i 10 -sm  1 -slb 1 -sl 1.0 -j 1</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
