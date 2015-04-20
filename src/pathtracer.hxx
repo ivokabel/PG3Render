@@ -260,9 +260,9 @@ protected:
                         const float lightPdf = brdfLightPdfW * brdfLightPickingProb;
                         oReflectedRadianceEstimate +=
                               (brdfSample.mSample * brdfEmmittedRadiance)
-                            * MISWeight2(brdfSample.mPdfW, brdfSamplesCount, lightPdf, lightSamplesCount) // MIS
-                            / brdfSample.mPdfW      // MC
-                            / reflectanceEstimate;  // Russian roulette
+                            * (   MISWeight2(brdfSample.mPdfW, brdfSamplesCount, lightPdf, lightSamplesCount) // MIS
+                                / brdfSample.mPdfW      // MC
+                                / reflectanceEstimate); // Russian roulette
                     }
 
                     // Simple MC for indirect light

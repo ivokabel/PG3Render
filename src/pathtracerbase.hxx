@@ -385,8 +385,8 @@ public:
             const float lightPdf = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
                   (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
-                * MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, aBrdfSamplesCount)
-                / lightPdf;
+                * (   MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, aBrdfSamplesCount)
+                    / lightPdf);
         }
         else
         {
@@ -443,8 +443,8 @@ public:
                 lightPdfW * lightPickingProbability, aLightSamplesCount);
         oLightBuffer +=
               (aBrdfSample.mSample * LiLight)
-            * misWeight
-            / aBrdfSample.mPdfW;
+            * (   misWeight
+                / aBrdfSample.mPdfW);
     }
 
     float MISWeight2(
