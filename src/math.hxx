@@ -48,6 +48,19 @@ inline T Clamp(const T& n, const T& lower, const T& upper)
     return std::max(lower, std::min(n, upper));
 }
 
+template <
+    typename T,
+    typename = typename
+        std::enable_if<
+               std::is_same<double, T>::value
+            || std::is_same<float, T>::value
+            >::type
+    >
+T LinInterpol(T c, T x1, T x2)
+{
+    return ((T)1. - c) * x1 + c * x2;
+}
+
 // 50-year old atan approximation due to Hastings
 // Taken from http://lists.apple.com/archives/PerfOptimization-dev/2005/Jan/msg00051.html
 // |error| < 0.005

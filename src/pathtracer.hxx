@@ -29,7 +29,7 @@ public:
             // Path tracer with next event estimate and MIS for direct illumination
             SpectrumF emmittedRadiance;
             SpectrumF reflectedRadianceEstimate;
-            EstimateIncomingRadiancePT(aRay, 1, emmittedRadiance, reflectedRadianceEstimate);
+            EstimateIncomingRadiancePT(aRay, 1, 8.0, emmittedRadiance, reflectedRadianceEstimate);
             oRadiance = emmittedRadiance + reflectedRadianceEstimate;
         }
         else
@@ -133,6 +133,7 @@ protected:
     void EstimateIncomingRadiancePT(
         const Ray       &aRay,
         const uint32_t   aPathLength,
+        const float      aSplitBudget,
         SpectrumF       &oEmmittedRadiance,
         SpectrumF       &oReflectedRadianceEstimate,
         const Frame     *aSurfFrame = NULL, // Only needed when you to compute PDF of a const env. light source sample
@@ -179,9 +180,15 @@ protected:
             if ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength))
                 return;
 
-            // TODO: Compute samples count
-            const uint32_t lightSamplesCount = 2;
-            const uint32_t brdfSamplesCount = (aPathLength == 1) ? 16 : 1;
+            // Splitting
+            uint32_t brdfSamplesCount;
+            uint32_t lightSamplesCount;
+            float nextStepSplitBudget;
+            float splitLevel = 1.f; // [0,1]: 0: no split, 1: full split
+            // TODO: Use BRDF settings
+            ComputeSplittingCounts(
+                aSplitBudget, splitLevel,
+                brdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
 
             // Generate requested amount of samples by sampling lights for direct illumination
             // ...if one more path step is allowed
@@ -230,7 +237,7 @@ protected:
                     PG3_ASSERT(brdfSample.mPdfW != INFINITY_F); // Dirac pulse BRDFs not yet supported
 
                     EstimateIncomingRadiancePT(
-                        brdfRay, aPathLength + 1,
+                        brdfRay, aPathLength + 1, nextStepSplitBudget,
                         brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
                         &surfFrame, &brdfLightPdfW, &brdfLightId);
 
@@ -289,5 +296,22 @@ protected:
                 }
             }
         }
+    }
+
+    void ComputeSplittingCounts(
+        float        aSplitBudget,
+        float        aSplitLevel, // [0,1]: 0: no split, 1: full split
+        uint32_t    &oBrdfSamplesCount,
+        uint32_t    &oLightSamplesCount,
+        float       &oNextStepSplitBudget
+        )
+    {
+        oBrdfSamplesCount =
+            std::lroundf(LinInterpol(aSplitLevel, 1.f, aSplitBudget));
+
+        oLightSamplesCount = oBrdfSamplesCount;
+
+        oNextStepSplitBudget =
+            1 + ((aSplitBudget - oBrdfSamplesCount) / (float)oBrdfSamplesCount);
     }
 };
