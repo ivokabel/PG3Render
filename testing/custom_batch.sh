@@ -12,10 +12,75 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-"$PG3RENDER" -a pt         -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
+
+###################################################################################################
+
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 2 -i 10 -sm  1 -slb 1 -sl 1.0
 echo
 
-#-od ".\output images" -e hdr -a pt -s 5 -t 180 -sm 1 -slb 1 -sl 1 -ot "SplitBudget8SplitLevel1"
+###################################################################################################
+
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  1 -slb 1 -sl 1.0
+#echo
+
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  4 -slb 1 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  4 -slb 1 -sl 0.7
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  4 -slb 1 -sl 1.0
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  4 -slb 2 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  4 -slb 2 -sl 0.7
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm  4 -slb 2 -sl 1.0
+#echo
+
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm 16 -slb 1 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm 16 -slb 1 -sl 0.7
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm 16 -slb 1 -sl 1.0
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm 16 -slb 2 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm 16 -slb 2 -sl 0.7
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -t 300 -sm 16 -slb 2 -sl 1.0
+#echo
+
+
+
+###################################################################################################
+
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  1 -slb 1 -sl 0.8
+#echo
+
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  4 -slb 1 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  4 -slb 1 -sl 0.6
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  4 -slb 1 -sl 0.8
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  4 -slb 2 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  4 -slb 2 -sl 0.6
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm  4 -slb 2 -sl 0.8
+#echo
+
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm 16 -slb 1 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm 16 -slb 1 -sl 0.6
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm 16 -slb 1 -sl 0.8
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm 16 -slb 2 -sl 0.4
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm 16 -slb 2 -sl 0.6
+#echo
+#"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -t 300 -sm 16 -slb 2 -sl 0.8
+#echo
 
 echo
 echo "The script has finished."
