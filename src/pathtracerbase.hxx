@@ -329,6 +329,7 @@ public:
     void AddMISLightSampleContribution(
         const LightSample   &aLightSample,
         const uint32_t       aLightSamplesCount,
+        const uint32_t       aBrdfSamplesCount,
         const Vec3f         &aSurfPt,
         const Frame         &aSurfFrame, 
         const Vec3f         &aWol,
@@ -379,7 +380,7 @@ public:
             const float lightPdf = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
                   (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
-                * MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, 1)
+                * MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, aBrdfSamplesCount)
                 / lightPdf;
         }
         else
@@ -397,6 +398,8 @@ public:
 
     void AddDirectIllumMISBrdfSampleContribution(
         const BRDFSample            &aBrdfSample,
+        const uint32_t               aLightSamplesCount,
+        const uint32_t               aBrdfSamplesCount,
         const Vec3f                 &aSurfPt,
         const Frame                 &aSurfFrame,
               LightSamplingContext  &aContext,
@@ -429,9 +432,13 @@ public:
         PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
         // Compute multiple importance sampling MC estimator. 
+        const float misWeight =
+            MISWeight2(
+                aBrdfSample.mPdfW, aBrdfSamplesCount,
+                lightPdfW * lightPickingProbability, aLightSamplesCount);
         oLightBuffer +=
               (aBrdfSample.mSample * LiLight)
-            * MISWeight2(aBrdfSample.mPdfW, 1, lightPdfW * lightPickingProbability, 1)
+            * misWeight
             / aBrdfSample.mPdfW;
     }
 

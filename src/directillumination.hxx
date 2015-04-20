@@ -94,7 +94,7 @@ public:
                 if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
                 {
                     AddMISLightSampleContribution(
-                        lightSample, 1, surfPt, surfFrame, wol, mat,
+                        lightSample, 1, 1, surfPt, surfFrame, wol, mat,
                         LoDirect);
                 }
 
@@ -102,7 +102,7 @@ public:
                 BRDFSample brdfSample;
                 mat.SampleBrdf(mRng, wol, brdfSample);
                 AddDirectIllumMISBrdfSampleContribution(
-                    brdfSample, surfPt, surfFrame, lightSamplingCtx,
+                    brdfSample, 1, 1, surfPt, surfFrame, lightSamplingCtx,
                     LoDirect);
             }
             else
