@@ -29,7 +29,8 @@ public:
             // Path tracer with next event estimate and MIS for direct illumination
             SpectrumF emmittedRadiance;
             SpectrumF reflectedRadianceEstimate;
-            EstimateIncomingRadiancePT(aRay, 1, 8.0, emmittedRadiance, reflectedRadianceEstimate);
+            EstimateIncomingRadiancePT(
+                aRay, 1, (float)mMaxSplitting, emmittedRadiance, reflectedRadianceEstimate);
             oRadiance = emmittedRadiance + reflectedRadianceEstimate;
         }
         else
@@ -184,7 +185,7 @@ protected:
             uint32_t brdfSamplesCount;
             uint32_t lightSamplesCount;
             float nextStepSplitBudget;
-            float splitLevel = 1.f; // [0,1]: 0: no split, 1: full split
+            float splitLevel = mDbgSplitLevel; // [0,1]: 0: no split, 1: full split
             // TODO: Use BRDF settings
             ComputeSplittingCounts(
                 aSplitBudget, splitLevel,
@@ -209,7 +210,7 @@ protected:
 
             // Russian roulette (based on reflectance of the whole BRDF)
             float reflectanceEstimate = 1.0f;
-            if (mMaxPathLength == 0)
+            if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
             {
                 reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
                 const float rnd = mRng.GetFloat();
@@ -309,7 +310,7 @@ protected:
         oBrdfSamplesCount =
             std::lroundf(LinInterpol(aSplitLevel, 1.f, aSplitBudget));
 
-        oLightSamplesCount = oBrdfSamplesCount;
+        oLightSamplesCount = mLightBrdfSamplesRatio * oBrdfSamplesCount;
 
         oNextStepSplitBudget =
             1 + ((aSplitBudget - oBrdfSamplesCount) / (float)oBrdfSamplesCount);

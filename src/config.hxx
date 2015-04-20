@@ -65,9 +65,14 @@ struct Config
     const Scene *mScene;
 
     Algorithm    mAlgorithm;
-    uint32_t     mMaxPathLength;    // Only used for path-based algorithms
-    uint32_t     mMinPathLength;    // dtto
+    uint32_t     mMaxPathLength;            // Only used for path-based algorithms
+    uint32_t     mMinPathLength;            // dtto
     float        mIndirectIllumClipping;    // Only used in the NEE MIS path tracer
+    uint32_t     mMaxSplitting;             // Only used in the NEE MIS path tracer
+    uint32_t     mLightBrdfSamplesRatio;    // Only used in the NEE MIS path tracer
+
+    // debug, temporary
+    float mDbgSplitLevel;
 
     int32_t      mIterations;
     float        mMaxTime;
@@ -149,6 +154,22 @@ std::string DefaultFilename(
                 + std::to_string(aConfig.mMinPathLength)
                 + "-"
                 + std::to_string(aConfig.mMaxPathLength);
+    }
+
+    // Splitting settings
+    if (aConfig.mAlgorithm == kPathTracing)
+    {
+        filename +=
+              "_splt"
+            + std::to_string(aConfig.mMaxSplitting)
+            + ","
+            + std::to_string(aConfig.mLightBrdfSamplesRatio);
+
+        // debug, temporary
+        std::ostringstream outStream;
+        outStream.precision(2);
+        outStream << std::fixed << aConfig.mDbgSplitLevel;
+        filename += "," + outStream.str();
     }
 
     // Indirect illumination clipping
@@ -235,10 +256,17 @@ void PrintConfiguration(const Config &config)
         if (config.mMaxPathLength == 0)
             printf(", Russian roulette path ending");
         else
-            printf(", path lengths interval: %d-%d", config.mMinPathLength, config.mMaxPathLength);
+            printf(", path lengths: %d-%d", config.mMinPathLength, config.mMaxPathLength);
     }
     if ((config.mAlgorithm == kPathTracing) && (config.mIndirectIllumClipping > 0.f))
-        printf(", indirect illumination clipping: %.2f", config.mIndirectIllumClipping);
+        printf(", indirect illum. clipping: %.2f", config.mIndirectIllumClipping);
+    if (config.mAlgorithm == kPathTracing)
+    {
+        printf(", splitting: %d, %d", config.mMaxSplitting, config.mLightBrdfSamplesRatio);
+
+        // debug, temporary
+        printf(", %.2f", config.mDbgSplitLevel);
+    }
     printf("\n");
 
     if (config.mMaxTime > 0)
@@ -276,7 +304,7 @@ void PrintHelp(const char *argv[])
     printf("\n");
     printf(
         "Usage: %s [ "
-        "-s <scene_id> | -a <algorithm> | -t <time> | -i <iterations> | -minpl <min_path_length> | -maxpl <max_path_length> | -iic <indirect_illum_clipping_value> | -em <env_map_type> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ]\n\n", 
+        "-s <scene_id> | -a <algorithm> | -t <time> | -i <iterations> | -minpl <min_path_length> | -maxpl <max_path_length> | -iic <indirect_illum_clipping_value> | [-sm|--max_splitting] <max_splitting> | [-slb|--splitting_light_to_brdf_ratio] <splitting_light_to_brdf_ratio> | -em <env_map_type> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ]\n\n",
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -299,6 +327,10 @@ void PrintHelp(const char *argv[])
     printf("           Default is 1.\n");
     printf("    -iic   Maximal allowed value for indirect illumination estimates. 0 means no clipping (default).\n");
     printf("           Only valid for path tracer (pt).\n");
+    printf("    -sm | --max_splitting \n");
+    printf("           Maximal total amount of splitted paths per one camera ray (default 8).\n");
+    printf("    -slb | --splitting_light_to_brdf_ratio \n");
+    printf("           Number of light samples per one brdf sample (default 1)\n");
 
     printf("    -t     Number of seconds to run the algorithm\n");
     printf("    -i     Number of iterations to run the algorithm (default 1)\n");
@@ -322,6 +354,11 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mMinPathLength          = 1;                        // [cmd]
     oConfig.mMaxPathLength          = 0;                        // [cmd]
     oConfig.mIndirectIllumClipping  = 0.f;                      // [cmd]
+    oConfig.mMaxSplitting           = 8;                        // [cmd]
+    oConfig.mLightBrdfSamplesRatio  = 1;                        // [cmd]
+
+    // debug, temporary
+    oConfig.mDbgSplitLevel = 1.f;
 
     oConfig.mIterations             = 1;                        // [cmd]
     oConfig.mMaxTime                = -1.f;                     // [cmd]
@@ -511,11 +548,11 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                     "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
             }
 
-            float tmpVal;
+            float tmp;
             std::istringstream iss(argv[i]);
-            iss >> tmpVal;
+            iss >> tmp;
 
-            if (iss.fail() || tmpVal < 0.f)
+            if (iss.fail() || tmp < 0.f)
             {
                 printf(
                     "Error: Invalid <indirect_illum_clipping_value> argument \"%s\", please see help (-h)\n",
@@ -523,7 +560,97 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 return;
             }
 
-            oConfig.mIndirectIllumClipping = tmpVal;
+            oConfig.mIndirectIllumClipping = tmp;
+        }
+        else if ((arg == "-sm") || (arg == "--max_splitting")) // maximal splitting
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <max_splitting> argument, please see help (-h)\n");
+                return;
+            }
+
+            if (oConfig.mAlgorithm != kPathTracing)
+            {
+                printf(
+                    "\n"
+                    "Warning: You specified maximal splitting; however, "
+                    "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
+            }
+
+            int32_t tmp;
+            std::istringstream iss(argv[i]);
+            iss >> tmp;
+
+            if (iss.fail() || tmp < 1)
+            {
+                printf(
+                    "Error: Invalid <max_splitting> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
+                return;
+            }
+
+            oConfig.mMaxSplitting = tmp;
+        }
+        else if ((arg == "-sl")) // debug, temporary
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <splitting_level> argument, please see help (-h)\n");
+                return;
+            }
+
+            if (oConfig.mAlgorithm != kPathTracing)
+            {
+                printf(
+                    "\n"
+                    "Warning: You specified splitting ratio; however, "
+                    "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
+            }
+
+            float tmp;
+            std::istringstream iss(argv[i]);
+            iss >> tmp;
+
+            if (iss.fail() || tmp < 0.f)
+            {
+                printf(
+                    "Error: Invalid <splitting_level> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
+                return;
+            }
+
+            oConfig.mDbgSplitLevel = tmp;
+        }
+        else if ((arg == "-slb") || (arg == "--splitting_light_to_brdf_ratio")) // splitting light-to-brdf samples ratio
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <splitting_light_to_brdf_ratio> argument, please see help (-h)\n");
+                return;
+            }
+
+            if (oConfig.mAlgorithm != kPathTracing)
+            {
+                printf(
+                    "\n"
+                    "Warning: You specified light-to-brdf samples ratio for splitting; however, "
+                    "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
+            }
+
+            int32_t tmp;
+            std::istringstream iss(argv[i]);
+            iss >> tmp;
+
+            if (iss.fail() || tmp < 1)
+            {
+                printf(
+                    "Error: Invalid <splitting_light_to_brdf_ratio> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
+                return;
+            }
+
+            oConfig.mLightBrdfSamplesRatio = tmp;
         }
         else if (arg == "-i") // number of iterations to run
         {

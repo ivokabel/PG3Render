@@ -14,14 +14,8 @@ cd "$PG3RENDER_BASE_DIR"
 
 "$PG3RENDER" -a pt         -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
 echo
-"$PG3RENDER" -a pt -iic 20 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
-echo
-"$PG3RENDER" -a pt -iic 15 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
-echo
-"$PG3RENDER" -a pt -iic 10 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
-echo
-"$PG3RENDER" -a pt -iic  5 -i 1000 -s 9 -em 4 -od ".\output images" -e hdr
-echo
+
+#-od ".\output images" -e hdr -a pt -s 5 -t 180 -sm 1 -slb 1 -sl 1 -ot "SplitBudget8SplitLevel1"
 
 echo
 echo "The script has finished."
