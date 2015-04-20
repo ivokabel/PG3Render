@@ -208,20 +208,20 @@ protected:
                 }
             }
 
-            // Russian roulette (based on reflectance of the whole BRDF)
-            float reflectanceEstimate = 1.0f;
-            if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
-            {
-                reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
-                const float rnd = mRng.GetFloat();
-                if (rnd > reflectanceEstimate)
-                    return;
-            }
-
             // Generate requested amount of samples by sampling the BRDF 
             // for both direct and indirect illumination
             for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
             {
+                // Russian roulette (based on reflectance of the whole BRDF)
+                float reflectanceEstimate = 1.0f;
+                if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
+                {
+                    reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
+                    const float rnd = mRng.GetFloat();
+                    if (rnd > reflectanceEstimate)
+                        continue;
+                }
+
                 BRDFSample brdfSample;
                 mat.SampleBrdf(mRng, wol, brdfSample);
                 if (brdfSample.mSample.Max() > 0.f)
