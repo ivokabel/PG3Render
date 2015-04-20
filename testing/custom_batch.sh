@@ -15,7 +15,17 @@ cd "$PG3RENDER_BASE_DIR"
 
 ###################################################################################################
 
-"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 2 -i 10 -sm  1 -slb 1 -sl 1.0
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 2 -i 100 -sm  1 -slb 1 -sl 1.0
+echo
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 3 -i 100 -sm  1 -slb 1 -sl 1.0
+echo
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 4 -i 100 -sm  1 -slb 1 -sl 1.0
+echo
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 5 -i 100 -sm  1 -slb 1 -sl 1.0
+echo
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 6 -i 100 -sm  1 -slb 1 -sl 1.0
+echo
+"$PG3RENDER" -od ".\output images" -e hdr -a pt -s 7 -i 100 -sm  1 -slb 1 -sl 1.0
 echo
 
 ###################################################################################################
