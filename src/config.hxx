@@ -64,15 +64,7 @@ struct Config
 
     const Scene *mScene;
 
-    Algorithm    mAlgorithm;
-    uint32_t     mMaxPathLength;            // Only used for path-based algorithms
-    uint32_t     mMinPathLength;            // dtto
-    float        mIndirectIllumClipping;    // Only used in the NEE MIS path tracer
-    uint32_t     mMaxSplitting;             // Only used in the NEE MIS path tracer
-    uint32_t     mLightBrdfSamplesRatio;    // Only used in the NEE MIS path tracer
-
-    // debug, temporary
-    float mDbgSplitLevel;
+    bool         mOnlyPrintOutputPath;
 
     int32_t      mIterations;
     float        mMaxTime;
@@ -84,6 +76,16 @@ struct Config
     std::string  mOutputName;
     std::string  mOutputDirectory;
     Vec2i        mResolution;
+
+    Algorithm    mAlgorithm;
+    uint32_t     mMaxPathLength;            // Only used for path-based algorithms
+    uint32_t     mMinPathLength;            // dtto
+    float        mIndirectIllumClipping;    // Only used in the NEE MIS path tracer
+    uint32_t     mMaxSplitting;             // Only used in the NEE MIS path tracer
+    uint32_t     mLightBrdfSamplesRatio;    // Only used in the NEE MIS path tracer
+
+    // debug, temporary
+    float        mDbgSplitLevel;
 };
 
 // Scene configurations
@@ -304,7 +306,7 @@ void PrintHelp(const char *argv[])
     printf("\n");
     printf(
         "Usage: %s [ "
-        "-s <scene_id> | -a <algorithm> | -t <time> | -i <iterations> | -minpl <min_path_length> | -maxpl <max_path_length> | -iic <indirect_illum_clipping_value> | [-sm|--max_splitting] <max_splitting> | [-slb|--splitting_light_to_brdf_ratio] <splitting_light_to_brdf_ratio> | -em <env_map_type> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ]\n\n",
+        "-s <scene_id> | -a <algorithm> | -t <time> | -i <iterations> | -minpl <min_path_length> | -maxpl <max_path_length> | -iic <indirect_illum_clipping_value> | [-sm|--max_splitting] <max_splitting> | [-slbr|--splitting_light_to_brdf_ratio] <splitting_light_to_brdf_ratio> | -em <env_map_type> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ] | [-opop | --only_print_output_pathname] \n\n",
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -329,7 +331,7 @@ void PrintHelp(const char *argv[])
     printf("           Only valid for path tracer (pt).\n");
     printf("    -sm | --max_splitting \n");
     printf("           Maximal total amount of splitted paths per one camera ray (default 8).\n");
-    printf("    -slb | --splitting_light_to_brdf_ratio \n");
+    printf("    -slbr | --splitting_light_to_brdf_ratio \n");
     printf("           Number of light samples per one brdf sample (default 1)\n");
 
     printf("    -t     Number of seconds to run the algorithm\n");
@@ -341,24 +343,20 @@ void PrintHelp(const char *argv[])
     printf("           (only used to alter a default filename; '_' is pasted automatically before the trail).\n");
     printf("    -j     Number of threads (\"jobs\") to be used\n");
     printf("    -q     Quiet mode - doesn't print anything except for warnings and errors\n");
+
+    printf("    -opop | --only_print_output_pathname \n");
+    printf("           Do not render anything; just print the full path of the current output file.\n");
+
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
 }
 
 // Parses command line, setting up config
-void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
+bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
     oConfig.mScene                  = NULL;                     // [cmd] When NULL, renderer will not run
 
-    oConfig.mAlgorithm              = kAlgorithmCount;          // [cmd]
-    oConfig.mMinPathLength          = 1;                        // [cmd]
-    oConfig.mMaxPathLength          = 0;                        // [cmd]
-    oConfig.mIndirectIllumClipping  = 0.f;                      // [cmd]
-    oConfig.mMaxSplitting           = 8;                        // [cmd]
-    oConfig.mLightBrdfSamplesRatio  = 1;                        // [cmd]
-
-    // debug, temporary
-    oConfig.mDbgSplitLevel = 1.f;
+    oConfig.mOnlyPrintOutputPath    = false;                    // [cmd]
 
     oConfig.mIterations             = 1;                        // [cmd]
     oConfig.mMaxTime                = -1.f;                     // [cmd]
@@ -369,6 +367,16 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mQuietMode              = false;
     oConfig.mBaseSeed               = 1234;
     oConfig.mResolution             = Vec2i(512, 512);
+
+    oConfig.mAlgorithm              = kAlgorithmCount;          // [cmd]
+    oConfig.mMinPathLength          = 1;                        // [cmd]
+    oConfig.mMaxPathLength          = 0;                        // [cmd]
+    oConfig.mIndirectIllumClipping  = 0.f;                      // [cmd]
+    oConfig.mMaxSplitting           = 8;                        // [cmd]
+    oConfig.mLightBrdfSamplesRatio  = 1;                        // [cmd]
+
+    // debug, temporary
+    oConfig.mDbgSplitLevel = 1.f;
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
@@ -383,19 +391,23 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         if (arg == "-h" || arg == "--help" || arg == "/?")
         {
             PrintHelp(argv);
-            return;
+            return false;
         }
 
         if (arg[0] != '-') // all our commands start with -
         {
             continue;
         }
+        else if ((arg == "-opop") || (arg == "--only_print_output_pathname"))
+        {
+            oConfig.mOnlyPrintOutputPath = true;
+        }
         else if (arg == "-j") // jobs (number of threads)
         {
             if (++i == argc)
             {
                 printf("Error: Missing <threads_count> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             std::istringstream iss(argv[i]);
@@ -404,7 +416,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || oConfig.mNumThreads <= 0)
             {
                 printf("Error: Invalid <threads_count> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-q") // quiet mode
@@ -416,7 +428,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <scene_id> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             std::istringstream iss(argv[i]);
@@ -425,7 +437,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || sceneID < 0 || sceneID >= SizeOfArray(g_SceneConfigs))
             {
                 printf("Error: Invalid <scene_id> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-em") // environment map
@@ -433,7 +445,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <environment_map_id> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if ((g_SceneConfigs[sceneID] & Scene::kLightEnv) == 0)
@@ -450,7 +462,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || envMapID < 0 || envMapID >= Scene::kEMCount)
             {
                 printf("Error: Invalid <environment_map_id> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-a") // algorithm to use
@@ -458,7 +470,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <algorithm> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             std::string alg(argv[i]);
@@ -469,7 +481,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (oConfig.mAlgorithm == kAlgorithmCount)
             {
                 printf("Error: Invalid <algorithm> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-maxpl") // maximal path length
@@ -477,7 +489,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <max_path_length> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if (   (oConfig.mAlgorithm != kPathTracingNaive)
@@ -496,7 +508,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || tmpPathLength < 0)
             {
                 printf("Error: Invalid <max_path_length> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             oConfig.mMaxPathLength = tmpPathLength;
@@ -506,7 +518,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <min_path_length> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if (   (oConfig.mAlgorithm != kPathTracingNaive)
@@ -527,7 +539,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf(
                     "Error: Invalid <min_path_length> argument \"%s\", please see help (-h)\n",
                     argv[i]);
-                return;
+                return false;
             }
 
             oConfig.mMinPathLength = tmpPathLength;
@@ -537,7 +549,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <indirect_illum_clipping_value> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if (oConfig.mAlgorithm != kPathTracing)
@@ -557,7 +569,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf(
                     "Error: Invalid <indirect_illum_clipping_value> argument \"%s\", please see help (-h)\n",
                     argv[i]);
-                return;
+                return false;
             }
 
             oConfig.mIndirectIllumClipping = tmp;
@@ -567,7 +579,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <max_splitting> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if (oConfig.mAlgorithm != kPathTracing)
@@ -587,7 +599,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf(
                     "Error: Invalid <max_splitting> argument \"%s\", please see help (-h)\n",
                     argv[i]);
-                return;
+                return false;
             }
 
             oConfig.mMaxSplitting = tmp;
@@ -597,7 +609,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <splitting_level> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if (oConfig.mAlgorithm != kPathTracing)
@@ -617,17 +629,17 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf(
                     "Error: Invalid <splitting_level> argument \"%s\", please see help (-h)\n",
                     argv[i]);
-                return;
+                return false;
             }
 
             oConfig.mDbgSplitLevel = tmp;
         }
-        else if ((arg == "-slb") || (arg == "--splitting_light_to_brdf_ratio")) // splitting light-to-brdf samples ratio
+        else if ((arg == "-slbr") || (arg == "--splitting_light_to_brdf_ratio")) // splitting light-to-brdf samples ratio
         {
             if (++i == argc)
             {
                 printf("Error: Missing <splitting_light_to_brdf_ratio> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             if (oConfig.mAlgorithm != kPathTracing)
@@ -647,7 +659,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf(
                     "Error: Invalid <splitting_light_to_brdf_ratio> argument \"%s\", please see help (-h)\n",
                     argv[i]);
-                return;
+                return false;
             }
 
             oConfig.mLightBrdfSamplesRatio = tmp;
@@ -657,7 +669,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <iterations> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             std::istringstream iss(argv[i]);
@@ -666,7 +678,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || oConfig.mIterations < 1)
             {
                 printf("Error: Invalid <iterations> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-t") // number of seconds to run
@@ -674,7 +686,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <time> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             std::istringstream iss(argv[i]);
@@ -683,7 +695,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || oConfig.mMaxTime < 0)
             {
                 printf("Error: Invalid <time> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             oConfig.mIterations = -1; // time has precedence
@@ -693,7 +705,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <default_output_extension> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             oConfig.mDefOutputExtension = argv[i];
@@ -709,7 +721,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             else if (oConfig.mDefOutputExtension.length() == 0)
             {
                 printf("Error: Invalid <default_output_extension> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-o") // custom output file name
@@ -717,7 +729,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <output_name> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             oConfig.mOutputName = argv[i];
@@ -725,7 +737,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (oConfig.mOutputName.length() == 0)
             {
                 printf("Error: Invalid <output_name> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-od") // custom output directory
@@ -733,7 +745,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <output_directory> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             oConfig.mOutputDirectory = argv[i];
@@ -741,7 +753,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (oConfig.mOutputDirectory.length() == 0)
             {
                 printf("Error: Invalid <output_directory> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
         else if (arg == "-ot") // output file name trail text
@@ -749,7 +761,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (++i == argc)
             {
                 printf("Error: Missing <output_trail> argument, please see help (-h)\n");
-                return;
+                return false;
             }
 
             outputNameTrail = argv[i];
@@ -757,7 +769,7 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (outputNameTrail.length() == 0)
             {
                 printf("Error: Invalid <output_trail> argument, please see help (-h)\n");
-                return;
+                return false;
             }
         }
     }
@@ -772,35 +784,31 @@ void ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         printf(
             "Error: Minimum path length different from 1 is set while Russian roulette was requested for ending paths, "
             "please see help (-h)\n");
-        return;
+        return false;
     }
     if ((oConfig.mMaxPathLength != 0) && (oConfig.mMinPathLength > oConfig.mMaxPathLength))
     {
         printf(
             "Error: Minimum path length (%d) is larger than maximum path length (%d), please see help (-h)\n",
             oConfig.mMinPathLength, oConfig.mMaxPathLength);
-        return;
+        return false;
     }
 
     // Load scene
     Scene *scene = new Scene;
     scene->LoadCornellBox(oConfig.mResolution, g_SceneConfigs[sceneID], envMapID);
-
     oConfig.mScene = scene;
 
     // If no output name is chosen, create a default one
     if (oConfig.mOutputName.length() == 0)
-    {
         oConfig.mOutputName = DefaultFilename(g_SceneConfigs[sceneID], oConfig, outputNameTrail);
-    }
 
-    // Check if output name has valid extension (.bmp or .hdr) and if not add .bmp
+    // If output name doesn't have a valid extension (.bmp or .hdr), use .bmp
     std::string extension = "";
-
-    if (oConfig.mOutputName.length() > 4) // must be at least 1 character before .bmp
-        extension = oConfig.mOutputName.substr(
-            oConfig.mOutputName.length() - 4, 4);
-
+    if (oConfig.mOutputName.length() > 4) // there must be at least 1 character before .bmp
+        extension = oConfig.mOutputName.substr(oConfig.mOutputName.length() - 4, 4);
     if (extension != ".bmp" && extension != ".hdr")
         oConfig.mOutputName += ".bmp";
+
+    return true;
 }
