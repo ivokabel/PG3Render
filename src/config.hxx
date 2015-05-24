@@ -305,8 +305,8 @@ void PrintHelp(const char *argv[])
 
     printf("\n");
     printf(
-        "Usage: %s [ "
-        "-s <scene_id> | -a <algorithm> | -t <time> | -i <iterations> | -minpl <min_path_length> | -maxpl <max_path_length> | -iic <indirect_illum_clipping_value> | [-sm|--max_splitting] <max_splitting> | [-slbr|--splitting_light_to_brdf_ratio] <splitting_light_to_brdf_ratio> | -em <env_map_type> | -e <def_output_ext> | -od <output_directory> | -o <output_name> | -ot <output_trail> | -j <threads_count> | -q ] | [-opop | --only_print_output_pathname] \n\n",
+        "Usage: %s "
+        "[-s <scene_id>] [-a <algorithm>] [-t <time> | -i <iterations>] [-minpl <min_path_length>] [-maxpl <max_path_length>] [-iic <indirect_illum_clipping_value>] [-sm|--max_splitting <max_splitting>] [-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] [-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] [-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] \n\n",
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -331,7 +331,7 @@ void PrintHelp(const char *argv[])
     printf("           Only valid for path tracer (pt).\n");
     printf("    -sm | --max_splitting \n");
     printf("           Maximal total amount of splitted paths per one camera ray (default 8).\n");
-    printf("    -slbr | --splitting_light_to_brdf_ratio \n");
+    printf("    -slbr | --splitting-light-to-brdf-ratio \n");
     printf("           Number of light samples per one brdf sample (default 1)\n");
 
     printf("    -t     Number of seconds to run the algorithm\n");
@@ -344,7 +344,7 @@ void PrintHelp(const char *argv[])
     printf("    -j     Number of threads (\"jobs\") to be used\n");
     printf("    -q     Quiet mode - doesn't print anything except for warnings and errors\n");
 
-    printf("    -opop | --only_print_output_pathname \n");
+    printf("    -opop | --only-print-output-pathname \n");
     printf("           Do not render anything; just print the full path of the current output file.\n");
 
     printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
@@ -398,7 +398,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
         {
             continue;
         }
-        else if ((arg == "-opop") || (arg == "--only_print_output_pathname"))
+        else if ((arg == "-opop") || (arg == "--only-print-output-pathname"))
         {
             oConfig.mOnlyPrintOutputPath = true;
         }
@@ -634,7 +634,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             oConfig.mDbgSplitLevel = tmp;
         }
-        else if ((arg == "-slbr") || (arg == "--splitting_light_to_brdf_ratio")) // splitting light-to-brdf samples ratio
+        else if ((arg == "-slbr") || (arg == "--splitting-light-to-brdf-ratio")) // splitting light-to-brdf samples ratio
         {
             if (++i == argc)
             {
