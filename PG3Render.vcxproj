@@ -198,6 +198,8 @@
   <ItemGroup>
     <None Include="testing\custom_batch.sh" />
     <None Include="testing\full_test.sh" />
+    <None Include="testing\img_diff.sh" />
+    <None Include="testing\img_diff_to_file.sh" />
     <None Include="testing\launcher.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

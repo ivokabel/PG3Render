@@ -40,7 +40,8 @@ run_single_render () {
     ((TEST_COUNT_TOTAL+=1))
 }
 
-# dtto
+# $1 ... algorithm
+# $2 ... scene idx
 # $3 ... environment map
 run_single_render_em () {
     if [ "$SHORT_OUTPUT" = "true" ]; then
