@@ -78,14 +78,18 @@ struct Config
     Vec2i        mResolution;
 
     Algorithm    mAlgorithm;
-    uint32_t     mMaxPathLength;            // Only used for path-based algorithms
-    uint32_t     mMinPathLength;            // dtto
-    float        mIndirectIllumClipping;    // Only used in the NEE MIS path tracer
-    uint32_t     mMaxSplitting;             // Only used in the NEE MIS path tracer
-    uint32_t     mLightBrdfSamplesRatio;    // Only used in the NEE MIS path tracer
+
+    // Only used for path-based algorithms
+    uint32_t     mMaxPathLength;
+    uint32_t     mMinPathLength;
+
+    // Only used in the NEE MIS path tracer
+    float        mIndirectIllumClipping;
+    uint32_t     mMaxSplitting;
 
     // debug, temporary
     float        mDbgSplitLevel;
+    float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one brdf sample.
 };
 
 // Scene configurations
@@ -161,17 +165,19 @@ std::string DefaultFilename(
     // Splitting settings
     if (aConfig.mAlgorithm == kPathTracing)
     {
-        filename +=
-              "_splt"
-            + std::to_string(aConfig.mMaxSplitting)
-            + ","
-            + std::to_string(aConfig.mLightBrdfSamplesRatio);
+        filename += "_splt" + std::to_string(aConfig.mMaxSplitting);
 
-        // debug, temporary
-        std::ostringstream outStream;
-        outStream.precision(2);
-        outStream << std::fixed << aConfig.mDbgSplitLevel;
-        filename += "," + outStream.str();
+        // debug, temporary: indirect illum splitting level
+        std::ostringstream outStream2;
+        outStream2.precision(1);
+        outStream2 << std::fixed << aConfig.mDbgSplitLevel;
+        filename += "," + outStream2.str();
+
+        // debug, temporary: light-to-brdf samples ratio
+        std::ostringstream outStream1;
+        outStream1.precision(1);
+        outStream1 << std::fixed << aConfig.mDbgSplittingLightToBrdfSmplRatio;
+        filename += "," + outStream1.str();
     }
 
     // Indirect illumination clipping
@@ -264,10 +270,8 @@ void PrintConfiguration(const Config &config)
         printf(", indirect illum. clipping: %.2f", config.mIndirectIllumClipping);
     if (config.mAlgorithm == kPathTracing)
     {
-        printf(", splitting: %d, %d", config.mMaxSplitting, config.mLightBrdfSamplesRatio);
-
         // debug, temporary
-        printf(", %.2f", config.mDbgSplitLevel);
+        printf(", splitting: %d, %.1f, %.1f", config.mMaxSplitting, config.mDbgSplitLevel, config.mDbgSplittingLightToBrdfSmplRatio);
     }
     printf("\n");
 
@@ -332,7 +336,7 @@ void PrintHelp(const char *argv[])
     printf("    -sm | --max_splitting \n");
     printf("           Maximal total amount of splitted paths per one camera ray (default 8).\n");
     printf("    -slbr | --splitting-light-to-brdf-ratio \n");
-    printf("           Number of light samples per one brdf sample (default 1)\n");
+    printf("           Number of light samples per one brdf sample (default 1.0)\n");
 
     printf("    -t     Number of seconds to run the algorithm\n");
     printf("    -i     Number of iterations to run the algorithm (default 1)\n");
@@ -354,29 +358,29 @@ void PrintHelp(const char *argv[])
 bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 {
     // Parameters marked with [cmd] can be changed from command line
-    oConfig.mScene                  = NULL;                     // [cmd] When NULL, renderer will not run
+    oConfig.mScene                          = NULL;                     // [cmd] When NULL, renderer will not run
 
-    oConfig.mOnlyPrintOutputPath    = false;                    // [cmd]
+    oConfig.mOnlyPrintOutputPath            = false;                    // [cmd]
 
-    oConfig.mIterations             = 1;                        // [cmd]
-    oConfig.mMaxTime                = -1.f;                     // [cmd]
-    oConfig.mDefOutputExtension     = "bmp";                    // [cmd]
-    oConfig.mOutputName             = "";                       // [cmd]
-    oConfig.mOutputDirectory        = "";                       // [cmd]
-    oConfig.mNumThreads             = 0;
-    oConfig.mQuietMode              = false;
-    oConfig.mBaseSeed               = 1234;
-    oConfig.mResolution             = Vec2i(512, 512);
+    oConfig.mIterations                     = 1;                        // [cmd]
+    oConfig.mMaxTime                        = -1.f;                     // [cmd]
+    oConfig.mDefOutputExtension             = "bmp";                    // [cmd]
+    oConfig.mOutputName                     = "";                       // [cmd]
+    oConfig.mOutputDirectory                = "";                       // [cmd]
+    oConfig.mNumThreads                     = 0;
+    oConfig.mQuietMode                      = false;
+    oConfig.mBaseSeed                       = 1234;
+    oConfig.mResolution                     = Vec2i(512, 512);
 
-    oConfig.mAlgorithm              = kAlgorithmCount;          // [cmd]
-    oConfig.mMinPathLength          = 1;                        // [cmd]
-    oConfig.mMaxPathLength          = 0;                        // [cmd]
-    oConfig.mIndirectIllumClipping  = 0.f;                      // [cmd]
-    oConfig.mMaxSplitting           = 8;                        // [cmd]
-    oConfig.mLightBrdfSamplesRatio  = 1;                        // [cmd]
+    oConfig.mAlgorithm                      = kAlgorithmCount;          // [cmd]
+    oConfig.mMinPathLength                  = 1;                        // [cmd]
+    oConfig.mMaxPathLength                  = 0;                        // [cmd]
+    oConfig.mIndirectIllumClipping          = 0.f;                      // [cmd]
+    oConfig.mMaxSplitting                   = 8;                        // [cmd]
 
     // debug, temporary
-    oConfig.mDbgSplitLevel = 1.f;
+    oConfig.mDbgSplitLevel = 4.f;                                       // [cmd]
+    oConfig.mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
@@ -604,7 +608,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             oConfig.mMaxSplitting = tmp;
         }
-        else if ((arg == "-sl")) // debug, temporary
+        else if ((arg == "-sl")) // debug, temporary: splitting level
         {
             if (++i == argc)
             {
@@ -634,7 +638,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             oConfig.mDbgSplitLevel = tmp;
         }
-        else if ((arg == "-slbr") || (arg == "--splitting-light-to-brdf-ratio")) // splitting light-to-brdf samples ratio
+        else if ((arg == "-slbr") || (arg == "--splitting-light-to-brdf-ratio")) // debug, temporary: splitting light-to-brdf samples ratio
         {
             if (++i == argc)
             {
@@ -650,11 +654,11 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                     "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
             }
 
-            int32_t tmp;
+            float tmp;
             std::istringstream iss(argv[i]);
             iss >> tmp;
 
-            if (iss.fail() || tmp < 1)
+            if (iss.fail() || tmp < 0.f)
             {
                 printf(
                     "Error: Invalid <splitting_light_to_brdf_ratio> argument \"%s\", please see help (-h)\n",
@@ -662,7 +666,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 return false;
             }
 
-            oConfig.mLightBrdfSamplesRatio = tmp;
+            oConfig.mDbgSplittingLightToBrdfSmplRatio = tmp;
         }
         else if (arg == "-i") // number of iterations to run
         {

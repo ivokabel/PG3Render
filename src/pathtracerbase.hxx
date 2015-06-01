@@ -37,10 +37,10 @@ public:
         mMaxPathLength(aConfig.mMaxPathLength),
         mIndirectIllumClipping(aConfig.mIndirectIllumClipping),
         mMaxSplitting(aConfig.mMaxSplitting),
-        mLightBrdfSamplesRatio(aConfig.mLightBrdfSamplesRatio),
 
         // debug, temporary
-        mDbgSplitLevel(aConfig.mDbgSplitLevel)
+        mDbgSplitLevel(aConfig.mDbgSplitLevel),
+        mDbgSplittingLightToBrdfSmplRatio(aConfig.mDbgSplittingLightToBrdfSmplRatio)
     {}
 
     virtual void EstimateIncomingRadiance(
@@ -490,8 +490,8 @@ protected:
     uint32_t                mMaxPathLength;
     float                   mIndirectIllumClipping;
     uint32_t                mMaxSplitting;
-    uint32_t                mLightBrdfSamplesRatio;
 
     // debug, temporary
     float mDbgSplitLevel;
+    float mDbgSplittingLightToBrdfSmplRatio;
 };

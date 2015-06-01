@@ -309,10 +309,17 @@ protected:
         float       &oNextStepSplitBudget
         )
     {
+        // TODO: Control by material glossines
         oBrdfSamplesCount =
-            std::lroundf(LinInterpol(aSplitLevel, 1.f, aSplitBudget));
+            std::lroundf(
+                LinInterpol(aSplitLevel, 1.f, aSplitBudget));
 
-        oLightSamplesCount = mLightBrdfSamplesRatio * oBrdfSamplesCount;
+        // TODO: Light samples count should be controlled by both 
+        //  - material glossines (the more glossy it is, the less efficient the light sampling is; for mirros it doesn't work at all)
+        //  - user-provided parameter (one may want to use more light samples for complicated geometry)
+        oLightSamplesCount =
+            std::lroundf(
+                std::max(mDbgSplittingLightToBrdfSmplRatio * oBrdfSamplesCount, 1.f));
 
         oNextStepSplitBudget =
             1 + ((aSplitBudget - oBrdfSamplesCount) / (float)oBrdfSamplesCount);
