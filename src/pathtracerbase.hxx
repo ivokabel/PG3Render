@@ -395,9 +395,8 @@ public:
             // The contribution of a single light is computed analytically, there is only one 
             // MC estimation left - the estimation of the sum of contributions of all light sources.
             oLightBuffer +=
-                  aLightSample.mSample
-                * aMat.EvalBrdf(wil, aWol)
-                / aLightSample.mLightProbability;
+                  (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                / (aLightSample.mLightProbability * aLightSamplesCount);
         }
     }
 
