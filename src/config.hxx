@@ -85,10 +85,10 @@ struct Config
 
     // Only used in the NEE MIS path tracer
     float        mIndirectIllumClipping;
-    uint32_t     mMaxSplitting;
+    uint32_t     mSplittingBudget;
 
     // debug, temporary
-    float        mDbgSplitLevel;
+    float        mDbgSplittingLevel;
     float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one brdf sample.
 };
 
@@ -165,12 +165,12 @@ std::string DefaultFilename(
     // Splitting settings
     if (aConfig.mAlgorithm == kPathTracing)
     {
-        filename += "_splt" + std::to_string(aConfig.mMaxSplitting);
+        filename += "_splt" + std::to_string(aConfig.mSplittingBudget);
 
         // debug, temporary: indirect illum splitting level
         std::ostringstream outStream2;
         outStream2.precision(1);
-        outStream2 << std::fixed << aConfig.mDbgSplitLevel;
+        outStream2 << std::fixed << aConfig.mDbgSplittingLevel;
         filename += "," + outStream2.str();
 
         // debug, temporary: light-to-brdf samples ratio
@@ -271,7 +271,11 @@ void PrintConfiguration(const Config &config)
     if (config.mAlgorithm == kPathTracing)
     {
         // debug, temporary
-        printf(", splitting: %d, %.1f, %.1f", config.mMaxSplitting, config.mDbgSplitLevel, config.mDbgSplittingLightToBrdfSmplRatio);
+        printf(
+            ", splitting: %d, %.1f, %.1f",
+            config.mSplittingBudget,
+            config.mDbgSplittingLevel,
+            config.mDbgSplittingLightToBrdfSmplRatio);
     }
     printf("\n");
 
@@ -310,7 +314,7 @@ void PrintHelp(const char *argv[])
     printf("\n");
     printf(
         "Usage: %s "
-        "[-s <scene_id>] [-a <algorithm>] [-t <time> | -i <iterations>] [-minpl <min_path_length>] [-maxpl <max_path_length>] [-iic <indirect_illum_clipping_value>] [-sm|--max_splitting <max_splitting>] [-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] [-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] [-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] \n\n",
+        "[-s <scene_id>] [-a <algorithm>] [-t <time> | -i <iterations>] [-minpl <min_path_length>] [-maxpl <max_path_length>] [-iic <indirect_illum_clipping_value>] [-sb|--splitting-budget <splitting_budget>] [-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] [-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] [-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] \n\n",
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -333,8 +337,8 @@ void PrintHelp(const char *argv[])
     printf("           Default is 1.\n");
     printf("    -iic   Maximal allowed value for indirect illumination estimates. 0 means no clipping (default).\n");
     printf("           Only valid for path tracer (pt).\n");
-    printf("    -sm | --max_splitting \n");
-    printf("           Maximal total amount of splitted paths per one camera ray (default 8).\n");
+    printf("    -sb | --splitting-budget \n");
+    printf("           Splitting budget: maximal total amount of splitted paths per one camera ray (default 4).\n");
     printf("    -slbr | --splitting-light-to-brdf-ratio \n");
     printf("           Number of light samples per one brdf sample (default 1.0)\n");
 
@@ -376,10 +380,10 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mMinPathLength                  = 1;                        // [cmd]
     oConfig.mMaxPathLength                  = 0;                        // [cmd]
     oConfig.mIndirectIllumClipping          = 0.f;                      // [cmd]
-    oConfig.mMaxSplitting                   = 8;                        // [cmd]
+    oConfig.mSplittingBudget                = 4;                        // [cmd]
 
     // debug, temporary
-    oConfig.mDbgSplitLevel = 4.f;                                       // [cmd]
+    oConfig.mDbgSplittingLevel = 4.f;                                   // [cmd]
     oConfig.mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
 
     int32_t sceneID     = 0; // default 0
@@ -578,11 +582,11 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             oConfig.mIndirectIllumClipping = tmp;
         }
-        else if ((arg == "-sm") || (arg == "--max_splitting")) // maximal splitting
+        else if ((arg == "-sb") || (arg == "--splitting-budget")) // splitting budget
         {
             if (++i == argc)
             {
-                printf("Error: Missing <max_splitting> argument, please see help (-h)\n");
+                printf("Error: Missing <splitting_budget> argument, please see help (-h)\n");
                 return false;
             }
 
@@ -601,12 +605,12 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || tmp < 1)
             {
                 printf(
-                    "Error: Invalid <max_splitting> argument \"%s\", please see help (-h)\n",
+                    "Error: Invalid <splitting_budget> argument \"%s\", please see help (-h)\n",
                     argv[i]);
                 return false;
             }
 
-            oConfig.mMaxSplitting = tmp;
+            oConfig.mSplittingBudget = tmp;
         }
         else if ((arg == "-sl")) // debug, temporary: splitting level
         {
@@ -636,7 +640,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 return false;
             }
 
-            oConfig.mDbgSplitLevel = tmp;
+            oConfig.mDbgSplittingLevel = tmp;
         }
         else if ((arg == "-slbr") || (arg == "--splitting-light-to-brdf-ratio")) // debug, temporary: splitting light-to-brdf samples ratio
         {

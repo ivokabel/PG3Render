@@ -67,9 +67,9 @@ compare_images () {
 render_and_compare () {
     if [ "$DO_COMPARE" != "true" ]; then
         mkdir -p "$6"
-        "$PG3RENDER" -od "$6" -e hdr -a pt -s $1 -t $5 -sm $2 -slbr $3 -sl $4
+        "$PG3RENDER" -od "$6" -e hdr -a pt -s $1 -t $5 -sb $2 -slbr $3 -sl $4
     else
-        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a pt -s $1 -t $5 -sm $2 -slbr $3 -sl $4`
+        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a pt -s $1 -t $5 -sb $2 -slbr $3 -sl $4`
         compare_images "$7" "$RENDERED_IMG"
     fi
 }

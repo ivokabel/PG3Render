@@ -36,10 +36,10 @@ public:
         mMinPathLength(aConfig.mMinPathLength),
         mMaxPathLength(aConfig.mMaxPathLength),
         mIndirectIllumClipping(aConfig.mIndirectIllumClipping),
-        mMaxSplitting(aConfig.mMaxSplitting),
+        mSplittingBudget(aConfig.mSplittingBudget),
 
         // debug, temporary
-        mDbgSplitLevel(aConfig.mDbgSplitLevel),
+        mDbgSplittingLevel(aConfig.mDbgSplittingLevel),
         mDbgSplittingLightToBrdfSmplRatio(aConfig.mDbgSplittingLightToBrdfSmplRatio)
     {}
 
@@ -489,9 +489,9 @@ protected:
     uint32_t                mMinPathLength;
     uint32_t                mMaxPathLength;
     float                   mIndirectIllumClipping;
-    uint32_t                mMaxSplitting;
+    uint32_t                mSplittingBudget;
 
     // debug, temporary
-    float mDbgSplitLevel;
+    float mDbgSplittingLevel;
     float mDbgSplittingLightToBrdfSmplRatio;
 };

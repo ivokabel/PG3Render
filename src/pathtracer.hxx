@@ -30,7 +30,7 @@ public:
             SpectrumF emmittedRadiance;
             SpectrumF reflectedRadianceEstimate;
             EstimateIncomingRadiancePT(
-                aRay, 1, (float)mMaxSplitting, emmittedRadiance, reflectedRadianceEstimate);
+                aRay, 1, (float)mSplittingBudget, emmittedRadiance, reflectedRadianceEstimate);
             oRadiance = emmittedRadiance + reflectedRadianceEstimate;
         }
         else
@@ -185,7 +185,7 @@ protected:
             uint32_t brdfSamplesCount;
             uint32_t lightSamplesCount;
             float nextStepSplitBudget;
-            float splitLevel = mDbgSplitLevel; // [0,1]: 0: no split, 1: full split
+            float splitLevel = mDbgSplittingLevel; // [0,1]: 0: no split, 1: full split
             // TODO: Use BRDF settings
             ComputeSplittingCounts(
                 aSplitBudget, splitLevel,
