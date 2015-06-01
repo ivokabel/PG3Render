@@ -19,14 +19,13 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #CVS_OUTPUT=true
 #CVS_SEPAR=" "
 #CVS_DATASETS_IN_COLUMNS=true    # Transpose the dataset
-#DO_RENDER=true
 #DO_COMPARE=true
 
-RENDERING_TIME=5
-SCENES="4"                              #`seq 0 7`
+RENDERING_TIME=500
+SCENES="7" #"2 3 6 7"                    #`seq 0 7`
 SPLIT_BUDGETS="1 4 8 16"
-SLB_RATIOS="1"                          #"1 2"
-SPLIT_LEVELS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"      #"0.2 0.4 0.6 0.8 1.0"
+SLB_RATIOS="1"                  #"1 2"
+SPLIT_LEVELS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"
 
 ###################################################################################################
 
@@ -66,10 +65,10 @@ compare_images () {
 # $6 ... rendering output directory
 # $7 ... reference image path
 render_and_compare () {
-    if [ "$DO_RENDER" == "true" ]; then
+    if [ "$DO_COMPARE" != "true" ]; then
         mkdir -p "$6"
         "$PG3RENDER" -od "$6" -e hdr -a pt -s $1 -t $5 -sm $2 -slbr $3 -sl $4
-    elif [ "$DO_COMPARE" == "true" ]; then
+    else
         RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a pt -s $1 -t $5 -sm $2 -slbr $3 -sl $4`
         compare_images "$7" "$RENDERED_IMG"
     fi
@@ -79,47 +78,47 @@ render_and_compare () {
 setup_out_dir_and_img () {
     case $1 in
         0 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_p_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_p_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_p_sdwd_pt_rr_70000s_WholeBrdfSampling.hdr"
             ;;
         1 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_p_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_p_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_p_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
             ;;
         2 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_c_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_c_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_c_sdwd_pt_rr_80000s_WholeBrdfSampling.hdr"
             ;;
         3 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_c_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_c_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_c_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
             ;;
         4 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_b_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_b_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_b_sdwd_pt_rr_80000s_WholeBrdfSampling.hdr"
             ;;
         5 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_b_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_b_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_b_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
             ;;
         6 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e0_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
             ;;
         7 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e0_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdsgwdwg_pt_rr_50000s_WholeBrdfSampling.hdr"
             ;;
         #10 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e0_sdwd_pt_rr_splt"
+        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         #11 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e0_sdwd_pt_rr_splt"
+        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         #12 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e0_sdwd_pt_rr_splt"
+        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         * )
@@ -210,6 +209,8 @@ fi
 
 ###################################################################################################
 
-#echo
-#echo "The script has finished."
-#read
+if [ "$DO_COMPARE" != "true" ]; then
+    echo
+    echo "The script has finished."
+    read
+fi

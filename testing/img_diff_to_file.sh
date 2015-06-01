@@ -28,7 +28,7 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OUT_FILE_BASE="$IMAGES_BASE_DIR/img_diff_4"
+OUT_FILE_BASE="$IMAGES_BASE_DIR/splitting/img_diff_7"
 OUT_FILE="$OUT_FILE_BASE.gnuplot"
 
 export CVS_OUTPUT=true
@@ -36,7 +36,7 @@ export CVS_SEPAR=" "
 export CVS_DATASETS_IN_COLUMNS=true         # Transpose the dataset
 export DO_COMPARE=true
 
-#./img_diff.sh > "$OUT_FILE"
+./img_diff.sh > "$OUT_FILE"
 
 # Gnuplot
 echo " 
