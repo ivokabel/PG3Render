@@ -28,22 +28,31 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OUT_FILE_BASE="$IMAGES_BASE_DIR/splitting/img_diff_7"
+OUT_FILE_BASE="$IMAGES_BASE_DIR/splitting/img_diff_7_lbr"
 OUT_FILE="$OUT_FILE_BASE.gnuplot"
 
-export CVS_OUTPUT=true
-export CVS_SEPAR=" "
-export CVS_DATASETS_IN_COLUMNS=true         # Transpose the dataset
-export DO_COMPARE=true
+DO_COMPARE=true
 
-./img_diff.sh > "$OUT_FILE"
+###################################################################################################
 
-# Gnuplot
-echo " 
-set terminal pngcairo size 800,800 enhanced font 'Verdana,10'
-set output '$OUT_FILE_BASE.png'
-set title \"Gnuplot test\" 
-unset border 
-set yrange [0:]
-plot for [IDX=2:5] '$OUT_FILE' using 1:IDX title columnheader with lines
-" | gnuplot
+export DO_COMPARE
+
+if [ "$DO_COMPARE" != "true" ]; then
+    ./img_diff.sh
+else
+    export CVS_OUTPUT=true
+    export CVS_SEPAR=" "
+    export CVS_DATASETS_IN_COLUMNS=true         # Transpose the dataset
+
+    ./img_diff.sh > "$OUT_FILE"
+
+    # Gnuplot
+    echo " 
+    set terminal pngcairo size 900,900 enhanced font 'Verdana,10'
+    set output '$OUT_FILE_BASE.png'
+    set title \"Gnuplot test\" 
+    unset border 
+    set yrange [0:]
+    plot for [IDX=2:13] '$OUT_FILE' using 1:IDX title columnheader with lines
+    " | gnuplot
+fi

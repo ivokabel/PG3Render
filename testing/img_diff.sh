@@ -21,11 +21,11 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #CVS_DATASETS_IN_COLUMNS=true    # Transpose the dataset
 #DO_COMPARE=true
 
-RENDERING_TIME=500
+RENDERING_TIME=100
 SCENES="7" #"2 3 6 7"                    #`seq 0 7`
-SPLIT_BUDGETS="1 4 8 16"
-SLB_RATIOS="1"                  #"1 2"
-SPLIT_LEVELS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"
+SPLIT_BUDGETS="1 4 8"           # 16"
+SLB_RATIOS="0.5 1.0 1.5 2.0"
+SPLIT_LEVELS="0.6 0.8 1.0"      #"0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"
 
 ###################################################################################################
 
@@ -78,47 +78,47 @@ render_and_compare () {
 setup_out_dir_and_img () {
     case $1 in
         0 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_p_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_p_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_p_sdwd_pt_rr_70000s_WholeBrdfSampling.hdr"
             ;;
         1 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_p_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_p_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_p_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
             ;;
         2 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_c_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_c_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_c_sdwd_pt_rr_80000s_WholeBrdfSampling.hdr"
             ;;
         3 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_c_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_c_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_c_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
             ;;
         4 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_b_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_b_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_b_sdwd_pt_rr_80000s_WholeBrdfSampling.hdr"
             ;;
         5 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_b_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_b_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_b_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
             ;;
         6 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
             ;;
         7 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdsgwdwg_pt_rr_splt"
+            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdsgwdwg_pt_rr_splt"
             REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdsgwdwg_pt_rr_50000s_WholeBrdfSampling.hdr"
             ;;
         #10 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
+        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         #11 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
+        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         #12 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting analysis\\w2s_e0_sdwd_pt_rr_splt"
+        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         * )
@@ -147,14 +147,14 @@ if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
     # Rendering, evaluation
     for SCENE in $SCENES; do
         setup_out_dir_and_img $SCENE
-        for SLBR in $SLB_RATIOS; do
-            for SBDGT in $SPLIT_BUDGETS; do
+        for SBDGT in $SPLIT_BUDGETS; do
+            for SLBR in $SLB_RATIOS; do
                 if [ "$CVS_OUTPUT" != "true" ]; then
                     for SL in $SPLIT_LEVELS; do
                         render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
                     done
                 else
-                    OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$SLBR${CVS_SEPAR}$SBDGT"
+                    OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME{CVS_SEPAR}$SBDGT${CVS_SEPAR}$SLBR$"
                     for SL in $SPLIT_LEVELS; do
                         COMPARE_STR=`render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
                         OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
@@ -175,8 +175,8 @@ elif [ "$CVS_OUTPUT" == "true" ]; then
     OUT_STR="\"Configuration\""
     for SCENE in $SCENES; do
         setup_out_dir_and_img $SCENE
-        for SLBR in $SLB_RATIOS; do
-            for SBDGT in $SPLIT_BUDGETS; do
+        for SBDGT in $SPLIT_BUDGETS; do
+            for SLBR in $SLB_RATIOS; do
                 CONFIG_NAME="\"Scene $SCENE: $SBDGT, $SLBR at ${RENDERING_TIME}sec\""
                 OUT_STR="$OUT_STR${CVS_SEPAR}$CONFIG_NAME"
             done
@@ -189,8 +189,8 @@ elif [ "$CVS_OUTPUT" == "true" ]; then
         OUT_STR="$SL"
         for SCENE in $SCENES; do
             setup_out_dir_and_img $SCENE
-            for SLBR in $SLB_RATIOS; do
-                for SBDGT in $SPLIT_BUDGETS; do
+            for SBDGT in $SPLIT_BUDGETS; do
+                for SLBR in $SLB_RATIOS; do
 
                     #OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$SLBR${CVS_SEPAR}$SBDGT"
 

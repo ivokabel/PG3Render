@@ -16,7 +16,11 @@ cd "$PG3RENDER_BASE_DIR"
 
 ###################################################################################################
 
-# ...
+IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
+
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 7 -t 120 -sm 8 -sl 1.0 -slbr  0.1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 7 -t 120 -sm 8 -sl 1.0 -slbr  1.0
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 7 -t 120 -sm 8 -sl 1.0 -slbr 10.0
 
 ###################################################################################################
 
