@@ -4,30 +4,6 @@
 
 class PathTracer : public PathTracerBase
 {
-protected:
-
-    //class PTNeeMisContext
-    //{
-    //public:
-    //    PTNeeMisContext(const Ray &aRay, uint32_t aPathLength) :
-    //        mRay(aRay), mPathLength(aPathLength) {};
-
-    //    // Input parameters
-    //    const Ray       &mRay;
-    //    const uint32_t   mPathLength;
-
-    //    // Output
-    //    SpectrumF        mLe;
-    //    SpectrumF        mLr;
-
-    //    // This class is not copyable because of a const member.
-    //    // If we don't delete the assignment operator and copy constructor 
-    //    // explicitly, the compiler may complain about not being able 
-    //    // to create their default implementations.
-    //    PTNeeMisContext & operator=(const PTNeeMisContext&) = delete;
-    //    PTNeeMisContext(const PTNeeMisContext&) = delete;
-    //};
-
 public:
 
     PathTracer(
@@ -53,7 +29,8 @@ public:
             // Path tracer with next event estimate and MIS for direct illumination
             SpectrumF emmittedRadiance;
             SpectrumF reflectedRadianceEstimate;
-            EstimateIncomingRadiancePTNeeMis(aRay, 1, emmittedRadiance, reflectedRadianceEstimate);
+            EstimateIncomingRadiancePT(
+                aRay, 1, (float)mSplittingBudget, emmittedRadiance, reflectedRadianceEstimate);
             oRadiance = emmittedRadiance + reflectedRadianceEstimate;
         }
         else
@@ -154,20 +131,23 @@ protected:
         }
     }
 
-    void EstimateIncomingRadiancePTNeeMis(
+    void EstimateIncomingRadiancePT(
         const Ray       &aRay,
         const uint32_t   aPathLength,
+        const float      aSplitBudget,
         SpectrumF       &oEmmittedRadiance,
         SpectrumF       &oReflectedRadianceEstimate,
         const Frame     *aSurfFrame = NULL, // Only needed when you to compute PDF of a const env. light source sample
         float           *oEmmittedLightPdfW = NULL,
-        float           *oEmmittedLightPickingProb = NULL
+        int32_t         *oLightID = NULL
         )
     {
         PG3_ASSERT((mMaxPathLength == 0) || (aPathLength <= mMaxPathLength));
 
         oEmmittedRadiance.MakeZero();
         oReflectedRadianceEstimate.MakeZero();
+
+        LightSamplingContext lightSamplingCtx(mConfig.mScene->GetLightCount());
 
         Isect isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
@@ -188,19 +168,8 @@ protected:
                 {
                     oEmmittedRadiance +=
                         light->GetEmmision(surfPt, wol, aRay.org, oEmmittedLightPdfW, aSurfFrame);
-
-                    if ((oEmmittedLightPickingProb != NULL) && (aSurfFrame != NULL))
-                    {
-                        // Note: We compute light picking probability before illumination 
-                        // computation of a next surface point starta; therefore, we don't 
-                        // increase the intersection ID (mCurrentIsectId) and cached data 
-                        // for light picking probability computation are still valid.
-                        LightPickingProbability(aRay.org, *aSurfFrame, isect.lightID, *oEmmittedLightPickingProb);
-                        // TODO: Uncomment this once proper environment map estimate is implemented.
-                        //       Now there can be zero contribution estimate (and therefore zero picking probability)
-                        //       even if the actual contribution is non-zero.
-                        //PG3_ASSERT(emmittedLightSample.mRadiance.IsZero() || (*oLightProbability > 0.f));
-                    }
+                    if (oLightID != NULL)
+                        *oLightID = isect.lightID;
                 }
             }
 
@@ -212,82 +181,106 @@ protected:
             if ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength))
                 return;
 
-            mCurrentIsectId++;
+            // Splitting
+            uint32_t brdfSamplesCount;
+            uint32_t lightSamplesCount;
+            float nextStepSplitBudget;
+            float splitLevel = mDbgSplittingLevel; // [0,1]: 0: no split, 1: full split
+            // TODO: Use BRDF settings
+            ComputeSplittingCounts(
+                aSplitBudget, splitLevel,
+                brdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
 
-            // Generate one sample by sampling the lights for direct illumination
-            // ...if one more step is allowed
+            // Generate requested amount of samples by sampling lights for direct illumination
+            // ...if one more path step is allowed
             if ((aPathLength + 1) >= mMinPathLength)
             {
-                LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSample))
+                for (uint32_t sampleNum = 0; sampleNum < lightSamplesCount; sampleNum++)
                 {
-                    AddMISLightSampleContribution(
-                        lightSample, surfPt, surfFrame, wol, mat,
-                        oReflectedRadianceEstimate);
+                    LightSample lightSample;
+                    if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
+                    {
+                        AddMISLightSampleContribution(
+                            lightSample, lightSamplesCount, brdfSamplesCount,
+                            surfPt, surfFrame, wol, mat,
+                            oReflectedRadianceEstimate);
+                    }
                 }
             }
 
-            // Russian roulette (based on reflectance of the whole BRDF)
             float reflectanceEstimate = 1.0f;
-            if (mMaxPathLength == 0)
-            {
+            if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
                 reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
-                const float rnd = mRng.GetFloat();
-                if (rnd > reflectanceEstimate)
-                    return;
-            }
 
-            // Generate one sample by sampling the BRDF for both direct and indirect illumination
-            BRDFSample brdfSample;
-            mat.SampleBrdf(mRng, wol, brdfSample);
-            if (brdfSample.mSample.Max() > 0.f)
+            // Generate requested amount of samples by sampling the BRDF 
+            // for both direct and indirect illumination
+            for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
             {
-                SpectrumF   brdfEmmittedRadiance;
-                SpectrumF   brdfReflectedRadianceEstimate;
-                float       brdfLightPdfW = 0.f;
-                float       brdfLightPickingProb = 0.f;
-
-                const Vec3f wig = surfFrame.ToWorld(brdfSample.mWil);
-                const float rayMin = EPS_RAY_COS(brdfSample.mWil.z);
-                const Ray   brdfRay(surfPt, wig, rayMin);
-
-                PG3_ASSERT(brdfSample.mPdfW != INFINITY_F); // Dirac pulse BRDFs not yet supported
-
-                EstimateIncomingRadiancePTNeeMis(
-                    brdfRay, aPathLength + 1,
-                    brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
-                    &surfFrame, &brdfLightPdfW, &brdfLightPickingProb);
-
-                // MIS for direct light
-                if (!brdfEmmittedRadiance.IsZero())
+                // Russian roulette (based on reflectance of the whole BRDF)
+                if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
                 {
-                    // TODO: Uncomment this once proper environment map estimate is implemented.
-                    //       Now there can be zero contribution estimate (and therefore zero picking probability)
-                    //       even if the actual contribution is non-zero.
-                    //PG3_ASSERT(lightPickingProbability > 0.f);
-                    PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
-
-                    // Compute multiple importance sampling MC estimator. 
-                    oReflectedRadianceEstimate +=
-                          (brdfSample.mSample * brdfEmmittedRadiance)
-                        / (   (   brdfSample.mPdfW
-                                + brdfLightPdfW * brdfLightPickingProb)
-                            * reflectanceEstimate); // Russian roulette
+                    const float rnd = mRng.GetFloat();
+                    if (rnd > reflectanceEstimate)
+                        continue;
                 }
 
-                // Simple MC for indirect light
-                if (!brdfReflectedRadianceEstimate.IsZero())
+                BRDFSample brdfSample;
+                mat.SampleBrdf(mRng, wol, brdfSample);
+                if (brdfSample.mSample.Max() > 0.f)
                 {
-                    SpectrumF indirectRadianceEstimate =
-                          (brdfSample.mSample * brdfReflectedRadianceEstimate)
-                        / (   brdfSample.mPdfW
-                            * reflectanceEstimate); // Russian roulette
+                    SpectrumF   brdfEmmittedRadiance;
+                    SpectrumF   brdfReflectedRadianceEstimate;
+                    float       brdfLightPdfW = 0.f;
+                    int32_t     brdfLightId = -1;
 
-                    // Clip fireflies
-                    if (mIndirectIllumClipping > 0.f)
-                        indirectRadianceEstimate.ClipProportionally(mIndirectIllumClipping);
+                    const Vec3f wig = surfFrame.ToWorld(brdfSample.mWil);
+                    const float rayMin = EPS_RAY_COS(brdfSample.mWil.z);
+                    const Ray   brdfRay(surfPt, wig, rayMin);
 
-                    oReflectedRadianceEstimate += indirectRadianceEstimate;
+                    PG3_ASSERT(brdfSample.mPdfW != INFINITY_F); // Dirac pulse BRDFs not yet supported
+
+                    EstimateIncomingRadiancePT(
+                        brdfRay, aPathLength + 1, nextStepSplitBudget,
+                        brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
+                        &surfFrame, &brdfLightPdfW, &brdfLightId);
+
+                    // MIS for direct light
+                    if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
+                    {
+                        float brdfLightPickingProb = 0.f;
+                        LightPickingProbability(
+                            surfPt, surfFrame, brdfLightId, lightSamplingCtx,
+                            brdfLightPickingProb);
+
+                        // TODO: Uncomment this once proper environment map estimate is implemented.
+                        //       Now there can be zero contribution estimate (and therefore zero picking probability)
+                        //       even if the actual contribution is non-zero.
+                        //PG3_ASSERT(lightPickingProbability > 0.f);
+                        PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
+
+                        // Compute multiple importance sampling MC estimator. 
+                        const float lightPdf = brdfLightPdfW * brdfLightPickingProb;
+                        oReflectedRadianceEstimate +=
+                              (brdfSample.mSample * brdfEmmittedRadiance)
+                            * (   MISWeight2(brdfSample.mPdfW, brdfSamplesCount, lightPdf, lightSamplesCount) // MIS
+                                / brdfSample.mPdfW      // MC
+                                / reflectanceEstimate); // Russian roulette
+                    }
+
+                    // Simple MC for indirect light
+                    if (!brdfReflectedRadianceEstimate.IsZero())
+                    {
+                        SpectrumF indirectRadianceEstimate =
+                              (brdfSample.mSample * brdfReflectedRadianceEstimate)
+                            / (   brdfSamplesCount * brdfSample.mPdfW
+                                * reflectanceEstimate); // Russian roulette
+
+                        // Clip fireflies
+                        if (mIndirectIllumClipping > 0.f)
+                            indirectRadianceEstimate.ClipProportionally(mIndirectIllumClipping);
+
+                        oReflectedRadianceEstimate += indirectRadianceEstimate;
+                    }
                 }
             }
         }
@@ -297,26 +290,38 @@ protected:
             if (aPathLength >= mMinPathLength)
             {
                 const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
-                const int32_t backgroundLightId = mConfig.mScene->GetBackgroundLightId();
                 if (backgroundLight != NULL)
                 {
                     oEmmittedRadiance +=
                         backgroundLight->GetEmmision(aRay.dir, true, oEmmittedLightPdfW, aSurfFrame);
-
-                    if ((oEmmittedLightPickingProb != NULL) && (aSurfFrame != NULL))
-                    {
-                        LightPickingProbability(
-                            aRay.org, 
-                            *aSurfFrame, 
-                            backgroundLightId, 
-                            *oEmmittedLightPickingProb);
-                        // TODO: Uncomment this once proper environment map estimate is implemented.
-                        //       Now there can be zero contribution estimate (and therefore zero picking probability)
-                        //       even if the actual contribution is non-zero.
-                        //PG3_ASSERT(emmittedLightSample.mRadiance.IsZero() || (*oLightProbability > 0.f));
-                    }
+                    if (oLightID != NULL)
+                        *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }
             }
         }
+    }
+
+    void ComputeSplittingCounts(
+        float        aSplitBudget,
+        float        aSplitLevel, // [0,1]: 0: no split, 1: full split
+        uint32_t    &oBrdfSamplesCount,
+        uint32_t    &oLightSamplesCount,
+        float       &oNextStepSplitBudget
+        )
+    {
+        // TODO: Control by material glossines
+        oBrdfSamplesCount =
+            std::lroundf(
+                LinInterpol(aSplitLevel, 1.f, aSplitBudget));
+
+        // TODO: Light samples count should be controlled by both 
+        //  - material glossines (the more glossy it is, the less efficient the light sampling is; for mirros it doesn't work at all)
+        //  - user-provided parameter (one may want to use more light samples for complicated geometry)
+        oLightSamplesCount =
+            std::lroundf(
+                std::max(mDbgSplittingLightToBrdfSmplRatio * oBrdfSamplesCount, 1.f));
+
+        oNextStepSplitBudget =
+            1 + ((aSplitBudget - oBrdfSamplesCount) / (float)oBrdfSamplesCount);
     }
 };

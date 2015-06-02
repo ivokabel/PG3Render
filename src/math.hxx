@@ -4,6 +4,8 @@
 #include "types.hxx"
 
 #include <cmath>
+#include <algorithm>
+
 // for portability issues
 #define PI_F        3.14159265358979f
 #define INV_PI_F    (1.f / PI_F)
@@ -46,6 +48,19 @@ inline T Clamp(const T& n, const T& lower, const T& upper)
 {
     PG3_ASSERT(lower <= upper);
     return std::max(lower, std::min(n, upper));
+}
+
+template <
+    typename T,
+    typename = typename
+        std::enable_if<
+               std::is_same<double, T>::value
+            || std::is_same<float, T>::value
+            >::type
+    >
+T LinInterpol(T c, T x1, T x2)
+{
+    return ((T)1. - c) * x1 + c * x2;
 }
 
 // 50-year old atan approximation due to Hastings

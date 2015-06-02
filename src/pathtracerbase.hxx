@@ -13,6 +13,19 @@
 
 class PathTracerBase : public AbstractRenderer
 {
+protected:
+    class LightSamplingContext
+    {
+    public:
+        LightSamplingContext(size_t aLightCount) :
+            mLightContribEstimsCache(aLightCount, 0.f),
+            mValid(false)
+        {};
+
+        std::vector<float>      mLightContribEstimsCache;
+        bool                    mValid;
+    };
+
 public:
 
     PathTracerBase(
@@ -22,11 +35,13 @@ public:
         AbstractRenderer(aConfig), mRng(aSeed),
         mMinPathLength(aConfig.mMinPathLength),
         mMaxPathLength(aConfig.mMaxPathLength),
-        mIndirectIllumClipping(aConfig.mIndirectIllumClipping)
-    {
-        mLightContribLastIsectIds.resize(aConfig.mScene->GetLightCount(), 0u);
-        mLightContribEstimsCache.resize(aConfig.mScene->GetLightCount(), 0.f);
-    }
+        mIndirectIllumClipping(aConfig.mIndirectIllumClipping),
+        mSplittingBudget(aConfig.mSplittingBudget),
+
+        // debug, temporary
+        mDbgSplittingLevel(aConfig.mDbgSplittingLevel),
+        mDbgSplittingLightToBrdfSmplRatio(aConfig.mDbgSplittingLightToBrdfSmplRatio)
+    {}
 
     virtual void EstimateIncomingRadiance(
         const Algorithm      aAlgorithm,
@@ -70,12 +85,13 @@ public:
     };
 
     void GetDirectRadianceFromDirection(
-        const Vec3f     &aSurfPt,
-        const Frame     &aSurfFrame,
-        const Vec3f     &aWil,
-              SpectrumF &oLight,
-              float     *oPdfW = NULL,
-              float     *oLightProbability = NULL
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame,
+        const Vec3f                 &aWil,
+              LightSamplingContext  &aContext,
+              SpectrumF             &oLight,
+              float                 *oPdfW = NULL,
+              float                 *oLightProbability = NULL
         )
     {
         int32_t lightId = -1;
@@ -122,11 +138,7 @@ public:
 
         if ((oLightProbability != NULL) && (lightId >= 0))
         {
-            // Note: We compute light picking probability only in case we hit a light source 
-            //       and then we don't recursively compute indirect radiance; therefore, we don't 
-            //       increase the intersection ID (mCurrentIsectId). That's why cached data 
-            //       for light picking probability computation are still valid.
-            LightPickingProbability(aSurfPt, aSurfFrame, lightId, *oLightProbability);
+            LightPickingProbability(aSurfPt, aSurfFrame, lightId, aContext, *oLightProbability);
             // TODO: Uncomment this once proper environment map estimate is implemented.
             //       Now there can be zero contribution estimate (and therefore zero picking probability)
             //       even if the actual contribution is non-zero.
@@ -135,9 +147,11 @@ public:
     }
 
     bool SampleLightsSingle(
-        const Vec3f     &aSurfPt, 
-        const Frame     &aSurfFrame, 
-        LightSample     &oLightSample)
+        const Vec3f                 &aSurfPt, 
+        const Frame                 &aSurfFrame, 
+              LightSamplingContext  &aContext,
+              LightSample           &oLightSample
+        )
     {
         // We split the planar integral over the surface of all light sources 
         // into sub-integrals - one integral for each light source - and estimate 
@@ -145,7 +159,7 @@ public:
 
         int32_t chosenLightId   = -1;
         float lightProbability  = 0.f;
-        PickSingleLight(aSurfPt, aSurfFrame, chosenLightId, lightProbability);
+        PickSingleLight(aSurfPt, aSurfFrame, aContext, chosenLightId, lightProbability);
 
         // Sample the chosen light
         if (chosenLightId >= 0)
@@ -164,10 +178,11 @@ public:
 
     // Pick one of the light sources randomly (proportionally to their estimated contribution)
     void PickSingleLight(
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-              int32_t       &oChosenLightId, 
-              float         &oLightProbability)
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame, 
+              LightSamplingContext  &aContext,
+              int32_t               &oChosenLightId, 
+              float                 &oLightProbability)
     {
         const size_t lightCount = mConfig.mScene->GetLightCount();
         if (lightCount == 0)
@@ -184,6 +199,8 @@ public:
             // TODO: Make it a PT's memeber to avoid unnecessary allocations?
             std::vector<float> lightContrPseudoCdf(lightCount + 1);
 
+            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+
             // Estimate the contribution of all available light sources
             float estimatesSum = 0.f;
             lightContrPseudoCdf[0] = 0.f;
@@ -192,16 +209,15 @@ public:
                 const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
                 PG3_ASSERT(light != 0);
 
-                if (mLightContribLastIsectIds[i] != mCurrentIsectId)
-                {
-                    // Update light contribution cache
-                    mLightContribEstimsCache[i]  = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
-                    mLightContribLastIsectIds[i] = mCurrentIsectId;
-                }
+                if (!aContext.mValid)
+                    // Fill light contribution cache
+                    aContext.mLightContribEstimsCache[i] =
+                        light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
 
-                estimatesSum += mLightContribEstimsCache[i];
+                estimatesSum += aContext.mLightContribEstimsCache[i];
                 lightContrPseudoCdf[i + 1] = estimatesSum;
             }
+            aContext.mValid = true;
 
             if (estimatesSum > 0.f)
             {
@@ -230,10 +246,11 @@ public:
 
     // Computes probability of picking the specified light source
     void LightPickingProbability(
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-              uint32_t       aLightId, 
-              float         &oLightProbability)
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame, 
+              uint32_t               aLightId, 
+              LightSamplingContext  &aContext,
+              float                 &oLightProbability)
     {
         const size_t lightCount = mConfig.mScene->GetLightCount();
 
@@ -249,6 +266,8 @@ public:
         }
         else
         {
+            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+
             // Estimate the contribution of all available light sources
             float estimatesSum  = 0.f;
             float lightEstimate = 0.f;
@@ -257,18 +276,17 @@ public:
                 const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
                 PG3_ASSERT(light != 0);
 
-                if (mLightContribLastIsectIds[i] != mCurrentIsectId)
-                {
-                    // Update light contribution cache
-                    mLightContribEstimsCache[i]  = light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
-                    mLightContribLastIsectIds[i] = mCurrentIsectId;
-                }
+                if (!aContext.mValid)
+                    // Fill light contribution cache
+                    aContext.mLightContribEstimsCache[i] =
+                        light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
 
-                const float estimate = mLightContribEstimsCache[i];
+                const float estimate = aContext.mLightContribEstimsCache[i];
                 if (i == aLightId)
                     lightEstimate = estimate;
                 estimatesSum += estimate;
             }
+            aContext.mValid = true;
 
             if (estimatesSum > 0.f)
             {
@@ -315,6 +333,8 @@ public:
 
     void AddMISLightSampleContribution(
         const LightSample   &aLightSample,
+        const uint32_t       aLightSamplesCount,
+        const uint32_t       aBrdfSamplesCount,
         const Vec3f         &aSurfPt,
         const Frame         &aSurfFrame, 
         const Vec3f         &aWol,
@@ -360,14 +380,13 @@ public:
         {
             // Planar or angular light source was chosen
 
-            // PDF of the BRDF sampling technique for the chosen light direction
-            const float brdfPdfW = aMat.GetPdfW(aWol, wil);
-
             // MIS MC estimator
+            const float brdfPdfW = aMat.GetPdfW(aWol, wil);
+            const float lightPdf = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
-                  aLightSample.mSample
-                * aMat.EvalBrdf(wil, aWol)
-                / (aLightSample.mPdfW * aLightSample.mLightProbability + brdfPdfW);
+                  (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                * (   MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, aBrdfSamplesCount)
+                    / lightPdf);
         }
         else
         {
@@ -376,17 +395,19 @@ public:
             // The contribution of a single light is computed analytically, there is only one 
             // MC estimation left - the estimation of the sum of contributions of all light sources.
             oLightBuffer +=
-                  aLightSample.mSample
-                * aMat.EvalBrdf(wil, aWol)
-                / aLightSample.mLightProbability;
+                  (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                / (aLightSample.mLightProbability * aLightSamplesCount);
         }
     }
 
     void AddDirectIllumMISBrdfSampleContribution(
-        const BRDFSample    &aBrdfSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame,
-              SpectrumF     &oLightBuffer)
+        const BRDFSample            &aBrdfSample,
+        const uint32_t               aLightSamplesCount,
+        const uint32_t               aBrdfSamplesCount,
+        const Vec3f                 &aSurfPt,
+        const Frame                 &aSurfFrame,
+              LightSamplingContext  &aContext,
+              SpectrumF             &oLightBuffer)
     {
         if (aBrdfSample.mSample.Max() <= 0.f)
             // The material is a complete blocker in this direction
@@ -399,6 +420,7 @@ public:
             aSurfPt,
             aSurfFrame,
             aBrdfSample.mWil,
+            aContext,
             LiLight,
             &lightPdfW,
             &lightPickingProbability);
@@ -414,17 +436,62 @@ public:
         PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
         // Compute multiple importance sampling MC estimator. 
+        const float misWeight =
+            MISWeight2(
+                aBrdfSample.mPdfW, aBrdfSamplesCount,
+                lightPdfW * lightPickingProbability, aLightSamplesCount);
         oLightBuffer +=
               (aBrdfSample.mSample * LiLight)
-            / (aBrdfSample.mPdfW + lightPdfW * lightPickingProbability);
+            * (   misWeight
+                / aBrdfSample.mPdfW);
+    }
+
+    float MISWeight2(
+        const float         aStrategy1Pdf,
+        const uint32_t      aStrategy1Count,
+        const float         aStrategy2Pdf,
+        const uint32_t      aStrategy2Count
+        )
+    {
+        return MISWeight2Balanced(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
+        //return MISWeight2Power(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
+    }
+
+    float MISWeight2Balanced(
+        const float         aStrategy1Pdf,
+        const uint32_t      aStrategy1Count,
+        const float         aStrategy2Pdf,
+        const uint32_t      aStrategy2Count
+        )
+    {
+        return
+              aStrategy1Pdf
+            / (aStrategy1Count * aStrategy1Pdf + aStrategy2Count * aStrategy2Pdf);
+    }
+
+    float MISWeight2Power(
+        const float         aStrategy1Pdf,
+        const uint32_t      aStrategy1Count,
+        const float         aStrategy2Pdf,
+        const uint32_t      aStrategy2Count
+        )
+    {
+        const float aStrategy1PdfSqr = aStrategy1Pdf * aStrategy1Pdf;
+        const float aStrategy2PdfSqr = aStrategy2Pdf * aStrategy2Pdf;
+        return
+              aStrategy1PdfSqr
+            / (aStrategy1Count * aStrategy1PdfSqr + aStrategy2Count * aStrategy2PdfSqr);
     }
 
 protected:
     Rng                     mRng;
-    std::vector<uint32_t>   mLightContribLastIsectIds;
-    std::vector<float>      mLightContribEstimsCache;
 
     uint32_t                mMinPathLength;
     uint32_t                mMaxPathLength;
     float                   mIndirectIllumClipping;
+    uint32_t                mSplittingBudget;
+
+    // debug, temporary
+    float mDbgSplittingLevel;
+    float mDbgSplittingLightToBrdfSmplRatio;
 };

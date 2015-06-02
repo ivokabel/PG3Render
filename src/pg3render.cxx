@@ -174,11 +174,22 @@ int32_t main(int32_t argc, const char *argv[])
 
     // Setup config based on command line
     Config config;
-    ParseCommandline(argc, argv, config);
-    if (config.mScene == NULL)
+    if (!ParseCommandline(argc, argv, config))
     {
         // When some error has been encountered, exit
-        //getchar(); // debug // Wait for pressing the enter key on the command line
+        //getchar(); // debug
+        return 1;
+    }
+
+    std::string fullOutputPath;
+    if (!config.mOutputDirectory.empty())
+        fullOutputPath = config.mOutputDirectory + "\\" + config.mOutputName;
+    else
+        fullOutputPath = config.mOutputName;
+
+    if (config.mOnlyPrintOutputPath)
+    {
+        printf("%s", fullOutputPath.c_str());
         return 1;
     }
 
@@ -201,11 +212,6 @@ int32_t main(int32_t argc, const char *argv[])
         printf(" done in %s\n", timeHumanReadable.c_str());
 
     // Save the image
-    std::string fullOutputPath;
-    if (!config.mOutputDirectory.empty())
-        fullOutputPath = config.mOutputDirectory + "\\" + config.mOutputName;
-    else
-        fullOutputPath = config.mOutputName;
     if (!config.mQuietMode)
         printf("Saving to: %s ... ", fullOutputPath.c_str());
     std::string extension = fullOutputPath.substr(fullOutputPath.length() - 3, 3);
