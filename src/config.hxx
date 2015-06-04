@@ -383,7 +383,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mSplittingBudget                = 4;                        // [cmd]
 
     // debug, temporary
-    oConfig.mDbgSplittingLevel = 4.f;                                   // [cmd]
+    oConfig.mDbgSplittingLevel = 1.f;                                   // [cmd]
     oConfig.mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
 
     int32_t sceneID     = 0; // default 0
@@ -632,7 +632,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             std::istringstream iss(argv[i]);
             iss >> tmp;
 
-            if (iss.fail() || tmp < 0.f)
+            if (iss.fail() || tmp <= 0.f || tmp > 1.f)
             {
                 printf(
                     "Error: Invalid <splitting_level> argument \"%s\", please see help (-h)\n",
@@ -662,7 +662,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             std::istringstream iss(argv[i]);
             iss >> tmp;
 
-            if (iss.fail() || tmp < 0.f)
+            if (iss.fail() || tmp <= 0.f)
             {
                 printf(
                     "Error: Invalid <splitting_light_to_brdf_ratio> argument \"%s\", please see help (-h)\n",
