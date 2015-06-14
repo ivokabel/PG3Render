@@ -326,7 +326,7 @@ void PrintProgressBarCommon(float aProgress)
             printf(".");
     }
 
-    printf("] %.1f%%", 100.0 * aProgress);
+    printf("] %.1f%%", std::floor(100.0 * aProgress * 10.0f) / 10.f);
 }
 
 void PrintProgressBarIterations(float aProgress, uint32_t aIterations)
