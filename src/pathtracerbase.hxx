@@ -453,8 +453,8 @@ public:
         const uint32_t      aStrategy2Count
         )
     {
-        return MISWeight2Balanced(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
-        //return MISWeight2Power(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
+        //return MISWeight2Balanced(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
+        return MISWeight2Power(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
     }
 
     float MISWeight2Balanced(
@@ -476,11 +476,16 @@ public:
         const uint32_t      aStrategy2Count
         )
     {
-        const float aStrategy1PdfSqr = aStrategy1Pdf * aStrategy1Pdf;
-        const float aStrategy2PdfSqr = aStrategy2Pdf * aStrategy2Pdf;
+        const float aStrategy1Sum = aStrategy1Count * aStrategy1Pdf;
+        const float aStrategy2Sum = aStrategy2Count * aStrategy2Pdf;
+
+        const float aStrategy1Sqr = aStrategy1Sum * aStrategy1Sum;
+        const float aStrategy2Sqr = aStrategy2Sum * aStrategy2Sum;
+
         return
-              aStrategy1PdfSqr
-            / (aStrategy1Count * aStrategy1PdfSqr + aStrategy2Count * aStrategy2PdfSqr);
+              aStrategy1Sqr
+            / (aStrategy1Sqr + aStrategy2Sqr)
+            / aStrategy1Count;
     }
 
 protected:
