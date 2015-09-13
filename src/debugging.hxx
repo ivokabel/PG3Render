@@ -121,7 +121,7 @@ void pg3_exit();
 #define PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
     PG3_ASSERT((_val1) >= (_val2))
 
-// noinline for profiling purposes - it helps to better visualise a low-level code in the profiler
+// noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE
 #ifdef PG3_USE_PROFILING_NOINLINE
 #define PG3_PROFILING_NOINLINE __declspec(noinline)

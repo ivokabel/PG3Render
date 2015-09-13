@@ -10,7 +10,8 @@
 class BRDFSample
 {
 public:
-    SpectrumF   mSample;            // BRDF attenuation * cosine theta_in
+    // BRDF attenuation * cosine theta_in
+    SpectrumF   mSample;
 
     // Angular PDF of the sample. In finite BRDF cases, it contains the whole PDF of all finite
     // components and is already pre-multiplied by probability of this case.
@@ -22,7 +23,8 @@ public:
     // Inifinite components' contributions are computed outside MIS mechanism.
     float       mCompProbability;
 
-    Vec3f       mWil;               // Chosen incoming direction
+    // Chosen incoming direction
+    Vec3f       mWil;
 };
 
 class Material

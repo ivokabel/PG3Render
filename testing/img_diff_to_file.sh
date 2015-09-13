@@ -28,9 +28,9 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OUT_FILE_BASE="$IMAGES_BASE_DIR/splitting/img_diff_7_lbr"
+OUT_FILE_BASE="$IMAGES_BASE_DIR/splitting/img_diff_0"
 OUT_GNUPLOT_FILE="$OUT_FILE_BASE.gnuplot"
-OUT_IMAGE_FILE="${OUT_FILE_BASE}_8.png"
+OUT_IMAGE_FILE="${OUT_FILE_BASE}.png"
 
 DO_COMPARE=true
 
@@ -45,7 +45,7 @@ else
     export CVS_SEPAR=" "
     export CVS_DATASETS_IN_COLUMNS=true         # Transpose the dataset
 
-    #./img_diff.sh > "$OUT_GNUPLOT_FILE"
+    ./img_diff.sh > "$OUT_GNUPLOT_FILE"
 
     # Gnuplot
     echo " 
@@ -53,7 +53,7 @@ else
     set output '$OUT_IMAGE_FILE'
     set title \"Gnuplot test\" 
     unset border 
-    set yrange [0:0.05]
-    plot for [IDX=10:13] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
+    set yrange [0:]
+    plot for [IDX=2:5] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
     " | gnuplot
 fi

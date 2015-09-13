@@ -9,6 +9,7 @@ PG3RENDER64="$PG3RENDER_BASE_DIR/x64/Release/PG3Render.exe"
 PG3RENDER=$PG3RENDER64
 
 DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
+PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 DIFF_TOOL=PerceptualDiff.exe
 
 IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
@@ -21,23 +22,11 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #CVS_DATASETS_IN_COLUMNS=true    # Transpose the dataset
 #DO_COMPARE=true
 
-RENDERING_TIME=100
-SCENES="7" #"2 3 6 7"                    #`seq 0 7`
-SPLIT_BUDGETS="1 4 8"           # 16"
-SLB_RATIOS="0.5 1.0 1.5 2.0"
-SPLIT_LEVELS="0.6 0.8 1.0"      #"0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"
-
-###################################################################################################
-
-PATH="$DIFF_TOOL_BASE_DIR:$PATH"
-#echo $PATH
-#echo
-
-#echo
-#pwd
-#cd "$DIFF_TOOL_BASE_DIR"
-#pwd
-#echo
+RENDERING_TIME=600
+SCENES="0" #"2 3 6 7"                    #`seq 0 7`
+SPLIT_BUDGETS="1 4 8 16"           # 16"
+SLB_RATIOS="1.0"
+SPLIT_LEVELS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"
 
 ###################################################################################################
 
