@@ -19,7 +19,7 @@ public:
 
     // Probability of picking the additive BRDF component which generated this sample.
     // The component can be an infinite pdf (dirac impulse) BRDF, e.g. Fresnel, 
-    //or total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
+    // or total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
     // Inifinite components' contributions are computed outside MIS mechanism.
     float       mCompProbability;
 
@@ -31,13 +31,11 @@ class AbstractMaterial
 {
 public:
     virtual SpectrumF EvalBrdf(
-        const Vec3f& wil,
-        const Vec3f& wol
+        const Vec3f& aWil,
+        const Vec3f& aWol
         ) const = 0;
 
-    // Generates a radnom BRDF sample.
-    // It first randomly chooses a BRDF component and then it samples a random direction 
-    // for this component.
+    // Generates a random BRDF sample.
     virtual void SampleBrdf(
         Rng         &aRng,
         const Vec3f &aWol,
@@ -95,15 +93,15 @@ public:
     }
 
     SpectrumF EvalGlossyComponent(
-        const Vec3f& wil,
-        const Vec3f& wol
+        const Vec3f& aWil,
+        const Vec3f& aWol
         ) const
     {
         const float constComponent = (mPhongExponent + 2.0f) / (2.0f * PI_F); // TODO: Pre-compute?
-        const Vec3f wrl = ReflectLocal(wil);
+        const Vec3f wrl = ReflectLocal(aWil);
         // We need to restrict to positive cos values only, otherwise we get unwanted behaviour 
         // in the retroreflection zone.
-        const float thetaRCos = std::max(Dot(wrl, wol), 0.f);
+        const float thetaRCos = std::max(Dot(wrl, aWol), 0.f);
         const float poweredCos = powf(thetaRCos, mPhongExponent);
 
         return mPhongReflectance * (constComponent * poweredCos);
@@ -115,27 +113,27 @@ public:
     }
 
     virtual SpectrumF EvalBrdf(
-        const Vec3f& wil,
-        const Vec3f& wol
-        ) const
+        const Vec3f& aWil,
+        const Vec3f& aWol
+        ) const override
     {
-        if (wil.z <= 0.f && wol.z <= 0.f)
+        if (aWil.z <= 0.f && aWol.z <= 0.f)
             return SpectrumF().MakeZero();
 
         const SpectrumF diffuseComponent = EvalDiffuseComponent();
-        const SpectrumF glossyComponent  = EvalGlossyComponent(wil, wol);
+        const SpectrumF glossyComponent  = EvalGlossyComponent(aWil, aWol);
 
         return diffuseComponent + glossyComponent;
     }
 
-    // Generates a radnom BRDF sample.
+    // Generates a random BRDF sample.
     // It first randomly chooses a BRDF component and then it samples a random direction 
     // for this component.
     virtual void SampleBrdf(
         Rng         &aRng,
         const Vec3f &aWol,
         BRDFSample  &oBrdfSample
-        ) const
+        ) const override
     {
         // Compute scalar reflectances. Replicated in GetPdfW()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
@@ -235,7 +233,7 @@ public:
     virtual float GetPdfW(
         const Vec3f &aWol,
         const Vec3f &aWil
-        ) const
+        ) const override
     {
         // Compute scalar reflectances. Replicated in SampleBrdf()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
@@ -253,7 +251,7 @@ public:
     // based on the material reflectance.
     float GetRRContinuationProb(
         const Vec3f &aWol
-        ) const
+        ) const override
     {
         // For conversion to scalar form we combine two strategies: maximum component value 
         // with weighted "luminance". The "luminance" strategy minimizes noise in colour 
@@ -282,7 +280,7 @@ public:
         return totalReflectance;
     }
 
-    virtual bool IsReflectanceZero() const
+    virtual bool IsReflectanceZero() const override
     {
         return mDiffuseReflectance.IsZero() && mPhongReflectance.IsZero();
     }
@@ -291,3 +289,74 @@ public:
     SpectrumF   mPhongReflectance;
     float       mPhongExponent;
 };
+
+class FresnelMaterial : public AbstractMaterial
+{
+public:
+    FresnelMaterial() {}
+
+    virtual SpectrumF EvalBrdf(
+        const Vec3f& aWil,
+        const Vec3f& aWol
+        ) const override
+    {
+        aWil; aWol; // unreferenced params
+            
+        // There is zero probability of hitting the only valid combination of 
+        // incoming and outgoing directions that transfers light
+        SpectrumF result;
+        result.SetGreyAttenuation(0.0f);
+        return result;
+    }
+
+    virtual float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const override
+    {
+        // unreferenced params
+        aWil;
+        aWol;
+
+        // There is zero probability of hitting the only valid combination of 
+        // incoming and outgoing directions that transfers light
+        return 0.0f;
+    }
+
+    // Generates a random BRDF sample.
+    virtual void SampleBrdf(
+        Rng         &aRng,
+        const Vec3f &aWol,
+        BRDFSample  &oBrdfSample
+        ) const override
+    {
+        aRng; aWol; oBrdfSample; // unreferenced params
+
+        oBrdfSample.mWil = ReflectLocal(aWol);
+        oBrdfSample.mPdfW = INFINITY_F;
+        oBrdfSample.mCompProbability = 1.f;
+
+        // debug: ideal mirror
+        oBrdfSample.mSample.SetGreyAttenuation(1.0f);
+    }
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        // unreferenced params
+        aWol;
+
+        // debug: ideal mirror
+        return 1.0;
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        // debug: ideal mirror
+        return false;
+    }
+};
+

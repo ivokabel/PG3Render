@@ -79,10 +79,15 @@ public:
                         lightSamplingCtx,
                         LiLight);
 
-                    // Compute the two-step MC estimator. 
-                    LoDirect =
-                          (brdfSample.mSample * LiLight)
-                        / brdfSample.mPdfW;
+                    // TODO: Add support for heterogenous and multi-component BRDFs
+                    if (brdfSample.mPdfW != INFINITY_F)
+                        // Finite BRDF: Compute the two-step MC estimator.
+                        LoDirect =
+                              (brdfSample.mSample * LiLight)
+                            / brdfSample.mPdfW;
+                    else
+                        // Dirac BRDF: compute the integral directly
+                        LoDirect = brdfSample.mSample * LiLight;
                 }
             }
             else if (aAlgorithm == kDirectIllumMIS)

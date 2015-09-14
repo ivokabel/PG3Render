@@ -378,9 +378,7 @@ public:
 
         if (aLightSample.mPdfW != INFINITY_F)
         {
-            // Planar or angular light source was chosen
-
-            // MIS MC estimator
+            // Planar or angular light source was chosen: Proceed with MIS MC estimator
             const float brdfPdfW = aMat.GetPdfW(aWol, wil);
             const float lightPdf = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
@@ -390,10 +388,9 @@ public:
         }
         else
         {
-            // Point light was chosen
-
-            // The contribution of a single light is computed analytically, there is only one 
-            // MC estimation left - the estimation of the sum of contributions of all light sources.
+            // Point light was chosen: The contribution of a single light is computed analytically,
+            // there is only one MC estimation left - the estimation of the sum of contributions
+            // of all light sources.
             oLightBuffer +=
                   (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
                 / (aLightSample.mLightProbability * aLightSamplesCount);
@@ -435,15 +432,23 @@ public:
         //PG3_ASSERT(lightPickingProbability > 0.f);
         PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
-        // Compute multiple importance sampling MC estimator. 
-        const float misWeight =
-            MISWeight2(
-                aBrdfSample.mPdfW, aBrdfSamplesCount,
-                lightPdfW * lightPickingProbability, aLightSamplesCount);
-        oLightBuffer +=
-              (aBrdfSample.mSample * LiLight)
-            * (   misWeight
-                / aBrdfSample.mPdfW);
+        // TODO: Add support for heterogenous and multi-component BRDFs
+        if (aBrdfSample.mPdfW != INFINITY_F)
+        {
+            // Finite BRDF: Compute two-step MIS MC estimator. 
+            const float misWeight =
+                MISWeight2(
+                    aBrdfSample.mPdfW, aBrdfSamplesCount,
+                    lightPdfW * lightPickingProbability, aLightSamplesCount);
+            oLightBuffer +=
+                  (aBrdfSample.mSample * LiLight)
+                * (misWeight / aBrdfSample.mPdfW);
+        }
+        else
+        {
+            // Dirac BRDF: compute the integral directly, without MIS
+            oLightBuffer += aBrdfSample.mSample * LiLight;
+        }
     }
 
     float MISWeight2(
@@ -476,6 +481,8 @@ public:
         const uint32_t      aStrategy2Count
         )
     {
+        PG3_ASSERT_VAL_POSITIVE(aStrategy1Count);
+
         const float aStrategy1Sum = aStrategy1Count * aStrategy1Pdf;
         const float aStrategy2Sum = aStrategy2Count * aStrategy2Pdf;
 
