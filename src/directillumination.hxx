@@ -27,7 +27,7 @@ public:
             Frame surfFrame;
             surfFrame.SetFromZ(isect.normal);
             const Vec3f wol = surfFrame.ToLocal(-aRay.dir);
-            const Material& mat = mConfig.mScene->GetMaterial(isect.matID);
+            const AbstractMaterial& mat = mConfig.mScene->GetMaterial(isect.matID);
 
             ///////////////////////////////////////////////////////////////////////////////////
             // Direct illumination

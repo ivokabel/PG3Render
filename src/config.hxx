@@ -93,42 +93,47 @@ struct Config
 };
 
 // Scene configurations
-uint32_t g_SceneConfigs[] = 
+#define GEOM_FULL_BOX           Scene::kWalls | Scene::kFloor | Scene::k2Spheres
+#define GEOM_2SPHERES_ON_FLOOR                  Scene::kFloor | Scene::k2Spheres
+#define GEOM_1SPHERE            Scene::k1Sphere
+#define MATS_PHONG_DIFFUSE      Scene::kWallsPhongDiffuse | Scene::kSpheresPhongDiffuse
+#define MATS_PHONG_GLOSSY       Scene::kWallsPhongGlossy | Scene::kSpheresPhongGlossy
+uint32_t g_SceneConfigs[] =
 {
     // Point light, box: 0,1
-    Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightPoint   | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
+    Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
     // Ceiling light, box: 2,3
-    Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightCeiling | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
+    Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
     // Light box, box: 4,5
-    Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightBox     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
+    Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
     // Environment map, box: 6,7
-    Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightEnv     | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
+    Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
     // Environment map, no walls: 8,9
-    Scene::kLightEnv                     | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse,
-    Scene::kLightEnv                     | Scene::kFloor | Scene::kWallsDiffuse | Scene::k2Spheres | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
+    Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
+    Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
     // EM testing: 10, 11, 12
-    Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse,
-    Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresGlossy,
-    Scene::kLightEnv | Scene::k1Sphere | Scene::kSpheresDiffuse | Scene::kSpheresGlossy,
+    Scene::kLightEnv | GEOM_1SPHERE | Scene::kSpheresPhongDiffuse,
+    Scene::kLightEnv | GEOM_1SPHERE | Scene::kSpheresPhongGlossy,
+    Scene::kLightEnv | GEOM_1SPHERE | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
 
     // Multiple lights, diffuse: 13, 14, 15, 16
-                         Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightPoint | Scene::kLightBox |                    Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv |                 Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse,
+                         Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
+    Scene::kLightPoint | Scene::kLightBox |                    GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
+    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
+    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
 
     // Multiple lights, glossy: 17, 18
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv |                 Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | Scene::kWalls | Scene::kFloor | Scene::k2Spheres | Scene::kWallsDiffuse | Scene::kSpheresDiffuse | Scene::kWallsGlossy | Scene::kSpheresGlossy,
+    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 };
 
 std::string DefaultFilename(

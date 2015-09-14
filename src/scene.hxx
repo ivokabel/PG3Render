@@ -30,7 +30,12 @@ public:
         delete mGeometry;
 
         for (size_t i=0; i<mLights.size(); i++)
-            delete mLights[i];
+            if (mLights[i] != NULL)
+                delete mLights[i];
+        
+         for (size_t i = 0; i<mMaterials.size(); i++)
+            if (mMaterials[i] != NULL)
+                delete mMaterials[i];
     }
 
     bool Intersect(
@@ -67,16 +72,18 @@ public:
         return mGeometry->IntersectP(ray, isect);
     }
 
-    const Material& GetMaterial(const int32_t aMaterialIdx) const
+    const AbstractMaterial& GetMaterial(int32_t aMaterialIdx) const
     {
-        return mMaterials[aMaterialIdx];
+        PG3_ASSERT_INTEGER_IN_RANGE(aMaterialIdx, 0, (int32_t)(mMaterials.size() - 1));
+        PG3_ASSERT(mMaterials[aMaterialIdx] != NULL);
+
+        return *mMaterials[aMaterialIdx];
     }
 
     int32_t GetMaterialCount() const
     {
         return (int32_t)mMaterials.size();
     }
-
 
     const AbstractLight* GetLightPtr(int32_t aLightIdx) const
     {
@@ -109,24 +116,24 @@ public:
     enum BoxMask
     {
         // light source flags
-        kLightCeiling       = 0x0001,
-        kLightBox           = 0x0002,
-        kLightPoint         = 0x0004,
-        kLightEnv           = 0x0008,
+        kLightCeiling           = 0x0001,
+        kLightBox               = 0x0002,
+        kLightPoint             = 0x0004,
+        kLightEnv               = 0x0008,
 
         // geometry flags
-        k2Spheres           = 0x0010,
-        k1Sphere            = 0x0020,
-        kWalls              = 0x0040,
-        kFloor              = 0x0080,
+        k2Spheres               = 0x0010,
+        k1Sphere                = 0x0020,
+        kWalls                  = 0x0040,
+        kFloor                  = 0x0080,
 
         // material flags
-        kSpheresDiffuse     = 0x0100,
-        kSpheresGlossy      = 0x0200,
-        kWallsDiffuse       = 0x0400,
-        kWallsGlossy        = 0x0800,
+        kSpheresPhongDiffuse    = 0x0100,
+        kSpheresPhongGlossy     = 0x0200,
+        kWallsPhongDiffuse      = 0x0400,
+        kWallsPhongGlossy       = 0x0800,
 
-        kDefault            = (kLightCeiling | kWalls | k2Spheres | kSpheresDiffuse | kWallsDiffuse),
+        kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
 
     enum EnvironmentMapType
@@ -173,55 +180,79 @@ public:
         //////////////////////////////////////////////////////////////////////////
         // Materials
 
-        Material mat;
         SpectrumF diffuseReflectance, glossyReflectance;
 
         // 0) light1, will only emit
-        mMaterials.push_back(mat);
+        mMaterials.push_back(new PhongMaterial());
         // 1) light2, will only emit
-        mMaterials.push_back(mat);
+        mMaterials.push_back(new PhongMaterial());
 
         // 2) white floor (and possibly the ceiling)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 90,
+                aBoxMask & kWallsPhongDiffuse, aBoxMask & kWallsPhongGlossy
+                )
+            );
 
         // 3) green left wall
         diffuseReflectance.SetSRGBAttenuation(0.156863f, 0.803922f, 0.172549f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 90,
+                aBoxMask & kWallsPhongDiffuse, aBoxMask & kWallsPhongGlossy
+                )
+            );
 
         // 4) red right wall
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.152941f, 0.152941f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 90,
+                aBoxMask & kWallsPhongDiffuse, aBoxMask & kWallsPhongGlossy
+                )
+            );
 
         // 5) white back wall
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kWallsDiffuse, aBoxMask & kWallsGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 90,
+                aBoxMask & kWallsPhongDiffuse, aBoxMask & kWallsPhongGlossy
+                )
+            );
 
         // 6) sphere1 (yellow)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
         glossyReflectance.SetGreyAttenuation(0.7f);
-        mat.Set(diffuseReflectance, glossyReflectance, 200, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 200,
+                aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
+            );
 
         // 7) sphere2 (blue)
         diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.7f);
-        mat.Set(diffuseReflectance, glossyReflectance, 600, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 600,
+                aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
+            );
 
         // 8) large sphere (white)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        mat.Set(diffuseReflectance, glossyReflectance, 90, aBoxMask & kSpheresDiffuse, aBoxMask & kSpheresGlossy);
-        mMaterials.push_back(mat);
+        mMaterials.push_back(
+            new PhongMaterial(
+                diffuseReflectance, glossyReflectance, 90,
+                aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
+            );
 
         delete mGeometry;
 
@@ -588,7 +619,11 @@ public:
         std::string name;
         std::string acronym;
 
+        name += "[";
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
         // Geometry
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         bool geometryUsed = false;
         #define GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED \
@@ -599,21 +634,21 @@ public:
             if (geometryUsed)      \
                 name += " ";    
 
-        if ((aBoxMask & kWalls) == kWalls)
+        if (IS_MASKED(aBoxMask, kWalls))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name += "walls";
             acronym += "w";
         }
 
-        if ((aBoxMask & k2Spheres) == k2Spheres)
+        if (IS_MASKED(aBoxMask, k2Spheres))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "2 spheres";
             acronym += "2s";
         }
 
-        if ((aBoxMask & k1Sphere) == k1Sphere)
+        if (IS_MASKED(aBoxMask, k1Sphere))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "1 sphere";
@@ -627,12 +662,13 @@ public:
             acronym += "e";
         }
 
-        GEOMETRY_ADD_SPACE_IF_NEEDED
-
-        name    += "+ ";
+        //GEOMETRY_ADD_SPACE_IF_NEEDED
+        name    += "] + [";
         acronym += "_";
 
+        ///////////////////////////////////////////////////////////////////////////////////////////
         // Light sources
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         bool lightUsed = false;
         #define LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED \
@@ -643,28 +679,28 @@ public:
             if (lightUsed)      \
                 name += " ";    
 
-        if ((aBoxMask & kLightCeiling) == kLightCeiling)
+        if (IS_MASKED(aBoxMask, kLightCeiling))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "ceiling light";
             acronym += "c";
         }
 
-        if ((aBoxMask & kLightBox) == kLightBox)
+        if (IS_MASKED(aBoxMask, kLightBox))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "light box";
             acronym += "b";
         }
 
-        if ((aBoxMask & kLightPoint) == kLightPoint)
+        if (IS_MASKED(aBoxMask, kLightPoint))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "point light";
             acronym += "p";
         }
         
-        if ((aBoxMask & kLightEnv) == kLightEnv)
+        if (IS_MASKED(aBoxMask, kLightEnv))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "env. light";
@@ -678,12 +714,13 @@ public:
             }
         }
 
-        LIGHTS_ADD_SPACE_IF_NEEDED
-
-        name += "+ ";
+        //LIGHTS_ADD_SPACE_IF_NEEDED
+        name    += "] + [";
         acronym += "_";
 
-        // Material
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        // Materials
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         bool materialUsed = false;
         #define MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED \
@@ -694,35 +731,48 @@ public:
             if (materialUsed)      \
                 name += " ";    
 
-        if ((aBoxMask & kSpheresDiffuse) == kSpheresDiffuse)
+        if (IS_MASKED(aBoxMask, kSpheresPhongDiffuse) ||
+            IS_MASKED(aBoxMask, kSpheresPhongGlossy))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "sph. diffuse";
-            acronym += "sd";
+            name    += "sph. Phong";
+            acronym += "Sp";
+
+            if (IS_MASKED(aBoxMask, kSpheresPhongDiffuse))
+            {
+                name    += " diffuse";
+                acronym += "d";
+            }
+
+            if (IS_MASKED(aBoxMask, kSpheresPhongGlossy))
+            {
+                name    += " glossy";
+                acronym += "g";
+            }
         }
 
-        if ((aBoxMask & kSpheresGlossy) == kSpheresGlossy)
+        if (IS_MASKED(aBoxMask, kWallsPhongDiffuse) ||
+            IS_MASKED(aBoxMask, kWallsPhongGlossy))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "sph. glossy";
-            acronym += "sg";
+            name    += "walls Phong";
+            acronym += "Wp";
+
+            if (IS_MASKED(aBoxMask, kWallsPhongDiffuse))
+            {
+                name    += " diffuse";
+                acronym += "d";
+            }
+
+            if (IS_MASKED(aBoxMask, kWallsPhongGlossy))
+            {
+                name    += " glossy";
+                acronym += "g";
+            }
         }
 
-        if ((aBoxMask & kWallsDiffuse) == kWallsDiffuse)
-        {
-            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "walls diffuse";
-            acronym += "wd";
-        }
-
-        if ((aBoxMask & kWallsGlossy) == kWallsGlossy)
-        {
-            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "walls glossy";
-            acronym += "wg";
-        }
-
-        MATERIALS_ADD_SPACE_IF_NEEDED
+        //MATERIALS_ADD_SPACE_IF_NEEDED
+        name += "]";
 
         if (oAcronym) *oAcronym = acronym;
         return name;
@@ -730,14 +780,14 @@ public:
 
 public:
 
-    AbstractGeometry            *mGeometry;
-    Camera                      mCamera;
-    std::vector<Material>       mMaterials;
-    std::vector<AbstractLight*> mLights;
-    std::map<int32_t, int32_t>  mMaterial2Light;
-    BackgroundLight*            mBackground;
-    int32_t                     mBackgroundLightId;
+    AbstractGeometry                *mGeometry;
+    Camera                           mCamera;
+    std::vector<AbstractMaterial*>   mMaterials;
+    std::vector<AbstractLight*>      mLights;
+    std::map<int32_t, int32_t>       mMaterial2Light;
+    BackgroundLight*                 mBackground;
+    int32_t                          mBackgroundLightId;
 
-    std::string           mSceneName;
-    std::string           mSceneAcronym;
+    std::string                      mSceneName;
+    std::string                      mSceneAcronym;
 };

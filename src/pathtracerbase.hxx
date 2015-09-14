@@ -300,12 +300,12 @@ public:
     }
 
     void AddSingleLightSampleContribution(
-        const LightSample   &aLightSample,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-        const Vec3f         &aWol,
-        const Material      &aMat,
-              SpectrumF     &oLightBuffer)
+        const LightSample       &aLightSample,
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame, 
+        const Vec3f             &aWol,
+        const AbstractMaterial  &aMat,
+              SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
             // The light emmits zero radiance in this direction
@@ -332,14 +332,14 @@ public:
     }
 
     void AddMISLightSampleContribution(
-        const LightSample   &aLightSample,
-        const uint32_t       aLightSamplesCount,
-        const uint32_t       aBrdfSamplesCount,
-        const Vec3f         &aSurfPt,
-        const Frame         &aSurfFrame, 
-        const Vec3f         &aWol,
-        const Material      &aMat,
-              SpectrumF     &oLightBuffer)
+        const LightSample       &aLightSample,
+        const uint32_t           aLightSamplesCount,
+        const uint32_t           aBrdfSamplesCount,
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame, 
+        const Vec3f             &aWol,
+        const AbstractMaterial  &aMat,
+              SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
             // The light emmits zero radiance in this direction

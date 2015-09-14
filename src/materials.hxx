@@ -27,22 +27,48 @@ public:
     Vec3f       mWil;
 };
 
-class Material
+class AbstractMaterial
 {
 public:
-    Material()
-    {
-        Reset();
-    }
+    virtual SpectrumF EvalBrdf(
+        const Vec3f& wil,
+        const Vec3f& wol
+        ) const = 0;
 
-    void Reset()
+    // Generates a radnom BRDF sample.
+    // It first randomly chooses a BRDF component and then it samples a random direction 
+    // for this component.
+    virtual void SampleBrdf(
+        Rng         &aRng,
+        const Vec3f &aWol,
+        BRDFSample  &oBrdfSample
+        ) const = 0;
+
+    virtual float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const = 0;
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const = 0;
+
+    virtual bool IsReflectanceZero() const = 0;
+};
+
+class PhongMaterial : public AbstractMaterial
+{
+public:
+    PhongMaterial()
     {
         mDiffuseReflectance.SetGreyAttenuation(0.0f);
         mPhongReflectance.SetGreyAttenuation(0.0f);
         mPhongExponent = 1.f;
     }
 
-    void Set(
+    PhongMaterial(
         const SpectrumF &aDiffuseReflectance,
         const SpectrumF &aGlossyReflectance,
         float            aPhongExponent,
@@ -68,7 +94,10 @@ public:
         return mDiffuseReflectance.Luminance(); // TODO: Pre-compute?
     }
 
-    SpectrumF EvalGlossyComponent(const Vec3f& wil, const Vec3f& wol) const
+    SpectrumF EvalGlossyComponent(
+        const Vec3f& wil,
+        const Vec3f& wol
+        ) const
     {
         const float constComponent = (mPhongExponent + 2.0f) / (2.0f * PI_F); // TODO: Pre-compute?
         const Vec3f wrl = ReflectLocal(wil);
@@ -85,7 +114,10 @@ public:
         return mPhongReflectance.Luminance(); // TODO: Pre-compute?
     }
 
-    SpectrumF EvalBrdf(const Vec3f& wil, const Vec3f& wol) const
+    virtual SpectrumF EvalBrdf(
+        const Vec3f& wil,
+        const Vec3f& wol
+        ) const
     {
         if (wil.z <= 0.f && wol.z <= 0.f)
             return SpectrumF().MakeZero();
@@ -99,7 +131,7 @@ public:
     // Generates a radnom BRDF sample.
     // It first randomly chooses a BRDF component and then it samples a random direction 
     // for this component.
-    void SampleBrdf(
+    virtual void SampleBrdf(
         Rng         &aRng,
         const Vec3f &aWol,
         BRDFSample  &oBrdfSample
@@ -141,7 +173,7 @@ public:
             // Glossy component sampling
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
-            const Vec3f canonicalSample = 
+            const Vec3f canonicalSample =
                 SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oBrdfSample.mPdfW*/);
 
             // Rotate sample to mirror-reflection
@@ -154,13 +186,13 @@ public:
         oBrdfSample.mCompProbability = 1.f;
 
         // Get whole PDF value
-        oBrdfSample.mPdfW = 
+        oBrdfSample.mPdfW =
             GetPdfW(aWol, oBrdfSample.mWil, diffuseReflectanceEst, glossyReflectanceEst);
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample = EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oBrdfSample.mSample = PhongMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
             oBrdfSample.mSample.MakeZero();
@@ -193,14 +225,14 @@ public:
         // Sum up both components' PDFs
         const float diffuseProbability = diffuseReflectanceEst / totalReflectance;
         const float glossyProbability  = glossyReflectanceEst  / totalReflectance;
-        
+
         PG3_ASSERT_FLOAT_IN_RANGE(diffuseProbability + glossyProbability, 0.0f, 1.001f);
         return
               diffuseProbability * CosHemispherePdfW(aWil)
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
-    float GetPdfW(
+    virtual float GetPdfW(
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const
@@ -239,8 +271,8 @@ public:
             + (1.f - blendCoeff) * mDiffuseReflectance.Max();
         const float cosThetaOut = std::max(aWol.z, 0.f);
         const float glossyReflectanceEst =
-              (   blendCoeff         * mPhongReflectance.Luminance()
-                + (1.f - blendCoeff) * mPhongReflectance.Max())
+              (blendCoeff         * mPhongReflectance.Luminance()
+            +  (1.f - blendCoeff) * mPhongReflectance.Max())
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
@@ -248,6 +280,11 @@ public:
         const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
         return totalReflectance;
+    }
+
+    virtual bool IsReflectanceZero() const
+    {
+        return mDiffuseReflectance.IsZero() && mPhongReflectance.IsZero();
     }
 
     SpectrumF   mDiffuseReflectance;

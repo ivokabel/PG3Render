@@ -63,7 +63,7 @@ protected:
                 Frame surfFrame;
                 surfFrame.SetFromZ(isect.normal);
                 const Vec3f wol = surfFrame.ToLocal(-currentRay.dir);
-                const Material& mat = mConfig.mScene->GetMaterial(isect.matID);
+                const AbstractMaterial& mat = mConfig.mScene->GetMaterial(isect.matID);
 
                 if ((isect.lightID >= 0) && (pathLength >= mMinPathLength))
                 {
@@ -75,9 +75,9 @@ protected:
                             * pathThroughput;
                 }
 
-                if (mat.mDiffuseReflectance.IsZero() && mat.mPhongReflectance.IsZero())
+                if (mat.IsReflectanceZero())
                     // Zero reflectivity - there is no chance of contribution behing this reflection;
-                    // we can cut the path without incorporation of bias
+                    // we can safely cut the path without incorporation of bias
                     return;
 
                 if ((mMaxPathLength > 0) && (pathLength >= mMaxPathLength))
@@ -158,7 +158,7 @@ protected:
             Frame surfFrame;
             surfFrame.SetFromZ(isect.normal);
             const Vec3f wol = surfFrame.ToLocal(-aRay.dir);
-            const Material& mat = mConfig.mScene->GetMaterial(isect.matID);
+            const AbstractMaterial& mat = mConfig.mScene->GetMaterial(isect.matID);
 
             if ((isect.lightID >= 0) && (aPathLength >= mMinPathLength))
             {
@@ -173,9 +173,9 @@ protected:
                 }
             }
 
-            if (mat.mDiffuseReflectance.IsZero() && mat.mPhongReflectance.IsZero())
+            if (mat.IsReflectanceZero())
                 // Zero reflectivity - there is no chance of contribution behing this reflection;
-                // we can cut the path without incorporation of bias
+                // we can safely cut the path without incorporation of bias
                 return;
 
             if ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength))
