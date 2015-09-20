@@ -249,12 +249,12 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    float GetRRContinuationProb(
+    virtual float GetRRContinuationProb(
         const Vec3f &aWol
         ) const override
     {
         // For conversion to scalar form we combine two strategies: maximum component value 
-        // with weighted "luminance". The "luminance" strategy minimizes noise in colour 
+        // and weighted "luminance". The "luminance" strategy minimizes noise in colour 
         // channels which human eye is most sensitive to; however, it doesn't work well for paths
         // which mainly contribute with less important channels (e.g. blue in sRGB). 
         // In such cases, the paths can have very small probability of survival even if they 

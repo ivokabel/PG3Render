@@ -84,12 +84,17 @@ protected:
                     return;
 
                 // Russian roulette (based on reflectance of the whole BRDF)
-                float reflectanceEstimate = 1.0f;
+                float rrContinuationProb = 1.0f;
                 if (mMaxPathLength == 0)
                 {
-                    reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
+                    rrContinuationProb =
+                        // We do not allow probability 1.0 because that can lead to infinite 
+                        // random walk in some pathological scenarios (completely white material).
+                        // After 100 bounces with probability of 98%, the whole path has 
+                        // probability of cca 13% of survival.
+                        Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.98f);
                     const float rnd = mRng.GetFloat();
-                    if (rnd > reflectanceEstimate)
+                    if (rnd > rrContinuationProb)
                         return;
                 }
 
@@ -111,11 +116,11 @@ protected:
                     pathThroughput *=
                             brdfSample.mSample
                           / (  brdfSample.mPdfW         // Monte Carlo est.
-                             * reflectanceEstimate);    // Russian roulette (optional)
+                             * rrContinuationProb);     // Russian roulette (optional)
                 else
                     pathThroughput *=
                             brdfSample.mSample
-                          / reflectanceEstimate;        // Russian roulette (optional)
+                          / rrContinuationProb;         // Russian roulette (optional)
 
                 pathLength++;
             }
@@ -214,9 +219,14 @@ protected:
                 }
             }
 
-            float reflectanceEstimate = 1.0f;
+            float rrContinuationProb = 1.0f;
             if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
-                reflectanceEstimate = Clamp(mat.GetRRContinuationProb(wol), 0.0f, 1.0f);
+                rrContinuationProb =
+                    // We do not allow probability 1.0 because that can lead to infinite 
+                    // random walk in some pathological scenarios (completely white material).
+                    // After 100 bounces with probability of 98%, the whole path has 
+                    // probability of cca 13% of survival.
+                    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.98f);
 
             // Generate requested amount of samples by sampling the BRDF 
             // for both direct and indirect illumination
@@ -226,7 +236,7 @@ protected:
                 if ((mMaxPathLength == 0) /*&& (aPathLength > 1)*/)
                 {
                     const float rnd = mRng.GetFloat();
-                    if (rnd > reflectanceEstimate)
+                    if (rnd > rrContinuationProb)
                         continue;
                 }
 
@@ -272,7 +282,7 @@ protected:
                                   (brdfSample.mSample * brdfEmmittedRadiance)
                                 * (   MISWeight2(brdfSample.mPdfW, brdfSamplesCount, lightPdf, lightSamplesCount) // MIS
                                     / brdfSample.mPdfW      // MC
-                                    / reflectanceEstimate); // Russian roulette
+                                    / rrContinuationProb);  // Russian roulette
                         }
                         else
                         {
@@ -280,7 +290,7 @@ protected:
                             oReflectedRadianceEstimate +=
                                     (brdfSample.mSample * brdfEmmittedRadiance)
                                   / (  brdfSamplesCount      // Splitting
-                                     * reflectanceEstimate); // Russian roulette
+                                     * rrContinuationProb);  // Russian roulette
                         }
                     }
 
@@ -295,7 +305,7 @@ protected:
                                   (brdfSample.mSample * brdfReflectedRadianceEstimate)
                                 / (   brdfSample.mPdfW
                                     * brdfSamplesCount      // Splitting
-                                    * reflectanceEstimate); // Russian roulette
+                                    * rrContinuationProb);  // Russian roulette
 
                             // Clip fireflies
                             if (mIndirectIllumClipping > 0.f)
@@ -308,7 +318,7 @@ protected:
                             indirectRadianceEstimate =
                                   (brdfSample.mSample * brdfReflectedRadianceEstimate)
                                 / (   brdfSamplesCount      // Splitting
-                                    * reflectanceEstimate); // Russian roulette
+                                    * rrContinuationProb);  // Russian roulette
                         }
 
                         oReflectedRadianceEstimate += indirectRadianceEstimate;
