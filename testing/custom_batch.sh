@@ -24,7 +24,7 @@ cd "$PG3RENDER_BASE_DIR"
 
 echo "$PG3RENDER"
 for SCENE in `seq 0 18`; do
-    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s $SCENE -opop
+    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s $SCENE -i 10 -ot OldMaterialArch
     echo
 done
 
