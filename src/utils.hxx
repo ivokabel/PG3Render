@@ -24,34 +24,137 @@
 #define IS_MASKED(val, mask)   (((val) & (mask)) == (mask))
 
 float FresnelDielectric(
-    float aCosInc,
-    float mIOR)
+    float aCosThetaI,
+    float aEta)         // internal IOR / external IOR
 {
-    if (mIOR < 0)
+    if (aEta < 0)
         return 1.f;
 
     float etaIncOverEtaTrans;
 
-    if (aCosInc < 0.f)
+    if (aCosThetaI < 0.f)
     {
-        aCosInc = -aCosInc;
-        etaIncOverEtaTrans = mIOR;
+        aCosThetaI = -aCosThetaI;
+        etaIncOverEtaTrans = aEta;
     }
     else
-        etaIncOverEtaTrans = 1.f / mIOR;
+        etaIncOverEtaTrans = 1.f / aEta;
 
-    const float sinTrans2 = Sqr(etaIncOverEtaTrans) * (1.f - Sqr(aCosInc));
-    const float cosTrans = std::sqrt(std::max(0.f, 1.f - sinTrans2));
+    const float sinTrans2 = Sqr(etaIncOverEtaTrans) * (1.f - Sqr(aCosThetaI));
+    const float cosTrans = SafeSqrt(1.f - sinTrans2);
 
     const float term1 = etaIncOverEtaTrans * cosTrans;
-    const float rParallel =
-        (aCosInc - term1) / (aCosInc + term1);
+    const float reflParallel =
+        (aCosThetaI - term1) / (aCosThetaI + term1);
 
-    const float term2 = etaIncOverEtaTrans * aCosInc;
-    const float rPerpendicular =
+    const float term2 = etaIncOverEtaTrans * aCosThetaI;
+    const float reflPerpendicular =
         (term2 - cosTrans) / (term2 + cosTrans);
 
-    return 0.5f * (Sqr(rParallel) + Sqr(rPerpendicular));
+    return 0.5f * (Sqr(reflParallel) + Sqr(reflPerpendicular));
+}
+
+float FresnelConductor(
+    float aCosThetaI,
+    float aEta,         // internal IOR / external IOR
+    float aAbsorbance
+    )
+{
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEta, 0.0f);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aAbsorbance, 0.0f);
+
+    if (aCosThetaI < -0.00001f)
+        // Hitting the surface from the inside - no reflectance. This can be caused for example by 
+        // a numerical error in object intersection code.
+        return 0.0f;
+
+    aCosThetaI = Clamp(aCosThetaI, 0.0f, 1.0f);
+
+//#define USE_ART_FRESNEL
+#define USE_MITSUBA_FRESNEL
+#ifdef USE_ART_FRESNEL
+
+    const float cosThetaSqr = Sqr(aCosThetaI);
+    const float sinThetaSqr = std::max(1.0f - cosThetaSqr, 0.0f);
+    const float sinTheta    = std::sqrt(sinThetaSqr);
+
+    const float iorSqr    = Sqr(aEta);
+    const float absorbSqr = Sqr(aAbsorbance);
+
+    const float tmp1 = iorSqr - absorbSqr - sinThetaSqr;
+    const float tmp2 = std::sqrt(Sqr(tmp1) + 4 * iorSqr * absorbSqr);
+
+    const float aSqr     = (tmp2 + tmp1) * 0.5f;
+    const float bSqr     = (tmp2 - tmp1) * 0.5f;
+    const float aSqrMul2 = 2 * std::sqrt(aSqr);
+
+    float tanTheta, tanThetaSqr;
+
+    if (!IsTiny(aCosThetaI))
+    {
+        tanTheta    = sinTheta / aCosThetaI;
+        tanThetaSqr = Sqr(tanTheta);
+    }
+    else
+    {
+        tanTheta    = HUGE_F;
+        tanThetaSqr = HUGE_F;
+    }
+
+    const float reflPerpendicular =
+          (aSqr + bSqr - aSqrMul2 * aCosThetaI + cosThetaSqr)
+        / (aSqr + bSqr + aSqrMul2 * aCosThetaI + cosThetaSqr);
+
+    const float reflParallel =
+          reflPerpendicular
+        * (  (aSqr + bSqr - aSqrMul2 * sinTheta * tanTheta + sinThetaSqr * tanThetaSqr)
+           / (aSqr + bSqr + aSqrMul2 * sinTheta * tanTheta + sinThetaSqr * tanThetaSqr));
+
+    const float reflectance = 0.5f * (reflParallel + reflPerpendicular);
+
+    PG3_ASSERT_FLOAT_IN_RANGE(reflPerpendicular, 0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_IN_RANGE(reflParallel,      0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_IN_RANGE(reflectance,       0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(reflPerpendicular, reflParallel);
+
+#elif defined USE_MITSUBA_FRESNEL
+
+    // Taken and modified from Mitsuba renderer, which states:
+    //      "Modified from "Optics" by K.D. Moeller, University Science Books, 1988"
+
+    const float cosThetaI2 = aCosThetaI * aCosThetaI;
+    const float sinThetaI2 = 1 - cosThetaI2;
+    const float sinThetaI4 = sinThetaI2 * sinThetaI2;
+
+    const float aEta2        = aEta * aEta;
+    const float aAbsorbance2 = aAbsorbance * aAbsorbance;
+
+    const float temp1 = aEta2 - aAbsorbance2 - sinThetaI2;
+    const float a2pb2 = SafeSqrt(temp1 * temp1 + 4 * aAbsorbance2 * aEta2);
+    const float a = SafeSqrt(0.5f * (a2pb2 + temp1));
+
+    const float term1 = a2pb2 + cosThetaI2;
+    const float term2 = 2 * a * aCosThetaI;
+
+    const float Rs2 = (term1 - term2) / (term1 + term2);
+
+    const float term3 = a2pb2 * cosThetaI2 + sinThetaI4;
+    const float term4 = term2 * sinThetaI2;
+
+    const float Rp2 = Rs2 * (term3 - term4) / (term3 + term4);
+
+    const float reflectance = 0.5f * (Rp2 + Rs2); // non-polarising reflectance
+
+    PG3_ASSERT_FLOAT_IN_RANGE(Rs2,          0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_IN_RANGE(Rp2,          0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_IN_RANGE(reflectance,  0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(Rs2 + 0.00001f, Rp2);
+
+#else
+#error Unspecified Fresnel version!
+#endif
+
+    return reflectance;
 }
 
 // reflect vector through (0,0,1)

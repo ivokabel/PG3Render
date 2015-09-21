@@ -13,6 +13,39 @@
 
 #define INFINITY_F  (std::numeric_limits<float>::infinity())
 
+// Tools be used instead of floating point values comparison against zero.
+// For IEEE floats and doubles this constant was set to 2^-20 and 2^-49 respectively, resulting in
+// 8 * float_eps and 8 * double_eps respectively.
+// Originally, this was set to  2^-21 and 2^-50 respectively, resulting in 4 * float_eps and 
+// 4 * double_eps respectively, but it was too sensitive in some situations.
+
+//#define TINY_F	4.76837158203125E-7f            // 2^-21
+#define TINY_F		9.5367431640625E-7f             // 2^-20
+//#define TINY_D	8.8817841970012523233891E-16    // 2^-50
+#define TINY_D	    1.7763568394002504646778E-15    // 2^-49
+
+inline float IsTiny(float x)
+{
+    return std::abs(x) < TINY_F;
+}
+
+inline double IsTiny(double x)
+{
+    return std::abs(x) < TINY_D;
+}
+
+// Defines huge float and double constants that can be regarded infinity for
+// this type of floating point arithmetic.
+//
+// For IEEE floats this constant was set to 2^31, so that multiplying
+// its exponent by 4 yields a float that is still valid.
+//
+// For  IEEE doubles this constant was set to 2^255, so that multiplying
+// its exponent by 4 yields a double that is still valid.
+
+#define HUGE_F	    2.147483648E+9f
+#define HUGE_D      5.78960446186580977117855E+76
+
 //////////////////////////////////////////////////////////////////////////
 // Math section
 
@@ -30,6 +63,12 @@ template<typename T>
 T Sqr(const T& a)
 {
     return a*a;
+}
+
+template<typename T>
+T SafeSqrt(const T& a)
+{
+    return std::sqrt(std::max<T>(0, a));
 }
 
 float FmodX(float x, float y)

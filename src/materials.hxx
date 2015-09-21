@@ -5,7 +5,16 @@
 #include "rng.hxx"
 #include "types.hxx"
 
-#define MATERIAL_BLOCKER_EPSILON    1e-5
+#define MAT_BLOCKER_EPSILON    1e-5
+
+// Various material IoRs and absorbances at roughly 590 nm
+#define MAT_AIR_IOR            1.000277f
+#define MAT_COPPER_IOR         0.468000f
+#define MAT_COPPER_ABSORBANCE  2.810000f
+#define MAT_SILVER_IOR         0.121000f
+#define MAT_SILVER_ABSORBANCE  3.660000f
+#define MAT_GOLD_IOR           0.236000f
+#define MAT_GOLD_ABSORBANCE    2.960089f
 
 class BRDFSample
 {
@@ -145,7 +154,7 @@ public:
                                            // (part of the glossy lobe can be under the surface).
         const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
-        if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
+        if (totalReflectance < MAT_BLOCKER_EPSILON)
         {
             // Diffuse fallback for blocker materials
             oBrdfSample.mSample.MakeZero();
@@ -210,7 +219,7 @@ public:
         // TODO: Uncomment when there are only energy conserving materials in the scene
         //PG3_ASSERT_FLOAT_IN_RANGE(totalReflectance,      0.0f, 1.001f);
 
-        if (totalReflectance < MATERIAL_BLOCKER_EPSILON)
+        if (totalReflectance < MAT_BLOCKER_EPSILON)
             // Diffuse fallback for blocker materials
             return CosHemispherePdfW(aWil);
 
@@ -253,12 +262,13 @@ public:
         const Vec3f &aWol
         ) const override
     {
-        // For conversion to scalar form we combine two strategies: maximum component value 
-        // and weighted "luminance". The "luminance" strategy minimizes noise in colour 
+        // For conversion to scalar form we combine two strategies:
+        //      maximum component value and weighted "luminance".
+        // The "luminance" strategy minimizes noise in colour 
         // channels which human eye is most sensitive to; however, it doesn't work well for paths
         // which mainly contribute with less important channels (e.g. blue in sRGB). 
         // In such cases, the paths can have very small probability of survival even if they 
-        // transfers the less important channels with no attenuation which leads to blue or,
+        // transfer the less important channels with no attenuation which leads to blue or,
         // less often, red fireflies. Maximum channel strategy removes those fireflies completely,
         // but tends to prefer less important channels too much and doesn't cut paths 
         // with blocking combinations of attenuations like (1,0,0)*(0,1,0).
@@ -290,10 +300,17 @@ public:
     float       mPhongExponent;
 };
 
-class FresnelMaterial : public AbstractMaterial
+class SmoothConductorMaterial : public AbstractMaterial
 {
 public:
-    FresnelMaterial() {}
+    SmoothConductorMaterial(float aInnerIor, float aOuterIor, float aAbsorbance /* k */)
+    {
+        if (!IsTiny(aOuterIor))
+            mEta = aInnerIor / aOuterIor;
+        else
+            mEta = 1.0f;
+        mAbsorbance = aAbsorbance;
+    }
 
     virtual SpectrumF EvalBrdf(
         const Vec3f& aWil,
@@ -330,14 +347,17 @@ public:
         BRDFSample  &oBrdfSample
         ) const override
     {
-        aRng; aWol; oBrdfSample; // unreferenced params
+        aRng; // unreferenced params
 
         oBrdfSample.mWil = ReflectLocal(aWol);
         oBrdfSample.mPdfW = INFINITY_F;
         oBrdfSample.mCompProbability = 1.f;
 
-        // debug: ideal mirror
-        oBrdfSample.mSample.SetGreyAttenuation(1.0f);
+        // TODO: This may be cached (GetRRContinuationProb and SampleBrdf compute the same Fresnel 
+        //       value), but it doesn't seem to be the bottleneck now. Postponing.
+
+        const float reflectance = FresnelConductor(oBrdfSample.mWil.z, mEta, mAbsorbance);
+        oBrdfSample.mSample.SetGreyAttenuation(reflectance);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -346,11 +366,13 @@ public:
         const Vec3f &aWol
         ) const override
     {
-        // unreferenced params
-        aWol;
+        // We can use local z of outgoing direction, because it's equal to incoming direction z
 
-        // debug: ideal mirror
-        return 1.0;
+        // TODO: This may be cached (GetRRContinuationProb and SampleBrdf compute the same Fresnel 
+        //       value), but it doesn't seem to be the bottleneck now. Postponing.
+
+        const float reflectance = FresnelConductor(aWol.z, mEta, mAbsorbance);
+        return reflectance;
     }
 
     virtual bool IsReflectanceZero() const override
@@ -358,5 +380,9 @@ public:
         // debug: ideal mirror
         return false;
     }
+
+protected:
+    float mEta;         // inner IOR / outer IOR
+    float mAbsorbance;  // k, the imaginary part of the complex index of refraction
 };
 

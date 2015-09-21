@@ -238,7 +238,8 @@ public:
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
         else
-            mMaterials.push_back(new FresnelMaterial());
+            mMaterials.push_back(
+                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
 
         // 7) sphere2 (blue)
         diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
@@ -250,7 +251,8 @@ public:
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
         else
-            mMaterials.push_back(new FresnelMaterial());
+            mMaterials.push_back(
+                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
 
         // 8) large sphere (white)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
@@ -262,7 +264,10 @@ public:
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
         else
-            mMaterials.push_back(new FresnelMaterial());
+            mMaterials.push_back(
+                //new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
+                //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
 
         delete mGeometry;
 
@@ -763,8 +768,8 @@ public:
         else if (IS_MASKED(aBoxMask, kSpheresFresnel))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "sph. ideal mirror";
-            acronym += "Sim";
+            name    += "sph. full fresnel conductor";
+            acronym += "Sffc";
         }
 
         if (IS_MASKED(aBoxMask, kWallsPhongDiffuse) ||
