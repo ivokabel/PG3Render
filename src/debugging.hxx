@@ -113,16 +113,16 @@ void pg3_exit();
     PG3_ASSERT(fabs((_val1) - (_val2)) <= (_radius))
 
 #define PG3_ASSERT_FLOAT_LESS_THAN(_val1, _val2) \
-    PG3_ASSERT((_val1) < (_val2))
+    PG3_ASSERT_MSG((_val1) < (_val2), "%.12f < %.12f", (_val1), (_val2))
 
 #define PG3_ASSERT_FLOAT_LARGER_THAN(_val1, _val2) \
-    PG3_ASSERT((_val1) > (_val2))
+    PG3_ASSERT_MSG((_val1) > (_val2), "%.12f > %.12f", (_val1), (_val2))
 
 #define PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(_val1, _val2) \
     PG3_ASSERT_MSG((_val1) <= (_val2), "%.12f <= %.12f", (_val1), (_val2))
 
 #define PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
-    PG3_ASSERT((_val1) >= (_val2))
+    PG3_ASSERT_MSG((_val1) >= (_val2), "%.12f >= %.12f", (_val1), (_val2))
 
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE
