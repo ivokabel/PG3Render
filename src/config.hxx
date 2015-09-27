@@ -136,11 +136,11 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
     // Fresnel testing: 19-21, 22, 23
-    Scene::kLightPoint   | GEOM_FULL_BOX | Scene::kSpheresFresnel | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_FULL_BOX | Scene::kSpheresFresnel | Scene::kWallsPhongDiffuse,
-    Scene::kLightCeiling | GEOM_FULL_BOX | Scene::kSpheresFresnel | Scene::kWallsPhongDiffuse,
-    Scene::kLightEnv     | GEOM_1SPHERE  | Scene::kSpheresFresnel,
-    Scene::kLightBox     | GEOM_FULL_BOX | Scene::kSpheresFresnel | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
+    Scene::kLightPoint   | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
+    Scene::kLightCeiling | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
+    Scene::kLightEnv     | GEOM_1SPHERE  | Scene::kSpheresFresnelConductor,
+    Scene::kLightBox     | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
 };
 
 std::string DefaultFilename(

@@ -116,23 +116,24 @@ public:
     enum BoxMask
     {
         // light source flags
-        kLightCeiling           = 0x0001,
-        kLightBox               = 0x0002,
-        kLightPoint             = 0x0004,
-        kLightEnv               = 0x0008,
+        kLightCeiling               = 0x0001,
+        kLightBox                   = 0x0002,
+        kLightPoint                 = 0x0004,
+        kLightEnv                   = 0x0008,
 
         // geometry flags
-        k2Spheres               = 0x0010,
-        k1Sphere                = 0x0020,
-        kWalls                  = 0x0040,
-        kFloor                  = 0x0080,
+        k2Spheres                   = 0x0010,
+        k1Sphere                    = 0x0020,
+        kWalls                      = 0x0040,
+        kFloor                      = 0x0080,
 
         // material flags
-        kSpheresPhongDiffuse    = 0x0100,
-        kSpheresPhongGlossy     = 0x0200,
-        kWallsPhongDiffuse      = 0x0400,
-        kWallsPhongGlossy       = 0x0800,
-        kSpheresFresnel         = 0x1000,
+        kSpheresPhongDiffuse        = 0x0100,
+        kSpheresPhongGlossy         = 0x0200,
+        kWallsPhongDiffuse          = 0x0400,
+        kWallsPhongGlossy           = 0x0800,
+        kSpheresFresnelConductor    = 0x1000,
+        //kSpheresFresnelDielectrics  = 0x2000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
@@ -231,7 +232,7 @@ public:
         // 6) sphere1 (yellow)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
         glossyReflectance.SetGreyAttenuation(0.7f);
-        if (!IS_MASKED(aBoxMask, kSpheresFresnel))
+        if (!IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 200,
@@ -244,7 +245,7 @@ public:
         // 7) sphere2 (blue)
         diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.7f);
-        if (!IS_MASKED(aBoxMask, kSpheresFresnel))
+        if (!IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 600,
@@ -257,7 +258,7 @@ public:
         // 8) large sphere (white)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        if (!IS_MASKED(aBoxMask, kSpheresFresnel))
+        if (!IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 90,
@@ -765,7 +766,7 @@ public:
                 acronym += "g";
             }
         }
-        else if (IS_MASKED(aBoxMask, kSpheresFresnel))
+        else if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. full fresnel conductor";
