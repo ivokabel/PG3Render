@@ -5,8 +5,8 @@
 ###################################################################################################
 
 SCENES_WITH_EM="6 7 8 9 10 11 12 13 15 16 17 18 22"
-SCENES=`seq 23 23`  #`seq 0 18`
-ITERATIONS_COUNT=100 #16
+SCENES=`seq 0 23`   #`seq 23 23`  #
+ITERATIONS_COUNT=32
 SHORT_OUTPUT=false
 
 TESTING_DIR="./testing"

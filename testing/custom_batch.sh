@@ -23,10 +23,19 @@ cd "$PG3RENDER_BASE_DIR"
 ###################################################################################################
 
 echo "$PG3RENDER"
-for SCENE in `seq 0 18`; do
-    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s $SCENE -i 10 -ot OldMaterialArch
-    echo
-done
+
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 20 -i 25000 -a pt -iic 20.0
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 21 -i 10000 -a pt
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 23 -i 40000 -a pt -iic 18.0
+
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -i 3000 -em 10
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 12 -i 5000 -em 10
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 22 -i 2000 -em 10
+
+#for EM in `seq 0 11`; do
+#    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 22 -i 1 -a pt -sb 1.0 -em $EM
+#    echo
+#done
 
 #SCENES="0 1 2 3 4 5 6 7"
 #for SCENE in $SCENES; do
