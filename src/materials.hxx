@@ -173,7 +173,6 @@ public:
         {
             // Diffuse, cosine-weighted sampling
             oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f());
-            PG3_ASSERT_VAL_NONNEGATIVE(oBrdfSample.mWil.z);
         }
         else
         {
@@ -303,7 +302,7 @@ public:
 class SmoothConductorMaterial : public AbstractMaterial
 {
 public:
-    SmoothConductorMaterial(float aInnerIor, float aOuterIor, float aAbsorbance /* k */)
+    SmoothConductorMaterial(float aInnerIor /* n */, float aOuterIor, float aAbsorbance /* k */)
     {
         if (!IsTiny(aOuterIor))
             mEta = aInnerIor / aOuterIor;
@@ -326,20 +325,6 @@ public:
         return result;
     }
 
-    virtual float GetPdfW(
-        const Vec3f &aWol,
-        const Vec3f &aWil
-        ) const override
-    {
-        // unreferenced params
-        aWil;
-        aWol;
-
-        // There is zero probability of hitting the only valid combination of 
-        // incoming and outgoing directions that transfers light
-        return 0.0f;
-    }
-
     // Generates a random BRDF sample.
     virtual void SampleBrdf(
         Rng         &aRng,
@@ -360,6 +345,20 @@ public:
         oBrdfSample.mSample.SetGreyAttenuation(reflectance);
     }
 
+    virtual float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const override
+    {
+        // unreferenced params
+        aWil;
+        aWol;
+
+        // There is zero probability of hitting the only valid combination of 
+        // incoming and outgoing directions that transfers light
+        return 0.0f;
+    }
+
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
     virtual float GetRRContinuationProb(
@@ -377,12 +376,129 @@ public:
 
     virtual bool IsReflectanceZero() const override
     {
-        // debug: ideal mirror
-        return false;
+        return false; // TODO
     }
 
 protected:
     float mEta;         // inner IOR / outer IOR
     float mAbsorbance;  // k, the imaginary part of the complex index of refraction
+};
+
+class MicrofacetGGXConductorMaterial : public AbstractMaterial
+{
+public:
+    MicrofacetGGXConductorMaterial(
+        float aRoughnessAlpha,
+        float aInnerIor /* n */,
+        float aOuterIor,
+        float aAbsorbance /* k */)
+    {
+        if (!IsTiny(aOuterIor))
+            mEta = aInnerIor / aOuterIor;
+        else
+            mEta = 1.0f;
+        mAbsorbance = aAbsorbance;
+
+        mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.01f, 1.0f);
+
+        // debug
+        //mDummyReflectance.SetGreyAttenuation(0.8f);
+    }
+
+    virtual SpectrumF EvalBrdf(
+        const Vec3f& aWil,
+        const Vec3f& aWol
+        ) const override
+    {
+        if (aWil.z <= 0.f && aWol.z <= 0.f)
+            return SpectrumF().MakeZero();
+
+        // Halfway vector (microfacet normal)
+        const Vec3f halfwayVec = HalfwayVector(aWil, aWol);
+
+        // Fresnel coefficient on the microsurface
+        const float cosThetaOM = Dot(halfwayVec, aWol);
+        const float fresnelReflectance = FresnelConductor(cosThetaOM, mEta, mAbsorbance);
+
+        // Microfacets distribution
+        float microFacetDistrVal = MicrofacetDistributionGgx(halfwayVec, mRoughnessAlpha);
+
+        // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
+        const float shadowing = MicrofacetMaskingFunctionGgx(aWil, halfwayVec, mRoughnessAlpha);
+        const float masking   = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, mRoughnessAlpha);
+        const float geometricalFactor = shadowing * masking;
+
+        // debug: lambert
+        //return mDummyReflectance * (fresnelReflectance / PI_F);
+
+        // Assemble the whole BRDF
+        const float cosThetaI = aWil.z;
+        const float cosThetaO = aWol.z;
+        const float brdfVal =
+              (fresnelReflectance * geometricalFactor * microFacetDistrVal)
+            / (4.0f * cosThetaI * cosThetaO);
+
+        // TODO: Color (from fresnel?)
+        SpectrumF result;
+        result.SetGreyAttenuation(brdfVal);
+        return result;
+    }
+
+    // Generates a random BRDF sample.
+    virtual void SampleBrdf(
+        Rng         &aRng,
+        const Vec3f &aWol,
+        BRDFSample  &oBrdfSample
+        ) const override
+    {
+        aWol; // unreferenced params
+        
+        oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW); // debug: cosine-weighted sampling
+        oBrdfSample.mCompProbability = 1.f;
+
+        const float thetaCosIn = oBrdfSample.mWil.z;
+        if (thetaCosIn > 0.0f)
+            // Above surface: Evaluate the whole BRDF
+            oBrdfSample.mSample =
+                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+        else
+            // Below surface: The sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
+    }
+
+    virtual float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const override
+    {
+        aWil; aWol; // unreferenced params
+
+        return CosHemispherePdfW(aWil); // debug: cosine-weighted sampling
+    }
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        aWol; // unreferenced params
+
+        //return mDummyReflectance.Max(); // debug
+        return 1.0f; // debug
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        //return mDummyReflectance.IsZero(); // debug
+        return false; // debug
+    }
+
+protected:
+    float           mEta;               // inner IOR / outer IOR
+    float           mAbsorbance;        // k, the imaginary part of the complex index of refraction
+    float           mRoughnessAlpha;    // GGX isotropic roughness
+
+    //SpectrumF       mDummyReflectance;
 };
 

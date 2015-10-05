@@ -135,12 +135,13 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Fresnel testing: 19-21, 22, 23
+    // Material testing: 19-21, 22, 23-24
     Scene::kLightPoint   | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightCeiling | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
-    Scene::kLightEnv     | GEOM_1SPHERE  | Scene::kSpheresFresnelConductor,
     Scene::kLightBox     | GEOM_FULL_BOX | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
+    Scene::kLightEnv     | GEOM_1SPHERE  | Scene::kSpheresFresnelConductor,
+    Scene::kLightEnv     | GEOM_1SPHERE  | Scene::kSpheresMicrofacetGGXConductor,
 };
 
 std::string DefaultFilename(

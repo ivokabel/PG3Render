@@ -116,24 +116,25 @@ public:
     enum BoxMask
     {
         // light source flags
-        kLightCeiling               = 0x0001,
-        kLightBox                   = 0x0002,
-        kLightPoint                 = 0x0004,
-        kLightEnv                   = 0x0008,
+        kLightCeiling                   = 0x0001,
+        kLightBox                       = 0x0002,
+        kLightPoint                     = 0x0004,
+        kLightEnv                       = 0x0008,
 
         // geometry flags
-        k2Spheres                   = 0x0010,
-        k1Sphere                    = 0x0020,
-        kWalls                      = 0x0040,
-        kFloor                      = 0x0080,
+        k2Spheres                       = 0x0010,
+        k1Sphere                        = 0x0020,
+        kWalls                          = 0x0040,
+        kFloor                          = 0x0080,
 
         // material flags
-        kSpheresPhongDiffuse        = 0x0100,
-        kSpheresPhongGlossy         = 0x0200,
-        kWallsPhongDiffuse          = 0x0400,
-        kWallsPhongGlossy           = 0x0800,
-        kSpheresFresnelConductor    = 0x1000,
-        //kSpheresFresnelDielectrics  = 0x2000,
+        kSpheresPhongDiffuse            = 0x0100,
+        kSpheresPhongGlossy             = 0x0200,
+        kWallsPhongDiffuse              = 0x0400,
+        kWallsPhongGlossy               = 0x0800,
+        kSpheresFresnelConductor        = 0x1000,
+        //kSpheresFresnelDielectrics    = 0x2000,
+        kSpheresMicrofacetGGXConductor  = 0x4000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
@@ -232,43 +233,52 @@ public:
         // 6) sphere1 (yellow)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
         glossyReflectance.SetGreyAttenuation(0.7f);
-        if (!IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+            mMaterials.push_back(
+                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+            mMaterials.push_back(
+                new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+        else
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 200,
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
-        else
-            mMaterials.push_back(
-                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
 
         // 7) sphere2 (blue)
         diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.7f);
-        if (!IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+            mMaterials.push_back(
+                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
+        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+            mMaterials.push_back(
+                new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+        else
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 600,
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
-        else
-            mMaterials.push_back(
-                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
 
         // 8) large sphere (white)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
         glossyReflectance.SetGreyAttenuation(0.5f);
-        if (!IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+            mMaterials.push_back(
+                //new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
+                //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
+        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+            mMaterials.push_back(
+                new MicrofacetGGXConductorMaterial(0.30f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+        else
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 90,
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
-        else
-            mMaterials.push_back(
-                //new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
-                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
-                //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
 
         delete mGeometry;
 
@@ -771,6 +781,12 @@ public:
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. full fresnel conductor";
             acronym += "Sffc";
+        }
+        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+        {
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "sph. microfacet ggx conductor";
+            acronym += "Smgc";
         }
 
         if (IS_MASKED(aBoxMask, kWallsPhongDiffuse) ||

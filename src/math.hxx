@@ -269,8 +269,9 @@ public:
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
     { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
-    float    LenSqr() const   { return Dot(*this, *this);   }
-    float    Length() const   { return std::sqrt(LenSqr()); }
+    float           LenSqr() const  { return Dot(*this, *this);   }
+    float           Length() const  { return std::sqrt(LenSqr()); }
+    Vec3Base<T>&    Normalize()     { this->operator/=(Length()); return *this; }
 
 public:
 

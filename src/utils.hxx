@@ -23,6 +23,10 @@
 
 #define IS_MASKED(val, mask)   (((val) & (mask)) == (mask))
 
+//////////////////////////////////////////////////////////////////////////
+// Fresnel-related routines
+//////////////////////////////////////////////////////////////////////////
+
 float FresnelDielectric(
     float aCosThetaI,
     float aEta)         // internal IOR / external IOR
@@ -157,14 +161,49 @@ float FresnelConductor(
     return reflectance;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Geometry routines
+//////////////////////////////////////////////////////////////////////////
+
 // reflect vector through (0,0,1)
 Vec3f ReflectLocal(const Vec3f& aVector)
 {
     return Vec3f(-aVector.x, -aVector.y, aVector.z);
 }
 
+// Halfway vector, microfacet normal
+// Incoming/outgoing directions on different sides of the macro surface are allowed.
+Vec3f HalfwayVector(
+    const Vec3f& aWil,
+    const Vec3f& aWol
+    )
+{
+    Vec3f halfwayVec = aWil + aWol;
+    
+    const float length = halfwayVec.Length();
+    if (IsTiny(length))
+        halfwayVec = Vec3f(0.0f, 0.0f, 1.0f); // Geometrical normal
+    else
+        halfwayVec /= length; // Normalize using the already computed length
+
+    return halfwayVec;
+}
+
+float TanTheta2(const Vec3f & aVectorLocal)
+{
+    PG3_ASSERT_VAL_NONNEGATIVE(aVectorLocal.z);
+
+    const float cosTheta2 = aVectorLocal.z * aVectorLocal.z;
+    const float sinTheta2 = 1.f - cosTheta2;
+    if (sinTheta2 <= 0.0f)
+        return 0.0f;
+    else
+        return sinTheta2 / cosTheta2;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Cosine lobe hemisphere sampling
+//////////////////////////////////////////////////////////////////////////
 
 Vec3f SamplePowerCosHemisphereW(
     const Vec2f  &aSamples,
@@ -205,6 +244,7 @@ float PowerCosHemispherePdfW(
 
 //////////////////////////////////////////////////////////////////////////
 // Disc sampling
+//////////////////////////////////////////////////////////////////////////
 
 Vec2f SampleConcentricDisc(
     const Vec2f &aSamples)
@@ -275,6 +315,8 @@ Vec3f SampleCosHemisphereW(
     if (oPdfW)
         *oPdfW = ret.z * INV_PI_F;
 
+    PG3_ASSERT_VAL_NONNEGATIVE(ret.z);
+
     return ret;
 }
 
@@ -302,6 +344,7 @@ Vec2f SampleUniformTriangle(const Vec2f &aSamples)
 
 //////////////////////////////////////////////////////////////////////////
 // Sphere sampling
+//////////////////////////////////////////////////////////////////////////
 
 Vec3f SampleUniformSphereW(
     const Vec2f  &aSamples,
@@ -333,6 +376,7 @@ float UniformSpherePdfW()
 // Utilities for converting PDF between Area (A) and Solid angle (W)
 // WtoA = PdfW * cosine / distance_squared
 // AtoW = PdfA * distance_squared / cosine
+//////////////////////////////////////////////////////////////////////////
 
 float PdfWtoA(
     const float aPdfW,
@@ -352,7 +396,52 @@ float PdfAtoW(
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Microfacets
+//////////////////////////////////////////////////////////////////////////
+
+float MicrofacetDistributionGgx(
+    const Vec3f &aWml,              // microfacet normal - halfway vector
+    const float  aRoughnessAlpha)
+{
+    PG3_ASSERT_VAL_NONNEGATIVE(aRoughnessAlpha);
+
+    if (aWml.z <= 0.f)
+        return 0.0f;
+
+    const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
+    const float cosTheta2 = aWml.z * aWml.z;
+    const float tanTheta2 = TanTheta2(aWml);
+    const float temp1 = roughnessAlpha2 + tanTheta2;
+    const float temp2 = cosTheta2 * temp1;
+
+    const float result = roughnessAlpha2 / (PI_F * temp2 * temp2);
+
+    PG3_ASSERT_FLOAT_LARGER_THAN(result, 0.0f);
+
+    return result;
+}
+
+float MicrofacetMaskingFunctionGgx(
+    const Vec3f &aWvl,              // the direction to compute masking for (incoming or outgoing)
+    const Vec3f &aWml,              // microfacet normal - halfway vector
+    const float  aRoughnessAlpha)
+{
+    PG3_ASSERT_VAL_NONNEGATIVE(aRoughnessAlpha);
+
+    if ((aWvl.z <= 0) || (aWml.z <= 0))
+        return 0.0f;
+
+    const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
+    const float tanTheta2 = TanTheta2(aWvl);
+    const float root = std::sqrt(1.0f + roughnessAlpha2 * tanTheta2); // TODO: Optimize sqrt
+
+    return 2.0f / (1.0f + root);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Others
+//////////////////////////////////////////////////////////////////////////
 
 void SecondsToHumanReadable(const float aSeconds, std::string &oResult)
 {
