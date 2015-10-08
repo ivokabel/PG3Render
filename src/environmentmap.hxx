@@ -367,7 +367,7 @@ private:
 
         const uint32_t height = aImage->Height();
 
-        PG3_ASSERT_FLOAT_LESS_THAN(aSegmY, height);
+        PG3_ASSERT_INTEGER_LESS_THAN(aSegmY, height);
 
         const float result = sinf(PI_F * (aSegmY + 0.5f) / height);
 

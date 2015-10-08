@@ -272,7 +272,7 @@ public:
                 //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.30f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(0.15f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
             mMaterials.push_back(
                 new PhongMaterial(

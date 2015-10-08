@@ -481,7 +481,7 @@ public:
         const uint32_t      aStrategy2Count
         )
     {
-        PG3_ASSERT_VAL_POSITIVE(aStrategy1Count);
+        PG3_ASSERT_INTEGER_POSITIVE(aStrategy1Count);
 
         const float aStrategy1Sum = aStrategy1Count * aStrategy1Pdf;
         const float aStrategy2Sum = aStrategy2Count * aStrategy2Pdf;

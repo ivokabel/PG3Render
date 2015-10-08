@@ -126,7 +126,7 @@ public:
         const Vec3f& aWol
         ) const override
     {
-        if (aWil.z <= 0.f && aWol.z <= 0.f)
+        if (aWil.z <= 0.f || aWol.z <= 0.f)
             return SpectrumF().MakeZero();
 
         const SpectrumF diffuseComponent = EvalDiffuseComponent();
@@ -400,9 +400,6 @@ public:
         mAbsorbance = aAbsorbance;
 
         mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.01f, 1.0f);
-
-        // debug
-        //mDummyReflectance.SetGreyAttenuation(0.8f);
     }
 
     virtual SpectrumF EvalBrdf(
@@ -410,8 +407,12 @@ public:
         const Vec3f& aWol
         ) const override
     {
-        if (aWil.z <= 0.f && aWol.z <= 0.f)
+        if (   aWil.z <= 0.f
+            || aWol.z <= 0.f
+            || IsTiny(4.0f * aWil.z * aWol.z)) // BRDF denominator
+        {
             return SpectrumF().MakeZero();
+        }
 
         // Halfway vector (microfacet normal)
         const Vec3f halfwayVec = HalfwayVector(aWil, aWol);
@@ -428,15 +429,16 @@ public:
         const float masking   = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, mRoughnessAlpha);
         const float geometricalFactor = shadowing * masking;
 
-        // debug: lambert
-        //return mDummyReflectance * (fresnelReflectance / PI_F);
+        PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
 
         // Assemble the whole BRDF
         const float cosThetaI = aWil.z;
         const float cosThetaO = aWol.z;
         const float brdfVal =
-              (fresnelReflectance * geometricalFactor * microFacetDistrVal)
-            / (4.0f * cosThetaI * cosThetaO);
+                (fresnelReflectance * geometricalFactor * microFacetDistrVal)
+              / (4.0f * cosThetaI * cosThetaO);
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
 
         // TODO: Color (from fresnel?)
         SpectrumF result;
@@ -471,7 +473,7 @@ public:
         const Vec3f &aWil
         ) const override
     {
-        aWil; aWol; // unreferenced params
+        aWol; // unreferenced params
 
         return CosHemispherePdfW(aWil); // debug: cosine-weighted sampling
     }
@@ -484,13 +486,11 @@ public:
     {
         aWol; // unreferenced params
 
-        //return mDummyReflectance.Max(); // debug
         return 1.0f; // debug
     }
 
     virtual bool IsReflectanceZero() const override
     {
-        //return mDummyReflectance.IsZero(); // debug
         return false; // debug
     }
 
@@ -498,7 +498,5 @@ protected:
     float           mEta;               // inner IOR / outer IOR
     float           mAbsorbance;        // k, the imaginary part of the complex index of refraction
     float           mRoughnessAlpha;    // GGX isotropic roughness
-
-    //SpectrumF       mDummyReflectance;
 };
 

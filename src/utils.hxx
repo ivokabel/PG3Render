@@ -191,7 +191,7 @@ Vec3f HalfwayVector(
 
 float TanTheta2(const Vec3f & aVectorLocal)
 {
-    PG3_ASSERT_VAL_NONNEGATIVE(aVectorLocal.z);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(aVectorLocal.z);
 
     const float cosTheta2 = aVectorLocal.z * aVectorLocal.z;
     const float sinTheta2 = 1.f - cosTheta2;
@@ -315,7 +315,7 @@ Vec3f SampleCosHemisphereW(
     if (oPdfW)
         *oPdfW = ret.z * INV_PI_F;
 
-    PG3_ASSERT_VAL_NONNEGATIVE(ret.z);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(ret.z);
 
     return ret;
 }
@@ -403,7 +403,7 @@ float MicrofacetDistributionGgx(
     const Vec3f &aWml,              // microfacet normal - halfway vector
     const float  aRoughnessAlpha)
 {
-    PG3_ASSERT_VAL_NONNEGATIVE(aRoughnessAlpha);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
     if (aWml.z <= 0.f)
         return 0.0f;
@@ -426,7 +426,7 @@ float MicrofacetMaskingFunctionGgx(
     const Vec3f &aWml,              // microfacet normal - halfway vector
     const float  aRoughnessAlpha)
 {
-    PG3_ASSERT_VAL_NONNEGATIVE(aRoughnessAlpha);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
     if ((aWvl.z <= 0) || (aWml.z <= 0))
         return 0.0f;
@@ -435,7 +435,11 @@ float MicrofacetMaskingFunctionGgx(
     const float tanTheta2 = TanTheta2(aWvl);
     const float root = std::sqrt(1.0f + roughnessAlpha2 * tanTheta2); // TODO: Optimize sqrt
 
-    return 2.0f / (1.0f + root);
+    const float result = 2.0f / (1.0f + root);
+
+    PG3_ASSERT_FLOAT_IN_RANGE(result, 0.0f, 1.0f);
+
+    return result;
 }
 
 

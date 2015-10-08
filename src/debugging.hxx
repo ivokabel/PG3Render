@@ -94,35 +94,74 @@ void pg3_exit();
 #endif
 
 
+// Float asserts
+
 #define PG3_ASSERT_VALID_FLOAT(_val) \
-    PG3_ASSERT(!std::isnan(_val))
+    PG3_ASSERT(!std::isnan(_val)); \
+    PG3_ASSERT( std::isfinite(_val))
 
-#define PG3_ASSERT_VAL_NONNEGATIVE(_val) \
-    PG3_ASSERT((_val) >= 0)
+#define PG3_ASSERT_FLOAT_NONNEGATIVE(_val) \
+    PG3_ASSERT_VALID_FLOAT(_val); \
+    PG3_ASSERT((_val) >= 0.0f)
 
-#define PG3_ASSERT_VAL_POSITIVE(_val) \
-    PG3_ASSERT((_val) > 0)
+#define PG3_ASSERT_FLOAT_POSITIVE(_val) \
+    PG3_ASSERT_VALID_FLOAT(_val); \
+    PG3_ASSERT((_val) > 0.0f)
 
 #define PG3_ASSERT_FLOAT_IN_RANGE(_val, _low, _up) \
+    PG3_ASSERT_VALID_FLOAT(_val); \
+    PG3_ASSERT_VALID_FLOAT(_low); \
+    PG3_ASSERT_VALID_FLOAT(_up); \
     PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%.12f <= %.12f <= %.12f", (_low), (_val), (_up))
+
+#define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius) \
+    PG3_ASSERT_VALID_FLOAT(_val1); \
+    PG3_ASSERT_VALID_FLOAT(_val2); \
+    PG3_ASSERT_VALID_FLOAT(_radius); \
+    PG3_ASSERT(fabs((_val1) - (_val2)) <= (_radius))
+
+#define PG3_ASSERT_FLOAT_LESS_THAN(_val1, _val2) \
+    PG3_ASSERT_VALID_FLOAT(_val1); \
+    PG3_ASSERT_VALID_FLOAT(_val2); \
+    PG3_ASSERT_MSG((_val1) < (_val2), "%.12f < %.12f", (_val1), (_val2))
+
+#define PG3_ASSERT_FLOAT_LARGER_THAN(_val1, _val2) \
+    PG3_ASSERT_VALID_FLOAT(_val1); \
+    PG3_ASSERT_VALID_FLOAT(_val2); \
+    PG3_ASSERT_MSG((_val1) > (_val2), "%.12f > %.12f", (_val1), (_val2))
+
+#define PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(_val1, _val2) \
+    PG3_ASSERT_VALID_FLOAT(_val1); \
+    PG3_ASSERT_VALID_FLOAT(_val2); \
+    PG3_ASSERT_MSG((_val1) <= (_val2), "%.12f <= %.12f", (_val1), (_val2))
+
+#define PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
+    PG3_ASSERT_VALID_FLOAT(_val1); \
+    PG3_ASSERT_VALID_FLOAT(_val2); \
+    PG3_ASSERT_MSG((_val1) >= (_val2), "%.12f >= %.12f", (_val1), (_val2))
+
+// Integer asserts
+
+#define PG3_ASSERT_INTEGER_NONNEGATIVE(_val) \
+    PG3_ASSERT((_val) >= 0)
+
+#define PG3_ASSERT_INTEGER_POSITIVE(_val) \
+    PG3_ASSERT((_val) > 0)
 
 #define PG3_ASSERT_INTEGER_IN_RANGE(_val, _low, _up) \
     PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%d <= %d <= %d", (_low), (_val), (_up))
 
-#define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius) \
-    PG3_ASSERT(fabs((_val1) - (_val2)) <= (_radius))
+#define PG3_ASSERT_INTEGER_LESS_THAN(_val1, _val2) \
+    PG3_ASSERT_MSG((_val1) < (_val2), "%d < %d", (_val1), (_val2))
 
-#define PG3_ASSERT_FLOAT_LESS_THAN(_val1, _val2) \
-    PG3_ASSERT_MSG((_val1) < (_val2), "%.12f < %.12f", (_val1), (_val2))
+#define PG3_ASSERT_INTEGER_LARGER_THAN(_val1, _val2) \
+    PG3_ASSERT_MSG((_val1) > (_val2), "%d > %d", (_val1), (_val2))
 
-#define PG3_ASSERT_FLOAT_LARGER_THAN(_val1, _val2) \
-    PG3_ASSERT_MSG((_val1) > (_val2), "%.12f > %.12f", (_val1), (_val2))
+#define PG3_ASSERT_INTEGER_LESS_THAN_OR_EQUAL_TO(_val1, _val2) \
+    PG3_ASSERT_MSG((_val1) <= (_val2), "%d <= %d", (_val1), (_val2))
 
-#define PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(_val1, _val2) \
-    PG3_ASSERT_MSG((_val1) <= (_val2), "%.12f <= %.12f", (_val1), (_val2))
-
-#define PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
-    PG3_ASSERT_MSG((_val1) >= (_val2), "%.12f >= %.12f", (_val1), (_val2))
+#define PG3_ASSERT_INTEGER_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
+    PG3_ASSERT_MSG((_val1) >= (_val2), "%d >= %d", (_val1), (_val2))
 
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE

@@ -53,7 +53,7 @@ public:
         mCdf[0] = 0.;
         for (uint32_t i = 1; i < mCount + 1; ++i)
         {
-            PG3_ASSERT_VAL_NONNEGATIVE(aFunc[i - 1]);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(aFunc[i - 1]);
             mCdf[i] = mCdf[i - 1] + aFunc[i - 1] / mCount; // 1/mCount = size of a segment
         }
 
