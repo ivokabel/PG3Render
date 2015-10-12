@@ -165,10 +165,26 @@ float FresnelConductor(
 // Geometry routines
 //////////////////////////////////////////////////////////////////////////
 
-// reflect vector through (0,0,1)
+// Reflect vector through (0,0,1)
 Vec3f ReflectLocal(const Vec3f& aVector)
 {
     return Vec3f(-aVector.x, -aVector.y, aVector.z);
+}
+
+// Reflect vector through given normal.
+// Both vectors are expected to be normalized.
+// Returns whether the input/output direction is in the half-space defined by the normal.
+bool Reflect(const Vec3f& aVectorIn, const Vec3f& aNormal, Vec3f& vectorOut)
+{
+    PG3_ASSERT_FLOAT_EQUAL(aVectorIn.LenSqr(), 1.0f, 0.0001f);
+    PG3_ASSERT_FLOAT_EQUAL(aNormal.LenSqr(),   1.0f, 0.0001f);
+
+    const float dot = Dot(aVectorIn, aNormal); // projection of Wo on normal
+    vectorOut = (2.0f * dot) * aNormal - aVectorIn;
+
+    PG3_ASSERT_FLOAT_EQUAL(vectorOut.LenSqr(), 1.0f, 0.0001f);
+
+    return dot > 0.0f; // Are we above the surface?
 }
 
 // Halfway vector, microfacet normal
@@ -442,6 +458,51 @@ float MicrofacetMaskingFunctionGgx(
     return result;
 }
 
+// Microfacet sampling
+bool SampleGgxMicrofacets(
+    const Vec3f &aWol,
+    const float  aRoughnessAlpha,
+    const Vec2f &aSample,
+          Vec3f &oReflectDir)
+{
+    // Sample microfacet direction (D(omega_m) * cos(theta_m))
+    const float tmp1 =
+          (aRoughnessAlpha * std::sqrt(aSample.x))
+        / std::sqrt(1.0f - aSample.x);
+    const float thetaM = std::atan(tmp1);
+    const float phiM = 2 * PI_F * aSample.y;
+
+    const float cosThetaM = std::cos(thetaM);
+    const float sinThetaM = std::sin(thetaM);
+    const float cosPhiM = std::cos(phiM);
+    const float sinPhiM = std::sin(phiM);
+    const Vec3f microfacetDir(
+        sinThetaM * sinPhiM,
+        sinThetaM * cosPhiM,
+        cosThetaM);
+
+    // Reflect from the microfacet
+    return Reflect(aWol, microfacetDir, oReflectDir);
+}
+
+// Microfacet sampling PDF
+float GgxMicrofacetSamplingPdf(
+    const Vec3f &aWol,
+    const Vec3f &aWil,
+    const float  aRoughnessAlpha)
+{
+    // Distribution value
+    const Vec3f halfwayVec = HalfwayVector(aWil, aWol);
+    const float microFacetDistrVal = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
+    const float microfacetPdf = microFacetDistrVal * halfwayVec.z;
+
+    // Jacobian of the reflection transform
+    const float cosThetaOM = Dot(halfwayVec, aWol);
+    const float cosThetaOMClamped = std::max(cosThetaOM, 0.000001f);
+    const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
+
+    return microfacetPdf * transfJacobian;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Others

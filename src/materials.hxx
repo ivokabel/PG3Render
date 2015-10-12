@@ -1,5 +1,6 @@
 #pragma once 
 
+#include "hardsettings.hxx"
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
@@ -431,7 +432,7 @@ public:
 
         PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
 
-        // Assemble the whole BRDF
+        // The whole BRDF
         const float cosThetaI = aWil.z;
         const float cosThetaO = aWol.z;
         const float brdfVal =
@@ -454,9 +455,11 @@ public:
         ) const override
     {
         aWol; // unreferenced params
-        
-        oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW); // debug: cosine-weighted sampling
-        oBrdfSample.mCompProbability = 1.f;
+
+#if defined MATERIAL_GGX_SAMPLING_COS
+
+        oBrdfSample.mWil =
+            SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW); // debug: cosine-weighted sampling
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if (thetaCosIn > 0.0f)
@@ -466,6 +469,30 @@ public:
         else
             // Below surface: The sample is valid, it just has zero contribution
             oBrdfSample.mSample.MakeZero();
+
+#elif defined MATERIAL_GGX_SAMPLING_DISTRIBUTION
+
+        // Distribution sampling
+        bool isAboveMicrofacet =
+            SampleGgxMicrofacets(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
+
+        // TODO: Re-use already evaluated data? half-way vector, distribution value?
+        oBrdfSample.mPdfW = MicrofacetGGXConductorMaterial::GetPdfW(aWol, oBrdfSample.mWil);
+
+        const float thetaCosIn = oBrdfSample.mWil.z;
+        if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
+            // Above surface: Evaluate the whole BRDF
+            oBrdfSample.mSample =
+                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+        else
+            // Below surface: The sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
+
+#else
+#error Undefined GGX sampling method!
+#endif
+
+        oBrdfSample.mCompProbability = 1.f;
     }
 
     virtual float GetPdfW(
@@ -473,9 +500,21 @@ public:
         const Vec3f &aWil
         ) const override
     {
-        aWol; // unreferenced params
+        if (aWil.z < 0.f || aWol.z < 0.f)
+            return 0.0f;
 
+#if defined MATERIAL_GGX_SAMPLING_COS
+
+        aWol; // unreferenced params
         return CosHemispherePdfW(aWil); // debug: cosine-weighted sampling
+
+#elif defined MATERIAL_GGX_SAMPLING_DISTRIBUTION
+
+        return GgxMicrofacetSamplingPdf(aWol, aWil, mRoughnessAlpha);
+
+#else
+#error Undefined GGX sampling method!
+#endif
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
