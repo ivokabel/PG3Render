@@ -88,8 +88,8 @@ void pg3_exit();
 
 #else
 
-    #define PG3_ASSERT
-    #define PG3_ASSERT_MSG
+    #define PG3_ASSERT(...)
+    #define PG3_ASSERT_MSG(...)
 
 #endif
 
