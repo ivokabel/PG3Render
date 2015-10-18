@@ -267,12 +267,12 @@ public:
         glossyReflectance.SetGreyAttenuation(0.5f);
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
-                //new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
-                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
+                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                //new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
                 //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(0.200f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
             mMaterials.push_back(
                 new PhongMaterial(

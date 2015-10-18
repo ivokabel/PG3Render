@@ -400,7 +400,7 @@ public:
             mEta = 1.0f;
         mAbsorbance = aAbsorbance;
 
-        mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.01f, 1.0f);
+        mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.001f, 1.0f);
     }
 
     virtual SpectrumF EvalBrdf(
