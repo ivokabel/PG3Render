@@ -459,7 +459,7 @@ float MicrofacetMaskingFunctionGgx(
 }
 
 // Microfacet sampling
-bool SampleGgxMicrofacets(
+bool SampleGgxNormals(
     const Vec3f &aWol,
     const float  aRoughnessAlpha,
     const Vec2f &aSample,

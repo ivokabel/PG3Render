@@ -71,6 +71,12 @@ T SafeSqrt(const T& a)
     return std::sqrt(std::max<T>(0, a));
 }
 
+template<typename T>
+T SignNum(const T& a)
+{
+    return std::signbit(a) ? T(-1) : T(1);
+}
+
 float FmodX(float x, float y)
 {
     float result = fmod(x, y);
