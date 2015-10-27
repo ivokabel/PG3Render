@@ -520,11 +520,14 @@ public:
                 if (aThetaI < 0.0001f)
                 {
                     // Normal incidence - simple hemispherical sampling?
-                    const float radius  = SafeSqrt(aSample.x / (1 - aSample.x));
-                    const float phi     = 2 * PI_F * aSample.y;
-                    const float sinPhi  = std::sin(phi);
-                    const float cosPhi  = std::cos(phi);
+                    const float sampleXClamped  = std::min(aSample.x, 0.9999f);
+                    const float radius          = SafeSqrt(sampleXClamped / (1 - sampleXClamped));
+                    const float phi             = 2 * PI_F * aSample.y;
+                    const float sinPhi          = std::sin(phi);
+                    const float cosPhi          = std::cos(phi);
                     aSlope = Vec2f(radius * cosPhi, radius * sinPhi);
+
+                    PG3_ASSERT_VEC2F_VALID(aSlope);
                 }
                 else
                 {
@@ -537,14 +540,16 @@ public:
 
                     // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
                     float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
-                    if (std::abs(A) == 1.0f) //???
-                        A -= SignNum(A) * 1e-4f;
+                    if (std::abs(A) == 1.0f)
+                        A -= SignNum(A) * 1e-4f; // avoid division by zero later
                     const float B = tanThetaI;
                     const float tmpFract = 1.0f / (A * A - 1.0f);
                     const float D = SafeSqrt(B * B * tmpFract * tmpFract - (A * A - B * B) * tmpFract);
                     const float slopeX1 = B * tmpFract - D;
                     const float slopeX2 = B * tmpFract + D;
                     aSlope.x = (A < 0.0f || slopeX2 > (1.0f / tanThetaI)) ? slopeX1 : slopeX2;
+
+                    PG3_ASSERT_FLOAT_VALID(aSlope.x);
 
                     // Sample y dimension
                     // Using conditional PDF; however, CDF is not directly invertible, so we use rational fit of CDF^-1.
@@ -571,8 +576,12 @@ public:
                              (float)0.169507819808272 - (float)0.397203533833404) - 
                              (float)0.232500544458471) + (float)1) - (float)0.539825872510702);
                     aSlope.y = ySign * z * std::sqrt(1.0f + aSlope.x * aSlope.x);
+
+                    PG3_ASSERT_FLOAT_VALID(aSlope.y);
                 }
             }
+
+            PG3_ASSERT_VEC2F_VALID(slopeStretch);
 
             // Rotate
             slopeStretch = Vec2f(
@@ -584,12 +593,17 @@ public:
                 slopeStretch.x * mRoughnessAlpha,
                 slopeStretch.y * mRoughnessAlpha);
 
+            PG3_ASSERT_VEC2F_VALID(slope);
+
             // Compute normal
             const float slopeLengthInv = 1.0f / Vec3f(slope.x, slope.y, 1.0f).Length();
             microfacetDir = Vec3f(
                 -slope.x * slopeLengthInv,
                 -slope.y * slopeLengthInv,
                 slopeLengthInv);
+
+            PG3_ASSERT_FLOAT_VALID(slopeLengthInv);
+            PG3_ASSERT_VEC3F_VALID(microfacetDir);
         }
 
         // Reflect from the microfacet
@@ -624,13 +638,6 @@ public:
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         oBrdfSample.mPdfW = MicrofacetGGXConductorMaterial::GetPdfW(aWol, oBrdfSample.mWil);
-
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        // Sanity check: sample weight have to be equal to G1(wi, wm)
-        //const Vec3f halfwayVec = HalfwayVector(oBrdfSample.mWil, aWol);
-        //const float shadowing = MicrofacetMaskingFunctionGgx(oBrdfSample.mWil, halfwayVec, mRoughnessAlpha);
-        //const float weight = oBrdfSample.mSample.x / oBrdfSample.mPdfW;
-        ///////////////////////////////////////////////////////////////////////////////////////////
 
 #else
 #error Undefined GGX sampling method!
@@ -675,20 +682,21 @@ public:
             const float distrVal    = MicrofacetDistributionGgx(halfwayVec, mRoughnessAlpha);
             const float masking     = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, mRoughnessAlpha);
             const float cosThetaOM  = Dot(halfwayVec, aWol);
-            const float cosThetaO   = aWol.z;
+            const float cosThetaO   = std::max(aWol.z, 0.00001f);
 
-            const float microfacetPdf = (masking * cosThetaOM * distrVal) / cosThetaO;
-
-            // Jacobian of the reflection transform
-            const float cosThetaOMClamped = std::max(cosThetaOM, 0.000001f);
-            const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
+            const float microfacetPdf = (masking * std::abs(cosThetaOM) * distrVal) / cosThetaO;
 
             PG3_ASSERT_FLOAT_NONNEGATIVE(microfacetPdf);
+
+            // Jacobian of the reflection transform
+            const float cosThetaOMClamped = std::max(cosThetaOM, 0.00001f);
+            const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
+
             PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
 
             const float pdf = microfacetPdf * transfJacobian;
 
-            PG3_ASSERT_VALID_FLOAT(pdf);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(pdf);
 
             return pdf;
         }

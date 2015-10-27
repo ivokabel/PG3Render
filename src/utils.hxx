@@ -432,7 +432,7 @@ float MicrofacetDistributionGgx(
 
     const float result = roughnessAlpha2 / (PI_F * temp2 * temp2);
 
-    PG3_ASSERT_FLOAT_LARGER_THAN(result, 0.0f);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(result);
 
     return result;
 }
