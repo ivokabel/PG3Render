@@ -161,6 +161,18 @@ float FresnelConductor(
     return reflectance;
 }
 
+// Jacobian of the reflection transform
+float MicrofacetReflectionJacobian(const Vec3f &aWil, const Vec3f &aMicrofacetNormal)
+{
+    const float cosThetaOM = Dot(aMicrofacetNormal, aWil);
+    const float cosThetaOMClamped = std::max(cosThetaOM, 0.000001f);
+    const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
+
+    PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
+
+    return transfJacobian;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Geometry routines
 //////////////////////////////////////////////////////////////////////////
@@ -176,13 +188,13 @@ Vec3f ReflectLocal(const Vec3f& aVector)
 // Returns whether the input/output direction is in the half-space defined by the normal.
 bool Reflect(const Vec3f& aVectorIn, const Vec3f& aNormal, Vec3f& vectorOut)
 {
-    PG3_ASSERT_FLOAT_EQUAL(aVectorIn.LenSqr(), 1.0f, 0.0001f);
-    PG3_ASSERT_FLOAT_EQUAL(aNormal.LenSqr(),   1.0f, 0.0001f);
+    PG3_ASSERT_VEC3F_NORMALIZED(aVectorIn);
+    PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
 
     const float dot = Dot(aVectorIn, aNormal); // projection of Wo on normal
     vectorOut = (2.0f * dot) * aNormal - aVectorIn;
 
-    PG3_ASSERT_FLOAT_EQUAL(vectorOut.LenSqr(), 1.0f, 0.0001f);
+    PG3_ASSERT_VEC3F_NORMALIZED(vectorOut);
 
     return dot > 0.0f; // Are we above the surface?
 }
@@ -416,17 +428,17 @@ float PdfAtoW(
 //////////////////////////////////////////////////////////////////////////
 
 float MicrofacetDistributionGgx(
-    const Vec3f &aWml,              // microfacet normal - halfway vector
+    const Vec3f &aMicrofacetNormal,
     const float  aRoughnessAlpha)
 {
     PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
-    if (aWml.z <= 0.f)
+    if (aMicrofacetNormal.z <= 0.f)
         return 0.0f;
 
     const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
-    const float cosTheta2 = aWml.z * aWml.z;
-    const float tanTheta2 = TanTheta2(aWml);
+    const float cosTheta2 = aMicrofacetNormal.z * aMicrofacetNormal.z;
+    const float tanTheta2 = TanTheta2(aMicrofacetNormal);
     const float temp1 = roughnessAlpha2 + tanTheta2;
     const float temp2 = cosTheta2 * temp1;
 
@@ -438,13 +450,13 @@ float MicrofacetDistributionGgx(
 }
 
 float MicrofacetMaskingFunctionGgx(
-    const Vec3f &aWvl,              // the direction to compute masking for (incoming or outgoing)
-    const Vec3f &aWml,              // microfacet normal - halfway vector
+    const Vec3f &aWvl,  // the direction to compute masking for (either incoming or outgoing)
+    const Vec3f &aMicrofacetNormal,
     const float  aRoughnessAlpha)
 {
     PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
-    if ((aWvl.z <= 0) || (aWml.z <= 0))
+    if ((aWvl.z <= 0) || (aMicrofacetNormal.z <= 0))
         return 0.0f;
 
     const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
@@ -458,8 +470,10 @@ float MicrofacetMaskingFunctionGgx(
     return result;
 }
 
-// Microfacet sampling
-bool SampleGgxNormals(
+// GGX sampling based directly on the distribution of microfacets.
+// Generates a lot of back-faced microfacets.
+// Returns whether the input and output directions are above microfacet.
+bool SampleGgxAllNormals(
     const Vec3f &aWol,
     const float  aRoughnessAlpha,
     const Vec2f &aSample,
@@ -469,13 +483,13 @@ bool SampleGgxNormals(
     const float tmp1 =
           (aRoughnessAlpha * std::sqrt(aSample.x))
         / std::sqrt(1.0f - aSample.x);
-    const float thetaM = std::atan(tmp1);
-    const float phiM = 2 * PI_F * aSample.y;
+    const float thetaM  = std::atan(tmp1);
+    const float phiM    = 2 * PI_F * aSample.y;
 
-    const float cosThetaM = std::cos(thetaM);
-    const float sinThetaM = std::sin(thetaM);
-    const float cosPhiM = std::cos(phiM);
-    const float sinPhiM = std::sin(phiM);
+    const float cosThetaM   = std::cos(thetaM);
+    const float sinThetaM   = std::sin(thetaM);
+    const float cosPhiM     = std::cos(phiM);
+    const float sinPhiM     = std::sin(phiM);
     const Vec3f microfacetDir(
         sinThetaM * sinPhiM,
         sinThetaM * cosPhiM,
@@ -485,23 +499,170 @@ bool SampleGgxNormals(
     return Reflect(aWol, microfacetDir, oReflectDir);
 }
 
-// Microfacet sampling PDF
-float GgxMicrofacetSamplingPdf(
+// Sampling density of GGX sampling based directly on the distribution of microfacets
+float GgxSamplingPdfAllNormals(
     const Vec3f &aWol,
     const Vec3f &aWil,
     const float  aRoughnessAlpha)
 {
     // Distribution value
-    const Vec3f halfwayVec = HalfwayVector(aWil, aWol);
-    const float microFacetDistrVal = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
-    const float microfacetPdf = microFacetDistrVal * halfwayVec.z;
+    const Vec3f halfwayVec          = HalfwayVector(aWil, aWol);
+    const float microFacetDistrVal  = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
+    const float microfacetPdf       = microFacetDistrVal * halfwayVec.z;
 
-    // Jacobian of the reflection transform
-    const float cosThetaOM = Dot(halfwayVec, aWol);
-    const float cosThetaOMClamped = std::max(cosThetaOM, 0.000001f);
-    const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
+    const float transfJacobian = MicrofacetReflectionJacobian(aWol, halfwayVec);
 
     return microfacetPdf * transfJacobian;
+}
+
+// Sample GGX P^{22}_{\omega_o}(slope, 1, 1) from [Heitz2014] for given incident direction theta
+void SampleGgxP11(
+          Vec2f &aSlope,
+    const float  aThetaI, 
+    const Vec2f &aSample)
+{
+    if (aThetaI < 0.0001f)
+    {
+        // Normal incidence - avoid division by zero later
+        const float sampleXClamped  = std::min(aSample.x, 0.9999f);
+        const float radius          = SafeSqrt(sampleXClamped / (1 - sampleXClamped));
+        const float phi             = 2 * PI_F * aSample.y;
+        const float sinPhi          = std::sin(phi);
+        const float cosPhi          = std::cos(phi);
+        aSlope = Vec2f(radius * cosPhi, radius * sinPhi);
+    }
+    else
+    {
+        const float tanThetaI    = std::tan(aThetaI);
+        const float tanThetaIInv = 1.0f / tanThetaI;
+        const float G1 =
+            2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
+
+        // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
+        float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
+        if (std::abs(A) == 1.0f)
+            A -= SignNum(A) * 1e-4f; // avoid division by zero later
+        const float B = tanThetaI;
+        const float tmpFract = 1.0f / (A * A - 1.0f);
+        const float D = SafeSqrt(B * B * tmpFract * tmpFract - (A * A - B * B) * tmpFract);
+        const float slopeX1 = B * tmpFract - D;
+        const float slopeX2 = B * tmpFract + D;
+        aSlope.x = (A < 0.0f || slopeX2 > (1.0f / tanThetaI)) ? slopeX1 : slopeX2;
+
+        PG3_ASSERT_FLOAT_VALID(aSlope.x);
+
+        // Sample y dimension
+        // Using conditional PDF; however, CDF is not directly invertible, so we use rational fit of CDF^-1.
+        // We sample just one half-space - PDF is symmetrical in y dimension.
+        // We use improved fit from Mitsuba renderer rather than the original fit from the paper.
+        float ySign;
+        float yHalfSample;
+        if (aSample.y > 0.5f) // pick one positive/negative interval
+        {
+            ySign       = 1.0f;
+            yHalfSample = 2.0f * (aSample.y - 0.5f);
+        }
+        else
+        {
+            ySign       = -1.0f;
+            yHalfSample = 2.0f * (0.5f - aSample.y);
+        }
+        const float z =
+                (yHalfSample * (yHalfSample * (yHalfSample *
+                    -(float)0.365728915865723 + (float)0.790235037209296) - 
+                    (float)0.424965825137544) + (float)0.000152998850436920)
+            /
+                (yHalfSample * (yHalfSample * (yHalfSample * (yHalfSample *
+                    (float)0.169507819808272 - (float)0.397203533833404) - 
+                    (float)0.232500544458471) + (float)1) - (float)0.539825872510702);
+        aSlope.y = ySign * z * std::sqrt(1.0f + aSlope.x * aSlope.x);
+
+        PG3_ASSERT_FLOAT_VALID(aSlope.y);
+    }
+
+    PG3_ASSERT_VEC2F_VALID(aSlope);
+}
+
+// GGX sampling based on "Importance Sampling Microfacet-Based BSDFs using the Distribution of 
+// Visible Normals" by Eric Heitz and Eugene D'Eon [Heitz2014]. It generates only the front-facing
+// microfacets resulting in less wasted samples with sample weights bound to [0, 1].
+bool SampleGgxVisibleNormals(
+    const Vec3f &aWol,
+    const float  aRoughnessAlpha,
+    const Vec2f &aSample,
+          Vec3f &oReflectDir)
+{
+    // Stretch Wol to canonical, unit roughness space
+    Vec3f wolStretch =
+        Normalize(Vec3f(aWol.x * aRoughnessAlpha, aWol.y * aRoughnessAlpha, aWol.z));
+
+    float thetaWolStretch = 0.0f;
+    float phiWolStretch   = 0.0f;
+    if (wolStretch.z < 0.999f)
+    {
+        thetaWolStretch = std::acos(wolStretch.z);
+        phiWolStretch   = std::atan2(wolStretch.y, wolStretch.x);
+    }
+    const float sinPhi = std::sin(phiWolStretch);
+    const float cosPhi = std::cos(phiWolStretch);
+
+    // Sample visible slopes for unit isotropic roughness, and given incident direction theta
+    Vec2f slopeStretch;
+    SampleGgxP11(slopeStretch, thetaWolStretch, aSample);
+
+    // Rotate
+    slopeStretch = Vec2f(
+        slopeStretch.x * cosPhi - slopeStretch.y * sinPhi,
+        slopeStretch.x * sinPhi + slopeStretch.y * cosPhi);
+
+    // Unstretch back to non-unit roughness
+    Vec2f slope(
+        slopeStretch.x * aRoughnessAlpha,
+        slopeStretch.y * aRoughnessAlpha);
+
+    PG3_ASSERT_VEC2F_VALID(slope);
+
+    // Compute normal
+    const float slopeLengthInv = 1.0f / Vec3f(slope.x, slope.y, 1.0f).Length();
+    Vec3f microfacetDir = Vec3f(
+        -slope.x * slopeLengthInv,
+        -slope.y * slopeLengthInv,
+        slopeLengthInv);
+
+    PG3_ASSERT_FLOAT_VALID(slopeLengthInv);
+    PG3_ASSERT_VEC3F_VALID(microfacetDir);
+
+    return Reflect(aWol, microfacetDir, oReflectDir);
+}
+
+// Sampling density of GGX sampling based on [Heitz2014]
+float GgxSamplingPdfVisibleNormals(
+    const Vec3f &aWol,
+    const Vec3f &aWil,
+    const float  aRoughnessAlpha)
+{
+    // TODO: Reuse computations when (if) combined with sampling routine??
+
+    const Vec3f halfwayVec  = HalfwayVector(aWil, aWol);
+    if (halfwayVec.z <= 0.f)
+        return 0.0f;
+
+    const float distrVal    = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
+    const float masking     = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, aRoughnessAlpha);
+    const float cosThetaOM  = Dot(halfwayVec, aWol);
+    const float cosThetaO   = std::max(aWol.z, 0.00001f);
+
+    const float microfacetPdf = (masking * std::abs(cosThetaOM) * distrVal) / cosThetaO;
+
+    PG3_ASSERT_FLOAT_NONNEGATIVE(microfacetPdf);
+
+    const float transfJacobian = MicrofacetReflectionJacobian(aWol, halfwayVec);
+
+    const float pdf = microfacetPdf * transfJacobian;
+
+    PG3_ASSERT_FLOAT_NONNEGATIVE(pdf);
+
+    return pdf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -454,12 +454,10 @@ public:
         BRDFSample  &oBrdfSample
         ) const override
     {
-        aWol; // unreferenced params
-
-#if defined MATERIAL_GGX_SAMPLING_COS
+        #if defined MATERIAL_GGX_SAMPLING_COS
 
         oBrdfSample.mWil =
-            SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW); // debug: cosine-weighted sampling
+            SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if (thetaCosIn > 0.0f)
@@ -470,11 +468,11 @@ public:
             // Below surface: The sample is valid, it just has zero contribution
             oBrdfSample.mSample.MakeZero();
 
-#elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
+        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
         // Distribution sampling
         bool isAboveMicrofacet =
-            SampleGgxNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
+            SampleGgxAllNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         oBrdfSample.mPdfW = MicrofacetGGXConductorMaterial::GetPdfW(aWol, oBrdfSample.mWil);
@@ -488,160 +486,28 @@ public:
             // Below surface: The sample is valid, it just has zero contribution
             oBrdfSample.mSample.MakeZero();
 
-#elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
+        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
-        //SampleGgxVisibleNormals(..., const Vec2f &aSample, ...)
-        const Vec2f aSample = aRng.GetVec2f();
-        Vec3f microfacetDir;
-        {
-            // Stretch Wol to canonical, unit roughness space
-            Vec3f wolStretch =
-                Normalize(Vec3f(aWol.x * mRoughnessAlpha, aWol.y * mRoughnessAlpha, aWol.z));
-
-            float thetaWolStretch = 0.0f;
-            float phiWolStretch   = 0.0f;
-            if (wolStretch.z < 0.999f)
-            {
-                thetaWolStretch = std::acos(wolStretch.z);
-                phiWolStretch   = std::atan2(wolStretch.y, wolStretch.x);
-            }
-            const float sinPhi = std::sin(phiWolStretch);
-            const float cosPhi = std::cos(phiWolStretch);
-
-            // Sample GGX P^{22}_{\omega_o}(slope, 1, 1) for given incident direction theta
-            Vec2f slopeStretch;
-            //Sample11(Vec2f &aSlope, const float aThetaI, const Vec2f &aSample);
-            {
-                // params...
-                Vec2f &aSlope = slopeStretch;
-                float aThetaI = thetaWolStretch;
-
-
-                if (aThetaI < 0.0001f)
-                {
-                    // Normal incidence - simple hemispherical sampling?
-                    const float sampleXClamped  = std::min(aSample.x, 0.9999f);
-                    const float radius          = SafeSqrt(sampleXClamped / (1 - sampleXClamped));
-                    const float phi             = 2 * PI_F * aSample.y;
-                    const float sinPhi          = std::sin(phi);
-                    const float cosPhi          = std::cos(phi);
-                    aSlope = Vec2f(radius * cosPhi, radius * sinPhi);
-
-                    PG3_ASSERT_VEC2F_VALID(aSlope);
-                }
-                else
-                {
-                    const float tanThetaI    = std::tan(aThetaI);
-                    const float tanThetaIInv = 1.0f / tanThetaI;
-                    const float G1 =
-                        2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
-                    //const float G1xxx =
-                    //    2.0f / (1.0f + SafeSqrt(1.0f + tanThetaI * tanThetaI));
-
-                    // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
-                    float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
-                    if (std::abs(A) == 1.0f)
-                        A -= SignNum(A) * 1e-4f; // avoid division by zero later
-                    const float B = tanThetaI;
-                    const float tmpFract = 1.0f / (A * A - 1.0f);
-                    const float D = SafeSqrt(B * B * tmpFract * tmpFract - (A * A - B * B) * tmpFract);
-                    const float slopeX1 = B * tmpFract - D;
-                    const float slopeX2 = B * tmpFract + D;
-                    aSlope.x = (A < 0.0f || slopeX2 > (1.0f / tanThetaI)) ? slopeX1 : slopeX2;
-
-                    PG3_ASSERT_FLOAT_VALID(aSlope.x);
-
-                    // Sample y dimension
-                    // Using conditional PDF; however, CDF is not directly invertible, so we use rational fit of CDF^-1.
-                    // We sample just one half-space - PDF is symmetrical in y dimension.
-                    // We use improved fit from Mitsuba renderer rather than the original fit from the paper.
-                    float ySign;
-                    float yHalfSample;
-                    if (aSample.y > 0.5f) // pick one positive/negative interval
-                    {
-                        ySign       = 1.0f;
-                        yHalfSample = 2.0f * (aSample.y - 0.5f);
-                    }
-                    else
-                    {
-                        ySign       = -1.0f;
-                        yHalfSample = 2.0f * (0.5f - aSample.y);
-                    }
-                    const float z =
-                            (yHalfSample * (yHalfSample * (yHalfSample *
-                             -(float)0.365728915865723 + (float)0.790235037209296) - 
-                             (float)0.424965825137544) + (float)0.000152998850436920)
-                        /
-                            (yHalfSample * (yHalfSample * (yHalfSample * (yHalfSample *
-                             (float)0.169507819808272 - (float)0.397203533833404) - 
-                             (float)0.232500544458471) + (float)1) - (float)0.539825872510702);
-                    aSlope.y = ySign * z * std::sqrt(1.0f + aSlope.x * aSlope.x);
-
-                    PG3_ASSERT_FLOAT_VALID(aSlope.y);
-                }
-            }
-
-            PG3_ASSERT_VEC2F_VALID(slopeStretch);
-
-            // Rotate
-            slopeStretch = Vec2f(
-                slopeStretch.x * cosPhi - slopeStretch.y * sinPhi,
-                slopeStretch.x * sinPhi + slopeStretch.y * cosPhi);
-
-            // Unstretch back to non-unit roughness
-            Vec2f slope(
-                slopeStretch.x * mRoughnessAlpha,
-                slopeStretch.y * mRoughnessAlpha);
-
-            PG3_ASSERT_VEC2F_VALID(slope);
-
-            // Compute normal
-            const float slopeLengthInv = 1.0f / Vec3f(slope.x, slope.y, 1.0f).Length();
-            microfacetDir = Vec3f(
-                -slope.x * slopeLengthInv,
-                -slope.y * slopeLengthInv,
-                slopeLengthInv);
-
-            PG3_ASSERT_FLOAT_VALID(slopeLengthInv);
-            PG3_ASSERT_VEC3F_VALID(microfacetDir);
-        }
-
-        // Reflect from the microfacet
-        Reflect(aWol, microfacetDir, oBrdfSample.mWil);
-
-        // TODO: Assert below microsurface surface
-        const float thetaMOCos = Dot(aWol, microfacetDir);
-
-        static uint32_t validCount = 0;
-        static uint32_t belowSurfaceCount = 0;
-        static uint32_t belowMFacetCount = 0;
-
-        const float thetaCosIn = oBrdfSample.mWil.z;
-        if (thetaMOCos <= 0.0f)
-        {
-            oBrdfSample.mSample.MakeZero(); // Outgoing dir is below microsurface!
-            belowMFacetCount++;
-        }
-        else if (thetaCosIn <= 0.0f)
-        {
-            // Incoming dir is below surface: The sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
-            belowSurfaceCount++;
-        }
-        else
-        {
-            // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
-            validCount++;
-        }
+        bool isAboveMicrofacet =
+            SampleGgxVisibleNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         oBrdfSample.mPdfW = MicrofacetGGXConductorMaterial::GetPdfW(aWol, oBrdfSample.mWil);
 
-#else
-#error Undefined GGX sampling method!
-#endif
+        const float thetaCosIn = oBrdfSample.mWil.z;
+        if (!isAboveMicrofacet)
+            // Outgoing dir is below microsurface: this happens occasionally because of numerical problems.
+            oBrdfSample.mSample.MakeZero();
+        else if (thetaCosIn < 0.0f)
+            // Incoming dir is below surface: the sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
+        else
+            oBrdfSample.mSample =
+                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+
+        #else
+        #error Undefined GGX sampling method!
+        #endif
 
         oBrdfSample.mCompProbability = 1.f;
     }
@@ -654,57 +520,26 @@ public:
         if (aWol.z < 0.f)
             return 0.0f;
 
-#if defined MATERIAL_GGX_SAMPLING_COS
-
-        if (aWil.z < 0.f)
-            return 0.0f;
+        #if defined MATERIAL_GGX_SAMPLING_COS
 
         aWol; // unreferenced params
-        return CosHemispherePdfW(aWil); // debug: cosine-weighted sampling
-
-#elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
         if (aWil.z < 0.f)
             return 0.0f;
 
-        return GgxMicrofacetSamplingPdf(aWol, aWil, mRoughnessAlpha);
+        return CosHemispherePdfW(aWil); // debug: cosine-weighted sampling
 
-#elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
+        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
-        // Visible normals PDF
-        {
-            // TODO: Reuse computations when(if) combined with sampling routine??
+        return GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
 
-            const Vec3f halfwayVec  = HalfwayVector(aWil, aWol);
-            if (halfwayVec.z <= 0.f)
-                return 0.0f;
+        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
-            const float distrVal    = MicrofacetDistributionGgx(halfwayVec, mRoughnessAlpha);
-            const float masking     = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, mRoughnessAlpha);
-            const float cosThetaOM  = Dot(halfwayVec, aWol);
-            const float cosThetaO   = std::max(aWol.z, 0.00001f);
+            return GgxSamplingPdfVisibleNormals(aWol, aWil, mRoughnessAlpha);
 
-            const float microfacetPdf = (masking * std::abs(cosThetaOM) * distrVal) / cosThetaO;
-
-            PG3_ASSERT_FLOAT_NONNEGATIVE(microfacetPdf);
-
-            // Jacobian of the reflection transform
-            const float cosThetaOMClamped = std::max(cosThetaOM, 0.00001f);
-            const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
-
-            PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
-
-            const float pdf = microfacetPdf * transfJacobian;
-
-            PG3_ASSERT_FLOAT_NONNEGATIVE(pdf);
-
-            return pdf;
-        }
-
-
-#else
-#error Undefined GGX sampling method!
-#endif
+        #else
+        #error Undefined GGX sampling method!
+        #endif
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
