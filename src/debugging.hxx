@@ -163,16 +163,22 @@ void pg3_exit();
 #define PG3_ASSERT_INTEGER_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
     PG3_ASSERT_MSG((_val1) >= (_val2), "%d >= %d", (_val1), (_val2))
 
-// Vector asserts
+// Vector2 asserts
 
 #define PG3_ASSERT_VEC2F_VALID(_vec2) \
     PG3_ASSERT_FLOAT_VALID(_vec2.x); \
     PG3_ASSERT_FLOAT_VALID(_vec2.y);
 
+// Vector3 asserts
+
 #define PG3_ASSERT_VEC3F_VALID(_vec3) \
     PG3_ASSERT_FLOAT_VALID(_vec3.x); \
     PG3_ASSERT_FLOAT_VALID(_vec3.y); \
     PG3_ASSERT_FLOAT_VALID(_vec3.z);
+
+#define PG3_ASSERT_VEC3F_NORMALIZED(_vec3) \
+    PG3_ASSERT_VEC3F_VALID(_vec3); \
+    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.0001f)
 
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE
