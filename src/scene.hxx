@@ -116,25 +116,30 @@ public:
     enum BoxMask
     {
         // light source flags
-        kLightCeiling                   = 0x0001,
-        kLightBox                       = 0x0002,
-        kLightPoint                     = 0x0004,
-        kLightEnv                       = 0x0008,
+        kLightCeiling                   = 0x00000001,
+        kLightBox                       = 0x00000002,
+        kLightPoint                     = 0x00000004,
+        kLightEnv                       = 0x00000008,
 
         // geometry flags
-        k2Spheres                       = 0x0010,
-        k1Sphere                        = 0x0020,
-        kWalls                          = 0x0040,
-        kFloor                          = 0x0080,
+        k2Spheres                       = 0x00000010,
+        k1Sphere                        = 0x00000020,   // large sphere in the middle
+        kVerticalRectangle              = 0x00000040,   // large vertical rectangle in the front
+        kDiagonalRectangles             = 0x00000080,   // rectangle from front floort edge to back ceiling edge
+        kWalls                          = 0x00000100,
+        kFloor                          = 0x00000200,
+        kAllGeometry                    = 0x00000ff0,
 
         // material flags
-        kSpheresPhongDiffuse            = 0x0100,
-        kSpheresPhongGlossy             = 0x0200,
-        kWallsPhongDiffuse              = 0x0400,
-        kWallsPhongGlossy               = 0x0800,
-        kSpheresFresnelConductor        = 0x1000,
-        //kSpheresFresnelDielectrics    = 0x2000,
-        kSpheresMicrofacetGGXConductor  = 0x4000,
+        kSpheresPhongDiffuse            = 0x00001000,
+        kSpheresPhongGlossy             = 0x00002000,
+        kWallsPhongDiffuse              = 0x00004000,
+        kWallsPhongGlossy               = 0x00008000,
+        kSpheresFresnelConductor        = 0x00010000,
+        //kSpheresFresnelDielectrics    = 0x00020000,
+        kSpheresMicrofacetGGXConductor  = 0x00040000,
+        //kSpheresMicrofacetGGXConductor= 0x00080000,
+        kVertRectFresnelDielectrics     = 0x00100000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
@@ -231,8 +236,6 @@ public:
             );
 
         // 6) sphere1 (yellow)
-        diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
-        glossyReflectance.SetGreyAttenuation(0.7f);
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
@@ -240,15 +243,17 @@ public:
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
+        {
+            diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
+            glossyReflectance.SetGreyAttenuation(0.7f);
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 200,
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
+        }
 
         // 7) sphere2 (blue)
-        diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
-        glossyReflectance.SetGreyAttenuation(0.7f);
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
@@ -256,15 +261,17 @@ public:
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
+        {
+            diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
+            glossyReflectance.SetGreyAttenuation(0.7f);
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 600,
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
+        }
 
         // 8) large sphere (white)
-        diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
-        glossyReflectance.SetGreyAttenuation(0.5f);
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
@@ -272,13 +279,35 @@ public:
                 //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.200f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
+        {
+            diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
+            glossyReflectance.SetGreyAttenuation(0.5f);
             mMaterials.push_back(
                 new PhongMaterial(
                     diffuseReflectance, glossyReflectance, 90,
                     aBoxMask & kSpheresPhongDiffuse, aBoxMask & kSpheresPhongGlossy)
                 );
+        }
+
+        // 9) front vertical rectangle
+        if (IS_MASKED(aBoxMask, kVertRectFresnelDielectrics))
+            mMaterials.push_back(
+                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE)); // debug
+        else
+        {
+            diffuseReflectance.SetGreyAttenuation(0.8f);
+            glossyReflectance.SetGreyAttenuation(0.0f);
+            mMaterials.push_back(
+                new PhongMaterial(diffuseReflectance, glossyReflectance, 1, 1, 0));
+        }
+
+        // 10) diagonal rectangles
+        diffuseReflectance.SetGreyAttenuation(0.8f);
+        glossyReflectance.SetGreyAttenuation(0.0f);
+        mMaterials.push_back(
+            new PhongMaterial(diffuseReflectance, glossyReflectance, 1, 1, 0));
 
         delete mGeometry;
 
@@ -338,11 +367,11 @@ public:
         if ( aBoxMask & k2Spheres )
         {
             float ballRadius = 0.5f;
-            Vec3f leftWallCenter  = (cb[0] + cb[4]) * (1.f / 2.f) + Vec3f(0, 0, ballRadius);
-            Vec3f rightWallCenter = (cb[1] + cb[5]) * (1.f / 2.f) + Vec3f(0, 0, ballRadius);
-            float xlen = rightWallCenter.x - leftWallCenter.x;
-            Vec3f leftBallCenter  = leftWallCenter  + Vec3f(2.f * xlen / 7.f, 0, 0);
-            Vec3f rightBallCenter = rightWallCenter - Vec3f(2.f * xlen / 7.f, -xlen/4, 0);
+            Vec3f leftWallCenter  = (cb[0] + cb[4]) * 0.5f + Vec3f(0, 0, ballRadius);
+            Vec3f rightWallCenter = (cb[1] + cb[5]) * 0.5f + Vec3f(0, 0, ballRadius);
+            float sceneWidth = rightWallCenter.x - leftWallCenter.x;
+            Vec3f leftBallCenter  = leftWallCenter  + Vec3f(2.f * sceneWidth / 7.f, 0, 0);
+            Vec3f rightBallCenter = rightWallCenter - Vec3f(2.f * sceneWidth / 7.f, -sceneWidth/4, 0);
 
             geometryList->mGeometry.push_back(new Sphere(leftBallCenter,  ballRadius, 6));
             geometryList->mGeometry.push_back(new Sphere(rightBallCenter, ballRadius, 7));
@@ -350,10 +379,62 @@ public:
         if ( aBoxMask & k1Sphere )
         {
             float ballRadius = 1.0f;
-            Vec3f floorCenter = (cb[0] + cb[5]) * (1.f / 2.f);
+            Vec3f floorCenter = (cb[0] + cb[5]) * 0.5f;
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
             geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
+        }
+
+        // Rectangles
+        if ( aBoxMask & kDiagonalRectangles )
+        {
+            const Vec3f floorXCenterFront   = (cb[4] + cb[5]) * 0.5f;
+            const Vec3f ceilingXCenterBack  = (cb[3] + cb[2]) * 0.5f;
+            const float boxHeight           = std::abs(cb[0].z - cb[3].z);
+            const float floorWidth          = std::abs(cb[0].x - cb[1].x);
+
+            const float rectHalfWidth       = 0.15f * floorWidth * 0.5f;
+            const float rectXOffset         = 0.6f * floorWidth * 0.5f;
+            const float rectZOffset         = 0.1f * boxHeight;
+
+            Vec3f rectLeft[4] = {
+                floorXCenterFront   + Vec3f(-rectHalfWidth - rectXOffset, 0, rectZOffset),
+                floorXCenterFront   + Vec3f( rectHalfWidth - rectXOffset, 0, rectZOffset),
+                ceilingXCenterBack  + Vec3f( rectHalfWidth - rectXOffset, 0, rectZOffset),
+                ceilingXCenterBack  + Vec3f(-rectHalfWidth - rectXOffset, 0, rectZOffset),
+            };
+            geometryList->mGeometry.push_back(new Triangle(rectLeft[3], rectLeft[0], rectLeft[1], 10));
+            geometryList->mGeometry.push_back(new Triangle(rectLeft[1], rectLeft[2], rectLeft[3], 10));
+
+            Vec3f rectRight[4] = {
+                floorXCenterFront   + Vec3f(-rectHalfWidth + rectXOffset, 0, rectZOffset),
+                floorXCenterFront   + Vec3f( rectHalfWidth + rectXOffset, 0, rectZOffset),
+                ceilingXCenterBack  + Vec3f( rectHalfWidth + rectXOffset, 0, rectZOffset),
+                ceilingXCenterBack  + Vec3f(-rectHalfWidth + rectXOffset, 0, rectZOffset),
+            };
+            geometryList->mGeometry.push_back(new Triangle(rectRight[3], rectRight[0], rectRight[1], 10));
+            geometryList->mGeometry.push_back(new Triangle(rectRight[1], rectRight[2], rectRight[3], 10));
+        }
+        if ( aBoxMask & kVerticalRectangle )
+        {
+            const Vec3f floorCenter         = (cb[0] + cb[5]) * 0.5f;
+            const float floorWidth          = std::abs(cb[0].x - cb[1].x);
+            const float boxHeight           = std::abs(cb[0].z - cb[3].z);
+            const float boxDepth            = std::abs(cb[0].y - cb[4].y);
+
+            const float rectHalfWidth       =  1.0f * floorWidth * 0.5f;
+            const float rectHeight          =  0.7f * boxHeight;
+            const float rectYOffset         = -1.0f * boxDepth * 0.5f;
+            const float rectZOffset         =  0.1f * boxHeight;
+
+            Vec3f rect[4] = {
+                floorCenter + Vec3f(-rectHalfWidth, rectYOffset, rectZOffset),
+                floorCenter + Vec3f( rectHalfWidth, rectYOffset, rectZOffset),
+                floorCenter + Vec3f( rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
+                floorCenter + Vec3f(-rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
+            };
+            geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
+            geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -681,7 +762,21 @@ public:
             acronym += "1s";
         }
 
-        if ((aBoxMask & kWalls|k2Spheres|k1Sphere) == 0)
+        if (IS_MASKED(aBoxMask, kVerticalRectangle))
+        {
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "vertical quad";
+            acronym += "vq";
+        }
+
+        if (IS_MASKED(aBoxMask, kDiagonalRectangles))
+        {
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "diagonal rectangles";
+            acronym += "dr";
+        }
+
+        if ((aBoxMask & kAllGeometry) == 0)
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "empty";
@@ -807,6 +902,19 @@ public:
                 name    += " glossy";
                 acronym += "g";
             }
+        }
+
+        if (IS_MASKED(aBoxMask, kVertRectFresnelDielectrics))
+        {
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "rectangle full fresnel dielectrics";
+            acronym += "Rffd";
+        }
+        else
+        {
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "rectangle pd";
+            acronym += "Rpd";
         }
 
         //MATERIALS_ADD_SPACE_IF_NEEDED
