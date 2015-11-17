@@ -136,10 +136,10 @@ public:
         kWallsPhongDiffuse              = 0x00004000,
         kWallsPhongGlossy               = 0x00008000,
         kSpheresFresnelConductor        = 0x00010000,
-        kSpheresFresnelDielectrics      = 0x00020000,
+        kSpheresFresnelDielectric       = 0x00020000,
         kSpheresMicrofacetGGXConductor  = 0x00040000,
         //kSpheresMicrofacetGGXConductor= 0x00080000,
-        kVertRectFresnelDielectrics     = 0x00100000,
+        kVertRectFresnelDielectric      = 0x00100000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
@@ -278,7 +278,7 @@ public:
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
                 //new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
                 //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
-        else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectrics))
+        else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectric))
             mMaterials.push_back(
                 new SmoothDielectricMaterial(MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
@@ -297,7 +297,7 @@ public:
         }
 
         // 9) front vertical rectangle
-        if (IS_MASKED(aBoxMask, kVertRectFresnelDielectrics))
+        if (IS_MASKED(aBoxMask, kVertRectFresnelDielectric))
             mMaterials.push_back(
                 new SmoothDielectricMaterial(MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
@@ -895,10 +895,10 @@ public:
             name    += "sph. full fresnel conductor";
             acronym += "Sffc";
         }
-        else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectrics))
+        else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectric))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "sph. full fresnel dielectrics";
+            name    += "sph. full fresnel dielectric";
             acronym += "Sffd";
         }
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
@@ -930,10 +930,10 @@ public:
 
         if (aBoxMask & kVerticalRectangle)
         {
-            if (IS_MASKED(aBoxMask, kVertRectFresnelDielectrics))
+            if (IS_MASKED(aBoxMask, kVertRectFresnelDielectric))
             {
                 MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-                name    += "rectangle full fresnel dielectrics";
+                name    += "rectangle full fresnel dielectric";
                 acronym += "Rffd";
             }
             else

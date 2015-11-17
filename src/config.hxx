@@ -144,11 +144,11 @@ uint32_t g_SceneConfigs[] =
 
     // Material testing: 23-25
     Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelConductor,
-    Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelDielectrics,
+    Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelDielectric,
     Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresMicrofacetGGXConductor,
 
     // Material testing: 26
-    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectrics
+    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric
 };
 
 std::string DefaultFilename(
