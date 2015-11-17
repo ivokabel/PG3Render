@@ -441,8 +441,6 @@ public:
             };
             geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
             geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));
-            //geometryList->mGeometry.push_back(new Triangle(rect[1], rect[0], rect[3], 9));
-            //geometryList->mGeometry.push_back(new Triangle(rect[3], rect[2], rect[1], 9));
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -930,17 +928,20 @@ public:
             }
         }
 
-        if (IS_MASKED(aBoxMask, kVertRectFresnelDielectrics))
+        if (aBoxMask & kVerticalRectangle)
         {
-            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "rectangle full fresnel dielectrics";
-            acronym += "Rffd";
-        }
-        else
-        {
-            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "rectangle pd";
-            acronym += "Rpd";
+            if (IS_MASKED(aBoxMask, kVertRectFresnelDielectrics))
+            {
+                MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+                name    += "rectangle full fresnel dielectrics";
+                acronym += "Rffd";
+            }
+            else
+            {
+                MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+                name    += "rectangle Phong diffuse";
+                acronym += "Rpd";
+            }
         }
 
         //MATERIALS_ADD_SPACE_IF_NEEDED
