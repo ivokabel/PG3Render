@@ -160,6 +160,7 @@ public:
         kEMImgEnnis                     = 9,
         kEMImgSatellite                 = 10,
         kEMImgPeaceGardensDusk          = 11,
+        kEMImgSynthThreePointLighting   = 12,
 
         kEMCount,
         kEMDefault                      = kEMConstBluish,
@@ -638,6 +639,14 @@ public:
                     break;
                 }
 
+                case kEMImgSynthThreePointLighting:
+                {
+                    light->LoadEnvironmentMap(
+                        ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                        0.0f, 7500.0f);
+                    break;
+                }
+
                 default:
                     PG3_FATAL_ERROR("Unknown environment map type");
             }
@@ -706,6 +715,10 @@ public:
 
         case kEMImgPeaceGardensDusk:
             oName = "Peace Gardens - Dusk";
+            break;
+
+        case kEMImgSynthThreePointLighting:
+            oName = "synthetic three point lighting";
             break;
 
         default:
