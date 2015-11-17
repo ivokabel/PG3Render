@@ -22,19 +22,46 @@ cd "$PG3RENDER_BASE_DIR"
 
 ###################################################################################################
 
-echo "$PG3RENDER"
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 1  -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 12 -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
 
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 20 -i 25000 -a pt -iic 20.0
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 21 -i 10000 -a pt
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 23 -i 40000 -a pt -iic 18.0
 
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -i 3000 -em 10
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 12 -i 5000 -em 10
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 22 -i 2000 -em 10
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 1  -i 100
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 12 -i 5000
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 10 -i 1000
 
-#for EM in `seq 0 11`; do
-#    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -a pt -s 22 -i 1 -a pt -sb 1.0 -em $EM
-#    echo
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 23 -a pt -em 1  -i 100
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 23 -a pt -em 12 -i 100
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 23 -a pt -em 10 -i 100
+
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 1  -i 100   -iic 20
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 12 -i 30000 -iic 20
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i 1000  -iic 20
+
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 25 -a pt -em 1  -i 500   -ot 0100
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 25 -a pt -em 12 -i 11000 -ot 0100
+#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 25 -a pt -em 10 -i 3000  -ot 0100
+
+
+#REFERENCE_IMG="$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_82800sec_RR99.7.hdr"
+#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt1,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt1,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt4,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt8,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt8,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
+
+#for EM in `echo 1 12 10`; do
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dbs      -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dlss     -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dmis     -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a pt -sb 1 -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a pt       -em $EM -ot VisNormSampling0010
+#done
+
+#for ITERS in `echo 1 5 10 50 100 500`; do
+#    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i $ITERS -sb 1
 #done
 
 #SCENES="0 1 2 3 4 5 6 7"
