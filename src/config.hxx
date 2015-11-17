@@ -136,13 +136,18 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Material testing: 19-22, 23-24, 25
+    // Material testing: 19-22
     Scene::kLightPoint   | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
+
+    // Material testing: 23-25
     Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelConductor,
+    Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelDielectrics,
     Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresMicrofacetGGXConductor,
+
+    // Material testing: 26
     Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectrics
 };
 

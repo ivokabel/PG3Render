@@ -22,6 +22,11 @@ struct Ray
         tmin(aTMin)
     {}
 
+    Vec3f PointAt(float aT) const
+    {
+        return org + dir * aT;
+    }
+
     Vec3f org;  //!< Ray origin
     Vec3f dir;  //!< Ray direction
     float tmin; //!< Minimal distance to intersection

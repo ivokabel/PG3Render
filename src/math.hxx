@@ -229,6 +229,8 @@ public:
         y(static_cast<double>(a.y)),
         z(static_cast<double>(a.z)) {}
 
+    void        Set(T aX, T aY, T aZ) { x = aX; y = aY; z = aZ; }
+
     const T&    Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
     T&          Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
     Vec2Base<T> GetXY() const         { return Vec2Base<T>(x, y); }

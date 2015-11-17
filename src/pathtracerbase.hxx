@@ -350,14 +350,14 @@ public:
 
         const Vec3f wil = aSurfFrame.ToLocal(aLightSample.mWig);
 
-        // Since the BRDF sampling only works for planar and angular light sources, we can't use 
-        // the multiple importance sampling scheme for the whole reflectance integral. We split 
+        // Since Monte Carlo estimation works only for planar and angular light sources, we can't 
+        // use the multiple importance sampling scheme for the whole reflectance integral. We split 
         // the integral into two parts - one for planar and angular light sources, and one 
         // for point light sources. The first part can be handled by both BRDF and light 
         // sampling strategies; therefore, we can combine the two with MIS. The second part 
         // (point lights) can only be hadled by the light sampling strategy.
         //
-        // We could separate the two computations completely, what whould result in computing 
+        // We could separate the two computations completely, what would result in computing 
         // separate sets of light samples for each of the two integrals, but we can use 
         // one light sampling routine to generate samples for both integrals in one place 
         // to make things easier for us (but maybe a little bit confusing at first sight).
@@ -379,12 +379,14 @@ public:
         if (aLightSample.mPdfW != INFINITY_F)
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
-            const float brdfPdfW = aMat.GetPdfW(aWol, wil);
-            const float lightPdf = aLightSample.mPdfW * aLightSample.mLightProbability;
+            float brdfCompPdfW, brdfCompProbability;
+            aMat.GetFiniteCompProbabilities(brdfCompPdfW, brdfCompProbability, aWol, wil);
+            const float brdfTotalPdfW = brdfCompPdfW * brdfCompProbability;
+            const float lightPdfW     = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
                   (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
-                * (   MISWeight2(lightPdf, aLightSamplesCount, brdfPdfW, aBrdfSamplesCount)
-                    / lightPdf);
+                  * (MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalPdfW, aBrdfSamplesCount)
+                    / lightPdfW);
         }
         else
         {
@@ -432,22 +434,26 @@ public:
         //PG3_ASSERT(lightPickingProbability > 0.f);
         PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
-        // TODO: Add support for heterogenous and multi-component BRDFs
         if (aBrdfSample.mPdfW != INFINITY_F)
         {
             // Finite BRDF: Compute two-step MIS MC estimator. 
+            const float brdfPdfW = aBrdfSample.mPdfW * aBrdfSample.mCompProbability;
             const float misWeight =
                 MISWeight2(
-                    aBrdfSample.mPdfW, aBrdfSamplesCount,
+                    brdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
                   (aBrdfSample.mSample * LiLight)
-                * (misWeight / aBrdfSample.mPdfW);
+                * misWeight
+                / brdfPdfW;
         }
         else
         {
             // Dirac BRDF: compute the integral directly, without MIS
-            oLightBuffer += aBrdfSample.mSample * LiLight;
+            oLightBuffer +=
+                  aBrdfSample.mSample * LiLight
+                / (static_cast<float>(aBrdfSamplesCount)    // Splitting
+                * aBrdfSample.mCompProbability);            // Discrete multi-component MC
         }
     }
 

@@ -34,28 +34,39 @@ float FresnelDielectric(
     if (aEta < 0)
         return 1.f;
 
-    float etaIncOverEtaTrans;
-
     if (aCosThetaI < 0.f)
     {
         aCosThetaI = -aCosThetaI;
-        etaIncOverEtaTrans = aEta;
+        aEta = aEta;
     }
     else
-        etaIncOverEtaTrans = 1.f / aEta;
+        aEta = 1.f / aEta;
 
-    const float sinTrans2 = Sqr(etaIncOverEtaTrans) * (1.f - Sqr(aCosThetaI));
-    const float cosTrans = SafeSqrt(1.f - sinTrans2);
+    const float sinThetaT2 = Sqr(aEta) * (1.f - Sqr(aCosThetaI));
+    const float cosThetaT  = SafeSqrt(1.f - sinThetaT2);
 
-    const float term1 = etaIncOverEtaTrans * cosTrans;
-    const float reflParallel =
-        (aCosThetaI - term1) / (aCosThetaI + term1);
+    //// debug
+    //const float thetaI = std::acos(aCosThetaI);
+    //const float thetaT = std::acos(cosThetaT);
 
-    const float term2 = etaIncOverEtaTrans * aCosThetaI;
-    const float reflPerpendicular =
-        (term2 - cosTrans) / (term2 + cosTrans);
+    // Perpendicular (senkrecht) polarization
+    const float term2                   = aEta * aCosThetaI;
+    const float reflPerpendicularSqrt   = (term2 - cosThetaT) / (term2 + cosThetaT);
+    const float reflPerpendicular       = Sqr(reflPerpendicularSqrt);
 
-    return 0.5f * (Sqr(reflParallel) + Sqr(reflPerpendicular));
+    // Parallel polarization
+    const float term1               = aEta * cosThetaT;
+    const float reflParallelSqrt    = (aCosThetaI - term1) / (aCosThetaI + term1);
+    const float reflParallel        = Sqr(reflParallelSqrt);
+
+    const float reflectance = 0.5f * (reflParallel + reflPerpendicular);
+
+    PG3_ASSERT_FLOAT_IN_RANGE(reflParallel, 0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_IN_RANGE(reflPerpendicular, 0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_IN_RANGE(reflectance, 0.0f, 1.0f);
+    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(reflPerpendicular + 0.00001f, reflParallel);
+
+    return reflectance;
 }
 
 float FresnelConductor(
@@ -186,17 +197,53 @@ Vec3f ReflectLocal(const Vec3f& aVector)
 // Reflect vector through given normal.
 // Both vectors are expected to be normalized.
 // Returns whether the input/output direction is in the half-space defined by the normal.
-bool Reflect(const Vec3f& aVectorIn, const Vec3f& aNormal, Vec3f& vectorOut)
+bool Reflect(
+          Vec3f& oVectorOut,
+    const Vec3f& aVectorIn,
+    const Vec3f& aNormal)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aVectorIn);
     PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
 
-    const float dot = Dot(aVectorIn, aNormal); // projection of Wo on normal
-    vectorOut = (2.0f * dot) * aNormal - aVectorIn;
+    const float dot = Dot(aVectorIn, aNormal); // projection of aVectorIn on normal
+    oVectorOut = (2.0f * dot) * aNormal - aVectorIn;
 
-    PG3_ASSERT_VEC3F_NORMALIZED(vectorOut);
+    PG3_ASSERT_VEC3F_NORMALIZED(oVectorOut);
 
     return dot > 0.0f; // Are we above the surface?
+}
+
+void Refract(
+          Vec3f &oVectorOut,
+    const Vec3f &aVectorIn,
+    const Vec3f &aNormal,
+          float  aEta           // internal IOR / external IOR
+          )
+{
+    PG3_ASSERT_VEC3F_NORMALIZED(aVectorIn);
+    PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
+
+    const float cosThetaI = Dot(aVectorIn, aNormal);
+
+    if (cosThetaI > 0.0f)
+        aEta = 1.0f / aEta;
+
+    const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (aEta * aEta);
+
+    if (cosThetaTSqr < 0.0f)
+    {
+        oVectorOut.Set(0.0f, 0.0f, 0.0f); // TODO
+        return;
+    }
+
+    float cosThetaT = std::sqrt(cosThetaTSqr);
+    cosThetaT = (cosThetaI > 0.0f) ? -cosThetaT : cosThetaT;
+
+    //// debug
+    //const float thetaI = std::acos(std::abs(cosThetaI));
+    //const float thetaT = std::acos(std::abs(cosThetaT));
+
+    oVectorOut = aNormal * (cosThetaI * aEta + cosThetaT) - aVectorIn * aEta;
 }
 
 // Halfway vector, microfacet normal
@@ -496,7 +543,7 @@ bool SampleGgxAllNormals(
         cosThetaM);
 
     // Reflect from the microfacet
-    return Reflect(aWol, microfacetDir, oReflectDir);
+    return Reflect(oReflectDir, aWol, microfacetDir);
 }
 
 // Sampling density of GGX sampling based directly on the distribution of microfacets
@@ -632,7 +679,7 @@ bool SampleGgxVisibleNormals(
     PG3_ASSERT_FLOAT_VALID(slopeLengthInv);
     PG3_ASSERT_VEC3F_VALID(microfacetDir);
 
-    return Reflect(aWol, microfacetDir, oReflectDir);
+    return Reflect(oReflectDir, aWol, microfacetDir);
 }
 
 // Sampling density of GGX sampling based on [Heitz2014]

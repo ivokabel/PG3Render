@@ -96,7 +96,7 @@ public:
         p[0] = p0;
         p[1] = p1;
         p[2] = p2;
-        matID = aMatID;
+        mMatId = aMatID;
         mNormal = Normalize(Cross(p[1] - p[0], p[2] - p[0]));
     }
 
@@ -124,7 +124,7 @@ public:
             if ((distance > aRay.tmin) & (distance < oResult.dist))
             {
                 oResult.normal = mNormal;
-                oResult.matID  = matID;
+                oResult.matID  = mMatId;
                 oResult.dist   = distance;
                 return true;
             }
@@ -150,7 +150,7 @@ public:
 public:
 
     Vec3f   p[3];
-    int32_t matID;
+    int32_t mMatId;
     Vec3f   mNormal;
 };
 
@@ -165,9 +165,9 @@ public:
         float        aRadius,
         int32_t      aMatID)
     {
-        center = aCenter;
-        radius = aRadius;
-        matID  = aMatID;
+        mCenter = aCenter;
+        mRadius = aRadius;
+        mMatId  = aMatID;
     }
 
     // Taken from:
@@ -177,27 +177,39 @@ public:
         const Ray &aRay,
         Isect     &oResult) const
     {
-        // we transform ray origin into object space (center == origin)
-        const Vec3f transformedOrigin = aRay.org - center;
+        // we transform ray origin into object space (mCenter == origin)
+        const Vec3f transformedOrigin = aRay.org - mCenter;
+
+        PG3_ASSERT_VEC3F_NORMALIZED(aRay.dir);
 
         const float A = Dot(aRay.dir, aRay.dir);
         const float B = 2 * Dot(aRay.dir, transformedOrigin);
-        const float C = Dot(transformedOrigin, transformedOrigin) - (radius * radius);
+        const float C = Dot(transformedOrigin, transformedOrigin) - (mRadius * mRadius);
 
         // Must use doubles, because when B ~ sqrt(B*B - 4*A*C)
         // the resulting t is imprecise enough to get around ray epsilons
-        const double disc = B*B - 4*A*C;
+        const double discriminant = B*B - 4*A*C;
 
-        if (disc < 0)
+        if (discriminant < 0)
             return false;
 
-        const double discSqrt = std::sqrt(disc);
-        const double q = (B < 0) ? ((-B - discSqrt) / 2.f) : ((-B + discSqrt) / 2.f);
+        const double discSqrt = std::sqrt(discriminant);
+        const double q = (B >= 0)  ? ((-B - discSqrt) / 2.f) : ((-B + discSqrt) / 2.f); // keep q far from 0
 
-        double t0 = q / A;
-        double t1 = C / q;
+        double t0 = q / A; // one root by the classical formula
+        double t1 = C / q; // second root found by Muller's method
 
         if (t0 > t1) std::swap(t0, t1);
+
+        #ifdef PG3_ASSERT_ENABLED
+        {
+            const float pt0DistSqr = (aRay.PointAt((float)t0) - mCenter).LenSqr();
+            const float pt1DistSqr = (aRay.PointAt((float)t1) - mCenter).LenSqr();
+            const float radiusSqr = Sqr(mRadius);
+            PG3_ASSERT_FLOAT_EQUAL(pt0DistSqr, radiusSqr, 0.0001f);
+            PG3_ASSERT_FLOAT_EQUAL(pt1DistSqr, radiusSqr, 0.0001f);
+        }
+        #endif
 
         float resT;
 
@@ -209,7 +221,7 @@ public:
             return false;
 
         oResult.dist   = resT;
-        oResult.matID  = matID;
+        oResult.matID  = mMatId;
         oResult.normal = Normalize(transformedOrigin + Vec3f(resT) * aRay.dir);
         return true;
     }
@@ -220,8 +232,8 @@ public:
     {
         for (uint32_t i=0; i<8; i++)
         {
-            Vec3f p = center;
-            Vec3f half(radius);
+            Vec3f p = mCenter;
+            Vec3f half(mRadius);
 
             for (uint32_t j=0; j<3; j++)
                 if (i & (1 << j)) half.Get(j) = -half.Get(j);
@@ -238,7 +250,7 @@ public:
 
 public:
 
-    Vec3f   center;
-    float   radius;
-    int32_t matID;
+    Vec3f   mCenter;
+    float   mRadius;
+    int32_t mMatId;
 };

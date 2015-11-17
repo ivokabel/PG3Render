@@ -112,16 +112,17 @@ protected:
                 currentRay.dir  = surfFrame.ToWorld(brdfSample.mWil);
                 currentRay.tmin = EPS_RAY_COS(brdfSample.mWil.z);
 
-                // TODO: Add support for heterogenous and multi-component BRDFs
                 if (brdfSample.mPdfW != INFINITY_F)
                     pathThroughput *=
                             brdfSample.mSample
-                          / (  brdfSample.mPdfW         // Monte Carlo est.
-                             * rrContinuationProb);     // Russian roulette (optional)
+                          / (  brdfSample.mPdfW             // Monte Carlo est.
+                             * rrContinuationProb           // Russian roulette (optional)
+                             * brdfSample.mCompProbability);// Discrete multi-component MC
                 else
                     pathThroughput *=
                             brdfSample.mSample
-                          / rrContinuationProb;         // Russian roulette (optional)
+                          / (  rrContinuationProb           // Russian roulette (optional)
+                             * brdfSample.mCompProbability);// Discrete multi-component MC
 
                 pathLength++;
             }
@@ -167,7 +168,7 @@ protected:
         {
             // We hit some geometry
 
-            const Vec3f surfPt = aRay.org + aRay.dir * isect.dist;
+            const Vec3f surfPt = aRay.PointAt(isect.dist);
             Frame surfFrame;
             surfFrame.SetFromZ(isect.normal);
             const Vec3f wol = surfFrame.ToLocal(-aRay.dir);
@@ -199,8 +200,8 @@ protected:
             uint32_t brdfSamplesCount;
             uint32_t lightSamplesCount;
             float nextStepSplitBudget;
-            float splitLevel = mDbgSplittingLevel; // [0,1]: 0: no split, 1: full split
             // TODO: Use BRDF settings
+            float splitLevel = mDbgSplittingLevel; // [0,1]: 0: no split, 1: full split
             ComputeSplittingCounts(
                 aSplitBudget, splitLevel,
                 brdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
@@ -226,10 +227,15 @@ protected:
             if (mMaxPathLength == 0)
                 rrContinuationProb =
                     // We do not allow probability 1.0 because that can lead to infinite 
-                    // random walk in some pathological scenarios (completely white material).
-                    // After 100 bounces with probability of 98%, the whole path has 
-                    // probability of cca 13% of survival.
-                    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.98f);
+                    // random walk in some pathological scenarios (completely white material or 
+                    // light trap made of glass).
+                    // Probability of survival after 100 bounces:
+                    // local probability 98.0% -> 13% for the whole path
+                    // local probability 99.0% -> 37% for the whole path
+                    // local probability 99.5% -> 61% for the whole path
+                    // local probability 99.7% -> 74% for the whole path
+                    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
+                    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
             // Generate requested amount of BRDF samples for both direct and indirect illumination
             for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
@@ -268,7 +274,11 @@ protected:
                 // Direct light
                 if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
                 {
-                    // TODO: Add support for heterogenous and multi-component BRDFs
+                    // Since Monte Carlo estimation works only for finite (non-Dirac) BSDFs,
+                    // we split the integral into two parts - one for finite components and 
+                    // one for Dirac components of the BSDF. This is analogical and well working 
+                    // together with the separate light sampling scheme used in 
+                    // AddMISLightSampleContribution() - see comments there for more information.
                     if (brdfSample.mPdfW != INFINITY_F)
                     {
                         // Finite BRDF: Compute MIS MC estimator. 
@@ -284,18 +294,20 @@ protected:
                         //PG3_ASSERT(lightPickingProbability > 0.f);
                         PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
-                        const float lightPdf = brdfLightPdfW * brdfLightPickingProb;
+                        const float lightPdfW = brdfLightPdfW * brdfLightPickingProb;
+                        const float brdfPdfW  = brdfSample.mPdfW * brdfSample.mCompProbability;
                         oReflectedRadianceEstimate +=
                               (brdfSample.mSample * brdfEmmittedRadiance)
-                            * (   MISWeight2(brdfSample.mPdfW, brdfSamplesCount, lightPdf, lightSamplesCount) // MIS
-                                / brdfSample.mPdfW);    // MC
+                            * MISWeight2(brdfPdfW, brdfSamplesCount, lightPdfW, lightSamplesCount) // MIS
+                            / brdfPdfW;
                     }
                     else
                     {
                         // Dirac BRDF: compute the integral directly, without MIS
                         oReflectedRadianceEstimate +=
                               (brdfSample.mSample * brdfEmmittedRadiance)
-                            / static_cast<float>(brdfSamplesCount); // Splitting
+                            / (   static_cast<float>(brdfSamplesCount)  // Splitting
+                                * brdfSample.mCompProbability);         // Discrete multi-component MC
                     }
                 }
 
@@ -308,23 +320,24 @@ protected:
                         // Finite BRDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
                               (brdfSample.mSample * brdfReflectedRadianceEstimate)
-                            / (   brdfSample.mPdfW
-                                * brdfSamplesCount      // Splitting
-                                * rrContinuationProb);  // Russian roulette
-
-                        // Clip fireflies
-                        if (mIndirectIllumClipping > 0.f)
-                            indirectRadianceEstimate.ClipProportionally(mIndirectIllumClipping);
+                            / (   brdfSample.mPdfW              // MC
+                                * brdfSamplesCount              // Splitting
+                                * rrContinuationProb            // Russian roulette
+                                * brdfSample.mCompProbability); // Discrete multi-component MC
                     }
                     else
                     {
                         // Dirac BRDF: compute the integral directly, without MIS
-                        // TODO: Add support for heterogenous and multi-component BRDFs
                         indirectRadianceEstimate =
                               (brdfSample.mSample * brdfReflectedRadianceEstimate)
-                            / (   brdfSamplesCount      // Splitting
-                                * rrContinuationProb);  // Russian roulette
+                            / (   brdfSamplesCount              // Splitting
+                                * rrContinuationProb            // Russian roulette
+                                * brdfSample.mCompProbability); // Discrete multi-component MC
                     }
+
+                    // Clip fireflies
+                    if (mIndirectIllumClipping > 0.f)
+                        indirectRadianceEstimate.ClipProportionally(mIndirectIllumClipping);
 
                     oReflectedRadianceEstimate += indirectRadianceEstimate;
                 }

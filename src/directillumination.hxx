@@ -23,7 +23,7 @@ public:
         Isect isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
         {
-            const Vec3f surfPt = aRay.org + aRay.dir * isect.dist;
+            const Vec3f surfPt = aRay.PointAt(isect.dist);
             Frame surfFrame;
             surfFrame.SetFromZ(isect.normal);
             const Vec3f wol = surfFrame.ToLocal(-aRay.dir);
@@ -79,15 +79,17 @@ public:
                         lightSamplingCtx,
                         LiLight);
 
-                    // TODO: Add support for heterogenous and multi-component BRDFs
                     if (brdfSample.mPdfW != INFINITY_F)
                         // Finite BRDF: Compute the two-step MC estimator.
                         LoDirect =
                               (brdfSample.mSample * LiLight)
-                            / brdfSample.mPdfW;
+                            / (  brdfSample.mPdfW               // Monte Carlo est.
+                               * brdfSample.mCompProbability);  // Discrete multi-component MC
                     else
-                        // Dirac BRDF: compute the integral directly
-                        LoDirect = brdfSample.mSample * LiLight;
+                        // Dirac BRDF: compute the integral analytically
+                        LoDirect =
+                              brdfSample.mSample * LiLight
+                            / brdfSample.mCompProbability;      // Discrete multi-component MC
                 }
             }
             else if (aAlgorithm == kDirectIllumMIS)

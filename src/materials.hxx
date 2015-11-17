@@ -9,13 +9,14 @@
 #define MAT_BLOCKER_EPSILON    1e-5
 
 // Various material IoRs and absorbances at roughly 590 nm
-#define MAT_AIR_IOR            1.000277f
-#define MAT_COPPER_IOR         0.468000f
-#define MAT_COPPER_ABSORBANCE  2.810000f
-#define MAT_SILVER_IOR         0.121000f
-#define MAT_SILVER_ABSORBANCE  3.660000f
-#define MAT_GOLD_IOR           0.236000f
-#define MAT_GOLD_ABSORBANCE    2.960089f
+#define MAT_AIR_IOR             1.000277f
+#define MAT_GLASS_CORNING_IOR   1.510000f
+#define MAT_COPPER_IOR          0.468000f
+#define MAT_COPPER_ABSORBANCE   2.810000f
+#define MAT_SILVER_IOR          0.121000f
+#define MAT_SILVER_ABSORBANCE   3.660000f
+#define MAT_GOLD_IOR            0.236000f
+#define MAT_GOLD_ABSORBANCE     2.960089f
 
 class BRDFSample
 {
@@ -23,13 +24,14 @@ public:
     // BRDF attenuation * cosine theta_in
     SpectrumF   mSample;
 
-    // Angular PDF of the sample. In finite BRDF cases, it contains the whole PDF of all finite
-    // components and is already pre-multiplied by probability of this case.
+    // Angular PDF of the sample.
+    // In finite BRDF cases, it contains the PDF of all finite components altogether.
+    // In infitite cases, it equals INFINITY_F.
     float       mPdfW;
 
     // Probability of picking the additive BRDF component which generated this sample.
-    // The component can be an infinite pdf (dirac impulse) BRDF, e.g. Fresnel, 
-    // or total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
+    // The component can be more infinite pdf (dirac impulse) BRDFs, e.g. Fresnel, 
+    // and/or one total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
     // Inifinite components' contributions are computed outside MIS mechanism.
     float       mCompProbability;
 
@@ -52,7 +54,9 @@ public:
         BRDFSample  &oBrdfSample
         ) const = 0;
 
-    virtual float GetPdfW(
+    virtual void GetFiniteCompProbabilities(
+              float &oPdfW,
+              float &oCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const = 0;
@@ -145,7 +149,7 @@ public:
         BRDFSample  &oBrdfSample
         ) const override
     {
-        // Compute scalar reflectances. Replicated in GetPdfW()!
+        // Compute scalar reflectances. Replicated in GetFiniteCompProbabilities()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
         const float cosThetaOut = std::max(aWol.z, 0.f);
         const float glossyReflectanceEst =
@@ -239,7 +243,9 @@ public:
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
-    virtual float GetPdfW(
+    virtual void GetFiniteCompProbabilities(
+              float &oPdfW,
+              float &oCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const override
@@ -253,7 +259,8 @@ public:
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
 
-        return GetPdfW(aWol, aWil, diffuseReflectanceEst, glossyReflectanceEst);
+        oPdfW            = GetPdfW(aWol, aWil, diffuseReflectanceEst, glossyReflectanceEst);
+        oCompProbability = 1.0f;
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -284,7 +291,7 @@ public:
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
-                                           // Replicated in SampleBrdf() and GetPdfW()!
+                                           // Replicated in SampleBrdf() and GetFiniteCompProbabilities()!
         const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
         return totalReflectance;
@@ -300,18 +307,9 @@ public:
     float       mPhongExponent;
 };
 
-class SmoothConductorMaterial : public AbstractMaterial
+class AbstractSmoothMaterial : public AbstractMaterial
 {
 public:
-    SmoothConductorMaterial(float aInnerIor /* n */, float aOuterIor, float aAbsorbance /* k */)
-    {
-        if (!IsTiny(aOuterIor))
-            mEta = aInnerIor / aOuterIor;
-        else
-            mEta = 1.0f;
-        mAbsorbance = aAbsorbance;
-    }
-
     virtual SpectrumF EvalBrdf(
         const Vec3f& aWil,
         const Vec3f& aWol
@@ -319,11 +317,41 @@ public:
     {
         aWil; aWol; // unreferenced params
             
-        // There is zero probability of hitting the only valid combination of 
-        // incoming and outgoing directions that transfers light
+        // There is zero probability of hitting the only one or two valid combinations of 
+        // incoming and outgoing directions which transfer light
         SpectrumF result;
         result.SetGreyAttenuation(0.0f);
         return result;
+    }
+
+    virtual void GetFiniteCompProbabilities(
+              float &oPdfW,
+              float &oCompProbability,
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const override
+    {
+        aWil; aWol; // unreferenced params
+
+        // There is zero probability of hitting the only valid combination of 
+        // incoming and outgoing directions that transfers light
+        oPdfW            = 0.0f;
+        oCompProbability = 0.0f;
+    }
+};
+
+class SmoothConductorMaterial : public AbstractSmoothMaterial
+{
+public:
+    SmoothConductorMaterial(
+        float aInnerIor, float aOuterIor,   // n
+        float aAbsorbance)                  // k
+    {
+        if (!IsTiny(aOuterIor))
+            mEta = aInnerIor / aOuterIor;
+        else
+            mEta = 1.0f;
+        mAbsorbance = aAbsorbance;
     }
 
     // Generates a random BRDF sample.
@@ -344,20 +372,6 @@ public:
 
         const float reflectance = FresnelConductor(oBrdfSample.mWil.z, mEta, mAbsorbance);
         oBrdfSample.mSample.SetGreyAttenuation(reflectance);
-    }
-
-    virtual float GetPdfW(
-        const Vec3f &aWol,
-        const Vec3f &aWil
-        ) const override
-    {
-        // unreferenced params
-        aWil;
-        aWol;
-
-        // There is zero probability of hitting the only valid combination of 
-        // incoming and outgoing directions that transfers light
-        return 0.0f;
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -383,6 +397,78 @@ public:
 protected:
     float mEta;         // inner IOR / outer IOR
     float mAbsorbance;  // k, the imaginary part of the complex index of refraction
+};
+
+class SmoothDielectricMaterial : public AbstractSmoothMaterial
+{
+public:
+    SmoothDielectricMaterial(float aInnerIor, float aOuterIor)
+    {
+        if (!IsTiny(aOuterIor))
+            mEta = aInnerIor / aOuterIor;
+        else
+            mEta = 1.0f;
+    }
+
+    // Generates a random BRDF sample.
+    virtual void SampleBrdf(
+        Rng         &aRng,
+        const Vec3f &aWol,
+        BRDFSample  &oBrdfSample
+        ) const override
+    {
+        // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt
+        const float fresnelRefl = FresnelDielectric(aWol.z, mEta);
+
+        float attenuation;
+        if (fresnelRefl >= 1.0f)
+        {
+            // Ideal mirror reflection (most probably caused by TIR) - always reflect
+            oBrdfSample.mWil = ReflectLocal(aWol);
+            attenuation      = 1.0f;
+        }
+        else
+        {
+            // Randomly choose between reflection or refraction
+            const float rnd = aRng.GetFloat();
+            if (rnd <= fresnelRefl)
+            {
+                // Reflect
+                oBrdfSample.mWil = ReflectLocal(aWol);
+                attenuation      = fresnelRefl;
+            }
+            else
+            {
+                // Refract
+                // TODO: local version of refract?
+                Refract(oBrdfSample.mWil, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
+                attenuation = 1.0f - fresnelRefl;
+            }
+        }
+
+        oBrdfSample.mCompProbability = attenuation;
+        oBrdfSample.mPdfW            = INFINITY_F;
+        oBrdfSample.mSample.SetGreyAttenuation(attenuation);
+    }
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        aWol; // unused parameter
+
+        return 1.0f; // reflectance is always 1 for dielectrics
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        return false;
+    }
+
+protected:
+    float mEta;         // inner IOR / outer IOR
 };
 
 class MicrofacetGGXConductorMaterial : public AbstractMaterial
@@ -475,7 +561,9 @@ public:
             SampleGgxAllNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
-        oBrdfSample.mPdfW = MicrofacetGGXConductorMaterial::GetPdfW(aWol, oBrdfSample.mWil);
+        MicrofacetGGXConductorMaterial::GetFiniteCompProbabilities(
+            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
+            aWol, oBrdfSample.mWil);
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
@@ -492,7 +580,9 @@ public:
             SampleGgxVisibleNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
-        oBrdfSample.mPdfW = MicrofacetGGXConductorMaterial::GetPdfW(aWol, oBrdfSample.mWil);
+        MicrofacetGGXConductorMaterial::GetFiniteCompProbabilities(
+            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
+            aWol, oBrdfSample.mWil);
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if (!isAboveMicrofacet)
@@ -508,17 +598,22 @@ public:
         #else
         #error Undefined GGX sampling method!
         #endif
-
-        oBrdfSample.mCompProbability = 1.f;
     }
 
-    virtual float GetPdfW(
+    virtual void GetFiniteCompProbabilities(
+              float &oPdfW,
+              float &oCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const override
     {
+        oCompProbability = 1.0f;
+
         if (aWol.z < 0.f)
-            return 0.0f;
+        {
+            oPdfW = 0.0f;
+            return;
+        }
 
         #if defined MATERIAL_GGX_SAMPLING_COS
 
@@ -527,15 +622,15 @@ public:
         if (aWil.z < 0.f)
             return 0.0f;
 
-        return CosHemispherePdfW(aWil); // debug: cosine-weighted sampling
+        oPdfW = CosHemispherePdfW(aWil);
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
-        return GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
+        oPdfW = GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
-            return GgxSamplingPdfVisibleNormals(aWol, aWil, mRoughnessAlpha);
+        oPdfW = GgxSamplingPdfVisibleNormals(aWol, aWil, mRoughnessAlpha);
 
         #else
         #error Undefined GGX sampling method!
