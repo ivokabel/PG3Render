@@ -116,30 +116,31 @@ public:
     enum BoxMask
     {
         // light source flags
-        kLightCeiling                   = 0x00000001,
-        kLightBox                       = 0x00000002,
-        kLightPoint                     = 0x00000004,
-        kLightEnv                       = 0x00000008,
+        kLightCeiling                       = 0x00000001,
+        kLightBox                           = 0x00000002,
+        kLightPoint                         = 0x00000004,
+        kLightEnv                           = 0x00000008,
 
         // geometry flags
-        k2Spheres                       = 0x00000010,
-        k1Sphere                        = 0x00000020,   // large sphere in the middle
-        kVerticalRectangle              = 0x00000040,   // large vertical rectangle in the front
-        kDiagonalRectangles             = 0x00000080,   // rectangle from front floort edge to back ceiling edge
-        kWalls                          = 0x00000100,
-        kFloor                          = 0x00000200,
-        kAllGeometry                    = 0x00000ff0,
+        k2Spheres                           = 0x00000010,
+        k1Sphere                            = 0x00000020,   // large sphere in the middle
+        kVerticalRectangle                  = 0x00000040,   // large vertical rectangle in the front
+        kDiagonalRectangles                 = 0x00000080,   // rectangle from front floort edge to back ceiling edge
+        kWalls                              = 0x00000100,
+        kFloor                              = 0x00000200,
+        kAllGeometry                        = 0x00000ff0,
 
         // material flags
-        kSpheresPhongDiffuse            = 0x00001000,
-        kSpheresPhongGlossy             = 0x00002000,
-        kWallsPhongDiffuse              = 0x00004000,
-        kWallsPhongGlossy               = 0x00008000,
-        kSpheresFresnelConductor        = 0x00010000,
-        kSpheresFresnelDielectric       = 0x00020000,
-        kSpheresMicrofacetGGXConductor  = 0x00040000,
-        //kSpheresMicrofacetGGXConductor= 0x00080000,
-        kVertRectFresnelDielectric      = 0x00100000,
+        kSpheresPhongDiffuse                = 0x00001000,
+        kSpheresPhongGlossy                 = 0x00002000,
+        kWallsPhongDiffuse                  = 0x00004000,
+        kWallsPhongGlossy                   = 0x00008000,
+        kSpheresFresnelConductor            = 0x00010000,
+        kSpheresFresnelDielectric           = 0x00020000,
+        kSpheresMicrofacetGGXConductor      = 0x00040000,
+        kSpheresMicrofacetGGXDielectric     = 0x00080000,
+        kVertRectFresnelDielectric          = 0x00100000,
+        kVertRectMicrofacetGGXDielectric    = 0x00200000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
@@ -285,6 +286,10 @@ public:
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXDielectric))
+            mMaterials.push_back(
+                new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
+                //new MicrofacetGGXDielectricMaterial(0.100f, MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
         else
         {
             diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
@@ -301,6 +306,9 @@ public:
             mMaterials.push_back(
                 new SmoothDielectricMaterial(MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
+        else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
+            mMaterials.push_back(
+                new MicrofacetGGXDielectricMaterial(0.001f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
         else
         {
             diffuseReflectance.SetGreyAttenuation(0.8f);
@@ -441,6 +449,8 @@ public:
             };
             geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
             geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));
+            //geometryList->mGeometry.push_back(new Triangle(rect[1], rect[0], rect[3], 9)); // reverted order
+            //geometryList->mGeometry.push_back(new Triangle(rect[3], rect[2], rect[1], 9)); // reverted order
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -585,7 +595,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\pisa.exr", 
-                        0.05f, 1.0f);
+                        //0.05f, 1.0f);
+                        0.05f, 32.0f);// debug
                     break;
                 }
 
@@ -907,6 +918,12 @@ public:
             name    += "sph. microfacet ggx conductor";
             acronym += "Smgc";
         }
+        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXDielectric))
+        {
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "sph. microfacet ggx dielectric";
+            acronym += "Smgd";
+        }
 
         if (IS_MASKED(aBoxMask, kWallsPhongDiffuse) ||
             IS_MASKED(aBoxMask, kWallsPhongGlossy))
@@ -928,7 +945,7 @@ public:
             }
         }
 
-        if (aBoxMask & kVerticalRectangle)
+        if (IS_MASKED(aBoxMask, kVerticalRectangle))
         {
             if (IS_MASKED(aBoxMask, kVertRectFresnelDielectric))
             {

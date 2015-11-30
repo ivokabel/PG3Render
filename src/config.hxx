@@ -101,54 +101,56 @@ struct Config
 #define MATS_PHONG_GLOSSY       Scene::kWallsPhongGlossy | Scene::kSpheresPhongGlossy
 uint32_t g_SceneConfigs[] =
 {
-    // Point light, box: 0,1
+    // Point light, box: 0, 1
     Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Ceiling light, box: 2,3
+    // Ceiling light, box: 2, 3
     Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
     Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Light box, box: 4,5
+    // Light box, box: 4, 5
     Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
     Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Environment map, box: 6,7
+    // Environment map, box: 6, 7
     Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
     Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Environment map, no walls: 8,9
+    // Environment map, no walls: 8, 9
     Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
     Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // EM testing: 10, 11, 12
-    Scene::kLightEnv | GEOM_1SPHERE | Scene::kSpheresPhongDiffuse,
-    Scene::kLightEnv | GEOM_1SPHERE | Scene::kSpheresPhongGlossy,
-    Scene::kLightEnv | GEOM_1SPHERE | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Multiple lights, diffuse: 13, 14, 15, 16
+    // Multiple lights, diffuse: 10-13
                          Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint | Scene::kLightBox |                    GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
 
-    // Multiple lights, glossy: 17, 18
+    // Multiple lights, glossy: 14, 15
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
 
-    // Material testing: 19-22
+    // Material testing, Full box: 16-19
     Scene::kLightPoint   | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
 
-    // Material testing: 23-25
-    Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelConductor,
-    Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresFresnelDielectric,
-    Scene::kLightEnv     | GEOM_1SPHERE     | Scene::kSpheresMicrofacetGGXConductor,
+    // Material testing: 20-26
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse,
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy,
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelConductor,
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelDielectric,
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXConductor,
+    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXDielectric,
 
-    // Material testing: 26
-    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric
+    // Material testing: 27, 28
+    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric,
+    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric
 };
 
 std::string DefaultFilename(

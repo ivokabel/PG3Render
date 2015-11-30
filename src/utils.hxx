@@ -172,18 +172,6 @@ float FresnelConductor(
     return reflectance;
 }
 
-// Jacobian of the reflection transform
-float MicrofacetReflectionJacobian(const Vec3f &aWil, const Vec3f &aMicrofacetNormal)
-{
-    const float cosThetaOM = Dot(aMicrofacetNormal, aWil);
-    const float cosThetaOMClamped = std::max(cosThetaOM, 0.000001f);
-    const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
-
-    PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
-
-    return transfJacobian;
-}
-
 //////////////////////////////////////////////////////////////////////////
 // Geometry routines
 //////////////////////////////////////////////////////////////////////////
@@ -197,10 +185,11 @@ Vec3f ReflectLocal(const Vec3f& aVector)
 // Reflect vector through given normal.
 // Both vectors are expected to be normalized.
 // Returns whether the input/output direction is in the half-space defined by the normal.
-bool Reflect(
-          Vec3f& oVectorOut,
-    const Vec3f& aVectorIn,
-    const Vec3f& aNormal)
+void Reflect(
+          Vec3f &oVectorOut,
+          bool  &oIsAboveSurface,
+    const Vec3f &aVectorIn,
+    const Vec3f &aNormal)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aVectorIn);
     PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
@@ -210,11 +199,12 @@ bool Reflect(
 
     PG3_ASSERT_VEC3F_NORMALIZED(oVectorOut);
 
-    return dot > 0.0f; // Are we above the surface?
+    oIsAboveSurface = dot > 0.0f;
 }
 
 void Refract(
           Vec3f &oVectorOut,
+          bool  &oIsAboveSurface,
     const Vec3f &aVectorIn,
     const Vec3f &aNormal,
           float  aEta           // internal IOR / external IOR
@@ -225,7 +215,9 @@ void Refract(
 
     const float cosThetaI = Dot(aVectorIn, aNormal);
 
-    if (cosThetaI > 0.0f)
+    oIsAboveSurface = (cosThetaI > 0.0f);
+
+    if (oIsAboveSurface)
         aEta = 1.0f / aEta;
 
     const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (aEta * aEta);
@@ -246,9 +238,49 @@ void Refract(
     oVectorOut = aNormal * (cosThetaI * aEta + cosThetaT) - aVectorIn * aEta;
 }
 
+// Jacobian of the reflection transform
+float MicrofacetReflectionJacobian(const Vec3f &aWil, const Vec3f &aMicrofacetNormal)
+{
+    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
+    PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
+
+    const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
+    const float cosThetaIMClamped = std::max(cosThetaIM, 0.000001f);
+
+    const float transfJacobian = 1.0f / (4.0f * cosThetaIMClamped);
+
+    PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
+
+    return transfJacobian;
+}
+
+// Jacobian of the refraction transform
+float MicrofacetRefractionJacobian(
+    const Vec3f &aWil,
+    const Vec3f &aWol,
+    const Vec3f &aMicrofacetNormal,
+    const float  aEta
+    )
+{
+    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
+    PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+    PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
+
+    const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
+    const float cosThetaOM = Dot(aMicrofacetNormal, aWol);
+
+    const float denom = Sqr(cosThetaIM + aEta * cosThetaOM);
+    const float transfJacobian = (Sqr(aEta) * std::abs(cosThetaOM)) / std::max(denom, 0.000001f);
+
+    PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
+
+    return transfJacobian;
+}
+
 // Halfway vector, microfacet normal
+// TODO: Add comment about reflection/refraction
 // Incoming/outgoing directions on different sides of the macro surface are allowed.
-Vec3f HalfwayVector(
+Vec3f HalfwayVectorReflectionLocal(
     const Vec3f& aWil,
     const Vec3f& aWol
     )
@@ -261,12 +293,48 @@ Vec3f HalfwayVector(
     else
         halfwayVec /= length; // Normalize using the already computed length
 
+    // Must point into the positive half-space
+    halfwayVec *= (halfwayVec.z >= 0.0f) ? 1.0f : -1.0f;
+
+    PG3_ASSERT_VEC3F_NORMALIZED(halfwayVec);
+
+    return halfwayVec;
+}
+
+// Halfway vector, microfacet normal
+// TODO: Add comment about reflection/refraction
+// TODO: If we arrive from below, then eta should probably switch
+// Incoming/outgoing directions on different sides of the macro surface are allowed.
+Vec3f HalfwayVectorRefractionLocal(
+    const Vec3f &aWil,
+    const Vec3f &aWol,
+    const float  aEta
+    )
+{
+    // TODO: Vector asserts:
+    // - normalized vectors
+    // - on different sides of surface
+    // eta assert?
+
+    Vec3f halfwayVec = aWil + aWol * aEta;
+    
+    const float length = halfwayVec.Length();
+    if (IsTiny(length))
+        halfwayVec = Vec3f(0.0f, 0.0f, 1.0f); // Geometrical normal
+    else
+        halfwayVec /= length; // Normalize using the already computed length
+
+    // Must point into the positive half-space
+    halfwayVec *= (halfwayVec.z >= 0.0f) ? 1.0f : -1.0f;
+
+    PG3_ASSERT_VEC3F_NORMALIZED(halfwayVec);
+
     return halfwayVec;
 }
 
 float TanTheta2(const Vec3f & aVectorLocal)
 {
-    PG3_ASSERT_FLOAT_NONNEGATIVE(aVectorLocal.z);
+    PG3_ASSERT_VEC3F_NORMALIZED(aVectorLocal);
 
     const float cosTheta2 = aVectorLocal.z * aVectorLocal.z;
     const float sinTheta2 = 1.f - cosTheta2;
@@ -276,10 +344,7 @@ float TanTheta2(const Vec3f & aVectorLocal)
         return sinTheta2 / cosTheta2;
 }
 
-//////////////////////////////////////////////////////////////////////////
 // Cosine lobe hemisphere sampling
-//////////////////////////////////////////////////////////////////////////
-
 Vec3f SamplePowerCosHemisphereW(
     const Vec2f  &aSamples,
     const float   aPower,
@@ -317,10 +382,7 @@ float PowerCosHemispherePdfW(
     return (aPower + 1.f) * std::pow(cosTheta, aPower) * (INV_PI_F * 0.5f);
 }
 
-//////////////////////////////////////////////////////////////////////////
 // Disc sampling
-//////////////////////////////////////////////////////////////////////////
-
 Vec2f SampleConcentricDisc(
     const Vec2f &aSamples)
 {
@@ -371,10 +433,8 @@ float ConcentricDiscPdfA()
     return INV_PI_F;
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-/// Sample direction in the upper hemisphere with cosine-proportional pdf
-/** The returned PDF is with respect to solid angle measure */
+// Sample direction in the upper hemisphere with cosine-proportional pdf
+// The returned PDF is with respect to solid angle measure
 Vec3f SampleCosHemisphereW(
     const Vec2f  &aSamples,
     float        *oPdfW = NULL)
@@ -496,14 +556,14 @@ float MicrofacetDistributionGgx(
     return result;
 }
 
-float MicrofacetMaskingFunctionGgx(
+float MicrofacetSmithMaskingFunctionGgx(
     const Vec3f &aWvl,  // the direction to compute masking for (either incoming or outgoing)
     const Vec3f &aMicrofacetNormal,
     const float  aRoughnessAlpha)
 {
     PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
-    if ((aWvl.z <= 0) || (aMicrofacetNormal.z <= 0))
+    if (/*(aWvl.z <= 0) ||*/ (aMicrofacetNormal.z <= 0))
         return 0.0f;
 
     const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
@@ -543,7 +603,10 @@ bool SampleGgxAllNormals(
         cosThetaM);
 
     // Reflect from the microfacet
-    return Reflect(oReflectDir, aWol, microfacetDir);
+    bool isAboveMicrofacet;
+    Reflect(oReflectDir, isAboveMicrofacet, aWol, microfacetDir);
+
+    return isAboveMicrofacet;
 }
 
 // Sampling density of GGX sampling based directly on the distribution of microfacets
@@ -553,7 +616,7 @@ float GgxSamplingPdfAllNormals(
     const float  aRoughnessAlpha)
 {
     // Distribution value
-    const Vec3f halfwayVec          = HalfwayVector(aWil, aWol);
+    const Vec3f halfwayVec          = HalfwayVectorReflectionLocal(aWil, aWol);
     const float microFacetDistrVal  = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
     const float microfacetPdf       = microFacetDistrVal * halfwayVec.z;
 
@@ -633,12 +696,13 @@ void SampleGgxP11(
 // GGX sampling based on "Importance Sampling Microfacet-Based BSDFs using the Distribution of 
 // Visible Normals" by Eric Heitz and Eugene D'Eon [Heitz2014]. It generates only the front-facing
 // microfacets resulting in less wasted samples with sample weights bound to [0, 1].
-bool SampleGgxVisibleNormals(
+Vec3f SampleGgxVisibleNormals(
     const Vec3f &aWol,
     const float  aRoughnessAlpha,
-    const Vec2f &aSample,
-          Vec3f &oReflectDir)
+    const Vec2f &aSample)
 {
+    PG3_ASSERT_FLOAT_NONNEGATIVE(aWol.z);
+
     // Stretch Wol to canonical, unit roughness space
     Vec3f wolStretch =
         Normalize(Vec3f(aWol.x * aRoughnessAlpha, aWol.y * aRoughnessAlpha, aWol.z));
@@ -671,7 +735,7 @@ bool SampleGgxVisibleNormals(
 
     // Compute normal
     const float slopeLengthInv = 1.0f / Vec3f(slope.x, slope.y, 1.0f).Length();
-    Vec3f microfacetDir = Vec3f(
+    Vec3f microfacetDir(
         -slope.x * slopeLengthInv,
         -slope.y * slopeLengthInv,
         slopeLengthInv);
@@ -679,37 +743,34 @@ bool SampleGgxVisibleNormals(
     PG3_ASSERT_FLOAT_VALID(slopeLengthInv);
     PG3_ASSERT_VEC3F_VALID(microfacetDir);
 
-    return Reflect(oReflectDir, aWol, microfacetDir);
+    return microfacetDir;
 }
 
 // Sampling density of GGX sampling based on [Heitz2014]
 float GgxSamplingPdfVisibleNormals(
     const Vec3f &aWol,
-    const Vec3f &aWil,
+    const Vec3f &aHalfwayVec,
     const float  aRoughnessAlpha)
 {
     // TODO: Reuse computations when (if) combined with sampling routine??
 
-    const Vec3f halfwayVec  = HalfwayVector(aWil, aWol);
-    if (halfwayVec.z <= 0.f)
+    PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+    PG3_ASSERT_VEC3F_NORMALIZED(aHalfwayVec);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(aWol.z);
+
+    if (aHalfwayVec.z <= 0.f)
         return 0.0f;
 
-    const float distrVal    = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
-    const float masking     = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, aRoughnessAlpha);
-    const float cosThetaOM  = Dot(halfwayVec, aWol);
+    const float distrVal    = MicrofacetDistributionGgx(aHalfwayVec, aRoughnessAlpha);
+    const float masking     = MicrofacetSmithMaskingFunctionGgx(aWol, aHalfwayVec, aRoughnessAlpha);
+    const float cosThetaOM  = Dot(aHalfwayVec, aWol);
     const float cosThetaO   = std::max(aWol.z, 0.00001f);
 
     const float microfacetPdf = (masking * std::abs(cosThetaOM) * distrVal) / cosThetaO;
 
     PG3_ASSERT_FLOAT_NONNEGATIVE(microfacetPdf);
 
-    const float transfJacobian = MicrofacetReflectionJacobian(aWol, halfwayVec);
-
-    const float pdf = microfacetPdf * transfJacobian;
-
-    PG3_ASSERT_FLOAT_NONNEGATIVE(pdf);
-
-    return pdf;
+    return microfacetPdf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

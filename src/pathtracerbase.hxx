@@ -384,7 +384,7 @@ public:
             const float brdfTotalPdfW = brdfCompPdfW * brdfCompProbability;
             const float lightPdfW     = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
-                  (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                    (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
                   * (MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalPdfW, aBrdfSamplesCount)
                     / lightPdfW);
         }

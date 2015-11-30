@@ -54,9 +54,10 @@ public:
         BRDFSample  &oBrdfSample
         ) const = 0;
 
+    // Computes PDF and component generation probability for the whole finite component
     virtual void GetFiniteCompProbabilities(
-              float &oPdfW,
-              float &oCompProbability,
+              float &oFinCompPdfW,
+              float &oFinCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const = 0;
@@ -244,8 +245,8 @@ public:
     }
 
     virtual void GetFiniteCompProbabilities(
-              float &oPdfW,
-              float &oCompProbability,
+              float &oFinCompPdfW,
+              float &oFinCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const override
@@ -259,8 +260,8 @@ public:
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
 
-        oPdfW            = GetPdfW(aWol, aWil, diffuseReflectanceEst, glossyReflectanceEst);
-        oCompProbability = 1.0f;
+        oFinCompPdfW        = GetPdfW(aWol, aWil, diffuseReflectanceEst, glossyReflectanceEst);
+        oFinCompProbability = 1.0f;
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -325,18 +326,17 @@ public:
     }
 
     virtual void GetFiniteCompProbabilities(
-              float &oPdfW,
-              float &oCompProbability,
+              float &oFinCompPdfW,
+              float &oFinCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const override
     {
         aWil; aWol; // unreferenced params
 
-        // There is zero probability of hitting the only valid combination of 
-        // incoming and outgoing directions that transfers light
-        oPdfW            = 0.0f;
-        oCompProbability = 0.0f;
+        // There is no finite component
+        oFinCompPdfW        = 0.0f;
+        oFinCompProbability = 0.0f;
     }
 };
 
@@ -417,23 +417,24 @@ public:
         BRDFSample  &oBrdfSample
         ) const override
     {
-        // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt
         const float fresnelRefl = FresnelDielectric(aWol.z, mEta);
 
         float attenuation;
-        if (fresnelRefl >= 1.0f)
-        {
-            // Ideal mirror reflection (most probably caused by TIR) - always reflect
-            oBrdfSample.mWil = ReflectLocal(aWol);
-            attenuation      = 1.0f;
-        }
-        else
+        // TODO: Test this without the out-commented code
+        //if (fresnelRefl >= 1.0f)
+        //{
+        //    // Ideal mirror reflection (most probably caused by TIR) - always reflect
+        //    oBrdfSample.mWil = ReflectLocal(aWol);
+        //    attenuation      = 1.0f;
+        //}
+        //else
         {
             // Randomly choose between reflection or refraction
             const float rnd = aRng.GetFloat();
             if (rnd <= fresnelRefl)
             {
                 // Reflect
+                // This branch also handles TIR cases
                 oBrdfSample.mWil = ReflectLocal(aWol);
                 attenuation      = fresnelRefl;
             }
@@ -441,7 +442,9 @@ public:
             {
                 // Refract
                 // TODO: local version of refract?
-                Refract(oBrdfSample.mWil, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
+                // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
+                bool isAboveMicrofacet;
+                Refract(oBrdfSample.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
                 attenuation = 1.0f - fresnelRefl;
             }
         }
@@ -502,7 +505,7 @@ public:
         }
 
         // Halfway vector (microfacet normal)
-        const Vec3f halfwayVec = HalfwayVector(aWil, aWol);
+        const Vec3f halfwayVec = HalfwayVectorReflectionLocal(aWil, aWol);
 
         // Fresnel coefficient on the microsurface
         const float cosThetaOM = Dot(halfwayVec, aWol);
@@ -512,8 +515,8 @@ public:
         float distrVal = MicrofacetDistributionGgx(halfwayVec, mRoughnessAlpha);
 
         // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
-        const float shadowing = MicrofacetMaskingFunctionGgx(aWil, halfwayVec, mRoughnessAlpha);
-        const float masking   = MicrofacetMaskingFunctionGgx(aWol, halfwayVec, mRoughnessAlpha);
+        const float shadowing = MicrofacetSmithMaskingFunctionGgx(aWil, halfwayVec, mRoughnessAlpha);
+        const float masking   = MicrofacetSmithMaskingFunctionGgx(aWol, halfwayVec, mRoughnessAlpha);
         const float geometricalFactor = shadowing * masking;
 
         PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
@@ -544,6 +547,7 @@ public:
 
         oBrdfSample.mWil =
             SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
+        oBrdfSample.mCompProbability = 1.0f;
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if (thetaCosIn > 0.0f)
@@ -576,8 +580,12 @@ public:
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
-        bool isAboveMicrofacet =
-            SampleGgxVisibleNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
+        Vec3f microfacetDir = SampleGgxVisibleNormals(aWol, mRoughnessAlpha, aRng.GetVec2f());
+
+        Vec3f reflectDir;
+        bool isOutDirAboveMicrofacet;
+        Reflect(reflectDir, isOutDirAboveMicrofacet, aWol, microfacetDir);
+        oBrdfSample.mWil = reflectDir;
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXConductorMaterial::GetFiniteCompProbabilities(
@@ -585,8 +593,8 @@ public:
             aWol, oBrdfSample.mWil);
 
         const float thetaCosIn = oBrdfSample.mWil.z;
-        if (!isAboveMicrofacet)
-            // Outgoing dir is below microsurface: this happens occasionally because of numerical problems.
+        if (!isOutDirAboveMicrofacet)
+            // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
             oBrdfSample.mSample.MakeZero();
         else if (thetaCosIn < 0.0f)
             // Incoming dir is below surface: the sample is valid, it just has zero contribution
@@ -601,36 +609,37 @@ public:
     }
 
     virtual void GetFiniteCompProbabilities(
-              float &oPdfW,
-              float &oCompProbability,
+              float &oFinCompPdfW,
+              float &oFinCompProbability,
         const Vec3f &aWol,
         const Vec3f &aWil
         ) const override
     {
-        oCompProbability = 1.0f;
+        oFinCompProbability = 1.0f;
 
         if (aWol.z < 0.f)
         {
-            oPdfW = 0.0f;
+            oFinCompPdfW = 0.0f;
             return;
         }
 
         #if defined MATERIAL_GGX_SAMPLING_COS
 
-        aWol; // unreferenced params
+        aWol; // unreferenced param
 
         if (aWil.z < 0.f)
-            return 0.0f;
-
-        oPdfW = CosHemispherePdfW(aWil);
+            oFinCompPdfW = 0.0f;
+        else
+            oFinCompPdfW = CosHemispherePdfW(aWil);
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
-        oPdfW = GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
+        oFinCompPdfW = GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
-        oPdfW = GgxSamplingPdfVisibleNormals(aWol, aWil, mRoughnessAlpha);
+        const Vec3f halfwayVec = HalfwayVectorReflectionLocal(aWil, aWol);
+        oFinCompPdfW = GgxSamplingPdfVisibleNormals(aWol, halfwayVec, mRoughnessAlpha);
 
         #else
         #error Undefined GGX sampling method!
@@ -643,19 +652,309 @@ public:
         const Vec3f &aWol
         ) const override
     {
-        aWol; // unreferenced params
+        aWol; // unreferenced param
 
-        return 1.0f; // debug
+        return 1.0f; // TODO
     }
 
     virtual bool IsReflectanceZero() const override
     {
-        return false; // debug
+        return false; // there should always be non-zero reflectance
     }
 
 protected:
     float           mEta;               // inner IOR / outer IOR
     float           mAbsorbance;        // k, the imaginary part of the complex index of refraction
+    float           mRoughnessAlpha;    // GGX isotropic roughness
+};
+
+class MicrofacetGGXDielectricMaterial : public AbstractMaterial
+{
+public:
+    MicrofacetGGXDielectricMaterial(
+        float aRoughnessAlpha,
+        float aInnerIor /* n */,
+        float aOuterIor)
+    {
+        if (!IsTiny(aOuterIor))
+        {
+            mEta    = aInnerIor / aOuterIor;
+            mEtaInv = aOuterIor / aInnerIor;
+        }
+        else
+        {
+            mEta    = 1.0f;
+            mEtaInv = 1.0f;
+        }
+
+        mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.001f, 1.0f);
+    }
+
+    virtual SpectrumF EvalBrdf(
+        const Vec3f& aWil,
+        const Vec3f& aWol
+        ) const override
+    {
+        const bool isReflection      = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
+        const bool isOutDirFromBelow = (aWol.z < 0.f);
+
+        // Make sure that the underlying code always deals with outgoing direction which is above the surface
+        const Vec3f wilSwitched = aWil * (isOutDirFromBelow ? -1.0f : 1.0f);
+        const Vec3f wolSwitched = aWol * (isOutDirFromBelow ? -1.0f : 1.0f);
+        const float etaSwitched = (isOutDirFromBelow ? mEtaInv : mEta);
+        const float cosThetaI   = std::abs(wilSwitched.z);
+        const float cosThetaO   = std::abs(wolSwitched.z);
+
+        // Check BRDF denominator
+        if (isReflection /*&& IsTiny(4.0f * cosThetaI * cosThetaO)*/)
+            return SpectrumF().MakeZero();
+        else if (!isReflection && IsTiny(cosThetaI * cosThetaO))
+            return SpectrumF().MakeZero();
+
+        // Halfway vector (microfacet normal)
+        // TODO: Solve "parallel I/O vectors" pathological case
+        Vec3f halfwayVec;
+        if (isReflection)
+            halfwayVec = HalfwayVectorReflectionLocal(wilSwitched, wolSwitched);
+        else
+            halfwayVec = HalfwayVectorRefractionLocal(wilSwitched, wolSwitched, etaSwitched);
+
+        // Fresnel coefficient on the microsurface
+        const float cosThetaOM = Dot(halfwayVec, wolSwitched);
+        const float fresnelReflectance = FresnelDielectric(cosThetaOM, etaSwitched);
+
+        // Microfacets distribution
+        float distrVal = MicrofacetDistributionGgx(halfwayVec, mRoughnessAlpha);
+
+        // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
+        const float shadowing = MicrofacetSmithMaskingFunctionGgx(wilSwitched, halfwayVec, mRoughnessAlpha);
+        const float masking   = MicrofacetSmithMaskingFunctionGgx(wolSwitched, halfwayVec, mRoughnessAlpha);
+        const float geometricalFactor = shadowing * masking;
+
+        PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
+
+        // The whole BRDF
+        float brdfVal;
+        if (isReflection)
+            brdfVal =
+                  (fresnelReflectance * geometricalFactor * distrVal)
+                / (4.0f * cosThetaI * cosThetaO);
+        else
+        {
+            const float cosThetaMI = Dot(halfwayVec, wilSwitched);
+            const float cosThetaMO = Dot(halfwayVec, wolSwitched);
+            // TODO: What if (cosThetaMI + etaSwitched * cosThetaMO) is close to zero??
+            brdfVal =
+                  ((cosThetaMI * cosThetaMO) / (cosThetaI * cosThetaO))
+                * (   (Sqr(etaSwitched) * (1.0f - fresnelReflectance) * geometricalFactor * distrVal)
+                    / Sqr(cosThetaMI + etaSwitched * cosThetaMO));
+        }
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
+
+        // TODO: Color (from fresnel?)
+        SpectrumF result;
+        result.SetGreyAttenuation(brdfVal);
+        return result;
+    }
+
+    // Generates a random BRDF sample.
+    virtual void SampleBrdf(
+        Rng         &aRng,
+        const Vec3f &aWol,
+        BRDFSample  &oBrdfSample
+        ) const override
+    {
+        const bool isOutDirFromBelow = (aWol.z < 0.f);
+
+        // Make sure that the underlying code always deals with outgoing direction which is above the surface
+        const Vec3f wolSwitched = aWol * (isOutDirFromBelow ? -1.0f : 1.0f); // TODO: Use just mirror symmetry instead of center symmetry?
+        const float etaSwitched = (isOutDirFromBelow ? mEtaInv : mEta);
+
+        #if defined MATERIAL_GGX_SAMPLING_COS
+        #error not tested!
+
+        Vec3f wilSwitched = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
+        oBrdfSample.mCompProbability = 1.0f;
+
+        // Switch up-down back if necessary
+        oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+
+        const float thetaCosIn = oBrdfSample.mWil.z;
+        if (thetaCosIn > 0.0f)
+            // Above surface: Evaluate the whole BRDF
+            oBrdfSample.mSample =
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+        else
+            // Below surface: The sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
+
+        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
+        #error not tested!
+
+        // Distribution sampling
+        Vec3f wilSwitched;
+        bool isAboveMicrofacet =
+            SampleGgxAllNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f(), wilSwitched);
+
+        // Switch up-down back if necessary
+        oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+
+        // TODO: Re-use already evaluated data? half-way vector, distribution value?
+        MicrofacetGGXDielectricMaterial::GetFiniteCompProbabilities(
+            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
+            aWol, oBrdfSample.mWil);
+
+        const float thetaCosIn = oBrdfSample.mWil.z;
+        if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
+            // Above surface: Evaluate the whole BRDF
+            oBrdfSample.mSample =
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+        else
+            // Below surface: The sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
+
+        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
+
+        Vec3f microfacetDirSwitched = SampleGgxVisibleNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
+
+        const float cosThetaOM = Dot(microfacetDirSwitched, wolSwitched);
+        const float fresnelReflectance = FresnelDielectric(cosThetaOM, etaSwitched);
+
+        Vec3f wilSwitched;
+        bool isOutDirAboveMicrofacet;
+        float fresnelAttenuation;
+        float thetaCosInAbs;
+
+        // Randomly choose between reflection or refraction
+        const float rnd = aRng.GetFloat();
+        if (rnd <= fresnelReflectance)
+        {
+            // This branch also handles TIR cases
+            Reflect(wilSwitched, isOutDirAboveMicrofacet, wolSwitched, microfacetDirSwitched);
+            fresnelAttenuation  = fresnelReflectance;
+            thetaCosInAbs       = wilSwitched.z;
+        }
+        else
+        {
+            // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
+            Refract(wilSwitched, isOutDirAboveMicrofacet, wolSwitched, microfacetDirSwitched, mEta);
+            fresnelAttenuation  = 1.0f - fresnelReflectance;
+            thetaCosInAbs       = -wilSwitched.z;
+        }
+
+        // Switch up-down back if necessary
+        oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+
+        // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
+        MicrofacetGGXDielectricMaterial::GetFiniteCompProbabilities(
+            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
+            aWol, oBrdfSample.mWil);
+
+        if (!isOutDirAboveMicrofacet)
+            // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
+            oBrdfSample.mSample.MakeZero();
+        else if (thetaCosInAbs < 0.0f)
+            // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
+            oBrdfSample.mSample.MakeZero();
+        else
+            oBrdfSample.mSample =
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosInAbs;
+
+        #else
+        #error Undefined GGX sampling method!
+        #endif
+    }
+
+    virtual void GetFiniteCompProbabilities(
+              float &oFinCompPdfW,
+              float &oFinCompProbability,
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const override
+    {
+        oFinCompProbability = 1.0f;
+
+        const bool isReflection = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
+
+        // Make sure that the underlying code always deals with outgoing direction which is above the surface
+        const bool isOutDirFromBelow = (aWol.z < 0.f);
+        const Vec3f wilSwitched = aWil * (isOutDirFromBelow ? -1.0f : 1.0f);
+        const Vec3f wolSwitched = aWol * (isOutDirFromBelow ? -1.0f : 1.0f);
+        const float etaSwitched = (isOutDirFromBelow ? mEtaInv : mEta);
+
+        if (wolSwitched.z < 0.f)
+        {
+            oFinCompPdfW = 0.0f;
+            return;
+        }
+
+        #if defined MATERIAL_GGX_SAMPLING_COS
+        #error not tested!
+
+        wolSwitched; // unreferenced param
+
+        if (wilSwitched.z < 0.f)
+            oFinCompPdfW = 0.0f;
+        else
+            oFinCompPdfW = CosHemispherePdfW(wilSwitched);
+
+        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
+        #error not tested!
+
+        oFinCompPdfW = GgxSamplingPdfAllNormals(wolSwitched, wilSwitched, mRoughnessAlpha);
+
+        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
+
+        // Halfway vector (microfacet normal)
+        // TODO: Solve "parallel I/O vectors" pathological case
+        Vec3f halfwayVecSwitched;
+        if (isReflection)
+            halfwayVecSwitched = HalfwayVectorReflectionLocal(wilSwitched, wolSwitched);
+        else
+            halfwayVecSwitched = HalfwayVectorRefractionLocal(wilSwitched, wolSwitched, etaSwitched);
+
+        const float visNormalsPdf =
+            GgxSamplingPdfVisibleNormals(wolSwitched, halfwayVecSwitched, mRoughnessAlpha);
+
+        float transfJacobian;
+        if (isReflection)
+            transfJacobian = MicrofacetReflectionJacobian(wolSwitched, halfwayVecSwitched);
+        else
+            transfJacobian = MicrofacetRefractionJacobian(wilSwitched, wolSwitched, halfwayVecSwitched, etaSwitched);
+
+        const float cosThetaOM      = Dot(halfwayVecSwitched, wolSwitched);
+        const float fresnelRefl     = FresnelDielectric(cosThetaOM, etaSwitched);
+        const float compProbability = isReflection ? fresnelRefl : (1.0f - fresnelRefl);
+
+        oFinCompPdfW = visNormalsPdf * transfJacobian * compProbability;
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(oFinCompPdfW);
+
+#else
+        #error Undefined GGX sampling method!
+        #endif
+    }
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        aWol; // unreferenced param
+
+        return 1.0f;
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        return false; // there always is non-zero reflectance
+    }
+
+protected:
+    float           mEta;               // inner IOR / outer IOR
+    float           mEtaInv;            // outer IOR / inner IOR
     float           mRoughnessAlpha;    // GGX isotropic roughness
 };
 
