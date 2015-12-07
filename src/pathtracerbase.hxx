@@ -380,7 +380,7 @@ public:
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             float brdfCompPdfW, brdfCompProbability;
-            aMat.GetFiniteCompProbabilities(brdfCompPdfW, brdfCompProbability, aWol, wil);
+            aMat.GetWholeFiniteCompProbabilities(brdfCompPdfW, brdfCompProbability, aWol, wil);
             const float brdfTotalPdfW = brdfCompPdfW * brdfCompProbability;
             const float lightPdfW     = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=

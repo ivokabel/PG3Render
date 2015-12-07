@@ -308,7 +308,7 @@ public:
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
         else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
             mMaterials.push_back(
-                new MicrofacetGGXDielectricMaterial(0.001f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
+                new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
         else
         {
             diffuseReflectance.SetGreyAttenuation(0.8f);
@@ -952,6 +952,12 @@ public:
                 MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
                 name    += "rectangle full fresnel dielectric";
                 acronym += "Rffd";
+            }
+            else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
+            {
+                MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+                name    += "rectangle microfacet ggx dielectric";
+                acronym += "Rmgd";
             }
             else
             {

@@ -34,15 +34,16 @@ float FresnelDielectric(
     if (aEta < 0)
         return 1.f;
 
+    float workingEta;
     if (aCosThetaI < 0.f)
     {
         aCosThetaI = -aCosThetaI;
-        aEta = aEta;
+        workingEta = aEta;
     }
     else
-        aEta = 1.f / aEta;
+        workingEta = 1.f / aEta;
 
-    const float sinThetaT2 = Sqr(aEta) * (1.f - Sqr(aCosThetaI));
+    const float sinThetaT2 = Sqr(workingEta) * (1.f - Sqr(aCosThetaI));
     const float cosThetaT  = SafeSqrt(1.f - sinThetaT2);
 
     //// debug
@@ -50,12 +51,12 @@ float FresnelDielectric(
     //const float thetaT = std::acos(cosThetaT);
 
     // Perpendicular (senkrecht) polarization
-    const float term2                   = aEta * aCosThetaI;
+    const float term2                   = workingEta * aCosThetaI;
     const float reflPerpendicularSqrt   = (term2 - cosThetaT) / (term2 + cosThetaT);
     const float reflPerpendicular       = Sqr(reflPerpendicularSqrt);
 
     // Parallel polarization
-    const float term1               = aEta * cosThetaT;
+    const float term1               = workingEta * cosThetaT;
     const float reflParallelSqrt    = (aCosThetaI - term1) / (aCosThetaI + term1);
     const float reflParallel        = Sqr(reflParallelSqrt);
 
@@ -87,6 +88,7 @@ float FresnelConductor(
 
 //#define USE_ART_FRESNEL
 #define USE_MITSUBA_FRESNEL
+
 #ifdef USE_ART_FRESNEL
 
     const float cosThetaSqr = Sqr(aCosThetaI);
@@ -204,7 +206,7 @@ void Reflect(
 
 void Refract(
           Vec3f &oVectorOut,
-          bool  &oIsAboveSurface,
+          bool  &oIsVectorInAboveSurface,
     const Vec3f &aVectorIn,
     const Vec3f &aNormal,
           float  aEta           // internal IOR / external IOR
@@ -215,9 +217,9 @@ void Refract(
 
     const float cosThetaI = Dot(aVectorIn, aNormal);
 
-    oIsAboveSurface = (cosThetaI > 0.0f);
+    oIsVectorInAboveSurface = (cosThetaI > 0.0f);
 
-    if (oIsAboveSurface)
+    if (oIsVectorInAboveSurface)
         aEta = 1.0f / aEta;
 
     const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (aEta * aEta);
@@ -239,7 +241,9 @@ void Refract(
 }
 
 // Jacobian of the reflection transform
-float MicrofacetReflectionJacobian(const Vec3f &aWil, const Vec3f &aMicrofacetNormal)
+float MicrofacetReflectionJacobian(
+    const Vec3f &aWil,  // Generated (reflected) incoming direction
+    const Vec3f &aMicrofacetNormal)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
@@ -256,10 +260,10 @@ float MicrofacetReflectionJacobian(const Vec3f &aWil, const Vec3f &aMicrofacetNo
 
 // Jacobian of the refraction transform
 float MicrofacetRefractionJacobian(
-    const Vec3f &aWil,
-    const Vec3f &aWol,
+    const Vec3f &aWol,  // Fixed outgoing direction
+    const Vec3f &aWil,  // Generated (refracted) incoming direction
     const Vec3f &aMicrofacetNormal,
-    const float  aEta
+    const float  aEta   // Outgoing n / Incoming n
     )
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
@@ -285,6 +289,9 @@ Vec3f HalfwayVectorReflectionLocal(
     const Vec3f& aWol
     )
 {
+    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
+    PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+
     Vec3f halfwayVec = aWil + aWol;
     
     const float length = halfwayVec.Length();
@@ -308,13 +315,16 @@ Vec3f HalfwayVectorReflectionLocal(
 Vec3f HalfwayVectorRefractionLocal(
     const Vec3f &aWil,
     const Vec3f &aWol,
-    const float  aEta
+    const float  aEta   // out n / in n
     )
 {
+    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
+    PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+
     // TODO: Vector asserts:
     // - normalized vectors
     // - on different sides of surface
-    // eta assert?
+    // etas asserts?
 
     Vec3f halfwayVec = aWil + aWol * aEta;
     
@@ -433,6 +443,19 @@ float ConcentricDiscPdfA()
     return INV_PI_F;
 }
 
+// Sample Triangle
+// returns barycentric coordinates
+Vec2f SampleUniformTriangle(const Vec2f &aSamples)
+{
+    const float xSqr = std::sqrt(aSamples.x);
+
+    return Vec2f(1.f - xSqr, aSamples.y * xSqr);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Cosine-Weighted Sphere sampling
+//////////////////////////////////////////////////////////////////////////
+
 // Sample direction in the upper hemisphere with cosine-proportional pdf
 // The returned PDF is with respect to solid angle measure
 Vec3f SampleCosHemisphereW(
@@ -466,15 +489,6 @@ float CosHemispherePdfW(
     const Vec3f  &aDirectionLocal)
 {
     return std::max(0.f, aDirectionLocal.z) * INV_PI_F;
-}
-
-// Sample Triangle
-// returns barycentric coordinates
-Vec2f SampleUniformTriangle(const Vec2f &aSamples)
-{
-    const float xSqr = std::sqrt(aSamples.x);
-
-    return Vec2f(1.f - xSqr, aSamples.y * xSqr);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -563,7 +577,7 @@ float MicrofacetSmithMaskingFunctionGgx(
 {
     PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
-    if (/*(aWvl.z <= 0) ||*/ (aMicrofacetNormal.z <= 0))
+    if (aMicrofacetNormal.z <= 0)
         return 0.0f;
 
     const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
@@ -701,6 +715,7 @@ Vec3f SampleGgxVisibleNormals(
     const float  aRoughnessAlpha,
     const Vec2f &aSample)
 {
+    PG3_ASSERT_VEC3F_NORMALIZED(aWol);
     PG3_ASSERT_FLOAT_NONNEGATIVE(aWol.z);
 
     // Stretch Wol to canonical, unit roughness space
