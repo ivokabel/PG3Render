@@ -49,19 +49,19 @@ public:
 
                     // Choose a random sample on the light
                     LightSample lightSample;
-                    light->SampleIllumination(surfPt, surfFrame, mRng, lightSample);
+                    light->SampleIllumination(surfPt, surfFrame, mat, mRng, lightSample);
 
                     AddSingleLightSampleContribution(
-                        lightSample, surfPt, surfFrame, wol, mat,
+                        lightSample, surfPt, surfFrame, mat, wol,
                         LoDirect);
                 }
             }
             else if (aAlgorithm == kDirectIllumLightSamplingSingle)
             {
                 LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
+                if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                     AddSingleLightSampleContribution(
-                        lightSample, surfPt, surfFrame, wol, mat,
+                        lightSample, surfPt, surfFrame, mat, wol,
                         LoDirect);
             }
             else if (aAlgorithm == kDirectIllumBRDFSampling)
@@ -75,6 +75,7 @@ public:
                     GetDirectRadianceFromDirection(
                         surfPt,
                         surfFrame,
+                        mat,
                         brdfSample.mWil,
                         lightSamplingCtx,
                         LiLight);
@@ -98,7 +99,7 @@ public:
 
                 // Generate one sample by sampling the lights
                 LightSample lightSample;
-                if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
+                if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                 {
                     AddMISLightSampleContribution(
                         lightSample, 1, 1, surfPt, surfFrame, wol, mat,
@@ -109,7 +110,7 @@ public:
                 BRDFSample brdfSample;
                 mat.SampleBrdf(mRng, wol, brdfSample);
                 AddDirectIllumMISBrdfSampleContribution(
-                    brdfSample, 1, 1, surfPt, surfFrame, lightSamplingCtx,
+                    brdfSample, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
                     LoDirect);
             }
             else

@@ -187,3 +187,14 @@ void pg3_exit();
 #else
 #define PG3_PROFILING_NOINLINE
 #endif
+
+// Code markers
+#define PG3_ERROR_NOT_IMPLEMENTED(_msg) \
+    PG3_FATAL_ERROR( \
+        "This code has not been implemented!\n" \
+        "Details:   %s", _msg);
+#define PG3_ERROR_CODE_NOT_TESTED(_msg) \
+    PG3_FATAL_ERROR( \
+        "This code has not been tested!\n" \
+        "Details:   %s", _msg);
+

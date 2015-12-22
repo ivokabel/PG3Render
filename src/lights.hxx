@@ -16,7 +16,7 @@
 class LightSample
 {
 public:
-    // (outgoing radiance * cosine theta_in) or it's equivalent (e.g. for point lights)
+    // (outgoing radiance * abs(cosine theta_in)) or it's equivalent (e.g. for point lights)
     // Note that this structure is designed for the angular version of the rendering equation 
     // to allow convenient combination of multiple sampling strategies in multiple-importance schema.
     SpectrumF   mSample;
@@ -36,10 +36,11 @@ public:
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: outgoing radiance * geometric component
     virtual void SampleIllumination(
-        const Vec3f     &aSurfPt, 
-        const Frame     &aSurfFrame, 
-        Rng             &aRng,
-        LightSample     &oSample
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        Rng                     &aRng,
+        LightSample             &oSample
         ) const = 0;
 
     // Returns amount of outgoing radiance from the point in the direction
@@ -54,9 +55,10 @@ public:
     // Returns an estimate of light contribution of this light-source to the given point.
     // Used for picking one of all available light sources when doing light-source sampling.
     virtual float EstimateContribution(
-        const Vec3f &aSurfPt,
-        const Frame &aSurfFrame,
-        Rng         &aRng
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+              Rng               &aRng
         ) const = 0;
 };
 
@@ -121,10 +123,11 @@ public:
     }
 
     virtual void SampleIllumination(
-        const Vec3f     &aSurfPt, 
-        const Frame     &aSurfFrame, 
-        Rng             &aRng,
-        LightSample     &oSample
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        Rng                     &aRng,
+        LightSample             &oSample
         ) const
     {
         // Sample the whole triangle surface
@@ -137,13 +140,14 @@ public:
             + baryCoords.y * P2
             + (1.0f - baryCoords.x - baryCoords.y) * mP0;
 
-        ComputeSample(aSurfPt, samplePoint, aSurfFrame, oSample);
+        ComputeSample(aSurfPt, samplePoint, aSurfFrame, aSurfMaterial, oSample);
     }
 
     virtual float EstimateContribution(
-        const Vec3f &aSurfPt,
-        const Frame &aSurfFrame,
-        Rng         &aRng
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+              Rng               &aRng
         ) const
     {
         aRng; // unused param
@@ -166,10 +170,10 @@ public:
         const Vec3f P2 = mP0 + mE2;
         const Vec3f P3 = mP0 + 0.33f * mE1 + 0.33f * mE2; // centre of mass
         LightSample sample0, sample1, sample2, sample3;
-        ComputeSample(aSurfPt, mP0, aSurfFrame, sample0);
-        ComputeSample(aSurfPt, P1,  aSurfFrame, sample1);
-        ComputeSample(aSurfPt, P2,  aSurfFrame, sample2);
-        ComputeSample(aSurfPt, P3,  aSurfFrame, sample3);
+        ComputeSample(aSurfPt, mP0, aSurfFrame, aSurfMaterial, sample0);
+        ComputeSample(aSurfPt, P1,  aSurfFrame, aSurfMaterial, sample1);
+        ComputeSample(aSurfPt, P2,  aSurfFrame, aSurfMaterial, sample2);
+        ComputeSample(aSurfPt, P3,  aSurfFrame, aSurfMaterial, sample3);
         return
             (   sample0.mSample.Luminance() / sample0.mPdfW
               + sample1.mSample.Luminance() / sample1.mPdfW
@@ -181,22 +185,45 @@ public:
 
 private:
     void ComputeSample(
-        const Vec3f     &aSurfPt,
-        const Vec3f     &aSamplePt,
-        const Frame     &aSurfFrame,
-        LightSample     &oSample
+        const Vec3f             &aSurfPt,
+        const Vec3f             &aSamplePt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+              LightSample       &oSample
         ) const
     {
         // Replicated in GetEmmision()!
+
+        aSurfMaterial; // unused parameter
 
         oSample.mWig = aSamplePt - aSurfPt;
         const float distSqr = oSample.mWig.LenSqr();
         oSample.mDist = sqrt(distSqr);
         oSample.mWig /= oSample.mDist;
         const float cosThetaOut = -Dot(mFrame.mZ, oSample.mWig); // for two-sided light use absf()
-        const float cosThetaIn = Dot(aSurfFrame.mZ, oSample.mWig);
+        float cosThetaIn        =  Dot(aSurfFrame.mZ, oSample.mWig);
 
-        if ((cosThetaIn > 0.f) && (cosThetaOut > 0.f))
+        const MaterialProperties matProps = aSurfMaterial.GetProperties();
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+
+        PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
+
+        // Materials do this checking on their own, but since we use this code also 
+        // for light contribution estimation, it is better to cut the light which is not going 
+        // to be used by the material as soon as now to get better contribution estimates.
+        if (sampleFrontSide && sampleBackSide)
+            cosThetaIn = std::abs(cosThetaIn);
+        else if (sampleFrontSide)
+            cosThetaIn = std::max(cosThetaIn, 0.0f);
+        else if (sampleBackSide)
+            cosThetaIn = std::max(-cosThetaIn, 0.0f);
+        else
+            cosThetaIn = 0.0f;
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(cosThetaIn);
+
+        if (cosThetaOut > 0.f)
             // Planar version: BRDF * Li * ((cos_in * cos_out) / dist^2)
             oSample.mSample = mRadiance * cosThetaIn; // Angular version
         else
@@ -254,35 +281,38 @@ public:
     };
 
     virtual void SampleIllumination(
-        const Vec3f     &aSurfPt,
-        const Frame     &aSurfFrame,
-        Rng             &aRng,
-        LightSample     &oSample
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        Rng                     &aRng,
+        LightSample             &oSample
         ) const
     {
         aRng; // unused param
 
-        ComputeIllumination(aSurfPt, aSurfFrame, oSample);
+        ComputeIllumination(aSurfPt, aSurfFrame, aSurfMaterial, oSample);
     }
 
     virtual float EstimateContribution(
-        const Vec3f &aSurfPt,
-        const Frame &aSurfFrame,
-        Rng         &aRng
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+              Rng               &aRng
         ) const
     {
         aRng; // unused param
 
         LightSample sample;
-        ComputeIllumination(aSurfPt, aSurfFrame, sample);
+        ComputeIllumination(aSurfPt, aSurfFrame, aSurfMaterial, sample);
         return sample.mSample.Luminance();
     }
 
 private:
     void ComputeIllumination(
-        const Vec3f     &aSurfPt,
-        const Frame     &aSurfFrame,
-        LightSample     &oSample
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        LightSample             &oSample
         ) const
     {
         oSample.mWig  = mPosition - aSurfPt;
@@ -290,9 +320,30 @@ private:
         oSample.mDist = sqrt(distSqr);
         oSample.mWig /= oSample.mDist;
 
-        const float cosTheta = Dot(aSurfFrame.mZ, oSample.mWig);
-        if (cosTheta > 0.f)
-            oSample.mSample = mIntensity * cosTheta / distSqr;
+        float cosThetaIn = Dot(aSurfFrame.mZ, oSample.mWig);
+
+        const MaterialProperties matProps = aSurfMaterial.GetProperties();
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+
+        PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
+
+        // Materials do this checking on their own, but since we use this code also 
+        // for light contribution estimation, it is better to cut the light which is not going 
+        // to be used by the material as soon as now to get better contribution estimates.
+        if (sampleFrontSide && sampleBackSide)
+            cosThetaIn = std::abs(cosThetaIn);
+        else if (sampleFrontSide)
+            cosThetaIn = std::max(cosThetaIn, 0.0f);
+        else if (sampleBackSide)
+            cosThetaIn = std::max(-cosThetaIn, 0.0f);
+        else
+            cosThetaIn = 0.0f;
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(cosThetaIn);
+
+        if (cosThetaIn > 0.f)
+            oSample.mSample = mIntensity * cosThetaIn / distSqr;
         else
             oSample.mSample.MakeZero();
 
@@ -362,10 +413,11 @@ public:
 
     PG3_PROFILING_NOINLINE
     virtual void SampleIllumination(
-        const Vec3f     &aSurfPt, 
-        const Frame     &aSurfFrame, 
-        Rng             &aRng,
-        LightSample     &oSample
+        const Vec3f             &aSurfPt, 
+        const Frame             &aSurfFrame, 
+        const AbstractMaterial  &aSurfMaterial,
+        Rng                     &aRng,
+        LightSample             &oSample
         ) const
     {
         aSurfPt; // unused parameter
@@ -373,30 +425,38 @@ public:
         if (mEnvMap != NULL)
         {
             #ifdef ENVMAP_USE_IMPORTANCE_SAMPLING
-                SampleEnvMap(aRng, aSurfFrame, oSample);
+                SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, oSample);
             #else
-                SampleCosHemisphere(aRng, aSurfFrame, oSample);
+                SampleEnvMapCosSphere(aRng, aSurfFrame, aSurfMaterial, oSample);
             #endif
         }
         else
         {
             // Constant environment illumination
-            // Sample the hemisphere in the normal direction in a cosine-weighted fashion
-            Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
-            oSample.mLightProbability = 1.0f;
+            // Sample the requested (hemi)sphere(s) in a cosine-weighted fashion
+
+            const MaterialProperties matProps = aSurfMaterial.GetProperties();
+            const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
+            const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+
+            Vec3f wil = SampleCosSphereParamPdfW(
+                aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
 
             oSample.mWig    = aSurfFrame.ToWorld(wil);
             oSample.mDist   = std::numeric_limits<float>::max();
 
-            const float cosThetaIn = wil.z;
+            oSample.mLightProbability = 1.0f;
+
+            const float cosThetaIn = std::abs(wil.z);
             oSample.mSample = mConstantRadiance * cosThetaIn;
         }
     }
 
     virtual float EstimateContribution(
-        const Vec3f &aSurfPt,
-        const Frame &aSurfFrame,
-        Rng         &aRng
+        const Vec3f             &aSurfPt,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+              Rng               &aRng
         ) const
     {
         aSurfPt; // unused param
@@ -409,23 +469,25 @@ public:
         {
             // Estimate the contribution of the environment map: \int{L_e * f_r * \cos\theta}
 
+            // TODO: This should be done using a pre-computed diffuse map!
+
             const uint32_t count = 10;
             float sum = 0.f;
 
             // We need more iterations because the estimate has too high variance if there are 
             // very bright spot lights (e.g. fully dynamic direct sun) under the surface.
-            // TODO: This should be done using a pre-computed diffuse map.
             for (uint32_t round = 0; round < count; round++)
             {
-                // Strategy 1: Sample the hemisphere in the cosine-weighted fashion
+                // Strategy 1: Sample the sphere in the cosine-weighted fashion
+                // TODO: This strategy should use material sampling rather than plain cosine-weighted one
                 LightSample sample1;
-                SampleCosHemisphere(aRng, aSurfFrame, sample1);
+                SampleEnvMapCosSphere(aRng, aSurfFrame, aSurfMaterial, sample1);
                 const float pdf1Cos = sample1.mPdfW;
                 const float pdf1EM  = EMPdfW(sample1.mWig);
 
                 // Strategy 2: Sample the environment map alone
                 LightSample sample2;
-                SampleEnvMap(aRng, aSurfFrame, sample2);
+                SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, sample2);
                 const float pdf2EM  = sample2.mPdfW;
                 const float pdf2Cos = CosHemispherePdfW(aSurfFrame.Normal(), sample2.mWig);
 
@@ -451,12 +513,20 @@ public:
     }
 
     // Sample the hemisphere in the normal direction in a cosine-weighted fashion
-    void SampleCosHemisphere(
-        Rng             &aRng,
-        const Frame     &aSurfFrame,
-        LightSample     &oSample) const
+    void SampleEnvMapCosSphere(
+        Rng                     &aRng,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        LightSample             &oSample) const
     {
-        Vec3f wil = SampleCosHemisphereW(aRng.GetVec2f(), &oSample.mPdfW);
+        const MaterialProperties matProps = aSurfMaterial.GetProperties();
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+
+        PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
+
+        Vec3f wil = SampleCosSphereParamPdfW(
+            aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
         oSample.mLightProbability = 1.0f;
 
         oSample.mWig = aSurfFrame.ToWorld(wil);
@@ -469,10 +539,15 @@ public:
 
     // Sample the environment map with the pdf proportional to luminance of the map
     void SampleEnvMap(
-        Rng             &aRng,
-        const Frame     &aSurfFrame,
-        LightSample     &oSample) const
+        Rng                     &aRng,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        LightSample             &oSample) const
     {
+        // unused param
+        // Will be used to decide which hemispheres should be sample when this is implemented
+        aSurfMaterial;
+
         PG3_ASSERT(mEnvMap != NULL);
 
         SpectrumF radiance;

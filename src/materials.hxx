@@ -18,6 +18,18 @@
 #define MAT_GOLD_IOR            0.236000f
 #define MAT_GOLD_ABSORBANCE     2.960089f
 
+enum MaterialProperties
+{
+    kBSDFNone                       = 0x00000000,
+
+    // What sides of surface should lights sample
+
+    kBSDFFrontSideLightSampling     = 0x00000001,
+    // Only needed if the back surface is not occluded by the surrounding geometry
+    // (e.g. single polygons or other non-watertight geometry)
+    kBSDFBackSideLightSampling      = 0x00000002,
+};
+
 class BRDFSample
 {
 public:
@@ -41,7 +53,18 @@ public:
 
 class AbstractMaterial
 {
+protected:
+    AbstractMaterial(MaterialProperties aProperties) :
+        mProperties(aProperties)
+    {}
+
 public:
+
+    MaterialProperties GetProperties() const
+    {
+        return mProperties;
+    }
+
     virtual SpectrumF EvalBrdf(
         const Vec3f& aWil,  // Incoming radiance direction
         const Vec3f& aWol   // Outgoing radiance direction
@@ -70,12 +93,16 @@ public:
         ) const = 0;
 
     virtual bool IsReflectanceZero() const = 0;
+
+protected:
+    MaterialProperties  mProperties;
 };
 
 class PhongMaterial : public AbstractMaterial
 {
 public:
-    PhongMaterial()
+    PhongMaterial() :
+        AbstractMaterial(kBSDFFrontSideLightSampling)
     {
         mDiffuseReflectance.SetGreyAttenuation(0.0f);
         mPhongReflectance.SetGreyAttenuation(0.0f);
@@ -87,7 +114,8 @@ public:
         const SpectrumF &aGlossyReflectance,
         float            aPhongExponent,
         uint32_t         aDiffuse,
-        uint32_t         aGlossy)
+        uint32_t         aGlossy) :
+        AbstractMaterial(kBSDFFrontSideLightSampling)
     {
         mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : SpectrumF().MakeZero();
         mPhongReflectance   = aGlossy  ? aGlossyReflectance  : SpectrumF().MakeZero();
@@ -311,6 +339,11 @@ public:
 
 class AbstractSmoothMaterial : public AbstractMaterial
 {
+protected:
+    AbstractSmoothMaterial() :
+        AbstractMaterial(kBSDFNone) // Dirac materials don't work with light sampling
+    {}
+
 public:
     virtual SpectrumF EvalBrdf(
         const Vec3f& aWil,
@@ -483,6 +516,8 @@ public:
         float aInnerIor /* n */,
         float aOuterIor,
         float aAbsorbance /* k */)
+        :
+        AbstractMaterial(kBSDFFrontSideLightSampling)
     {
         if (!IsTiny(aOuterIor))
             mEta = aInnerIor / aOuterIor;
@@ -675,7 +710,15 @@ public:
     MicrofacetGGXDielectricMaterial(
         float aRoughnessAlpha,
         float aInnerIor /* n */,
-        float aOuterIor)
+        float aOuterIor,
+        bool aAllowBackSideLightSampling = false// Only needed if the back surface is not occluded 
+                                                // by the surrounding geometry (e.g. single polygons 
+                                                // or other non-watertight geometry)
+        ) :
+        AbstractMaterial(
+            MaterialProperties(
+                  kBSDFFrontSideLightSampling
+                | (aAllowBackSideLightSampling ? kBSDFBackSideLightSampling : 0)))
     {
         if (!IsTiny(aOuterIor))
         {

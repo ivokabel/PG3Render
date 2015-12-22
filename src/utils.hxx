@@ -459,8 +459,8 @@ Vec2f SampleUniformTriangle(const Vec2f &aSamples)
 // Sample direction in the upper hemisphere with cosine-proportional pdf
 // The returned PDF is with respect to solid angle measure
 Vec3f SampleCosHemisphereW(
-    const Vec2f  &aSamples,
-    float        *oPdfW = NULL)
+    const Vec2f &aSamples,
+    float       *oPdfW = NULL)
 {
     const float term1 = 2.f * PI_F * aSamples.x;
     const float term2 = std::sqrt(1.f - aSamples.y);
@@ -491,9 +491,36 @@ float CosHemispherePdfW(
     return std::max(0.f, aDirectionLocal.z) * INV_PI_F;
 }
 
+Vec3f SampleCosSphereParamPdfW(
+    const Vec3f &aSamples,
+    const bool   sampleUpperHemisphere,
+    const bool   sampleLowerHemisphere,
+    float       &oPdfW)
+{
+    Vec3f wil = SampleCosHemisphereW(aSamples.GetXY(), &oPdfW);
+
+    if (sampleUpperHemisphere && sampleLowerHemisphere)
+    {
+        // Chose one hemisphere randomly and reduce the pdf accordingly
+        if (aSamples.z < 0.5f)
+            wil *= -1.0f;
+        oPdfW *= 0.5f;
+    }
+    else if (sampleLowerHemisphere)
+        wil *= -1.0f; // Just switch to lower hemisphere
+
+    return wil;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Sphere sampling
 //////////////////////////////////////////////////////////////////////////
+
+float UniformSpherePdfW()
+{
+    //return (1.f / (4.f * PI_F));
+    return INV_PI_F * 0.25f;
+}
 
 Vec3f SampleUniformSphereW(
     const Vec2f  &aSamples,
@@ -508,16 +535,9 @@ Vec3f SampleUniformSphereW(
         1.f - 2.f * aSamples.y);
 
     if (oPdfSA)
-        //*oPdfSA = 1.f / (4.f * PI_F);
-        *oPdfSA = INV_PI_F * 0.25f;
+        *oPdfSA = UniformSpherePdfW();
 
     return ret;
-}
-
-float UniformSpherePdfW()
-{
-    //return (1.f / (4.f * PI_F));
-    return INV_PI_F * 0.25f;
 }
 
 

@@ -308,7 +308,7 @@ public:
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
         else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
             mMaterials.push_back(
-                new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
+                new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
         else
         {
             diffuseReflectance.SetGreyAttenuation(0.8f);

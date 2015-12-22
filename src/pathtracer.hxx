@@ -213,7 +213,7 @@ protected:
                 for (uint32_t sampleNum = 0; sampleNum < lightSamplesCount; sampleNum++)
                 {
                     LightSample lightSample;
-                    if (SampleLightsSingle(surfPt, surfFrame, lightSamplingCtx, lightSample))
+                    if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                     {
                         AddMISLightSampleContribution(
                             lightSample, lightSamplesCount, brdfSamplesCount,
@@ -285,7 +285,7 @@ protected:
 
                         float brdfLightPickingProb = 0.f;
                         LightPickingProbability(
-                            surfPt, surfFrame, brdfLightId, lightSamplingCtx,
+                            surfPt, surfFrame, mat, brdfLightId, lightSamplingCtx,
                             brdfLightPickingProb);
 
                         // TODO: Uncomment this once proper environment map estimate is implemented.

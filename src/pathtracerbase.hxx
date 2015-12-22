@@ -87,6 +87,7 @@ public:
     void GetDirectRadianceFromDirection(
         const Vec3f                 &aSurfPt,
         const Frame                 &aSurfFrame,
+        const AbstractMaterial      &aSurfMaterial,
         const Vec3f                 &aWil,
               LightSamplingContext  &aContext,
               SpectrumF             &oLight,
@@ -138,7 +139,8 @@ public:
 
         if ((oLightProbability != NULL) && (lightId >= 0))
         {
-            LightPickingProbability(aSurfPt, aSurfFrame, lightId, aContext, *oLightProbability);
+            LightPickingProbability(
+                aSurfPt, aSurfFrame, aSurfMaterial, lightId, aContext, *oLightProbability);
             // TODO: Uncomment this once proper environment map estimate is implemented.
             //       Now there can be zero contribution estimate (and therefore zero picking probability)
             //       even if the actual contribution is non-zero.
@@ -149,6 +151,7 @@ public:
     bool SampleLightsSingle(
         const Vec3f                 &aSurfPt, 
         const Frame                 &aSurfFrame, 
+        const AbstractMaterial      &aSurfMaterial,
               LightSamplingContext  &aContext,
               LightSample           &oLightSample
         )
@@ -159,7 +162,8 @@ public:
 
         int32_t chosenLightId   = -1;
         float lightProbability  = 0.f;
-        PickSingleLight(aSurfPt, aSurfFrame, aContext, chosenLightId, lightProbability);
+        PickSingleLight(
+            aSurfPt, aSurfFrame, aSurfMaterial, aContext, chosenLightId, lightProbability);
 
         // Sample the chosen light
         if (chosenLightId >= 0)
@@ -167,7 +171,7 @@ public:
             // Choose a random sample on the light
             const AbstractLight* light = mConfig.mScene->GetLightPtr(chosenLightId);
             PG3_ASSERT(light != 0);
-            light->SampleIllumination(aSurfPt, aSurfFrame, mRng, oLightSample);
+            light->SampleIllumination(aSurfPt, aSurfFrame, aSurfMaterial, mRng, oLightSample);
             oLightSample.mLightProbability = lightProbability;
 
             return true;
@@ -180,6 +184,7 @@ public:
     void PickSingleLight(
         const Vec3f                 &aSurfPt,
         const Frame                 &aSurfFrame, 
+        const AbstractMaterial      &aSurfMaterial,
               LightSamplingContext  &aContext,
               int32_t               &oChosenLightId, 
               float                 &oLightProbability)
@@ -212,7 +217,7 @@ public:
                 if (!aContext.mValid)
                     // Fill light contribution cache
                     aContext.mLightContribEstimsCache[i] =
-                        light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
+                        light->EstimateContribution(aSurfPt, aSurfFrame, aSurfMaterial, mRng);
 
                 estimatesSum += aContext.mLightContribEstimsCache[i];
                 lightContrPseudoCdf[i + 1] = estimatesSum;
@@ -248,6 +253,7 @@ public:
     void LightPickingProbability(
         const Vec3f                 &aSurfPt,
         const Frame                 &aSurfFrame, 
+        const AbstractMaterial      &aSurfMaterial,
               uint32_t               aLightId, 
               LightSamplingContext  &aContext,
               float                 &oLightProbability)
@@ -279,7 +285,7 @@ public:
                 if (!aContext.mValid)
                     // Fill light contribution cache
                     aContext.mLightContribEstimsCache[i] =
-                        light->EstimateContribution(aSurfPt, aSurfFrame, mRng);
+                        light->EstimateContribution(aSurfPt, aSurfFrame, aSurfMaterial, mRng);
 
                 const float estimate = aContext.mLightContribEstimsCache[i];
                 if (i == aLightId)
@@ -303,8 +309,8 @@ public:
         const LightSample       &aLightSample,
         const Vec3f             &aSurfPt,
         const Frame             &aSurfFrame, 
+        const AbstractMaterial  &aSurfMaterial,
         const Vec3f             &aWol,
-        const AbstractMaterial  &aMat,
               SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
@@ -318,7 +324,7 @@ public:
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
                   aLightSample.mSample
-                * aMat.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
+                * aSurfMaterial.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
                 / (aLightSample.mPdfW * aLightSample.mLightProbability);
         else
             // Point light - the contribution of a single light is computed 
@@ -327,7 +333,7 @@ public:
             // of all light sources.
             oLightBuffer +=
                   aLightSample.mSample
-                * aMat.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
+                * aSurfMaterial.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
                 / aLightSample.mLightProbability;
     }
 
@@ -338,7 +344,7 @@ public:
         const Vec3f             &aSurfPt,
         const Frame             &aSurfFrame, 
         const Vec3f             &aWol,
-        const AbstractMaterial  &aMat,
+        const AbstractMaterial  &aSurfMaterial,
               SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
@@ -380,11 +386,12 @@ public:
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             float brdfCompPdfW, brdfCompProbability;
-            aMat.GetWholeFiniteCompProbabilities(brdfCompPdfW, brdfCompProbability, aWol, wil);
+            aSurfMaterial.GetWholeFiniteCompProbabilities(
+                brdfCompPdfW, brdfCompProbability, aWol, wil);
             const float brdfTotalPdfW = brdfCompPdfW * brdfCompProbability;
             const float lightPdfW     = aLightSample.mPdfW * aLightSample.mLightProbability;
             oLightBuffer +=
-                    (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                    (aLightSample.mSample * aSurfMaterial.EvalBrdf(wil, aWol))
                   * (MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalPdfW, aBrdfSamplesCount)
                     / lightPdfW);
         }
@@ -394,7 +401,7 @@ public:
             // there is only one MC estimation left - the estimation of the sum of contributions
             // of all light sources.
             oLightBuffer +=
-                  (aLightSample.mSample * aMat.EvalBrdf(wil, aWol))
+                  (aLightSample.mSample * aSurfMaterial.EvalBrdf(wil, aWol))
                 / (aLightSample.mLightProbability * aLightSamplesCount);
         }
     }
@@ -405,6 +412,7 @@ public:
         const uint32_t               aBrdfSamplesCount,
         const Vec3f                 &aSurfPt,
         const Frame                 &aSurfFrame,
+        const AbstractMaterial      &aSurfMaterial,
               LightSamplingContext  &aContext,
               SpectrumF             &oLightBuffer)
     {
@@ -418,6 +426,7 @@ public:
         GetDirectRadianceFromDirection(
             aSurfPt,
             aSurfFrame,
+            aSurfMaterial,
             aBrdfSample.mWil,
             aContext,
             LiLight,
