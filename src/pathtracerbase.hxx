@@ -201,7 +201,7 @@ public:
         else
         {
             // Non-normalized CDF for all light sources
-            // TODO: Make it a PT's memeber to avoid unnecessary allocations?
+            // TODO: Make it a PT's member to avoid unnecessary allocations?
             std::vector<float> lightContrPseudoCdf(lightCount + 1);
 
             PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);

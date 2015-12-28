@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+void init_debugging();
+
 // Uncomment this to activate all asserts in the code
 //#define PG3_ASSERT_ENABLED
 
@@ -9,7 +11,7 @@ void pg3_exit();
 
 #define PG3_WARNING( _message, ... ) \
     for(;;) \
-        { \
+    { \
         fprintf( \
             stderr, \
             "\n\n" \
@@ -26,7 +28,7 @@ void pg3_exit();
         \
         fflush(stderr); \
         break; \
-    }
+        }
 
 #define PG3_FATAL_ERROR( _message, ... ) \
     for(;;) \
@@ -48,6 +50,8 @@ void pg3_exit();
         fflush(stderr); \
         \
         pg3_exit(); \
+        \
+        break; \
     }
 
 #ifdef PG3_ASSERT_ENABLED

@@ -40,6 +40,7 @@ AbstractRenderer* CreateRenderer(
 
     default:
         PG3_FATAL_ERROR("Unknown algorithm!!");
+        return NULL;
     }
 }
 
@@ -169,6 +170,8 @@ float Render(
 
 int32_t main(int32_t argc, const char *argv[])
 {
+    init_debugging();
+
     // Warn when not using C++11 Mersenne Twister
     PrintRngWarning();
 
