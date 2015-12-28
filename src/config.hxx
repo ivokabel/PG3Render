@@ -90,6 +90,9 @@ struct Config
     // debug, temporary
     float        mDbgSplittingLevel;
     float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one brdf sample.
+
+    // Auxiliary debugging ad hoc parameters
+    float        mDbgAuxiliaryFloat;
 };
 
 // Scene configurations
@@ -324,6 +327,10 @@ void PrintConfiguration(const Config &config)
         config.mNumThreads
         );
 
+    // debugging options
+    if (config.mDbgAuxiliaryFloat != INFINITY_F)
+        printf("Debugging: Aux float param %f\n", config.mDbgAuxiliaryFloat);
+
     fflush(stdout);
 }
 
@@ -336,7 +343,13 @@ void PrintHelp(const char *argv[])
     printf("\n");
     printf(
         "Usage: %s "
-        "[-s <scene_id>] [-a <algorithm>] [-t <time> | -i <iterations>] [-minpl <min_path_length>] [-maxpl <max_path_length>] [-iic <indirect_illum_clipping_value>] [-sb|--splitting-budget <splitting_budget>] [-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] [-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] [-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] \n\n",
+        "[-s <scene_id>] [-a <algorithm>] [-t <time> | -i <iterations>] [-minpl <min_path_length>] "
+        "[-maxpl <max_path_length>] [-iic <indirect_illum_clipping_value>] "
+        "[-sb|--splitting-budget <splitting_budget>] "
+        "[-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] "
+        "[-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] "
+        "[-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] "
+        "[-auxf|--dbg_aux_float <value>] \n\n",
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -374,6 +387,11 @@ void PrintHelp(const char *argv[])
     printf("    -j     Number of threads (\"jobs\") to be used\n");
     printf("    -q     Quiet mode - doesn't print anything except for warnings and errors\n");
 
+    printf("\n");
+
+    printf("    -auxf | --dbg_aux_float \n");
+    printf("           Auxiliary float debugging ad hoc parameter (default: infinity=not set).\n");
+
     printf("    -opop | --only-print-output-pathname \n");
     printf("           Do not render anything; just print the full path of the current output file.\n");
 
@@ -407,6 +425,8 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     // debug, temporary
     oConfig.mDbgSplittingLevel = 1.f;                                   // [cmd]
     oConfig.mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
+
+    oConfig.mDbgAuxiliaryFloat              = INFINITY_F;               // [cmd]
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
@@ -801,6 +821,28 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 printf("Error: Invalid <output_trail> argument, please see help (-h)\n");
                 return false;
             }
+        }
+        else if ((arg == "-auxf"))
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <dbg_aux_float> argument, please see help (-h)\n");
+                return false;
+            }
+
+            float tmp;
+            std::istringstream iss(argv[i]);
+            iss >> tmp;
+
+            if (iss.fail())
+            {
+                printf(
+                    "Error: Invalid <dbg_aux_float> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
+                return false;
+            }
+
+            oConfig.mDbgAuxiliaryFloat = tmp;
         }
     }
 
