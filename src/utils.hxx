@@ -1,5 +1,6 @@
 #pragma once
 
+#include "unittesting.hxx"
 #include "spectrum.hxx"
 #include "math.hxx"
 #include "types.hxx"

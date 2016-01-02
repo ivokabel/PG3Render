@@ -98,6 +98,9 @@
     <ClInclude Include="src\pathtracerbase.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\unittesting.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

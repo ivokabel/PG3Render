@@ -166,11 +166,31 @@ float Render(
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Unit testing
+
+#ifdef UNIT_TESTS_CODE_ENABLED
+void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
+{
+    _UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+
+    exit(0);
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
 // Main
 
 int32_t main(int32_t argc, const char *argv[])
 {
     init_debugging();
+
+#ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    argc; argv; // unused params
+
+    RunUnitTests(eutblSubTest);
+
+#else
 
     // Warn when not using C++11 Mersenne Twister
     PrintRngWarning();
@@ -239,4 +259,6 @@ int32_t main(int32_t argc, const char *argv[])
     // debug
     //getchar(); // Wait for pressing the enter key on the command line
     return 0;
+
+#endif
 }
