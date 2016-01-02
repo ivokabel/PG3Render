@@ -309,9 +309,9 @@ void PrintConfiguration(const Config &config)
     else
         printf("Target:    %d iteration(s)\n", config.mIterations);
 
+    printf("Out file:  %s\n", config.mOutputName.c_str());
     if (!config.mOutputDirectory.empty())
         printf("Out dir:   %s\n", config.mOutputDirectory.c_str());
-    printf("Out name:  %s\n", config.mOutputName.c_str());
 
     printf("Config:    "
         "%d threads, "
@@ -465,7 +465,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || oConfig.mNumThreads <= 0)
             {
-                printf("Error: Invalid <threads_count> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <threads_count> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -486,7 +488,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || sceneID < 0 || sceneID >= SizeOfArray(g_SceneConfigs))
             {
-                printf("Error: Invalid <scene_id> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <scene_id> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -511,7 +515,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || envMapID < 0 || envMapID >= Scene::kEMCount)
             {
-                printf("Error: Invalid <environment_map_id> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <environment_map_id> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -524,13 +530,15 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             }
 
             std::string alg(argv[i]);
-            for (int32_t i=0; i<kAlgorithmCount; i++)
-                if (alg == Config::GetAcronym(Algorithm(i)))
-                    oConfig.mAlgorithm = Algorithm(i);
+            for (int32_t algorithm=0; algorithm<kAlgorithmCount; algorithm++)
+                if (alg == Config::GetAcronym(Algorithm(algorithm)))
+                    oConfig.mAlgorithm = Algorithm(algorithm);
 
             if (oConfig.mAlgorithm == kAlgorithmCount)
             {
-                printf("Error: Invalid <algorithm> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <algorithm> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -557,7 +565,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || tmpPathLength < 0)
             {
-                printf("Error: Invalid <max_path_length> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <max_path_length> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
 
@@ -727,7 +737,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || oConfig.mIterations < 1)
             {
-                printf("Error: Invalid <iterations> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <iterations> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -744,7 +756,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (iss.fail() || oConfig.mMaxTime < 0)
             {
-                printf("Error: Invalid <time> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <time> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
 
@@ -770,7 +784,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             }
             else if (oConfig.mDefOutputExtension.length() == 0)
             {
-                printf("Error: Invalid <default_output_extension> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <default_output_extension> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -786,7 +802,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (oConfig.mOutputName.length() == 0)
             {
-                printf("Error: Invalid <output_name> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <output_name> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -802,7 +820,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (oConfig.mOutputDirectory.length() == 0)
             {
-                printf("Error: Invalid <output_directory> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <output_directory> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -818,7 +838,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             if (outputNameTrail.length() == 0)
             {
-                printf("Error: Invalid <output_trail> argument, please see help (-h)\n");
+                printf(
+                    "Error: Invalid <output_trail> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
                 return false;
             }
         }
@@ -868,7 +890,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
     // Load scene
     Scene *scene = new Scene;
-    scene->LoadCornellBox(oConfig.mResolution, g_SceneConfigs[sceneID], envMapID);
+    scene->LoadCornellBox(oConfig.mResolution, g_SceneConfigs[sceneID], envMapID, oConfig.mDbgAuxiliaryFloat);
     oConfig.mScene = scene;
 
     // If no output name is chosen, create a default one

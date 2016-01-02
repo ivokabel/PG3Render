@@ -61,7 +61,7 @@ void pg3_exit();
         { \
             if(!(__expr)) \
             { \
-                std::cerr << std::endl << \
+                std::cerr << std::endl << std::endl << \
                     "Assertion\n\t'" #__expr "'\nfailed at " << __FILE__ << ":" << __LINE__ << \
                     std::endl << std::flush; \
                 pg3_exit(); \
@@ -76,7 +76,7 @@ void pg3_exit();
             { \
                 fprintf( \
                     stderr, \
-                    "\n" \
+                    "\n\n" \
                     "Assertion\n\t'" #__expr "'\nfailed at %s:%d\n" \
                     "Detail: " __msg \
                     "\n" \
@@ -118,11 +118,24 @@ void pg3_exit();
     PG3_ASSERT_FLOAT_VALID(_up); \
     PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%.12f <= %.12f <= %.12f", (_low), (_val), (_up))
 
+#ifdef PG3_ASSERT_ENABLED
 #define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius) \
-    PG3_ASSERT_FLOAT_VALID(_val1); \
-    PG3_ASSERT_FLOAT_VALID(_val2); \
-    PG3_ASSERT_FLOAT_VALID(_radius); \
-    PG3_ASSERT(fabs((_val1) - (_val2)) <= (_radius))
+{ \
+    const auto _val1_const      = (_val1); \
+    const auto _val2_const      = (_val2); \
+    const auto _radius_const    = (_radius); \
+    \
+    PG3_ASSERT_FLOAT_VALID(_val1_const); \
+    PG3_ASSERT_FLOAT_VALID(_val2_const); \
+    PG3_ASSERT_FLOAT_VALID(_radius_const); \
+    PG3_ASSERT_MSG( \
+        fabs((_val1_const) - (_val2_const)) <= (_radius_const), \
+        "fabs((%.12f) - (%.12f)) <= (%.12f)", \
+        (_val1_const), (_val2_const), (_radius_const)) \
+}
+#else
+#define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius)
+#endif
 
 #define PG3_ASSERT_FLOAT_LESS_THAN(_val1, _val2) \
     PG3_ASSERT_FLOAT_VALID(_val1); \
@@ -182,7 +195,7 @@ void pg3_exit();
 
 #define PG3_ASSERT_VEC3F_NORMALIZED(_vec3) \
     PG3_ASSERT_VEC3F_VALID(_vec3); \
-    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.0001f)
+    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.0005f)
 
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE

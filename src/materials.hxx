@@ -453,6 +453,8 @@ public:
     {
         const float fresnelRefl = FresnelDielectric(aWol.z, mEta);
 
+        PG3_ERROR_CODE_NOT_TESTED("Test this without the out-commented code.");
+
         float attenuation;
         // TODO: Test this without the out-commented code
         //if (fresnelRefl >= 1.0f)
