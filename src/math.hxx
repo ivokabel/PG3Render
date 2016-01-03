@@ -95,6 +95,18 @@ inline T Clamp(const T& n, const T& lower, const T& upper)
     return std::max(lower, std::min(n, upper));
 }
 
+template <typename T>
+inline T Min3(const T& n1, const T& n2, const T& n3)
+{
+    return std::min(n1, std::min(n2, n3));
+}
+
+template <typename T>
+inline T Max3(const T& n1, const T& n2, const T& n3)
+{
+    return std::max(n1, std::max(n2, n3));
+}
+
 template <
     typename T,
     typename = typename
