@@ -1,6 +1,7 @@
 #pragma once
 
 #include "unittesting.hxx"
+#include "rng.hxx"
 #include "spectrum.hxx"
 #include "math.hxx"
 #include "types.hxx"
@@ -179,6 +180,19 @@ float FresnelConductor(
 // Geometry routines
 //////////////////////////////////////////////////////////////////////////
 
+
+float TanTheta2(const Vec3f & aDirLocal)
+{
+    PG3_ASSERT_VEC3F_NORMALIZED(aDirLocal);
+
+    const float cosTheta2 = aDirLocal.z * aDirLocal.z;
+    const float sinTheta2 = 1.f - cosTheta2;
+    if (sinTheta2 <= 0.0f)
+        return 0.0f;
+    else
+        return sinTheta2 / cosTheta2;
+}
+
 // Reflect vector through (0,0,1)
 Vec3f ReflectLocal(const Vec3f& aVector)
 {
@@ -343,17 +357,385 @@ Vec3f HalfwayVectorRefractionLocal(
     return halfwayVec;
 }
 
-float TanTheta2(const Vec3f & aVectorLocal)
-{
-    PG3_ASSERT_VEC3F_NORMALIZED(aVectorLocal);
+#ifdef UNIT_TESTS_CODE_ENABLED
 
-    const float cosTheta2 = aVectorLocal.z * aVectorLocal.z;
-    const float sinTheta2 = 1.f - cosTheta2;
-    if (sinTheta2 <= 0.0f)
-        return 0.0f;
+bool _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
+    const UnitTestBlockLevel aMaxUtBlockPrintLevel,
+    const float  thetaIn,
+    const float  thetaOut,
+    const float  phiOut,
+    const float  upperN,
+    const float  lowerN)
+{
+    const Vec3f dirIn  = CreateDirection(thetaIn, 0.0f);
+    const Vec3f dirOut = CreateDirection(thetaOut, phiOut);
+
+    const bool isDirInBelow  = dirIn.z  < 0.0f;
+    const bool isDirOutBelow = dirOut.z < 0.0f;
+
+    UT_BEGIN(
+        aMaxUtBlockPrintLevel, eutblSingleStep,
+        "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
+        dirIn.x, dirIn.y, dirIn.z,
+        dirOut.x, dirOut.y, dirOut.z);
+
+    // If both directions are on the same side, it is an invalid configuration for refraction,
+    // but we want to test those too
+    const float etaInOut =
+          (isDirOutBelow ? lowerN : upperN)
+        / (isDirInBelow  ? lowerN : upperN);
+
+    // Compute half vector
+    const Vec3f halfVector =
+        HalfwayVectorRefractionLocal(dirIn, dirOut, etaInOut);
+
+    // Halfway vector validity
+    const float cosThetaIM = Dot(dirIn, halfVector);
+    const float cosThetaOM = Dot(dirOut, halfVector);
+    const bool isHalfwayVectorValid =
+           // Incident and refracted directions must be on the oposite sides of the microfacet
+           ((cosThetaIM  * cosThetaOM) <= 0.0f)
+           // Up directions cannot face the microfacet from below and vice versa
+        && ((dirIn.z  * cosThetaIM) >= -0.0f)
+        && ((dirOut.z * cosThetaOM) >= -0.0f);
+
+    // Tests
+    if (isDirInBelow == isDirOutBelow)
+    {
+        if (isHalfwayVectorValid)
+        {
+            UT_END_FAILED(
+                aMaxUtBlockPrintLevel, eutblSingleStep,
+                "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
+                "In and out directions are on the same side of the macro surface, but halfway vector is valid!",
+                dirIn.x, dirIn.y, dirIn.z,
+                dirOut.x, dirOut.y, dirOut.z);
+            return false;
+        }
+    }
+    else if (isDirInBelow != isDirOutBelow)
+    {
+        if (isHalfwayVectorValid)
+        {
+            // Test behaviour using the Refract() function
+            Vec3f dirOutComputed;
+            bool isAboveMicrofacet;
+            const auto eta = lowerN / upperN;
+            Refract(dirOutComputed, isAboveMicrofacet, dirIn, halfVector, eta);
+
+            // Refraction validity
+            const float cosThetaI = Dot(dirIn, halfVector);
+            const float etaInternal = (cosThetaI > 0.0f) ? (1.0f / eta) : eta;
+            const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (etaInternal * etaInternal);
+            const float refractionValidityCoef = cosThetaTSqr;
+
+            // Evaluate
+            if (refractionValidityCoef >= 0.0f)
+            {
+                // Check out directions
+                const float outDirsDistance = (dirOutComputed - dirOut).Length();
+                const bool outDirsEqual = outDirsDistance < 0.0005f;
+
+                if (!outDirsEqual)
+                {
+                    UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSingleStep,
+                        "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
+                        "Both halfway vector and refraction are valid, but out directions are not equal!",
+                        dirIn.x, dirIn.y, dirIn.z,
+                        dirOut.x, dirOut.y, dirOut.z);
+                    return false;
+                }
+            }
+            else if (refractionValidityCoef < -0.0001f)
+            {
+                UT_END_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSingleStep,
+                    "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
+                    "Halfway vector is valid, but refraction is not!",
+                    dirIn.x, dirIn.y, dirIn.z,
+                    dirOut.x, dirOut.y, dirOut.z);
+                return false;
+            }
+        }
+    }
     else
-        return sinTheta2 / cosTheta2;
+    {
+        UT_FATAL_ERROR(
+            aMaxUtBlockPrintLevel, eutblSingleStep,
+            "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
+            "Unexpected case!",
+            dirIn.x, dirIn.y, dirIn.z,
+            dirOut.x, dirOut.y, dirOut.z);
+        return false;
+    }
+
+    UT_END_PASSED(
+        aMaxUtBlockPrintLevel, eutblSingleStep,
+        "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
+        dirIn.x, dirIn.y, dirIn.z,
+        dirOut.x, dirOut.y, dirOut.z);
+
+    return true;
 }
+
+bool _UnitTest_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
+    const UnitTestBlockLevel aMaxUtBlockPrintLevel,
+    const float  thetaIn,
+    const float  thetaHalfwayVector,
+    const float  phiHalfwayVector,
+    const float  upperN,
+    const float  lowerN)
+{
+    const Vec3f dirIn       = CreateDirection(thetaIn, 0.0f);
+    const Vec3f halfVector  = CreateDirection(thetaHalfwayVector, phiHalfwayVector);
+
+    if (halfVector.z < 0.0f)
+        return true;
+
+    UT_BEGIN(
+        aMaxUtBlockPrintLevel, eutblSingleStep,
+        "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
+        dirIn.x, dirIn.y, dirIn.z,
+        halfVector.x, halfVector.y, halfVector.z);
+
+    // Refract
+    Vec3f dirOut;
+    bool isAboveMicrofacet;
+    const auto etaAbs = lowerN / upperN;
+    Refract(dirOut, isAboveMicrofacet, dirIn, halfVector, etaAbs);
+
+    // Refraction validity
+    const float cosThetaI = Dot(dirIn, halfVector);
+    const float etaInternal = (cosThetaI > 0.0f) ? (1.0f / etaAbs) : etaAbs;
+    const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (etaInternal * etaInternal);
+    const float refractionValidityCoef = cosThetaTSqr;
+
+    // Tests
+    const float cosThetaIM = Dot(dirIn,  halfVector);
+    const float cosThetaOM = Dot(dirOut, halfVector);
+
+    if (   (refractionValidityCoef >= 0.0f)
+        && ((dirIn.z  * cosThetaIM) >= 0.0f)
+        && ((dirOut.z * cosThetaOM) >= 0.0f))
+    {
+        const bool isDirInBelow = dirIn.z  < 0.0f;
+        const bool isDirOutBelow = dirOut.z < 0.0f;
+
+        if (isDirInBelow == isDirOutBelow)
+        {
+            UT_END_FAILED(
+                aMaxUtBlockPrintLevel, eutblSingleStep,
+                "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
+                "In and out directions are on the same side of the macro surface!",
+                dirIn.x, dirIn.y, dirIn.z,
+                halfVector.x, halfVector.y, halfVector.z);
+            return false;
+        }
+
+        // Compute half vector
+        const float etaInOut =
+              (isDirOutBelow ? lowerN : upperN)
+            / (isDirInBelow  ? lowerN : upperN);
+        const Vec3f halfVectorComputed =
+            HalfwayVectorRefractionLocal(dirIn, dirOut, etaInOut);
+
+        // Halfway vector validity
+        const float cosThetaIMComp = Dot(dirIn,  halfVectorComputed);
+        const float cosThetaOMComp = Dot(dirOut, halfVectorComputed);
+        const bool isHalfwayVectorValid =
+               // Incident and refracted directions must be on the oposite sides of the microfacet
+               ((cosThetaIMComp  * cosThetaOMComp) <= 0.0f)
+               // Up directions cannot face the microfacet from below and vice versa
+            && ((dirIn.z  * cosThetaIMComp) >= -0.0f)
+            && ((dirOut.z * cosThetaOMComp) >= -0.0f);
+        const float subCoef1 = -1.0f * cosThetaIMComp * cosThetaOMComp;
+        const float subCoef2 = dirIn.z  * cosThetaIMComp;
+        const float subCoef3 = dirOut.z * cosThetaOMComp;
+        const float halwayVectCompValidityCoef = Min3(subCoef1, subCoef2, subCoef3);
+
+        // Sanity test
+        if (isHalfwayVectorValid != (halwayVectCompValidityCoef >= 0.0f))
+        {
+            UT_FATAL_ERROR(
+                aMaxUtBlockPrintLevel, eutblSingleStep,
+                "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
+                "Refraction valitidy sanity test failed!",
+                dirIn.x, dirIn.y, dirIn.z,
+                halfVector.x, halfVector.y, halfVector.z);
+            return false;
+        }
+
+        // Evaluate
+        if (halwayVectCompValidityCoef >= 0.0f)
+        {
+            // Check out directions
+            const float halfVectorsDistance = (halfVectorComputed - halfVector).Length();
+            const bool halfVectorsEqual = halfVectorsDistance < 0.0001f;
+
+            if (!halfVectorsEqual)
+            {
+                UT_END_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSingleStep,
+                    "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
+                    "Both refraction and halfway vector are valid, but halfway vectors are not equal!",
+                    dirIn.x, dirIn.y, dirIn.z,
+                    halfVector.x, halfVector.y, halfVector.z);
+                return false;
+            }
+        }
+        else if (halwayVectCompValidityCoef < -0.0001f)
+        {
+            UT_END_FAILED(
+                aMaxUtBlockPrintLevel, eutblSingleStep,
+                "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
+                "Refraction is valid, but halfway vector is not!",
+                dirIn.x, dirIn.y, dirIn.z,
+                halfVector.x, halfVector.y, halfVector.z);
+            return false;
+        }
+    }
+
+    UT_END_PASSED(
+        aMaxUtBlockPrintLevel, eutblSingleStep,
+        "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
+        dirIn.x, dirIn.y, dirIn.z,
+        halfVector.x, halfVector.y, halfVector.z);
+
+    return true;
+}
+
+bool _UnitTest_HalfwayVectorRefractionLocal_TestInterface(
+    UnitTestBlockLevel  aMaxUtBlockPrintLevel,
+    const float         aUpperN, // above macro surface
+    const float         aLowerN  // below macro surface
+    )
+{
+    // Deterministic directions generation
+
+    const float thetaInStepCount    = 32;
+    const float thetaInStart        = 0.0f * PI_F;
+    const float thetaInEnd          = 2.0f * PI_F;
+
+    const float thetaOutStepCount   = 32;
+    const float thetaOutStart       = 0.0f * PI_F;
+    const float thetaOutEnd         = 2.0f * PI_F;
+
+    const float phiOutStepCount     = 16;
+    const float phiOutStart         = 0.0f * PI_F;
+    const float phiOutEnd           = 2.0f * PI_F;
+
+    UT_BEGIN(
+        aMaxUtBlockPrintLevel, eutblSubTest,
+        "Air(%.2f)/glass(%.2f) interface, deterministics directions (%.0fx%.0fx%.0f)",
+        aUpperN, aLowerN, thetaInStepCount, thetaOutStepCount, phiOutStepCount);
+
+    const float thetaInStep = (thetaInEnd - thetaInStart) / (thetaInStepCount - 1);
+    for (float thetaIn = thetaInStart; thetaIn <= (thetaInEnd + 0.001f); thetaIn += thetaInStep)
+    {
+        const float thetaOutStep = (thetaOutEnd - thetaOutStart) / (thetaOutStepCount - 1);
+        for (float thetaOut = thetaOutStart; thetaOut <= (thetaOutEnd + 0.001f); thetaOut += thetaOutStep)
+        {
+            const float phiOutStep = (phiOutEnd - phiOutStart) / (phiOutStepCount - 1);
+            for (float phiOut = phiOutStart; phiOut <= (phiOutEnd + 0.001f); phiOut += phiOutStep)
+            {
+                bool success;
+
+                success =
+                    _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
+                        aMaxUtBlockPrintLevel,
+                        thetaIn, thetaOut, phiOut,
+                        aUpperN, aLowerN);
+                if (!success)
+                    return false;
+
+                success =
+                    _UnitTest_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
+                        aMaxUtBlockPrintLevel,
+                        thetaIn, thetaOut, phiOut,
+                        aUpperN, aLowerN);
+                if (!success)
+                    return false;
+            }
+        }
+    }
+
+    UT_END_PASSED(
+        aMaxUtBlockPrintLevel, eutblSubTest,
+        "Air(%.2f)/glass(%.2f) interface, deterministics directions (%.0fx%.0fx%.0f)",
+        aUpperN, aLowerN, thetaInStepCount, thetaOutStepCount, phiOutStepCount);
+
+    // Monte Carlo testing
+
+    const uint32_t randomSamplesCount = 32 * 32 * 64;
+    Rng rng(1998);
+
+    UT_BEGIN(
+        aMaxUtBlockPrintLevel, eutblSubTest,
+        "Air(%.2f)/glass(%.2f) interface, random directions (%d)",
+        aUpperN, aLowerN, randomSamplesCount);
+
+    for (uint32_t sample = 0; sample < randomSamplesCount; sample++)
+    {
+        // Sample spheres uniformly
+        const Vec3f samples = rng.GetVec3f();
+        const float thetaIn     = std::acos(1.f - 2.f * samples.x);
+        const float thetaOut    = std::acos(1.f - 2.f * samples.y);
+        const float phiOut      = samples.z * 2.0f * PI_F;
+
+        bool success;
+
+        success = _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
+            aMaxUtBlockPrintLevel,
+            thetaIn, thetaOut, phiOut,
+            aUpperN, aLowerN);
+        if (!success)
+            return false;
+
+        success = _UnitTest_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
+            aMaxUtBlockPrintLevel,
+            thetaIn, thetaOut, phiOut,
+            aUpperN, aLowerN);
+        if (!success)
+            return false;
+    }
+
+    UT_END_PASSED(
+        aMaxUtBlockPrintLevel, eutblSubTest,
+        "Air(%.2f)/glass(%.2f) interface, random directions (%d)",
+        aUpperN, aLowerN, randomSamplesCount);
+
+    return true;
+}
+
+bool _UnitTest_HalfwayVectorRefractionLocal(
+    UnitTestBlockLevel   aMaxUtBlockPrintLevel)
+{
+    UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "HalfwayVectorRefractionLocal()");
+
+    if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.51f))
+        return false;
+    if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.51f, 1.00f))
+        return false;
+
+    if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.10f, 1.00f))
+        return false;
+    if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.10f))
+        return false;
+
+    if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.51f, 1.55f))
+        return false;
+    if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.55f, 1.51f))
+        return false;
+
+    UT_END_PASSED(
+        aMaxUtBlockPrintLevel, eutblWholeTest,
+        "HalfwayVectorRefractionLocal()");
+
+    return true;
+}
+
+#endif
 
 // Cosine lobe hemisphere sampling
 Vec3f SamplePowerCosHemisphereW(
