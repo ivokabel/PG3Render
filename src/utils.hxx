@@ -180,6 +180,38 @@ float FresnelConductor(
 // Geometry routines
 //////////////////////////////////////////////////////////////////////////
 
+// Theta - inclination angle
+// Phi   - azimuth angle
+Vec3f CreateDirection(
+    const float aSinTheta,
+    const float aCosTheta,
+    const float aSinPhi,
+    const float aCosPhi
+    )
+{
+    PG3_ASSERT_FLOAT_VALID(aSinTheta);
+    PG3_ASSERT_FLOAT_VALID(aCosTheta);
+    PG3_ASSERT_FLOAT_VALID(aSinPhi);
+    PG3_ASSERT_FLOAT_VALID(aCosPhi);
+
+    return Vec3f(aSinTheta * aCosPhi, aSinTheta * aSinPhi, aCosTheta);
+}
+
+// Theta - inclination angle
+// Phi   - azimuth angle
+Vec3f CreateDirection(
+    const float aTheta,
+    const float aPhi)
+{
+    PG3_ASSERT_FLOAT_VALID(aTheta);
+    PG3_ASSERT_FLOAT_VALID(aPhi);
+
+    return CreateDirection(
+        std::sin(aTheta),
+        std::cos(aTheta),
+        std::sin(aPhi),
+        std::cos(aPhi));
+}
 
 float TanTheta2(const Vec3f & aDirLocal)
 {
@@ -909,13 +941,13 @@ Vec3f SampleUniformSphereW(
     const Vec2f  &aSamples,
     float        *oPdfSA)
 {
-    const float term1 = 2.f * PI_F * aSamples.x;
-    const float term2 = 2.f * std::sqrt(aSamples.y - aSamples.y * aSamples.y);
+    const float phi      = 2.f * PI_F * aSamples.x;
+    const float sinTheta = 2.f * std::sqrt(aSamples.y - aSamples.y * aSamples.y);
+    const float cosTheta = 1.f - 2.f * aSamples.y;
 
-    const Vec3f ret(
-        std::cos(term1) * term2,
-        std::sin(term1) * term2,
-        1.f - 2.f * aSamples.y);
+    PG3_ERROR_CODE_NOT_TESTED("");
+
+    const Vec3f ret = CreateDirection(sinTheta, cosTheta, std::sin(phi), std::cos(phi));
 
     if (oPdfSA)
         *oPdfSA = UniformSpherePdfW();

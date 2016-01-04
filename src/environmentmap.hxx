@@ -277,9 +277,7 @@ private:
         const float phi   = -(uv.x - 0.5f) * 2 * PI_F; // we rotate in the opposite direction
         const float theta = uv.y * PI_F;
 
-        const float sinTheta = sin(theta);
-
-        return Vec3f(sinTheta * cos(phi), sinTheta * sin(phi), cos(theta));
+        return CreateDirection(theta, phi);
     }
 
     // Returns vector [u,v] in [0,1]x[0,1]. The direction must be non-zero and normalized.
