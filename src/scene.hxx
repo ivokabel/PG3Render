@@ -602,8 +602,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\pisa.exr", 
-                        //0.05f, 1.0f);
-                        0.05f, 32.0f);// debug
+                        0.05f, 1.0f);
+                        //0.05f, 32.0f);// debug
                     break;
                 }
 
