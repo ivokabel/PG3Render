@@ -170,7 +170,8 @@ public:
     void LoadCornellBox(
         const Vec2i &aResolution,
         uint32_t aBoxMask = kDefault,
-        uint32_t aEnvironmentMapType = kEMDefault
+        uint32_t aEnvironmentMapType = kEMDefault,
+        float aDbgAux = INFINITY_F
         )
     {
         mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
@@ -447,10 +448,16 @@ public:
                 floorCenter + Vec3f( rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
                 floorCenter + Vec3f(-rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
             };
-            geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
-            geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));
-            //geometryList->mGeometry.push_back(new Triangle(rect[1], rect[0], rect[3], 9)); // reverted order
-            //geometryList->mGeometry.push_back(new Triangle(rect[3], rect[2], rect[1], 9)); // reverted order
+            if (aDbgAux != 1.0f)
+            {
+                geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
+                geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));
+            }
+            else
+            {
+                geometryList->mGeometry.push_back(new Triangle(rect[1], rect[0], rect[3], 9)); // reverted order
+                geometryList->mGeometry.push_back(new Triangle(rect[3], rect[2], rect[1], 9)); // reverted order
+            }
         }
 
         //////////////////////////////////////////////////////////////////////////
