@@ -479,7 +479,6 @@ public:
             for (uint32_t round = 0; round < count; round++)
             {
                 // Strategy 1: Sample the sphere in the cosine-weighted fashion
-                // TODO: This strategy should use material sampling rather than plain cosine-weighted one
                 LightSample sample1;
                 SampleEnvMapCosSphere(aRng, aSurfFrame, aSurfMaterial, sample1);
                 const float pdf1Cos = sample1.mPdfW;
@@ -544,10 +543,6 @@ public:
         const AbstractMaterial  &aSurfMaterial,
         LightSample             &oSample) const
     {
-        // unused param
-        // Will be used to decide which hemispheres should be sample when this is implemented
-        aSurfMaterial;
-
         PG3_ASSERT(mEnvMap != NULL);
 
         SpectrumF radiance;
@@ -557,12 +552,15 @@ public:
         oSample.mDist               = std::numeric_limits<float>::max();
         oSample.mLightProbability   = 1.0f;
 
+        const MaterialProperties matProps = aSurfMaterial.GetProperties();
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+
         const float cosThetaIn = Dot(oSample.mWig, aSurfFrame.Normal());
-        if (cosThetaIn <= 0.0f)
-            // The sample is below the surface - no light contribution
-            oSample.mSample.MakeZero();
+        if ((sampleFrontSide && (cosThetaIn > 0.0f)) || (sampleBackSide && (cosThetaIn < 0.0f)))
+            oSample.mSample = radiance * std::abs(cosThetaIn);
         else
-            oSample.mSample = radiance * cosThetaIn;
+            oSample.mSample.MakeZero();
     }
 
     float EMPdfW(const Vec3f &aDirection) const

@@ -31,26 +31,27 @@
 
 float FresnelDielectric(
     float aCosThetaI,
-    float aEta)         // internal IOR / external IOR
+    float aEtaAbs)         // internal IOR / external IOR
 {
-    if (aEta < 0)
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaAbs, 0.0f);
+
+    if (aEtaAbs < 0)
         return 1.f;
 
     float workingEta;
     if (aCosThetaI < 0.f)
     {
         aCosThetaI = -aCosThetaI;
-        workingEta = aEta;
+        workingEta = aEtaAbs;
     }
     else
-        workingEta = 1.f / aEta;
+        workingEta = 1.f / aEtaAbs;
 
-    const float sinThetaT2 = Sqr(workingEta) * (1.f - Sqr(aCosThetaI));
-    const float cosThetaT  = SafeSqrt(1.f - sinThetaT2);
+    const float sinThetaTSqr    = Sqr(workingEta) * (1.f - Sqr(aCosThetaI));
+    const float cosThetaT       = SafeSqrt(1.f - sinThetaTSqr);
 
-    //// debug
-    //const float thetaI = std::acos(aCosThetaI);
-    //const float thetaT = std::acos(cosThetaT);
+    if (sinThetaTSqr > 1.0f)
+        return 1.0f; // TIR
 
     // Perpendicular (senkrecht) polarization
     const float term2                   = workingEta * aCosThetaI;
@@ -67,18 +68,18 @@ float FresnelDielectric(
     PG3_ASSERT_FLOAT_IN_RANGE(reflParallel, 0.0f, 1.0f);
     PG3_ASSERT_FLOAT_IN_RANGE(reflPerpendicular, 0.0f, 1.0f);
     PG3_ASSERT_FLOAT_IN_RANGE(reflectance, 0.0f, 1.0f);
-    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(reflPerpendicular + 0.00001f, reflParallel);
+    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(reflPerpendicular + 0.001f, reflParallel);
 
     return reflectance;
 }
 
 float FresnelConductor(
     float aCosThetaI,
-    float aEta,         // internal IOR / external IOR
+    float aEtaAbs,         // internal IOR / external IOR
     float aAbsorbance
     )
 {
-    PG3_ASSERT_FLOAT_LARGER_THAN(aEta, 0.0f);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaAbs, 0.0f);
     PG3_ASSERT_FLOAT_LARGER_THAN(aAbsorbance, 0.0f);
 
     if (aCosThetaI < -0.00001f)
@@ -97,7 +98,7 @@ float FresnelConductor(
     const float sinThetaSqr = std::max(1.0f - cosThetaSqr, 0.0f);
     const float sinTheta    = std::sqrt(sinThetaSqr);
 
-    const float iorSqr    = Sqr(aEta);
+    const float iorSqr    = Sqr(aEtaAbs);
     const float absorbSqr = Sqr(aAbsorbance);
 
     const float tmp1 = iorSqr - absorbSqr - sinThetaSqr;
@@ -145,7 +146,7 @@ float FresnelConductor(
     const float sinThetaI2 = 1 - cosThetaI2;
     const float sinThetaI4 = sinThetaI2 * sinThetaI2;
 
-    const float aEta2        = aEta * aEta;
+    const float aEta2        = aEtaAbs * aEtaAbs;
     const float aAbsorbance2 = aAbsorbance * aAbsorbance;
 
     const float temp1 = aEta2 - aAbsorbance2 - sinThetaI2;
@@ -213,78 +214,78 @@ Vec3f CreateDirection(
         std::cos(aPhi));
 }
 
-float TanTheta2(const Vec3f & aDirLocal)
+float TanThetaSqr(const Vec3f & aDirLocal)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aDirLocal);
 
-    const float cosTheta2 = aDirLocal.z * aDirLocal.z;
-    const float sinTheta2 = 1.f - cosTheta2;
-    if (sinTheta2 <= 0.0f)
+    const float cosThetaSqr = aDirLocal.z * aDirLocal.z;
+    const float sinThetaSqr = 1.f - cosThetaSqr;
+    if (sinThetaSqr <= 0.0f)
         return 0.0f;
     else
-        return sinTheta2 / cosTheta2;
+        return sinThetaSqr / cosThetaSqr;
 }
 
 // Reflect vector through (0,0,1)
-Vec3f ReflectLocal(const Vec3f& aVector)
+Vec3f ReflectLocal(const Vec3f& aDirIn)
 {
-    return Vec3f(-aVector.x, -aVector.y, aVector.z);
+    return Vec3f(-aDirIn.x, -aDirIn.y, aDirIn.z);
 }
 
 // Reflect vector through given normal.
 // Both vectors are expected to be normalized.
 // Returns whether the input/output direction is in the half-space defined by the normal.
 void Reflect(
-          Vec3f &oVectorOut,
+          Vec3f &oDirOut,
           bool  &oIsAboveSurface,
-    const Vec3f &aVectorIn,
+    const Vec3f &aDirIn,
     const Vec3f &aNormal)
 {
-    PG3_ASSERT_VEC3F_NORMALIZED(aVectorIn);
+    PG3_ASSERT_VEC3F_NORMALIZED(aDirIn);
     PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
 
-    const float dot = Dot(aVectorIn, aNormal); // projection of aVectorIn on normal
-    oVectorOut = (2.0f * dot) * aNormal - aVectorIn;
+    const float dot = Dot(aDirIn, aNormal); // projection of aDirIn on normal
+    oDirOut = (2.0f * dot) * aNormal - aDirIn;
 
-    PG3_ASSERT_VEC3F_NORMALIZED(oVectorOut);
+    PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
 
     oIsAboveSurface = dot > 0.0f;
 }
 
 void Refract(
-          Vec3f &oVectorOut,
-          bool  &oIsVectorInAboveSurface,
-    const Vec3f &aVectorIn,
+          Vec3f &oDirOut,
+          bool  &oIsDirInAboveSurface,
+    const Vec3f &aDirIn,
     const Vec3f &aNormal,
-          float  aEta           // internal IOR / external IOR
+          float  aEtaAbs           // internal IOR / external IOR
           )
 {
-    PG3_ASSERT_VEC3F_NORMALIZED(aVectorIn);
+    PG3_ASSERT_VEC3F_NORMALIZED(aDirIn);
     PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaAbs, 0.0f);
 
-    const float cosThetaI = Dot(aVectorIn, aNormal);
+    const float cosThetaI = Dot(aDirIn, aNormal);
 
-    oIsVectorInAboveSurface = (cosThetaI > 0.0f);
+    oIsDirInAboveSurface = (cosThetaI > 0.0f);
 
-    if (oIsVectorInAboveSurface)
-        aEta = 1.0f / aEta;
+    if (oIsDirInAboveSurface)
+        aEtaAbs = 1.0f / aEtaAbs;
 
-    const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (aEta * aEta);
+    const float cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (aEtaAbs * aEtaAbs);
 
     if (cosThetaTSqr < 0.0f)
     {
-        oVectorOut.Set(0.0f, 0.0f, 0.0f); // TODO
+        // Total internal reflection
+        oDirOut.Set(0.0f, 0.0f, 0.0f);
         return;
     }
 
     float cosThetaT = std::sqrt(cosThetaTSqr);
     cosThetaT = (cosThetaI > 0.0f) ? -cosThetaT : cosThetaT;
 
-    //// debug
-    //const float thetaI = std::acos(std::abs(cosThetaI));
-    //const float thetaT = std::acos(std::abs(cosThetaT));
+    oDirOut = aNormal * (cosThetaI * aEtaAbs + cosThetaT) - aDirIn * aEtaAbs;
 
-    oVectorOut = aNormal * (cosThetaI * aEta + cosThetaT) - aVectorIn * aEta;
+    PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
 }
 
 // Jacobian of the reflection transform
@@ -310,27 +311,27 @@ float MicrofacetRefractionJacobian(
     const Vec3f &aWol,  // Fixed outgoing direction
     const Vec3f &aWil,  // Generated (refracted) incoming direction
     const Vec3f &aMicrofacetNormal,
-    const float  aEta   // Outgoing n / Incoming n
+    const float  aEtaInOut   // Outgoing n / Incoming n
     )
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
     PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaInOut, 0.0f);
 
     const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
     const float cosThetaOM = Dot(aMicrofacetNormal, aWol);
 
-    const float denom = Sqr(cosThetaIM + aEta * cosThetaOM);
-    const float transfJacobian = (Sqr(aEta) * std::abs(cosThetaOM)) / std::max(denom, 0.000001f);
+    const float denom = Sqr(cosThetaIM + aEtaInOut * cosThetaOM);
+    const float transfJacobian = (Sqr(aEtaInOut) * std::abs(cosThetaOM)) / std::max(denom, 0.000001f);
 
     PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
 
     return transfJacobian;
 }
 
-// Halfway vector, microfacet normal
-// TODO: Add comment about reflection/refraction
-// Incoming/outgoing directions on different sides of the macro surface are allowed.
+// Halfway vector (microfacet normal) for reflection
+// Incoming/outgoing directions on different sides of the macro surface are NOT allowed.
 Vec3f HalfwayVectorReflectionLocal(
     const Vec3f& aWil,
     const Vec3f& aWol
@@ -338,11 +339,18 @@ Vec3f HalfwayVectorReflectionLocal(
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+    PG3_ASSERT_MSG(
+        ((aWil.z >= 0.0f) && (aWol.z >= 0.0f)) ||
+        ((aWil.z <= 0.0f) && (aWol.z <= 0.0f)),
+        "Incoming (z: %.12f) and outgoing (z: %.12f) directions must be on the same side of the geometrical surface!",
+        aWil.z, aWol.z);
 
     Vec3f halfwayVec = aWil + aWol;
     
     const float length = halfwayVec.Length();
     if (IsTiny(length))
+        // This happens if an only if the in/out vectors are on the same line 
+        // (in the oposite directions)
         halfwayVec = Vec3f(0.0f, 0.0f, 1.0f); // Geometrical normal
     else
         halfwayVec /= length; // Normalize using the already computed length
@@ -355,29 +363,34 @@ Vec3f HalfwayVectorReflectionLocal(
     return halfwayVec;
 }
 
-// Halfway vector, microfacet normal
-// TODO: Add comment about reflection/refraction
-// TODO: If we arrive from below, then eta should probably switch
-// Incoming/outgoing directions on different sides of the macro surface are allowed.
+// Halfway vector (microfacet normal) for refraction
+// Incoming and outgoing direction must be on oposite sides of the macro surface.
 Vec3f HalfwayVectorRefractionLocal(
     const Vec3f &aWil,
     const Vec3f &aWol,
-    const float  aEta   // out n / in n
+    const float  aEtaInOut  // out n / in n
     )
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+    PG3_ASSERT_MSG(
+        ((aWil.z >= 0) && (aWol.z <= 0)) ||
+        ((aWil.z <= 0) && (aWol.z >= 0)),
+        "Incoming (z: %.12f) and outgoing (z: %.12f) directions must be on oposite sides of the geometrical surface!",
+        aWil.z, aWol.z);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaInOut, 0.0f);
 
-    // TODO: Vector asserts:
-    // - normalized vectors
-    // - on different sides of surface
-    // etas asserts?
-
-    Vec3f halfwayVec = aWil + aWol * aEta;
+    // Compute non-yet-normalized halfway vector. Note that this can yield nonsensical results 
+    // for invalid in-out configurations and has to be handled later. This is usually done 
+    // in the masking function, which checks whether the in and out directions are on the proper 
+    // sides of the microfacet.
+    Vec3f halfwayVec = aWil + aWol * aEtaInOut;
     
     const float length = halfwayVec.Length();
     if (IsTiny(length))
-        halfwayVec = Vec3f(0.0f, 0.0f, 1.0f); // Geometrical normal
+        // This happens if and only if the in/out vectors are on the same line 
+        // (in the oposite directions) and eta equals 1
+        halfwayVec = aWil;
     else
         halfwayVec /= length; // Normalize using the already computed length
 
@@ -992,13 +1005,13 @@ float MicrofacetDistributionGgx(
     if (aMicrofacetNormal.z <= 0.f)
         return 0.0f;
 
-    const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
-    const float cosTheta2 = aMicrofacetNormal.z * aMicrofacetNormal.z;
-    const float tanTheta2 = TanTheta2(aMicrofacetNormal);
-    const float temp1 = roughnessAlpha2 + tanTheta2;
-    const float temp2 = cosTheta2 * temp1;
+    const float roughnessAlphaSqr = aRoughnessAlpha * aRoughnessAlpha;
+    const float cosThetaSqr = aMicrofacetNormal.z * aMicrofacetNormal.z;
+    const float tanThetaSqr = TanThetaSqr(aMicrofacetNormal);
+    const float temp1 = roughnessAlphaSqr + tanThetaSqr;
+    const float temp2 = cosThetaSqr * temp1;
 
-    const float result = roughnessAlpha2 / (PI_F * temp2 * temp2);
+    const float result = roughnessAlphaSqr / (PI_F * temp2 * temp2);
 
     PG3_ASSERT_FLOAT_NONNEGATIVE(result);
 
@@ -1006,18 +1019,24 @@ float MicrofacetDistributionGgx(
 }
 
 float MicrofacetSmithMaskingFunctionGgx(
-    const Vec3f &aWvl,  // the direction to compute masking for (either incoming or outgoing)
+    const Vec3f &aDir,  // the direction to compute masking for (either incoming or outgoing)
     const Vec3f &aMicrofacetNormal,
     const float  aRoughnessAlpha)
 {
+    PG3_ASSERT_VEC3F_NORMALIZED(aDir);
+    PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
     PG3_ASSERT_FLOAT_NONNEGATIVE(aRoughnessAlpha);
 
     if (aMicrofacetNormal.z <= 0)
         return 0.0f;
 
-    const float roughnessAlpha2 = aRoughnessAlpha * aRoughnessAlpha;
-    const float tanTheta2 = TanTheta2(aWvl);
-    const float root = std::sqrt(1.0f + roughnessAlpha2 * tanTheta2); // TODO: Optimize sqrt
+    const float cosThetaVM = Dot(aDir, aMicrofacetNormal);
+    if ((aDir.z * cosThetaVM) < 0.0f)
+        return 0.0f; // up direction is below microfacet or vice versa
+
+    const float roughnessAlphaSqr = aRoughnessAlpha * aRoughnessAlpha;
+    const float tanThetaSqr = TanThetaSqr(aDir);
+    const float root = std::sqrt(1.0f + roughnessAlphaSqr * tanThetaSqr); // TODO: Optimize sqrt
 
     const float result = 2.0f / (1.0f + root);
 
