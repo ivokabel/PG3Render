@@ -232,10 +232,11 @@ protected:
                     // Probability of survival after 100 bounces:
                     // local probability 98.0% -> 13% for the whole path
                     // local probability 99.0% -> 37% for the whole path
+                    // local probability 99.3% -> 50% for the whole path
                     // local probability 99.5% -> 61% for the whole path
                     // local probability 99.7% -> 74% for the whole path
                     // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
-                    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+                    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.995f);
 
             // Generate requested amount of BRDF samples for both direct and indirect illumination
             for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
@@ -243,9 +244,10 @@ protected:
                 bool bCutIndirect = false;
 
                 // Russian roulette (based on reflectance of the whole BRDF)
+                float rnd = -1.0f;
                 if (mMaxPathLength == 0)
                 {
-                    const float rnd = mRng.GetFloat();
+                    rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
                         bCutIndirect = true;
                 }
