@@ -453,36 +453,25 @@ public:
     {
         const float fresnelRefl = FresnelDielectric(aWol.z, mEta);
 
-        PG3_ERROR_CODE_NOT_TESTED("Test this without the out-commented code.");
-
         float attenuation;
-        // TODO: Test this without the out-commented code
-        //if (fresnelRefl >= 1.0f)
-        //{
-        //    // Ideal mirror reflection (most probably caused by TIR) - always reflect
-        //    oBrdfSample.mWil = ReflectLocal(aWol);
-        //    attenuation      = 1.0f;
-        //}
-        //else
+
+        // Randomly choose between reflection or refraction
+        const float rnd = aRng.GetFloat();
+        if (rnd <= fresnelRefl)
         {
-            // Randomly choose between reflection or refraction
-            const float rnd = aRng.GetFloat();
-            if (rnd <= fresnelRefl)
-            {
-                // Reflect
-                // This branch also handles TIR cases
-                oBrdfSample.mWil = ReflectLocal(aWol);
-                attenuation      = fresnelRefl;
-            }
-            else
-            {
-                // Refract
-                // TODO: local version of refract?
-                // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
-                bool isAboveMicrofacet;
-                Refract(oBrdfSample.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
-                attenuation = 1.0f - fresnelRefl;
-            }
+            // Reflect
+            // This branch also handles TIR cases
+            oBrdfSample.mWil = ReflectLocal(aWol);
+            attenuation      = fresnelRefl;
+        }
+        else
+        {
+            // Refract
+            // TODO: local version of refract?
+            // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
+            bool isAboveMicrofacet;
+            Refract(oBrdfSample.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
+            attenuation = 1.0f - fresnelRefl;
         }
 
         oBrdfSample.mCompProbability = attenuation;
