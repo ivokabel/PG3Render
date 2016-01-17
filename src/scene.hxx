@@ -286,16 +286,22 @@ public:
                 //new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
                 //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectric))
-            mMaterials.push_back(
-                new SmoothDielectricMaterial(MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
-                //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
+        {
+            const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
+            const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
+            mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
+        }
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXDielectric))
-            mMaterials.push_back(
-                new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
-                //new MicrofacetGGXDielectricMaterial(0.100f, MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
+        {
+            const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
+            const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
+            const float roughness =
+                (aDbgAux2 != INFINITY_F) ? aDbgAux2 : /*0.001f*/ /*0.010f*/ 0.100f;
+            mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
+        }
         else
         {
             diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
@@ -314,7 +320,9 @@ public:
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
         else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
             mMaterials.push_back(
-                new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
+                //new MicrofacetGGXDielectricMaterial(0.001f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
+                //new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
+                  new MicrofacetGGXDielectricMaterial(0.100f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
         else
         {
             diffuseReflectance.SetGreyAttenuation(0.8f);
