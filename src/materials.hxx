@@ -472,6 +472,8 @@ public:
             bool isAboveMicrofacet;
             Refract(oBrdfSample.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
+
+            // TODO: Radiance (de)compression?
         }
 
         oBrdfSample.mCompProbability = attenuation;
@@ -780,12 +782,14 @@ public:
         {
             const float cosThetaMI = Dot(halfwayVecSwitched, wilSwitched);
             const float cosThetaMO = Dot(halfwayVecSwitched, wolSwitched);
-            // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
             brdfVal =
                   (   (std::abs(cosThetaMI) * std::abs(cosThetaMO))
                     / (cosThetaIAbs * cosThetaOAbs))
                 * (   (Sqr(etaInvSwitched) * (1.0f - fresnelReflectance) * geometricalFactor * distrVal)
                     / (Sqr(cosThetaMI + etaInvSwitched * cosThetaMO)));
+                       // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
+
+            brdfVal *= Sqr(etaSwitched); // radiance (solid angle) compression
         }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
@@ -813,10 +817,13 @@ public:
         #error not tested!
 
         Vec3f wilSwitched = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
-        oBrdfSample.mCompProbability = 1.0f;
 
         // Switch up-down back if necessary
         oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+
+        MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
+            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
+            aWol, oBrdfSample.mWil);
 
         const float thetaCosIn = oBrdfSample.mWil.z;
         if (thetaCosIn > 0.0f)
@@ -856,14 +863,13 @@ public:
 
         Vec3f microfacetDirSwitched = SampleGgxVisibleNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
 
-        const float cosThetaOM      = Dot(microfacetDirSwitched, wolSwitched);
-        const float fresnelReflOut  = FresnelDielectric(cosThetaOM, etaSwitched);
-
         Vec3f wilSwitched;
         bool isOutDirAboveMicrofacet;
         float thetaInCosAbs;
 
         // Randomly choose between reflection or refraction
+        const float cosThetaOM      = Dot(microfacetDirSwitched, wolSwitched);
+        const float fresnelReflOut  = FresnelDielectric(cosThetaOM, etaSwitched);
         const float rnd = aRng.GetFloat();
         if (rnd <= fresnelReflOut)
         {
@@ -937,7 +943,7 @@ public:
         if (wilSwitched.z < 0.f)
             oWholeFinCompPdfW = 0.0f;
         else
-            oWholeFinCompPdfW = CosHemispherePdfW(wilSwitched);
+            oWholeFinCompPdfW = CosHemispherePdfW(wilSwitched * 1.0f);
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
         #error not tested!
@@ -961,7 +967,7 @@ public:
         float transfJacobian;
         if (isReflection)
             transfJacobian = MicrofacetReflectionJacobian(
-                wolSwitched, halfwayVecSwitched);
+                wilSwitched, halfwayVecSwitched);
         else
             transfJacobian = MicrofacetRefractionJacobian(
                 wolSwitched, wilSwitched, halfwayVecSwitched, etaInvSwitched);

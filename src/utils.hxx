@@ -290,16 +290,16 @@ void Refract(
 
 // Jacobian of the reflection transform
 float MicrofacetReflectionJacobian(
-    const Vec3f &aWil,  // Generated (reflected) incoming direction
+    const Vec3f &aWol,  // Generated (reflected) direction
     const Vec3f &aMicrofacetNormal)
 {
-    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
+    PG3_ASSERT_VEC3F_NORMALIZED(aWol);
     PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
 
-    const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
-    const float cosThetaIMClamped = std::max(cosThetaIM, 0.000001f);
+    const float cosThetaOM = Dot(aMicrofacetNormal, aWol);
+    const float cosThetaOMClamped = std::max(cosThetaOM, 0.000001f);
 
-    const float transfJacobian = 1.0f / (4.0f * cosThetaIMClamped);
+    const float transfJacobian = 1.0f / (4.0f * cosThetaOMClamped);
 
     PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
 
@@ -308,22 +308,23 @@ float MicrofacetReflectionJacobian(
 
 // Jacobian of the refraction transform
 float MicrofacetRefractionJacobian(
-    const Vec3f &aWol,  // Fixed outgoing direction
-    const Vec3f &aWil,  // Generated (refracted) incoming direction
+    const Vec3f &aWil,          // Fixed incident direction
+    const Vec3f &aWol,          // Generated (refracted) direction
     const Vec3f &aMicrofacetNormal,
-    const float  aEtaInOut   // Outgoing n / Incoming n
+    const float  aEtaOutIn      // Incoming n / Outgoing n
     )
 {
-    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+    PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aMicrofacetNormal);
-    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaInOut, 0.0f);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aEtaOutIn, 0.0f);
 
-    const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
     const float cosThetaOM = Dot(aMicrofacetNormal, aWol);
+    const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
 
-    const float denom = Sqr(cosThetaIM + aEtaInOut * cosThetaOM);
-    const float transfJacobian = (Sqr(aEtaInOut) * std::abs(cosThetaOM)) / std::max(denom, 0.000001f);
+    const float numerator      = std::abs(cosThetaOM);
+    const float denominator    = Sqr(aEtaOutIn * cosThetaIM + cosThetaOM);
+    const float transfJacobian = (numerator / std::max(denominator, 0.000001f));
 
     PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
 
@@ -1088,7 +1089,7 @@ float GgxSamplingPdfAllNormals(
     const float microFacetDistrVal  = MicrofacetDistributionGgx(halfwayVec, aRoughnessAlpha);
     const float microfacetPdf       = microFacetDistrVal * halfwayVec.z;
 
-    const float transfJacobian = MicrofacetReflectionJacobian(aWol, halfwayVec);
+    const float transfJacobian = MicrofacetReflectionJacobian(aWil, halfwayVec);
 
     return microfacetPdf * transfJacobian;
 }
