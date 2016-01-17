@@ -207,17 +207,23 @@ private:
         const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
         const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
 
-        PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
-
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
         // to be used by the material as soon as now to get better contribution estimates.
         if (sampleFrontSide && sampleBackSide)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
+
             cosThetaIn = std::abs(cosThetaIn);
+        }
         else if (sampleFrontSide)
             cosThetaIn = std::max(cosThetaIn, 0.0f);
         else if (sampleBackSide)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
+
             cosThetaIn = std::max(-cosThetaIn, 0.0f);
+        }
         else
             cosThetaIn = 0.0f;
 
