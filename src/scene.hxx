@@ -664,7 +664,7 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-                        -0.12f, 0.5f);
+                        -0.12f, 3.0f);
                     break;
                 }
 
