@@ -99,6 +99,7 @@ struct Config
 // Scene configurations
 #define GEOM_FULL_BOX           Scene::kWalls | Scene::kFloor | Scene::k2Spheres
 #define GEOM_2SPHERES_ON_FLOOR                  Scene::kFloor | Scene::k2Spheres
+#define GEOM_BOX_1SPHERE        Scene::kWalls | Scene::kFloor | Scene::k1Sphere
 #define GEOM_1SPHERE            Scene::k1Sphere
 #define GEOM_RECTANTGLES        Scene::kVerticalRectangle | Scene::kDiagonalRectangles
 #define MATS_PHONG_DIFFUSE      Scene::kWallsPhongDiffuse | Scene::kSpheresPhongDiffuse
@@ -143,7 +144,7 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
 
-    // Material testing: 20-26
+    // Material testing, sphere: 20-26
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
@@ -152,9 +153,16 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXConductor,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXDielectric,
 
-    // Material testing: 27, 28
+    // Material testing, rectangles: 27-28
     Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric,
-    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric
+    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric,
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    // 29-30
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric      | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    
 };
 
 std::string DefaultFilename(
