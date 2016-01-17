@@ -92,7 +92,8 @@ struct Config
     float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one brdf sample.
 
     // Auxiliary debugging ad hoc parameters
-    float        mDbgAuxiliaryFloat;
+    float        mDbgAuxiliaryFloat1;
+    float        mDbgAuxiliaryFloat2;
 };
 
 // Scene configurations
@@ -328,8 +329,10 @@ void PrintConfiguration(const Config &config)
         );
 
     // debugging options
-    if (config.mDbgAuxiliaryFloat != INFINITY_F)
-        printf("Debugging: Aux float param %f\n", config.mDbgAuxiliaryFloat);
+    if ((config.mDbgAuxiliaryFloat1 != INFINITY_F) || (config.mDbgAuxiliaryFloat2 != INFINITY_F))
+        printf(
+            "Debugging: Aux float param1 %f, aux float param2 %f\n",
+            config.mDbgAuxiliaryFloat1, config.mDbgAuxiliaryFloat2);
 
     fflush(stdout);
 }
@@ -349,7 +352,7 @@ void PrintHelp(const char *argv[])
         "[-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] "
         "[-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] "
         "[-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] "
-        "[-auxf|--dbg_aux_float <value>] \n\n",
+        "[-auxf1|--dbg_aux_float1 <value>] [-auxf2|--dbg_aux_float2 <value>] \n\n",
         filename.c_str());
 
     printf("    -s     Selects the scene (default 0):\n");
@@ -389,8 +392,10 @@ void PrintHelp(const char *argv[])
 
     printf("\n");
 
-    printf("    -auxf | --dbg_aux_float \n");
-    printf("           Auxiliary float debugging ad hoc parameter (default: infinity=not set).\n");
+    printf("    -auxf1 | --dbg_aux_float1 \n");
+    printf("           Auxiliary float debugging ad hoc parameter no. 1 (default: infinity=not set).\n");
+    printf("    -auxf2 | --dbg_aux_float2 \n");
+    printf("           Auxiliary float debugging ad hoc parameter no. 2 (default: infinity=not set).\n");
 
     printf("    -opop | --only-print-output-pathname \n");
     printf("           Do not render anything; just print the full path of the current output file.\n");
@@ -426,7 +431,8 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
     oConfig.mDbgSplittingLevel = 1.f;                                   // [cmd]
     oConfig.mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
 
-    oConfig.mDbgAuxiliaryFloat              = INFINITY_F;               // [cmd]
+    oConfig.mDbgAuxiliaryFloat1              = INFINITY_F;              // [cmd]
+    oConfig.mDbgAuxiliaryFloat2              = INFINITY_F;              // [cmd]
 
     int32_t sceneID     = 0; // default 0
     uint32_t envMapID   = Scene::kEMDefault;
@@ -844,11 +850,11 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
                 return false;
             }
         }
-        else if ((arg == "-auxf"))
+        else if ((arg == "-auxf1"))
         {
             if (++i == argc)
             {
-                printf("Error: Missing <dbg_aux_float> argument, please see help (-h)\n");
+                printf("Error: Missing <dbg_aux_float1> argument, please see help (-h)\n");
                 return false;
             }
 
@@ -859,12 +865,34 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail())
             {
                 printf(
-                    "Error: Invalid <dbg_aux_float> argument \"%s\", please see help (-h)\n",
+                    "Error: Invalid <dbg_aux_float1> argument \"%s\", please see help (-h)\n",
                     argv[i]);
                 return false;
             }
 
-            oConfig.mDbgAuxiliaryFloat = tmp;
+            oConfig.mDbgAuxiliaryFloat1 = tmp;
+        }
+        else if ((arg == "-auxf2"))
+        {
+            if (++i == argc)
+            {
+                printf("Error: Missing <dbg_aux_float2> argument, please see help (-h)\n");
+                return false;
+            }
+
+            float tmp;
+            std::istringstream iss(argv[i]);
+            iss >> tmp;
+
+            if (iss.fail())
+            {
+                printf(
+                    "Error: Invalid <dbg_aux_float2> argument \"%s\", please see help (-h)\n",
+                    argv[i]);
+                return false;
+            }
+
+            oConfig.mDbgAuxiliaryFloat2 = tmp;
         }
     }
 
@@ -890,7 +918,9 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
     // Load scene
     Scene *scene = new Scene;
-    scene->LoadCornellBox(oConfig.mResolution, g_SceneConfigs[sceneID], envMapID, oConfig.mDbgAuxiliaryFloat);
+    scene->LoadCornellBox(
+        oConfig.mResolution, g_SceneConfigs[sceneID], envMapID,
+        oConfig.mDbgAuxiliaryFloat1, oConfig.mDbgAuxiliaryFloat2);
     oConfig.mScene = scene;
 
     // If no output name is chosen, create a default one

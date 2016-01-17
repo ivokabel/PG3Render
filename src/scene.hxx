@@ -171,9 +171,12 @@ public:
         const Vec2i &aResolution,
         uint32_t aBoxMask = kDefault,
         uint32_t aEnvironmentMapType = kEMDefault,
-        float aDbgAux = INFINITY_F
+        float aDbgAux1 = INFINITY_F,
+        float aDbgAux2 = INFINITY_F
         )
     {
+        aDbgAux1, aDbgAux2; // possibly unused parameters
+
         mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
 
         bool light_ceiling = (aBoxMask & kLightCeiling)    != 0;
@@ -186,7 +189,9 @@ public:
             Vec3f(-0.0439815f, -4.12529f, 0.222539f),
             Vec3f(0.00688625f, 0.998505f, -0.0542161f),
             Vec3f(3.73896e-4f, 0.0542148f, 0.998529f),
-            Vec2f(float(aResolution.x), float(aResolution.y)), 45);
+            Vec2f(float(aResolution.x), float(aResolution.y)),
+            45);
+            //135); // debug
 
         //////////////////////////////////////////////////////////////////////////
         // Materials
@@ -437,7 +442,7 @@ public:
             const float boxHeight           = std::abs(cb[0].z - cb[3].z);
             const float boxDepth            = std::abs(cb[0].y - cb[4].y);
 
-            const float rectHalfWidth       =  1.0f * floorWidth * 0.5f;
+            const float rectHalfWidth       =  8.0f * floorWidth * 0.5f;
             const float rectHeight          =  0.7f * boxHeight;
             const float rectYOffset         = -1.0f * boxDepth * 0.5f;
             const float rectZOffset         =  0.1f * boxHeight;
@@ -448,7 +453,7 @@ public:
                 floorCenter + Vec3f( rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
                 floorCenter + Vec3f(-rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
             };
-            if (aDbgAux != 1.0f)
+            if (aDbgAux1 != 1.0f)
             {
                 geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
                 geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));
