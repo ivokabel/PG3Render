@@ -239,23 +239,23 @@ int32_t main(int32_t argc, const char *argv[])
         printf(" done in %s\n", timeHumanReadable.c_str());
 
     // Save the image
-    if (!config.mQuietMode)
-        printf("Saving to: %s ... ", fullOutputPath.c_str());
+    //if (!config.mQuietMode)
+    //    printf("Saving:    ");
     std::string extension = fullOutputPath.substr(fullOutputPath.length() - 3, 3);
     if (extension == "bmp")
     {
         fbuffer.SaveBMP(fullOutputPath.c_str(), 2.2f /*gamma*/);
-        if (!config.mQuietMode)
-            printf("done\n");
+        //if (!config.mQuietMode)
+        //    printf("done\n");
     }
     else if (extension == "hdr")
     {
         fbuffer.SaveHDR(fullOutputPath.c_str());
-        if (!config.mQuietMode)
-            printf("done\n");
+        //if (!config.mQuietMode)
+        //    printf("done\n");
     }
     else
-        printf("Used unknown extension %s\n", extension.c_str());
+        printf("Saving:    Used unknown extension %s!\n", extension.c_str());
 
     // Introspection
     introspectionAggregator.PrintIntrospection();

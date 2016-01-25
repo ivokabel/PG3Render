@@ -43,7 +43,7 @@ struct Config
             "direct illumination - light sampling (single sample)",
             "direct illumination - multiple importance sampling",
             "naive path tracing",
-            "path tracing (next event estimate, multiple importance sampling)",
+            "path tracing (NEE, MIS)",
         };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
@@ -160,7 +160,7 @@ uint32_t g_SceneConfigs[] =
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     // 29-30
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric      | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric       | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
     
 };
@@ -288,9 +288,10 @@ void PrintConfiguration(const Config &config)
     if (config.mQuietMode)
         return;
 
-    printf("PG3Render\n");
+    printf("========== [[ PG3Render ]] ==========\n");
 
     printf("Scene:     %s\n", config.mScene->mSceneName.c_str());
+
     printf("Algorithm: %s", config.GetName(config.mAlgorithm));
     if (   (config.mAlgorithm == kPathTracingNaive)
         || (config.mAlgorithm == kPathTracing))
@@ -313,17 +314,13 @@ void PrintConfiguration(const Config &config)
     }
     printf("\n");
 
+    // Configuration
     if (config.mMaxTime > 0)
-        printf("Target:    %g seconds render time\n", config.mMaxTime);
+        printf("Config:    %g seconds render time", config.mMaxTime);
     else
-        printf("Target:    %d iteration(s)\n", config.mIterations);
-
-    printf("Out file:  %s\n", config.mOutputName.c_str());
-    if (!config.mOutputDirectory.empty())
-        printf("Out dir:   %s\n", config.mOutputDirectory.c_str());
-
-    printf("Config:    "
-        "%d threads, "
+        printf("Config:    %d iteration(s)", config.mIterations);
+    printf(""
+        ", %d threads, "
         #if !defined _DEBUG
             "release"
         #else
@@ -336,11 +333,17 @@ void PrintConfiguration(const Config &config)
         config.mNumThreads
         );
 
-    // debugging options
+    // Debugging options
     if ((config.mDbgAuxiliaryFloat1 != INFINITY_F) || (config.mDbgAuxiliaryFloat2 != INFINITY_F))
         printf(
             "Debugging: Aux float param1 %f, aux float param2 %f\n",
             config.mDbgAuxiliaryFloat1, config.mDbgAuxiliaryFloat2);
+
+    // Output
+    printf("Out file:  ");
+    if (!config.mOutputDirectory.empty())
+        printf("%s\\", config.mOutputDirectory.c_str());
+    printf("%s\n", config.mOutputName.c_str());
 
     fflush(stdout);
 }

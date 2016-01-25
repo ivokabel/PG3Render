@@ -299,7 +299,7 @@ public:
             const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
             const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
             const float roughness =
-                (aDbgAux2 != INFINITY_F) ? aDbgAux2 : /*0.001f*/ /*0.010f*/ 0.100f;
+                (aDbgAux2 != INFINITY_F) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
         }
         else
@@ -584,7 +584,7 @@ public:
                 case kEMConstSRGBWhite:
                 {
                     SpectrumF radiance;
-                    radiance.SetSRGBGreyLight(1.0f);
+                    radiance.SetSRGBGreyLight(0.87f); // 2^{-0.2}
                     light->SetConstantRadiance(radiance);
                     break;
                 }

@@ -199,7 +199,7 @@ void pg3_exit();
 
 #define PG3_ASSERT_VEC3F_NORMALIZED(_vec3) \
     PG3_ASSERT_VEC3F_VALID(_vec3); \
-    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.0005f)
+    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.001f)
 
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE
