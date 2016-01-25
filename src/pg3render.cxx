@@ -46,10 +46,10 @@ AbstractRenderer* CreateRenderer(
 
 //////////////////////////////////////////////////////////////////////////
 // The main rendering function, renders what is in aConfig
-
 float Render(
-    const Config &aConfig,
-    uint32_t     *oUsedIterations = NULL)
+    const Config                        &aConfig,
+    RendererIntrospectionDataAggregator &aIntrospectionAggregator,
+    uint32_t                            *oUsedIterations = NULL)
 {
     SetProcessPriority();
 
@@ -156,10 +156,13 @@ float Render(
     // Scale framebuffer by the number of used renderers
     aConfig.mFramebuffer->Scale(FramebufferFloat(1.) / usedRenderers);
 
-    // Clean up renderers
+    // Aggregate introspection data (e.g. path statistics) from all renderers
+    for (uint32_t i = 0; i<aConfig.mNumThreads; i++)
+        aIntrospectionAggregator.AddRendererData(renderers[i]->GetRendererIntrospectionData());
+
+    // Release renderers
     for (uint32_t i=0; i<aConfig.mNumThreads; i++)
         delete renderers[i];
-
     delete [] renderers;
 
     return float(realEndT - startT) / CLOCKS_PER_SEC;
@@ -179,7 +182,6 @@ void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 
 //////////////////////////////////////////////////////////////////////////
 // Main
-
 int32_t main(int32_t argc, const char *argv[])
 {
     init_debugging();
@@ -227,8 +229,10 @@ int32_t main(int32_t argc, const char *argv[])
     Framebuffer fbuffer;
     config.mFramebuffer = &fbuffer;
 
+    RendererIntrospectionDataAggregator introspectionAggregator;
+
     // Render the image
-    float time = Render(config);
+    float time = Render(config, introspectionAggregator);
     std::string timeHumanReadable;
     SecondsToHumanReadable(time, timeHumanReadable);
     if (!config.mQuietMode)
@@ -252,6 +256,9 @@ int32_t main(int32_t argc, const char *argv[])
     }
     else
         printf("Used unknown extension %s\n", extension.c_str());
+
+    // Introspection
+    introspectionAggregator.PrintIntrospection();
 
     // Scene cleanup
     delete config.mScene;

@@ -2,6 +2,13 @@
 
 #include "pathtracerbase.hxx"
 
+// Empirical values for cutting too long paths
+#ifdef _DEBUG
+#define PATH_TRACER_MAX_PATH_LENGTH 750     // crash at 812
+#else
+#define PATH_TRACER_MAX_PATH_LENGTH 1500    // 1700 crashes for sure
+#endif
+
 class PathTracer : public PathTracerBase
 {
 public:
@@ -188,13 +195,24 @@ protected:
             }
 
             if (!aComputeReflectedRadiance)
+                // Just emmited radiance (direct ligth computation)
                 return;
-            if (mat.IsReflectanceZero())
-                // Zero reflectivity - there is no chance of contribution behing this reflection;
+
+            if (// Zero reflectivity - there is no chance of contribution behing this reflection;
                 // we can safely cut the path without incorporation of bias
+                (mat.IsReflectanceZero()) ||
+                // There's no point in continuing because all of the following computations 
+                // need to extend the path and that's not allowed
+                ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength)))
                 return;
-            if ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength))
+            
+            // We cut too long paths even when Russian roulette ending is active
+            // to avoid stack overflows
+            if (aPathLength >= PATH_TRACER_MAX_PATH_LENGTH)
+            {
+                mIntrospectionData.AddCorePathLength(aPathLength, true);
                 return;
+            }
 
             // Splitting
             uint32_t brdfSamplesCount;
@@ -225,18 +243,31 @@ protected:
 
             float rrContinuationProb = 1.0f;
             if (mMaxPathLength == 0)
-                rrContinuationProb =
-                    // We do not allow probability 1.0 because that can lead to infinite 
-                    // random walk in some pathological scenarios (completely white material or 
-                    // light trap made of glass).
-                    // Probability of survival after 100 bounces:
-                    // local probability 98.0% -> 13% for the whole path
-                    // local probability 99.0% -> 37% for the whole path
-                    // local probability 99.3% -> 50% for the whole path
-                    // local probability 99.5% -> 61% for the whole path
-                    // local probability 99.7% -> 74% for the whole path
-                    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
-                    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.995f);
+            {
+                // Const clamping
+                //rrContinuationProb =
+                //    // We do not allow probability 1.0 because that can lead to infinite 
+                //    // random walk in some pathological scenarios (completely white material or 
+                //    // light trap made of glass).
+                //    // Probability of survival after 100 bounces:
+                //    // local probability 98.0% -> 13% for the whole path
+                //    // local probability 99.0% -> 37% for the whole path
+                //    // local probability 99.3% -> 50% for the whole path
+                //    // local probability 99.5% -> 61% for the whole path
+                //    // local probability 99.7% -> 74% for the whole path
+                //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
+                //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+
+                // No clamping
+                rrContinuationProb = mat.GetRRContinuationProb(wol);
+
+                // Progressive clamping experiment - more aggressive for longer paths
+                //const float lengthCoef =
+                //    Clamp(float(aPathLength) / PATH_TRACER_MAX_PATH_LENGTH, 0.0f, 1.0f);
+                //const float maxVal =
+                //    (1.0f - lengthCoef) * 1.0f + lengthCoef * 0.95f;
+                //rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.0f, maxVal);
+            }
 
             // Generate requested amount of BRDF samples for both direct and indirect illumination
             for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
@@ -249,7 +280,10 @@ protected:
                 {
                     rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
+                    {
                         bCutIndirect = true;
+                        mIntrospectionData.AddCorePathLength(aPathLength);
+                    }
                 }
 
                 BRDFSample brdfSample;
@@ -359,6 +393,12 @@ protected:
                         *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }
             }
+
+            if (aComputeReflectedRadiance)
+                // If we were asked for reflected radiance, we need to save path length here,
+                // because the caller cannot identify this case without incorporating additional 
+                // communication with the callee
+                mIntrospectionData.AddCorePathLength(aPathLength - 1u);
         }
     }
 
