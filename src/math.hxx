@@ -12,6 +12,7 @@
 #define PI_DIV_2_F  1.5707963f
 
 #define INFINITY_F  (std::numeric_limits<float>::infinity())
+#define INFINITY_D  (std::numeric_limits<double>::infinity())
 
 // Tools be used instead of floating point values comparison against zero.
 // For IEEE floats and doubles this constant was set to 2^-20 and 2^-49 respectively, resulting in

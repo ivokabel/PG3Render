@@ -186,18 +186,36 @@ public:
         const float B = 2 * Dot(aRay.dir, transformedOrigin);
         const float C = Dot(transformedOrigin, transformedOrigin) - (mRadius * mRadius);
 
+        PG3_ASSERT_FLOAT_VALID(A);
+        PG3_ASSERT_FLOAT_VALID(B);
+        PG3_ASSERT_FLOAT_VALID(C);
+
         // Must use doubles, because when B ~ sqrt(B*B - 4*A*C)
         // the resulting t is imprecise enough to get around ray epsilons
         const double discriminant = B*B - 4*A*C;
+
+        PG3_ASSERT_FLOAT_VALID(discriminant);
 
         if (discriminant < 0)
             return false;
 
         const double discSqrt = std::sqrt(discriminant);
-        const double q = (B >= 0)  ? ((-B - discSqrt) / 2.f) : ((-B + discSqrt) / 2.f); // keep q far from 0
+        const double q = (B >= 0) ? ((-B - discSqrt) / 2.f) : ((-B + discSqrt) / 2.f); // keep q far from 0
 
-        double t0 = q / A; // one root by the classical formula
-        double t1 = C / q; // second root found by Muller's method
+        PG3_ASSERT_FLOAT_VALID(discSqrt);
+        PG3_ASSERT_FLOAT_VALID(q);
+
+        // One root by the classical formula
+        double t0 = q / A;
+
+        // Second root found by Muller's method
+        // q is small if B is very close to 0 and discriminant is too small, so we couldn't create 
+        // any q far enough from 0. If discriminant is small, the two solutions of our quadratic 
+        // equation are very close; therefore, it should be relatively safe to ignore the second solution.
+        double t1 = (std::abs(q) > 0.1) ? (C / q) : t0;
+
+        PG3_ASSERT_FLOAT_VALID(t0);
+        PG3_ASSERT_FLOAT_VALID(t1);
 
         if (t0 > t1) std::swap(t0, t1);
 
