@@ -198,19 +198,27 @@ protected:
                 // Just emmited radiance (direct ligth computation)
                 return;
 
-            if (// Zero reflectivity - there is no chance of contribution behing this reflection;
+            if (mat.IsReflectanceZero())
+            {
+                // Zero reflectivity - there is no chance of contribution behing this reflection;
                 // we can safely cut the path without incorporation of bias
-                (mat.IsReflectanceZero()) ||
+                mIntrospectionData.AddCorePathLength(aPathLength, kTerminatedByBlocker);
+                return;
+            }
+
+            if (((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength)))
+            {
                 // There's no point in continuing because all of the following computations 
                 // need to extend the path and that's not allowed
-                ((mMaxPathLength > 0) && (aPathLength >= mMaxPathLength)))
+                mIntrospectionData.AddCorePathLength(aPathLength, kTerminatedByMaxLimit);
                 return;
+            }
             
-            // We cut too long paths even when Russian roulette ending is active
-            // to avoid stack overflows
             if (aPathLength >= PATH_TRACER_MAX_PATH_LENGTH)
             {
-                mIntrospectionData.AddCorePathLength(aPathLength, true);
+                // We cut too long paths even when Russian roulette ending is active
+                // to avoid stack overflows
+                mIntrospectionData.AddCorePathLength(aPathLength, kTerminatedBySafetyLimit);
                 return;
             }
 
@@ -282,7 +290,7 @@ protected:
                     if (rnd > rrContinuationProb)
                     {
                         bCutIndirect = true;
-                        mIntrospectionData.AddCorePathLength(aPathLength);
+                        mIntrospectionData.AddCorePathLength(aPathLength, kTerminatedByRussianRoulette);
                     }
                 }
 
@@ -398,7 +406,7 @@ protected:
                 // If we were asked for reflected radiance, we need to save path length here,
                 // because the caller cannot identify this case without incorporating additional 
                 // communication with the callee
-                mIntrospectionData.AddCorePathLength(aPathLength - 1u);
+                mIntrospectionData.AddCorePathLength(aPathLength - 1u, kTerminatedByBackground);
         }
     }
 

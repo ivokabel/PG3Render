@@ -8,6 +8,25 @@
 #include "types.hxx"
 #include "hardsettings.hxx"
 
+enum PathTerminationReason
+{
+    kTerminatedByRussianRoulette,
+
+    // Background/environment map was hit
+    kTerminatedByBackground,
+
+    // Material with zero reflectance encountered (e.g. lights)
+    kTerminatedByBlocker,    
+
+    // Explicit maximal allowed path length was reached
+    // (safety recursion limit doesn't count into this)
+    kTerminatedByMaxLimit,
+
+    // Stopped by hardwired safety recursion limit (e.g. PATH_TRACER_MAX_PATH_LENGTH)
+    // to avoid stack overflow problems
+    kTerminatedBySafetyLimit
+};
+
 class RendererIntrospectionDataBase
 {
 #ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
@@ -15,24 +34,31 @@ class RendererIntrospectionDataBase
 public:
     RendererIntrospectionDataBase()
         :
-        mCorePathCount(0),
-        mMinCorePathLength(UINT32_MAX),
-        mMaxCorePathLength(0),
-        mCutTooLongCorePaths(0)
+        mCorePathsCount(0),
+        mCorePathsMinLength(UINT32_MAX),
+        mCorePathsMaxLength(0),
+        mCorePathsTerminatedByRussianRoulette(0),
+        mCorePathsTerminatedByBackground(0),
+        mCorePathsTerminatedByBlocker(0),
+        mCorePathsTerminatedByMaxLimit(0),
+        mCorePathsTerminatedBySafetyLimit(0)
     {}
 
 protected:
+    uint32_t        mCorePathsCount;
+    uint32_t        mCorePathsMinLength;
+    uint32_t        mCorePathsMaxLength;
+
+    // Histogram of path termination reasons, for more details see PathTerminationReason
+    uint32_t        mCorePathsTerminatedByRussianRoulette;
+    uint32_t        mCorePathsTerminatedByBackground;
+    uint32_t        mCorePathsTerminatedByBlocker;
+    uint32_t        mCorePathsTerminatedByMaxLimit;
+    uint32_t        mCorePathsTerminatedBySafetyLimit; // Not contained in the lengths histogram
+
+    // Histogram of lengths
     typedef std::vector<uint32_t> TPathHistogram;
-
-    uint32_t        mCorePathCount;
-    uint32_t        mMinCorePathLength;
-    uint32_t        mMaxCorePathLength;
-
-    // Paths which where cut by hard limit (e.g. PATH_TRACER_MAX_PATH_LENGTH).
-    // These are not contained in the lengths histogram
-    uint32_t        mCutTooLongCorePaths;
-
-    TPathHistogram  mCorePathLengthsHistogram; // Exponential size of bins with base2: 1, 2, 4, 8, ...
+    TPathHistogram  mCorePathsLengthHistogram; // Exponential size of bins with base2: 1, 2, 4, 8, ...
 
 protected:
     uint32_t LengthToSegment(uint32_t aLength) const
@@ -51,29 +77,41 @@ protected:
 class RendererIntrospectionData : public RendererIntrospectionDataBase
 {
 public:
-    void AddCorePathLength(uint32_t aLength, bool aCutTooLong = false)
+    void AddCorePathLength(uint32_t aLength, const PathTerminationReason &aTerminationReason)
     {
-        aLength;
+        aLength; aTerminationReason; // potentially unused params
 
 #ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
-        mCorePathCount++;
-        mMinCorePathLength = std::min(mMinCorePathLength, aLength);
-        mMaxCorePathLength = std::max(mMaxCorePathLength, aLength);
+        mCorePathsCount++;
+        mCorePathsMinLength = std::min(mCorePathsMinLength, aLength);
+        mCorePathsMaxLength = std::max(mCorePathsMaxLength, aLength);
 
-        if (!aCutTooLong)
+        if (aTerminationReason != kTerminatedBySafetyLimit)
         {
-            // Histogram
+            // Lenghts histogram
             const auto segment = LengthToSegment(aLength);
 
             const auto neededSize = segment + 1u;
-            if (mCorePathLengthsHistogram.size() < neededSize)
-                mCorePathLengthsHistogram.resize(neededSize, 0u);
-            auto &histoVal = mCorePathLengthsHistogram[segment];
+            if (mCorePathsLengthHistogram.size() < neededSize)
+                mCorePathsLengthHistogram.resize(neededSize, 0u);
+            auto &histoVal = mCorePathsLengthHistogram[segment];
             histoVal++;
+
+            // Termination reasons
+            if (aTerminationReason == kTerminatedByRussianRoulette)
+                mCorePathsTerminatedByRussianRoulette++;
+            else if (aTerminationReason == kTerminatedByBackground)
+                mCorePathsTerminatedByBackground++;
+            else if (aTerminationReason == kTerminatedByBlocker)
+                mCorePathsTerminatedByBlocker++;
+            else if (aTerminationReason == kTerminatedByMaxLimit)
+                mCorePathsTerminatedByMaxLimit++;
+            else
+                PG3_FATAL_ERROR("Unecognised path termination reason!");
         }
         else
-            mCutTooLongCorePaths++;
+            mCorePathsTerminatedBySafetyLimit++;
 
 #endif
     }
@@ -84,24 +122,31 @@ public:
 class RendererIntrospectionDataAggregator : public RendererIntrospectionDataBase
 {
 public:
+
     void AddRendererData(const RendererIntrospectionData &aRendererData)
     {
         aRendererData;
 
 #ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
-        mCorePathCount          += aRendererData.mCorePathCount;
-        mMinCorePathLength       = std::min(mMinCorePathLength, aRendererData.mMinCorePathLength);
-        mMaxCorePathLength       = std::max(mMaxCorePathLength, aRendererData.mMaxCorePathLength);
-        mCutTooLongCorePaths    += aRendererData.mCutTooLongCorePaths;
+        mCorePathsCount += aRendererData.mCorePathsCount;
+
+        mCorePathsMinLength = std::min(mCorePathsMinLength, aRendererData.mCorePathsMinLength);
+        mCorePathsMaxLength = std::max(mCorePathsMaxLength, aRendererData.mCorePathsMaxLength);
+
+        mCorePathsTerminatedByRussianRoulette   += aRendererData.mCorePathsTerminatedByRussianRoulette;
+        mCorePathsTerminatedByBackground        += aRendererData.mCorePathsTerminatedByBackground;
+        mCorePathsTerminatedByBlocker           += aRendererData.mCorePathsTerminatedByBlocker;
+        mCorePathsTerminatedByMaxLimit          += aRendererData.mCorePathsTerminatedByMaxLimit;
+        mCorePathsTerminatedBySafetyLimit       += aRendererData.mCorePathsTerminatedBySafetyLimit;
 
         const uint32_t rendererDataSize =
-            static_cast<uint32_t>(aRendererData.mCorePathLengthsHistogram.size());
-        if (mCorePathLengthsHistogram.size() < rendererDataSize)
-            mCorePathLengthsHistogram.resize(rendererDataSize, 0u);
+            static_cast<uint32_t>(aRendererData.mCorePathsLengthHistogram.size());
+        if (mCorePathsLengthHistogram.size() < rendererDataSize)
+            mCorePathsLengthHistogram.resize(rendererDataSize, 0u);
 
         for (uint32_t segment = 0; segment < rendererDataSize; segment++)
-            mCorePathLengthsHistogram[segment] += aRendererData.mCorePathLengthsHistogram[segment];
+            mCorePathsLengthHistogram[segment] += aRendererData.mCorePathsLengthHistogram[segment];
 
 #endif
     }
@@ -110,35 +155,76 @@ public:
     {
 #ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
-        printf("\nIntrospection - ");
-        if (mCorePathCount > 0)
+        printf("\nIntrospection (core paths): ");
+        if (mCorePathsCount > 0)
         {
             printf(
-                "core paths: count %d, min path length %d, max path length %d\n",
-                mCorePathCount, mMinCorePathLength, mMaxCorePathLength);
+                "count %d, min path length %d, max path length %d\n",
+                mCorePathsCount, mCorePathsMinLength, mCorePathsMaxLength);
 
-            const uint32_t histoSize = static_cast<uint32_t>(mCorePathLengthsHistogram.size());
+            const uint32_t histoSize = static_cast<uint32_t>(mCorePathsLengthHistogram.size());
             for (uint32_t segment = 0; segment < histoSize; segment++)
             {
                 auto lowerBound = SegmentToShortestLength(segment);
                 auto upperBound = SegmentToShortestLength(segment + 1) - 1u;
-                auto count = mCorePathLengthsHistogram[segment];
-                auto percentage = (100.f * count) / mCorePathCount;
-                printf(
-                    "\tlengths %5d-%-5d: %7.4f%% %10d %s\n",
-                    lowerBound, upperBound, percentage, count, count == 1 ? "path" : "paths");
+                auto count = mCorePathsLengthHistogram[segment];
+                PrintTerminatedPathsCountByLengths(lowerBound, upperBound, count);
             }
 
-            auto percentage = (100.f * mCutTooLongCorePaths) / mCorePathCount;
-            printf(
-                "\tCut (too long)     : %7.4f%% %10d %s\n",
-                percentage, mCutTooLongCorePaths, mCutTooLongCorePaths == 1 ? "path" : "paths");
+            // Normal termination reasons
+            printf("\t----------------------------------------------\n");
+            PrintTerminatedPathsCountByReason(mCorePathsTerminatedByRussianRoulette, "Russian roulette");
+            PrintTerminatedPathsCountByReason(mCorePathsTerminatedByBackground, "Background");
+            PrintTerminatedPathsCountByReason(mCorePathsTerminatedByBlocker, "Blocker");
+            PrintTerminatedPathsCountByReason(mCorePathsTerminatedByMaxLimit, "Max limit");
+
+            // Hard limit termination
+            printf("\t----------------------------------------------\n");
+            PrintTerminatedPathsCountByReason(mCorePathsTerminatedBySafetyLimit, "Cut (too long)");
         }
         else
             printf("no data!\n");
 
 #endif
     }
+
+protected:
+
+    void PrintTerminatedPathsCountByLengths(
+        const uint32_t aLowerBound,
+        const uint32_t aUpperBound,
+        const uint32_t aTerminatedCount) const
+    {
+        aLowerBound; aUpperBound;  aTerminatedCount; // potentially unused params
+
+#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+
+        auto percentage = (100.f * aTerminatedCount) / mCorePathsCount;
+        printf(
+            "\tlengths %5d-%-5d: %7.4f%% %10d %s\n",
+            aLowerBound, aUpperBound, percentage,
+            aTerminatedCount, aTerminatedCount == 1 ? "path" : "paths");
+
+#endif
+    }
+
+    void PrintTerminatedPathsCountByReason(
+        const uint32_t aTerminatedCount,
+        const char *aTermReasonDescr) const
+    {
+        aTerminatedCount; aTermReasonDescr; // potentially unused params
+
+#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+
+        const auto percentage = (100.f * aTerminatedCount) / mCorePathsCount;
+        printf(
+            "\t%-19s: %7.4f%% %10d %s\n",
+            aTermReasonDescr, percentage, aTerminatedCount,
+            aTerminatedCount == 1 ? "path" : "paths");
+
+#endif
+    }
+
 };
 
 
