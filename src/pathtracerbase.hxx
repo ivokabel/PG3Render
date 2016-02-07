@@ -407,7 +407,7 @@ public:
     }
 
     void AddDirectIllumMISBrdfSampleContribution(
-        const BRDFSample            &aBrdfSample,
+        const MaterialRecord        &aMatRecord,
         const uint32_t               aLightSamplesCount,
         const uint32_t               aBrdfSamplesCount,
         const Vec3f                 &aSurfPt,
@@ -416,7 +416,7 @@ public:
               LightSamplingContext  &aContext,
               SpectrumF             &oLightBuffer)
     {
-        if (aBrdfSample.mSample.Max() <= 0.f)
+        if (aMatRecord.mSample.Max() <= 0.f)
             // The material is a complete blocker in this direction
             return;
 
@@ -427,7 +427,7 @@ public:
             aSurfPt,
             aSurfFrame,
             aSurfMaterial,
-            aBrdfSample.mWil,
+            aMatRecord.mWil,
             aContext,
             LiLight,
             &lightPdfW,
@@ -443,16 +443,16 @@ public:
         //PG3_ASSERT(lightPickingProbability > 0.f);
         PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
-        if (aBrdfSample.mPdfW != INFINITY_F)
+        if (aMatRecord.mPdfW != INFINITY_F)
         {
             // Finite BRDF: Compute two-step MIS MC estimator. 
-            const float brdfPdfW = aBrdfSample.mPdfW * aBrdfSample.mCompProbability;
+            const float brdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProbability;
             const float misWeight =
                 MISWeight2(
                     brdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
-                  (aBrdfSample.mSample * LiLight)
+                  (aMatRecord.mSample * LiLight)
                 * misWeight
                 / brdfPdfW;
         }
@@ -460,9 +460,9 @@ public:
         {
             // Dirac BRDF: compute the integral directly, without MIS
             oLightBuffer +=
-                  aBrdfSample.mSample * LiLight
+                  aMatRecord.mSample * LiLight
                 / (static_cast<float>(aBrdfSamplesCount)    // Splitting
-                * aBrdfSample.mCompProbability);            // Discrete multi-component MC
+                * aMatRecord.mCompProbability);            // Discrete multi-component MC
         }
     }
 

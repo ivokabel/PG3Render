@@ -107,29 +107,29 @@ protected:
                 }
 
                 // Sample BRDF
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
-                if (brdfSample.mSample.Max() <= 0.)
+                MaterialRecord matRecord;
+                mat.SampleBrdf(mRng, wol, matRecord);
+                if (matRecord.mSample.Max() <= 0.)
                     // There is no contribution behing this reflection;
                     // we can cut the path without incorporation of bias
                     return;
 
                 // Construct new ray from the current surface point
                 currentRay.org  = surfPt;
-                currentRay.dir  = surfFrame.ToWorld(brdfSample.mWil);
-                currentRay.tmin = EPS_RAY_COS(brdfSample.mWil.z);
+                currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
+                currentRay.tmin = EPS_RAY_COS(matRecord.mWil.z);
 
-                if (brdfSample.mPdfW != INFINITY_F)
+                if (matRecord.mPdfW != INFINITY_F)
                     pathThroughput *=
-                            brdfSample.mSample
-                          / (  brdfSample.mPdfW             // Monte Carlo est.
+                            matRecord.mSample
+                          / (  matRecord.mPdfW              // Monte Carlo est.
                              * rrContinuationProb           // Russian roulette (optional)
-                             * brdfSample.mCompProbability);// Discrete multi-component MC
+                             * matRecord.mCompProbability); // Discrete multi-component MC
                 else
                     pathThroughput *=
-                            brdfSample.mSample
+                            matRecord.mSample
                           / (  rrContinuationProb           // Russian roulette (optional)
-                             * brdfSample.mCompProbability);// Discrete multi-component MC
+                             * matRecord.mCompProbability); // Discrete multi-component MC
 
                 pathLength++;
             }
@@ -294,9 +294,9 @@ protected:
                     }
                 }
 
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
-                if (brdfSample.mSample.Max() <= 0.f)
+                MaterialRecord matRecord;
+                mat.SampleBrdf(mRng, wol, matRecord);
+                if (matRecord.mSample.Max() <= 0.f)
                     continue;
 
                 SpectrumF   brdfEmmittedRadiance;
@@ -304,8 +304,8 @@ protected:
                 float       brdfLightPdfW = 0.f;
                 int32_t     brdfLightId = -1;
 
-                const Vec3f wig = surfFrame.ToWorld(brdfSample.mWil);
-                const float rayMin = EPS_RAY_COS(brdfSample.mWil.z);
+                const Vec3f wig = surfFrame.ToWorld(matRecord.mWil);
+                const float rayMin = EPS_RAY_COS(matRecord.mWil.z);
                 const Ray   brdfRay(surfPt, wig, rayMin);
 
                 EstimateIncomingRadiancePT(
@@ -323,7 +323,7 @@ protected:
                     // one for Dirac components of the BSDF. This is analogical and well working 
                     // together with the separate light sampling scheme used in 
                     // AddMISLightSampleContribution() - see comments there for more information.
-                    if (brdfSample.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != INFINITY_F)
                     {
                         // Finite BRDF: Compute MIS MC estimator. 
 
@@ -339,9 +339,9 @@ protected:
                         PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
 
                         const float lightPdfW = brdfLightPdfW * brdfLightPickingProb;
-                        const float brdfPdfW  = brdfSample.mPdfW * brdfSample.mCompProbability;
+                        const float brdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
                         oReflectedRadianceEstimate +=
-                              (brdfSample.mSample * brdfEmmittedRadiance)
+                              (matRecord.mSample * brdfEmmittedRadiance)
                             * MISWeight2(brdfPdfW, brdfSamplesCount, lightPdfW, lightSamplesCount) // MIS
                             / brdfPdfW;
                     }
@@ -349,9 +349,9 @@ protected:
                     {
                         // Dirac BRDF: compute the integral directly, without MIS
                         oReflectedRadianceEstimate +=
-                              (brdfSample.mSample * brdfEmmittedRadiance)
+                              (matRecord.mSample * brdfEmmittedRadiance)
                             / (   static_cast<float>(brdfSamplesCount)  // Splitting
-                                * brdfSample.mCompProbability);         // Discrete multi-component MC
+                                * matRecord.mCompProbability);          // Discrete multi-component MC
                     }
                 }
 
@@ -359,24 +359,24 @@ protected:
                 if (!bCutIndirect && !brdfReflectedRadianceEstimate.IsZero())
                 {
                     SpectrumF indirectRadianceEstimate;
-                    if (brdfSample.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != INFINITY_F)
                     {
                         // Finite BRDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
-                              (brdfSample.mSample * brdfReflectedRadianceEstimate)
-                            / (   brdfSample.mPdfW              // MC
+                              (matRecord.mSample * brdfReflectedRadianceEstimate)
+                            / (   matRecord.mPdfW               // MC
                                 * brdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
-                                * brdfSample.mCompProbability); // Discrete multi-component MC
+                                * matRecord.mCompProbability);  // Discrete multi-component MC
                     }
                     else
                     {
                         // Dirac BRDF: compute the integral directly, without MIS
                         indirectRadianceEstimate =
-                              (brdfSample.mSample * brdfReflectedRadianceEstimate)
+                              (matRecord.mSample * brdfReflectedRadianceEstimate)
                             / (   brdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
-                                * brdfSample.mCompProbability); // Discrete multi-component MC
+                                * matRecord.mCompProbability);  // Discrete multi-component MC
                     }
 
                     // Clip fireflies

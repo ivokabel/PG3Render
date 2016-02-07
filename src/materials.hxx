@@ -30,7 +30,7 @@ enum MaterialProperties
     kBSDFBackSideLightSampling      = 0x00000002,
 };
 
-class BRDFSample
+class MaterialRecord
 {
 public:
     // BRDF attenuation * cosine theta_in for the case of finite BSDF component, or
@@ -73,9 +73,9 @@ public:
 
     // Generates a random BRDF sample.
     virtual void SampleBrdf(
-        Rng         &aRng,
-        const Vec3f &aWol,
-        BRDFSample  &oBrdfSample
+        Rng             &aRng,
+        const Vec3f     &aWol,
+        MaterialRecord  &oMatRecord
         ) const = 0;
 
     // Computes PDF and component generation probability for the whole finite component 
@@ -175,9 +175,9 @@ public:
     // It first randomly chooses a BRDF component and then it samples a random direction 
     // for this component.
     virtual void SampleBrdf(
-        Rng         &aRng,
-        const Vec3f &aWol,
-        BRDFSample  &oBrdfSample
+        Rng             &aRng,
+        const Vec3f     &aWol,
+        MaterialRecord  &oMatRecord
         ) const override
     {
         // Compute scalar reflectances. Replicated in GetWholeFiniteCompProbabilities()!
@@ -193,9 +193,9 @@ public:
         if (totalReflectance < MAT_BLOCKER_EPSILON)
         {
             // Diffuse fallback for blocker materials
-            oBrdfSample.mSample.MakeZero();
-            oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
-            oBrdfSample.mCompProbability = 1.f;
+            oMatRecord.mSample.MakeZero();
+            oMatRecord.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
+            oMatRecord.mCompProbability = 1.f;
             return;
         }
 
@@ -208,7 +208,7 @@ public:
         if (randomVal < diffuseReflectanceEst)
         {
             // Diffuse, cosine-weighted sampling
-            oBrdfSample.mWil = SampleCosHemisphereW(aRng.GetVec2f());
+            oMatRecord.mWil = SampleCosHemisphereW(aRng.GetVec2f());
         }
         else
         {
@@ -216,28 +216,28 @@ public:
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample =
-                SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oBrdfSample.mPdfW*/);
+                SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oMatRecord.mPdfW*/);
 
             // Rotate sample to mirror-reflection
             const Vec3f wrl = ReflectLocal(aWol);
             Frame lobeFrame;
             lobeFrame.SetFromZ(wrl);
-            oBrdfSample.mWil = lobeFrame.ToWorld(canonicalSample);
+            oMatRecord.mWil = lobeFrame.ToWorld(canonicalSample);
         }
 
-        oBrdfSample.mCompProbability = 1.f;
+        oMatRecord.mCompProbability = 1.f;
 
         // Get whole PDF value
-        oBrdfSample.mPdfW =
-            GetPdfW(aWol, oBrdfSample.mWil, diffuseReflectanceEst, glossyReflectanceEst);
+        oMatRecord.mPdfW =
+            GetPdfW(aWol, oMatRecord.mWil, diffuseReflectanceEst, glossyReflectanceEst);
 
-        const float thetaCosIn = oBrdfSample.mWil.z;
+        const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample = PhongMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oMatRecord.mSample = PhongMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
     }
 
     float GetPdfW(
@@ -391,22 +391,22 @@ public:
 
     // Generates a random BRDF sample.
     virtual void SampleBrdf(
-        Rng         &aRng,
-        const Vec3f &aWol,
-        BRDFSample  &oBrdfSample
+        Rng             &aRng,
+        const Vec3f     &aWol,
+        MaterialRecord  &oMatRecord
         ) const override
     {
         aRng; // unreferenced params
 
-        oBrdfSample.mWil = ReflectLocal(aWol);
-        oBrdfSample.mPdfW = INFINITY_F;
-        oBrdfSample.mCompProbability = 1.f;
+        oMatRecord.mWil             = ReflectLocal(aWol);
+        oMatRecord.mPdfW            = INFINITY_F;
+        oMatRecord.mCompProbability = 1.f;
 
         // TODO: This may be cached (GetRRContinuationProb and SampleBrdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
-        const float reflectance = FresnelConductor(oBrdfSample.mWil.z, mEta, mAbsorbance);
-        oBrdfSample.mSample.SetGreyAttenuation(reflectance);
+        const float reflectance = FresnelConductor(oMatRecord.mWil.z, mEta, mAbsorbance);
+        oMatRecord.mSample.SetGreyAttenuation(reflectance);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -447,9 +447,9 @@ public:
 
     // Generates a random BRDF sample.
     virtual void SampleBrdf(
-        Rng         &aRng,
-        const Vec3f &aWol,
-        BRDFSample  &oBrdfSample
+        Rng             &aRng,
+        const Vec3f     &aWol,
+        MaterialRecord  &oMatRecord
         ) const override
     {
         const float fresnelRefl = FresnelDielectric(aWol.z, mEta);
@@ -462,8 +462,8 @@ public:
         {
             // Reflect
             // This branch also handles TIR cases
-            oBrdfSample.mWil = ReflectLocal(aWol);
-            attenuation      = fresnelRefl;
+            oMatRecord.mWil = ReflectLocal(aWol);
+            attenuation     = fresnelRefl;
         }
         else
         {
@@ -471,15 +471,15 @@ public:
             // TODO: local version of refract?
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
             bool isAboveMicrofacet;
-            Refract(oBrdfSample.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
+            Refract(oMatRecord.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
             // TODO: Radiance (de)compression?
         }
 
-        oBrdfSample.mCompProbability = attenuation;
-        oBrdfSample.mPdfW            = INFINITY_F;
-        oBrdfSample.mSample.SetGreyAttenuation(attenuation);
+        oMatRecord.mCompProbability = attenuation;
+        oMatRecord.mPdfW            = INFINITY_F;
+        oMatRecord.mSample.SetGreyAttenuation(attenuation);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -568,45 +568,45 @@ public:
 
     // Generates a random BRDF sample.
     virtual void SampleBrdf(
-        Rng         &aRng,
-        const Vec3f &aWol,
-        BRDFSample  &oBrdfSample
+        Rng             &aRng,
+        const Vec3f     &aWol,
+        MaterialRecord  &oMatRecord
         ) const override
     {
         #if defined MATERIAL_GGX_SAMPLING_COS
 
-        oBrdfSample.mWil =
-            SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
-        oBrdfSample.mCompProbability = 1.0f;
+        oMatRecord.mWil =
+            SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
+        oMatRecord.mCompProbability = 1.0f;
 
-        const float thetaCosIn = oBrdfSample.mWil.z;
+        const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oMatRecord.mSample =
+                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
         // Distribution sampling
         bool isAboveMicrofacet =
-            SampleGgxAllNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oBrdfSample.mWil);
+            SampleGgxAllNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oMatRecord.mWil);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXConductorMaterial::GetWholeFiniteCompProbabilities(
-            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
-            aWol, oBrdfSample.mWil);
+            oMatRecord.mPdfW, oMatRecord.mCompProbability,
+            aWol, oMatRecord.mWil);
 
-        const float thetaCosIn = oBrdfSample.mWil.z;
+        const float thetaCosIn = oMatRecord.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
             // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oMatRecord.mSample =
+                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
@@ -615,23 +615,23 @@ public:
         Vec3f reflectDir;
         bool isOutDirAboveMicrofacet;
         Reflect(reflectDir, isOutDirAboveMicrofacet, aWol, microfacetDir);
-        oBrdfSample.mWil = reflectDir;
+        oMatRecord.mWil = reflectDir;
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXConductorMaterial::GetWholeFiniteCompProbabilities(
-            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
-            aWol, oBrdfSample.mWil);
+            oMatRecord.mPdfW, oMatRecord.mCompProbability,
+            aWol, oMatRecord.mWil);
 
-        const float thetaCosIn = oBrdfSample.mWil.z;
+        const float thetaCosIn = oMatRecord.mWil.z;
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
         else if (thetaCosIn < 0.0f)
             // Incoming dir is below surface: the sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
         else
-            oBrdfSample.mSample =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oMatRecord.mSample =
+                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
 
         #else
         #error Undefined GGX sampling method!
@@ -803,9 +803,9 @@ public:
 
     // Generates a random BRDF sample.
     virtual void SampleBrdf(
-        Rng         &aRng,
-        const Vec3f &aWol,
-        BRDFSample  &oBrdfSample
+        Rng             &aRng,
+        const Vec3f     &aWol,
+        MaterialRecord  &oMatRecord
         ) const override
     {
         const bool isOutDirFromBelow = (aWol.z < 0.f);
@@ -817,23 +817,23 @@ public:
         #if defined MATERIAL_GGX_SAMPLING_COS
         #error not tested!
 
-        Vec3f wilSwitched = SampleCosHemisphereW(aRng.GetVec2f(), &oBrdfSample.mPdfW);
+        Vec3f wilSwitched = SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
 
         // Switch up-down back if necessary
-        oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+        oMatRecord.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
 
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
-            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
-            aWol, oBrdfSample.mWil);
+            oMatRecord.mPdfW, oMatRecord.mCompProbability,
+            aWol, oMatRecord.mWil);
 
-        const float thetaCosIn = oBrdfSample.mWil.z;
+        const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample =
-                MicrofacetGGXDielectricMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oMatRecord.mSample =
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
         #error not tested!
@@ -844,21 +844,21 @@ public:
             SampleGgxAllNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f(), wilSwitched);
 
         // Switch up-down back if necessary
-        oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+        oMatRecord.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
-            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
-            aWol, oBrdfSample.mWil);
+            oMatRecord.mPdfW, oMatRecord.mCompProbability,
+            aWol, oMatRecord.mWil);
 
-        const float thetaCosIn = oBrdfSample.mWil.z;
+        const float thetaCosIn = oMatRecord.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
             // Above surface: Evaluate the whole BRDF
-            oBrdfSample.mSample =
-                MicrofacetGGXDielectricMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaCosIn;
+            oMatRecord.mSample =
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
@@ -886,23 +886,23 @@ public:
         }
 
         // Switch up-down back if necessary
-        oBrdfSample.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+        oMatRecord.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
 
         // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
-            oBrdfSample.mPdfW, oBrdfSample.mCompProbability,
-            aWol, oBrdfSample.mWil);
+            oMatRecord.mPdfW, oMatRecord.mCompProbability,
+            aWol, oMatRecord.mWil);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
         else if (thetaInCosAbs < 0.0f)
             // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
-            oBrdfSample.mSample.MakeZero();
+            oMatRecord.mSample.MakeZero();
         else
             // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
-            oBrdfSample.mSample =
-                MicrofacetGGXDielectricMaterial::EvalBrdf(oBrdfSample.mWil, aWol) * thetaInCosAbs;
+            oMatRecord.mSample =
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaInCosAbs;
 
         #else
         #error Undefined GGX sampling method!

@@ -67,30 +67,30 @@ public:
             else if (aAlgorithm == kDirectIllumBRDFSampling)
             {
                 // Sample BRDF
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
-                if (brdfSample.mSample.Max() > 0.)
+                MaterialRecord matRecord;
+                mat.SampleBrdf(mRng, wol, matRecord);
+                if (matRecord.mSample.Max() > 0.)
                 {
                     SpectrumF LiLight;
                     GetDirectRadianceFromDirection(
                         surfPt,
                         surfFrame,
                         mat,
-                        brdfSample.mWil,
+                        matRecord.mWil,
                         lightSamplingCtx,
                         LiLight);
 
-                    if (brdfSample.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != INFINITY_F)
                         // Finite BRDF: Compute the two-step MC estimator.
                         LoDirect =
-                              (brdfSample.mSample * LiLight)
-                            / (  brdfSample.mPdfW               // Monte Carlo est.
-                               * brdfSample.mCompProbability);  // Discrete multi-component MC
+                              (matRecord.mSample * LiLight)
+                            / (  matRecord.mPdfW               // Monte Carlo est.
+                               * matRecord.mCompProbability);  // Discrete multi-component MC
                     else
                         // Dirac BRDF: compute the integral analytically
                         LoDirect =
-                              brdfSample.mSample * LiLight
-                            / brdfSample.mCompProbability;      // Discrete multi-component MC
+                              matRecord.mSample * LiLight
+                            / matRecord.mCompProbability;      // Discrete multi-component MC
                 }
             }
             else if (aAlgorithm == kDirectIllumMIS)
@@ -107,10 +107,10 @@ public:
                 }
 
                 // Generate one sample by sampling the BRDF
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
+                MaterialRecord matRecord;
+                mat.SampleBrdf(mRng, wol, matRecord);
                 AddDirectIllumMISBrdfSampleContribution(
-                    brdfSample, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
+                    matRecord, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
                     LoDirect);
             }
             else
