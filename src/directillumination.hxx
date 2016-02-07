@@ -67,8 +67,8 @@ public:
             else if (aAlgorithm == kDirectIllumBRDFSampling)
             {
                 // Sample BRDF
-                MaterialRecord matRecord;
-                mat.SampleBrdf(mRng, wol, matRecord);
+                MaterialRecord matRecord(wol);
+                mat.SampleBrdf(mRng, matRecord);
                 if (matRecord.mAttenuation.Max() > 0.)
                 {
                     SpectrumF LiLight;
@@ -107,8 +107,8 @@ public:
                 }
 
                 // Generate one sample by sampling the BRDF
-                MaterialRecord matRecord;
-                mat.SampleBrdf(mRng, wol, matRecord);
+                MaterialRecord matRecord(wol);
+                mat.SampleBrdf(mRng, matRecord);
                 AddDirectIllumMISBrdfSampleContribution(
                     matRecord, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
                     LoDirect);

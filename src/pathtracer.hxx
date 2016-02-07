@@ -107,8 +107,8 @@ protected:
                 }
 
                 // Sample BRDF
-                MaterialRecord matRecord;
-                mat.SampleBrdf(mRng, wol, matRecord);
+                MaterialRecord matRecord(wol);
+                mat.SampleBrdf(mRng, matRecord);
                 if (matRecord.mAttenuation.Max() <= 0.)
                     // There is no contribution behing this reflection;
                     // we can cut the path without incorporation of bias
@@ -294,8 +294,8 @@ protected:
                     }
                 }
 
-                MaterialRecord matRecord;
-                mat.SampleBrdf(mRng, wol, matRecord);
+                MaterialRecord matRecord(wol);
+                mat.SampleBrdf(mRng, matRecord);
                 if (matRecord.mAttenuation.Max() <= 0.f)
                     continue;
 

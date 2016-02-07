@@ -30,26 +30,49 @@ enum MaterialProperties
     kBSDFBackSideLightSampling      = 0x00000002,
 };
 
+// Structure that holds data for sampling&evaluation or just evaluation of materials.
+// In the case involving sampling many of the members have slightly different meaning.
 class MaterialRecord
 {
 public:
-    // BRDF attenuation * cosine theta_in for the case of finite BSDF component, or
-    // just dirac BSDF component attenuation 
+
+    MaterialRecord(const Vec3f &aWol) :
+        mWol(aWol) {}
+
+    MaterialRecord(const Vec3f &aWol, const Vec3f &aWil) :
+        mWol(aWol), mWil(aWil) {}
+
+    // Outgoing direction
+    Vec3f       mWol;
+
+    // Incoming direction (either input or output parameter)
+    Vec3f       mWil;
+
+    // BSDF attenuation * cosine theta_in for the case of finite BSDF, or
+    // just attenuation for dirac BSDF.
+    //
+    // For sampling usage scenario it relates to the chosen BSDF component only,
+    // otherwise it relates to the whole model.
     SpectrumF   mAttenuation;
 
-    // Angular PDF of the sample.
-    // In finite BRDF cases it contains the PDF of all finite components altogether.
+    // In finite BSDF cases it contains the angular PDF of all finite components altogether.
     // In infinite cases it equals INFINITY_F.
+    //
+    // For sampling usage scenario it relates to the chosen BSDF component only,
+    // otherwise it relates to the whole model.
     float       mPdfW;
 
-    // Probability of picking the additive BRDF component which generated this sample.
-    // The component can be more infinite pdf (dirac impulse) BRDFs, e.g. Fresnel, 
-    // and/or one total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
-    // Infinite components' contributions are computed outside MIS mechanism.
+    // Probability of picking the additive BSDF component for given outgoing direction.
+    // The components can be more infinite pdf (dirac) BSDFs (e.g. Fresnel) 
+    // and/or one total finite BSDF.
+    //
+    // Finite sub-components are treated as one total finite component, because finite BSDFs 
+    // cannot be sampled separatelly due to MIS. Infinite components' contributions are computed 
+    // outside MIS mechanism.
+    //
+    // For sampling usage scenario it relates to the chosen BSDF component only,
+    // otherwise it relates to the total finite BSDF.
     float       mCompProbability;
-
-    // Chosen incoming direction
-    Vec3f       mWil;
 };
 
 class AbstractMaterial
@@ -71,10 +94,9 @@ public:
         const Vec3f& aWol   // Outgoing radiance direction
         ) const = 0;
 
-    // Generates a random BRDF sample.
+    // Generates a random BSDF sample.
     virtual void SampleBrdf(
         Rng             &aRng,
-        const Vec3f     &aWol,
         MaterialRecord  &oMatRecord
         ) const = 0;
 
@@ -171,18 +193,17 @@ public:
         return diffuseComponent + glossyComponent;
     }
 
-    // Generates a random BRDF sample.
-    // It first randomly chooses a BRDF component and then it samples a random direction 
+    // Generates a random BSDF sample.
+    // It first randomly chooses a BSDF component and then it samples a random direction 
     // for this component.
     virtual void SampleBrdf(
         Rng             &aRng,
-        const Vec3f     &aWol,
         MaterialRecord  &oMatRecord
         ) const override
     {
         // Compute scalar reflectances. Replicated in GetWholeFiniteCompProbabilities()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
-        const float cosThetaOut = std::max(aWol.z, 0.f);
+        const float cosThetaOut = std::max(oMatRecord.mWol.z, 0.f);
         const float glossyReflectanceEst =
               GetGlossyReflectance()
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
@@ -219,7 +240,7 @@ public:
                 SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oMatRecord.mPdfW*/);
 
             // Rotate sample to mirror-reflection
-            const Vec3f wrl = ReflectLocal(aWol);
+            const Vec3f wrl = ReflectLocal(oMatRecord.mWol);
             Frame lobeFrame;
             lobeFrame.SetFromZ(wrl);
             oMatRecord.mWil = lobeFrame.ToWorld(canonicalSample);
@@ -229,12 +250,12 @@ public:
 
         // Get whole PDF value
         oMatRecord.mPdfW =
-            GetPdfW(aWol, oMatRecord.mWil, diffuseReflectanceEst, glossyReflectanceEst);
+            GetPdfW(oMatRecord.mWol, oMatRecord.mWil, diffuseReflectanceEst, glossyReflectanceEst);
 
         const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
-            // Above surface: Evaluate the whole BRDF
-            oMatRecord.mAttenuation = PhongMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+            // Above surface: Evaluate the whole BSDF
+            oMatRecord.mAttenuation = PhongMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
             oMatRecord.mAttenuation.MakeZero();
@@ -389,16 +410,15 @@ public:
         mAbsorbance = aAbsorbance;
     }
 
-    // Generates a random BRDF sample.
+    // Generates a random BSDF sample.
     virtual void SampleBrdf(
         Rng             &aRng,
-        const Vec3f     &aWol,
         MaterialRecord  &oMatRecord
         ) const override
     {
         aRng; // unreferenced params
 
-        oMatRecord.mWil             = ReflectLocal(aWol);
+        oMatRecord.mWil             = ReflectLocal(oMatRecord.mWol);
         oMatRecord.mPdfW            = INFINITY_F;
         oMatRecord.mCompProbability = 1.f;
 
@@ -445,14 +465,13 @@ public:
             mEta = 1.0f;
     }
 
-    // Generates a random BRDF sample.
+    // Generates a random BSDF sample.
     virtual void SampleBrdf(
         Rng             &aRng,
-        const Vec3f     &aWol,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        const float fresnelRefl = FresnelDielectric(aWol.z, mEta);
+        const float fresnelRefl = FresnelDielectric(oMatRecord.mWol.z, mEta);
 
         float attenuation;
 
@@ -462,7 +481,7 @@ public:
         {
             // Reflect
             // This branch also handles TIR cases
-            oMatRecord.mWil = ReflectLocal(aWol);
+            oMatRecord.mWil = ReflectLocal(oMatRecord.mWol);
             attenuation     = fresnelRefl;
         }
         else
@@ -471,7 +490,7 @@ public:
             // TODO: local version of refract?
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
             bool isAboveMicrofacet;
-            Refract(oMatRecord.mWil, isAboveMicrofacet, aWol, Vec3f(0.f, 0.f, 1.f), mEta);
+            Refract(oMatRecord.mWil, isAboveMicrofacet, oMatRecord.mWol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
             // TODO: Radiance (de)compression?
@@ -529,7 +548,7 @@ public:
     {
         if (   aWil.z <= 0.f
             || aWol.z <= 0.f
-            || IsTiny(4.0f * aWil.z * aWol.z)) // BRDF denominator
+            || IsTiny(4.0f * aWil.z * aWol.z)) // BSDF denominator
         {
             return SpectrumF().MakeZero();
         }
@@ -551,7 +570,7 @@ public:
 
         PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
 
-        // The whole BRDF
+        // The whole BSDF
         const float cosThetaI = aWil.z;
         const float cosThetaO = aWol.z;
         const float brdfVal =
@@ -566,10 +585,9 @@ public:
         return result;
     }
 
-    // Generates a random BRDF sample.
+    // Generates a random BSDF sample.
     virtual void SampleBrdf(
         Rng             &aRng,
-        const Vec3f     &aWol,
         MaterialRecord  &oMatRecord
         ) const override
     {
@@ -581,9 +599,9 @@ public:
 
         const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
-            // Above surface: Evaluate the whole BRDF
+            // Above surface: Evaluate the whole BSDF
             oMatRecord.mAttenuation =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
             oMatRecord.mAttenuation.MakeZero();
@@ -592,35 +610,35 @@ public:
 
         // Distribution sampling
         bool isAboveMicrofacet =
-            SampleGgxAllNormals(aWol, mRoughnessAlpha, aRng.GetVec2f(), oMatRecord.mWil);
+            SampleGgxAllNormals(oMatRecord.mWol, mRoughnessAlpha, aRng.GetVec2f(), oMatRecord.mWil);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXConductorMaterial::GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            aWol, oMatRecord.mWil);
+            oMatRecord.mWol, oMatRecord.mWil);
 
         const float thetaCosIn = oMatRecord.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
-            // Above surface: Evaluate the whole BRDF
+            // Above surface: Evaluate the whole BSDF
             oMatRecord.mAttenuation =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
             oMatRecord.mAttenuation.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
-        Vec3f microfacetDir = SampleGgxVisibleNormals(aWol, mRoughnessAlpha, aRng.GetVec2f());
+        Vec3f microfacetDir = SampleGgxVisibleNormals(oMatRecord.mWol, mRoughnessAlpha, aRng.GetVec2f());
 
         Vec3f reflectDir;
         bool isOutDirAboveMicrofacet;
-        Reflect(reflectDir, isOutDirAboveMicrofacet, aWol, microfacetDir);
+        Reflect(reflectDir, isOutDirAboveMicrofacet, oMatRecord.mWol, microfacetDir);
         oMatRecord.mWil = reflectDir;
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXConductorMaterial::GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            aWol, oMatRecord.mWil);
+            oMatRecord.mWol, oMatRecord.mWil);
 
         const float thetaCosIn = oMatRecord.mWil.z;
         if (!isOutDirAboveMicrofacet)
@@ -631,7 +649,7 @@ public:
             oMatRecord.mAttenuation.MakeZero();
         else
             oMatRecord.mAttenuation =
-                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+                MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaCosIn;
 
         #else
         #error Undefined GGX sampling method!
@@ -744,7 +762,7 @@ public:
         const float cosThetaIAbs    = std::abs(wilSwitched.z);
         const float cosThetaOAbs    = std::abs(wolSwitched.z);
 
-        // Check BRDF denominator
+        // Check BSDF denominator
         if (isReflection && IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
             return SpectrumF().MakeZero();
         else if (!isReflection && IsTiny(cosThetaIAbs * cosThetaOAbs))
@@ -773,7 +791,7 @@ public:
 
         PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
 
-        // The whole BRDF
+        // The whole BSDF
         float brdfVal;
         if (isReflection)
             brdfVal =
@@ -801,17 +819,16 @@ public:
         return result;
     }
 
-    // Generates a random BRDF sample.
+    // Generates a random BSDF sample.
     virtual void SampleBrdf(
         Rng             &aRng,
-        const Vec3f     &aWol,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        const bool isOutDirFromBelow = (aWol.z < 0.f);
+        const bool isOutDirFromBelow = (oMatRecord.mWol.z < 0.f);
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        const Vec3f wolSwitched = aWol * (isOutDirFromBelow ? -1.0f : 1.0f); // TODO: Use just mirror symmetry instead of center symmetry?
+        const Vec3f wolSwitched = oMatRecord.mWol * (isOutDirFromBelow ? -1.0f : 1.0f); // TODO: Use just mirror symmetry instead of center symmetry?
         const float etaSwitched = (isOutDirFromBelow ? mEtaInv : mEta);
 
         #if defined MATERIAL_GGX_SAMPLING_COS
@@ -824,13 +841,13 @@ public:
 
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            aWol, oMatRecord.mWil);
+            oMatRecord.mWol, oMatRecord.mWil);
 
         const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
-            // Above surface: Evaluate the whole BRDF
+            // Above surface: Evaluate the whole BSDF
             oMatRecord.mAttenuation =
-                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
             oMatRecord.mAttenuation.MakeZero();
@@ -849,13 +866,13 @@ public:
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            aWol, oMatRecord.mWil);
+            oMatRecord.mWol, oMatRecord.mWil);
 
         const float thetaCosIn = oMatRecord.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
-            // Above surface: Evaluate the whole BRDF
+            // Above surface: Evaluate the whole BSDF
             oMatRecord.mAttenuation =
-                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
             oMatRecord.mAttenuation.MakeZero();
@@ -891,7 +908,7 @@ public:
         // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            aWol, oMatRecord.mWil);
+            oMatRecord.mWol, oMatRecord.mWil);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
@@ -902,7 +919,7 @@ public:
         else
             // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
             oMatRecord.mAttenuation =
-                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaInCosAbs;
+                MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, oMatRecord.mWol) * thetaInCosAbs;
 
         #else
         #error Undefined GGX sampling method!
