@@ -318,7 +318,7 @@ protected:
                 // Direct light
                 if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
                 {
-                    // Since Monte Carlo estimation works only for finite (non-Dirac) BSDFs,
+                    // Since Monte Carlo estimation works for finite (non-Dirac) BSDFs only,
                     // we split the integral into two parts - one for finite components and 
                     // one for Dirac components of the BSDF. This is analogical and well working 
                     // together with the separate light sampling scheme used in 

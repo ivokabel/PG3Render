@@ -33,18 +33,19 @@ enum MaterialProperties
 class BRDFSample
 {
 public:
-    // BRDF attenuation * cosine theta_in
+    // BRDF attenuation * cosine theta_in for the case of finite BSDF component, or
+    // just dirac BSDF component attenuation 
     SpectrumF   mSample;
 
     // Angular PDF of the sample.
-    // In finite BRDF cases, it contains the PDF of all finite components altogether.
-    // In infitite cases, it equals INFINITY_F.
+    // In finite BRDF cases it contains the PDF of all finite components altogether.
+    // In infinite cases it equals INFINITY_F.
     float       mPdfW;
 
     // Probability of picking the additive BRDF component which generated this sample.
     // The component can be more infinite pdf (dirac impulse) BRDFs, e.g. Fresnel, 
     // and/or one total finite BRDF. Finite BRDFs cannot be sampled separatelly due to MIS; 
-    // Inifinite components' contributions are computed outside MIS mechanism.
+    // Infinite components' contributions are computed outside MIS mechanism.
     float       mCompProbability;
 
     // Chosen incoming direction
