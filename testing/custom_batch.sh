@@ -22,26 +22,60 @@ cd "$PG3RENDER_BASE_DIR"
 
 ###################################################################################################
 
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 1  -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 12 -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
+# Dielectric GGX microfacet testing
+for ITERS in `echo 4`; do
+    for ALG in `echo pt`; do      #dbs dlsa dmis ptn pt`; do
+        for EM in `echo 1`; do        #1 10 12 11 7`; do
+            # Glass sphere in air
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a $ALG -sb 1         -em $EM  -i $ITERS -ot GlassInAir; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot GlassInAir; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0001 -auxf2 0.001; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0001 -auxf2 0.001; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0003 -auxf2 0.003; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0003 -auxf2 0.003; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0010 -auxf2 0.010; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0010 -auxf2 0.010; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0030 -auxf2 0.030; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0030 -auxf2 0.030; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0100 -auxf2 0.100; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0100 -auxf2 0.100; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0200 -auxf2 0.200; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0200 -auxf2 0.200; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0300 -auxf2 0.300; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0300 -auxf2 0.300; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0400 -auxf2 0.400; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0400 -auxf2 0.400; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_0500 -auxf2 0.500; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_0500 -auxf2 0.500; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4         -em $EM  -i $ITERS -ot GlassInAir_1000 -auxf2 1.000; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 4 -iic 18 -em $EM  -i $ITERS -ot GlassInAir_1000 -auxf2 1.000; echo
 
+            # Air sphere in glass
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AirInGlass -auxf1 1; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot AirInGlass -auxf1 1; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AirInGlass_0030 -auxf2 0.030 -auxf1 1; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot AirInGlass_0030 -auxf2 0.030 -auxf1 1; echo
 
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 1  -i 100
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 12 -i 5000
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 10 -i 1000
+            # Rectangles
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 27 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AdjacentNormal;      echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AdjacentNormal_0100; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot AdjacentNormal_0100; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 27 -a $ALG -sb 1         -em $EM  -i $ITERS -ot ReverseNormal      -auxf1 1; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1         -em $EM  -i $ITERS -ot ReverseNormal_0100 -auxf1 1; echo
+            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot ReverseNormal_0100 -auxf1 1; echo
+        done
 
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 23 -a pt -em 1  -i 100
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 23 -a pt -em 12 -i 100
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 23 -a pt -em 10 -i 100
-
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 1  -i 100   -iic 20
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 12 -i 30000 -iic 20
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i 1000  -iic 20
-
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 25 -a pt -em 1  -i 500   -ot 0100
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 25 -a pt -em 12 -i 11000 -ot 0100
-#"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 25 -a pt -em 10 -i 3000  -ot 0100
+        # Glass sphere in Cornell Box
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 30 -a $ALG -sb 4         -i $ITERS -ot GlassInAir; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 30 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4         -i $ITERS -ot GlassInAir_0001 -auxf2 0.001; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir_0001 -auxf2 0.001; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4         -i $ITERS -ot GlassInAir_0010 -auxf2 0.010; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir_0010 -auxf2 0.010; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4         -i $ITERS -ot GlassInAir_0100 -auxf2 0.100; echo
+        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir_0100 -auxf2 0.100; echo
+    done
+done
 
 
 #REFERENCE_IMG="$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_82800sec_RR99.7.hdr"
@@ -53,15 +87,11 @@ cd "$PG3RENDER_BASE_DIR"
 #echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt8,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
 
 #for EM in `echo 1 12 10`; do
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dbs      -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dlss     -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dmis     -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a pt -sb 1 -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a pt       -em $EM -ot VisNormSampling0010
-#done
-
-#for ITERS in `echo 1 5 10 50 100 500`; do
-#    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i $ITERS -sb 1
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24old -i 10 -a dbs      -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24old -i 10 -a dlss     -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24old -i 10 -a dmis     -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24old -i 10 -a pt -sb 1 -em $EM -ot VisNormSampling0010
+    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24old -i 10 -a pt       -em $EM -ot VisNormSampling0010
 #done
 
 #SCENES="0 1 2 3 4 5 6 7"

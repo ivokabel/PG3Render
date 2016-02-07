@@ -159,10 +159,11 @@ uint32_t g_SceneConfigs[] =
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    // 29-30
+    // 29-32
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelConductor        | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric       | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor  | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
-    
 };
 
 std::string DefaultFilename(
