@@ -416,7 +416,7 @@ public:
               LightSamplingContext  &aContext,
               SpectrumF             &oLightBuffer)
     {
-        if (aMatRecord.mSample.Max() <= 0.f)
+        if (aMatRecord.mAttenuation.Max() <= 0.f)
             // The material is a complete blocker in this direction
             return;
 
@@ -452,7 +452,7 @@ public:
                     brdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
-                  (aMatRecord.mSample * LiLight)
+                  (aMatRecord.mAttenuation * LiLight)
                 * misWeight
                 / brdfPdfW;
         }
@@ -460,9 +460,9 @@ public:
         {
             // Dirac BRDF: compute the integral directly, without MIS
             oLightBuffer +=
-                  aMatRecord.mSample * LiLight
+                  aMatRecord.mAttenuation * LiLight
                 / (static_cast<float>(aBrdfSamplesCount)    // Splitting
-                * aMatRecord.mCompProbability);            // Discrete multi-component MC
+                * aMatRecord.mCompProbability);             // Discrete multi-component MC
         }
     }
 

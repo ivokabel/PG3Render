@@ -35,7 +35,7 @@ class MaterialRecord
 public:
     // BRDF attenuation * cosine theta_in for the case of finite BSDF component, or
     // just dirac BSDF component attenuation 
-    SpectrumF   mSample;
+    SpectrumF   mAttenuation;
 
     // Angular PDF of the sample.
     // In finite BRDF cases it contains the PDF of all finite components altogether.
@@ -193,7 +193,7 @@ public:
         if (totalReflectance < MAT_BLOCKER_EPSILON)
         {
             // Diffuse fallback for blocker materials
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
             oMatRecord.mWil = SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
             oMatRecord.mCompProbability = 1.f;
             return;
@@ -234,10 +234,10 @@ public:
         const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oMatRecord.mSample = PhongMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
+            oMatRecord.mAttenuation = PhongMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
     }
 
     float GetPdfW(
@@ -406,7 +406,7 @@ public:
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
         const float reflectance = FresnelConductor(oMatRecord.mWil.z, mEta, mAbsorbance);
-        oMatRecord.mSample.SetGreyAttenuation(reflectance);
+        oMatRecord.mAttenuation.SetGreyAttenuation(reflectance);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -479,7 +479,7 @@ public:
 
         oMatRecord.mCompProbability = attenuation;
         oMatRecord.mPdfW            = INFINITY_F;
-        oMatRecord.mSample.SetGreyAttenuation(attenuation);
+        oMatRecord.mAttenuation.SetGreyAttenuation(attenuation);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -582,11 +582,11 @@ public:
         const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oMatRecord.mSample =
+            oMatRecord.mAttenuation =
                 MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
 
@@ -602,11 +602,11 @@ public:
         const float thetaCosIn = oMatRecord.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
             // Above surface: Evaluate the whole BRDF
-            oMatRecord.mSample =
+            oMatRecord.mAttenuation =
                 MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
@@ -625,12 +625,12 @@ public:
         const float thetaCosIn = oMatRecord.mWil.z;
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
         else if (thetaCosIn < 0.0f)
             // Incoming dir is below surface: the sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
         else
-            oMatRecord.mSample =
+            oMatRecord.mAttenuation =
                 MicrofacetGGXConductorMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
 
         #else
@@ -829,11 +829,11 @@ public:
         const float thetaCosIn = oMatRecord.mWil.z;
         if (thetaCosIn > 0.0f)
             // Above surface: Evaluate the whole BRDF
-            oMatRecord.mSample =
+            oMatRecord.mAttenuation =
                 MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
         #error not tested!
@@ -854,11 +854,11 @@ public:
         const float thetaCosIn = oMatRecord.mWil.z;
         if ((thetaCosIn > 0.0f) && isAboveMicrofacet)
             // Above surface: Evaluate the whole BRDF
-            oMatRecord.mSample =
+            oMatRecord.mAttenuation =
                 MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaCosIn;
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
@@ -895,13 +895,13 @@ public:
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
         else if (thetaInCosAbs < 0.0f)
             // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
-            oMatRecord.mSample.MakeZero();
+            oMatRecord.mAttenuation.MakeZero();
         else
             // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
-            oMatRecord.mSample =
+            oMatRecord.mAttenuation =
                 MicrofacetGGXDielectricMaterial::EvalBrdf(oMatRecord.mWil, aWol) * thetaInCosAbs;
 
         #else

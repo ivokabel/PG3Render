@@ -69,7 +69,7 @@ public:
                 // Sample BRDF
                 MaterialRecord matRecord;
                 mat.SampleBrdf(mRng, wol, matRecord);
-                if (matRecord.mSample.Max() > 0.)
+                if (matRecord.mAttenuation.Max() > 0.)
                 {
                     SpectrumF LiLight;
                     GetDirectRadianceFromDirection(
@@ -83,13 +83,13 @@ public:
                     if (matRecord.mPdfW != INFINITY_F)
                         // Finite BRDF: Compute the two-step MC estimator.
                         LoDirect =
-                              (matRecord.mSample * LiLight)
+                              (matRecord.mAttenuation * LiLight)
                             / (  matRecord.mPdfW               // Monte Carlo est.
                                * matRecord.mCompProbability);  // Discrete multi-component MC
                     else
                         // Dirac BRDF: compute the integral analytically
                         LoDirect =
-                              matRecord.mSample * LiLight
+                              matRecord.mAttenuation * LiLight
                             / matRecord.mCompProbability;      // Discrete multi-component MC
                 }
             }
