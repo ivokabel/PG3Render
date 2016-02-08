@@ -209,19 +209,14 @@ private:
 
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
-        // to be used by the material as soon as now to get better contribution estimates.
+        // to be used by the material here too to get better contribution estimates.
         if (sampleFrontSide && sampleBackSide)
-        {
-            PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
-
             cosThetaIn = std::abs(cosThetaIn);
-        }
         else if (sampleFrontSide)
             cosThetaIn = std::max(cosThetaIn, 0.0f);
         else if (sampleBackSide)
         {
             PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
-
             cosThetaIn = std::max(-cosThetaIn, 0.0f);
         }
         else
@@ -332,19 +327,23 @@ private:
         const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
         const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
 
-        PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
-
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
-        // to be used by the material as soon as now to get better contribution estimates.
+        // to be used by the material here too to get better contribution estimates.
         if (sampleFrontSide && sampleBackSide)
             cosThetaIn = std::abs(cosThetaIn);
         else if (sampleFrontSide)
             cosThetaIn = std::max(cosThetaIn, 0.0f);
         else if (sampleBackSide)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
             cosThetaIn = std::max(-cosThetaIn, 0.0f);
+        }
         else
+        {
+            PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
             cosThetaIn = 0.0f;
+        }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(cosThetaIn);
 
@@ -528,17 +527,16 @@ public:
         const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
         const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
 
-        PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
-
         Vec3f wil = SampleCosSphereParamPdfW(
             aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
+
+        oSample.mWig    = aSurfFrame.ToWorld(wil);
+        oSample.mDist   = std::numeric_limits<float>::max();
+
         oSample.mLightProbability = 1.0f;
 
-        oSample.mWig = aSurfFrame.ToWorld(wil);
-        oSample.mDist = std::numeric_limits<float>::max();
-
         const SpectrumF radiance = mEnvMap->Lookup(oSample.mWig, false);
-        const float cosThetaIn   = wil.z;
+        const float cosThetaIn   = std::abs(wil.z);
         oSample.mSample = radiance * cosThetaIn;
     }
 

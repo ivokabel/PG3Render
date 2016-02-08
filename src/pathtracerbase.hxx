@@ -471,6 +471,8 @@ public:
                 / (   static_cast<float>(aBrdfSamplesCount)     // Splitting
                     * aMatRecord.mCompProbability);             // Discrete multi-component MC
         }
+
+        PG3_ASSERT_VEC3F_NONNEGATIVE(oLightBuffer);
     }
 
     float MISWeight2(

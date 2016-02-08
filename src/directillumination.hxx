@@ -95,6 +95,7 @@ public:
                                 * matRecord.ThetaInCos()
                                 * LiLight)
                             / matRecord.mCompProbability;      // Discrete multi-component MC
+                    PG3_ASSERT_VEC3F_NONNEGATIVE(LoDirect);
                 }
             }
             else if (aAlgorithm == kDirectIllumMIS)
