@@ -324,7 +324,7 @@ public:
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
                   aLightSample.mSample
-                * aSurfMaterial.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
+                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
                 / (aLightSample.mPdfW * aLightSample.mLightProbability);
         else
             // Point light - the contribution of a single light is computed 
@@ -333,7 +333,7 @@ public:
             // of all light sources.
             oLightBuffer +=
                   aLightSample.mSample
-                * aSurfMaterial.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
+                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
                 / aLightSample.mLightProbability;
     }
 
@@ -345,6 +345,7 @@ public:
         const Frame             &aSurfFrame, 
         const Vec3f             &aWol,
         const AbstractMaterial  &aSurfMaterial,
+              Rng               &aRng,
               SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
@@ -385,15 +386,17 @@ public:
         if (aLightSample.mPdfW != INFINITY_F)
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
-            float brdfCompPdfW, brdfCompProbability;
-            aSurfMaterial.GetWholeFiniteCompProbabilities(
-                brdfCompPdfW, brdfCompProbability, aWol, wil);
-            const float brdfTotalPdfW = brdfCompPdfW * brdfCompProbability;
-            const float lightPdfW     = aLightSample.mPdfW * aLightSample.mLightProbability;
+            MaterialRecord matRecord(wil, aWol);
+            aSurfMaterial.EvalBsdf(aRng, matRecord);
+            const float brdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProbability;
+            const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
+
             oLightBuffer +=
-                    (aLightSample.mSample * aSurfMaterial.EvalBrdf(wil, aWol))
-                  * (MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalPdfW, aBrdfSamplesCount)
-                    / lightPdfW);
+                    (   aLightSample.mSample
+                      * matRecord.mAttenuation
+                      * matRecord.ThetaInCos()
+                      * MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalFinitePdfW, aBrdfSamplesCount))
+                    / lightPdfW;
         }
         else
         {
@@ -401,7 +404,7 @@ public:
             // there is only one MC estimation left - the estimation of the sum of contributions
             // of all light sources.
             oLightBuffer +=
-                  (aLightSample.mSample * aSurfMaterial.EvalBrdf(wil, aWol))
+                  (aLightSample.mSample * aSurfMaterial.EvalBsdf(wil, aWol))
                 / (aLightSample.mLightProbability * aLightSamplesCount);
         }
     }
@@ -416,7 +419,7 @@ public:
               LightSamplingContext  &aContext,
               SpectrumF             &oLightBuffer)
     {
-        if (aMatRecord.mAttenuation.Max() <= 0.f)
+        if (aMatRecord.IsBlocker())
             // The material is a complete blocker in this direction
             return;
 
@@ -452,17 +455,21 @@ public:
                     brdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
-                  (aMatRecord.mAttenuation * LiLight)
-                * misWeight
+                  (   aMatRecord.mAttenuation
+                    * aMatRecord.ThetaInCos()
+                    * LiLight
+                    * misWeight)
                 / brdfPdfW;
         }
         else
         {
             // Dirac BRDF: compute the integral directly, without MIS
             oLightBuffer +=
-                  aMatRecord.mAttenuation * LiLight
-                / (static_cast<float>(aBrdfSamplesCount)    // Splitting
-                * aMatRecord.mCompProbability);             // Discrete multi-component MC
+                  (   aMatRecord.mAttenuation
+                    * aMatRecord.ThetaInCos()
+                    * LiLight)
+                / (   static_cast<float>(aBrdfSamplesCount)     // Splitting
+                    * aMatRecord.mCompProbability);             // Discrete multi-component MC
         }
     }
 
