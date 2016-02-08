@@ -4,7 +4,7 @@
 
 // Empirical values for cutting too long paths
 #ifdef _DEBUG
-#define PATH_TRACER_MAX_PATH_LENGTH 750     // crash at 812
+#define PATH_TRACER_MAX_PATH_LENGTH 700     // crash at 700
 #else
 #define PATH_TRACER_MAX_PATH_LENGTH 1500    // 1700 crashes for sure
 #endif
