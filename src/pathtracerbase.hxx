@@ -394,7 +394,6 @@ public:
             oLightBuffer +=
                     (   aLightSample.mSample
                       * matRecord.mAttenuation
-                      * matRecord.ThetaInCos()
                       * MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalFinitePdfW, aBrdfSamplesCount))
                     / lightPdfW;
         }
@@ -456,7 +455,7 @@ public:
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
                   (   aMatRecord.mAttenuation
-                    * aMatRecord.ThetaInCos()
+                    * aMatRecord.ThetaInCosAbs()
                     * LiLight
                     * misWeight)
                 / brdfPdfW;
@@ -466,7 +465,6 @@ public:
             // Dirac BRDF: compute the integral directly, without MIS
             oLightBuffer +=
                   (   aMatRecord.mAttenuation
-                    * aMatRecord.ThetaInCos()
                     * LiLight)
                 / (   static_cast<float>(aBrdfSamplesCount)     // Splitting
                     * aMatRecord.mCompProbability);             // Discrete multi-component MC

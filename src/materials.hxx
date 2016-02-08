@@ -44,13 +44,18 @@ public:
 
     bool IsBlocker() const
     {
-        const float attenuationAndCos = mAttenuation.Max() * ThetaInCos();
+        const float attenuationAndCos = mAttenuation.Max() * ThetaInCosAbs();
         return attenuationAndCos <= 0.0f;
     }
 
     float ThetaInCos() const
     {
         return mWil.z;
+    }
+
+    float ThetaInCosAbs() const
+    {
+        return std::abs(ThetaInCos());
     }
 
 public:
@@ -114,7 +119,7 @@ public:
         ) const = 0;
 
     // Generates a random BSDF sample.
-    virtual void SampleBrdf(
+    virtual void SampleBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const = 0;
@@ -222,7 +227,7 @@ public:
     // Generates a random BSDF sample.
     // It first randomly chooses a BSDF component and then it samples a random direction 
     // for this component.
-    virtual void SampleBrdf(
+    virtual void SampleBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
@@ -328,7 +333,7 @@ public:
         const Vec3f &aWil
         ) const
     {
-        // Compute scalar reflectances. Replicated in SampleBrdf()!
+        // Compute scalar reflectances. Replicated in SampleBsdf()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
         const float cosThetaOut = std::max(aWol.z, 0.f);
         const float glossyReflectanceEst =
@@ -369,7 +374,7 @@ public:
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
                                            // Cheap, but relatively good approximation of actual glossy reflectance
                                            // (part of the glossy lobe can be under the surface).
-                                           // Replicated in SampleBrdf() and GetWholeFiniteCompProbabilities()!
+                                           // Replicated in SampleBsdf() and GetWholeFiniteCompProbabilities()!
         const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
         return totalReflectance;
@@ -454,7 +459,7 @@ public:
     }
 
     // Generates a random BSDF sample.
-    virtual void SampleBrdf(
+    virtual void SampleBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
@@ -465,7 +470,7 @@ public:
         oMatRecord.mPdfW            = INFINITY_F;
         oMatRecord.mCompProbability = 1.f;
 
-        // TODO: This may be cached (GetRRContinuationProb and SampleBrdf compute the same Fresnel 
+        // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
         const float reflectance = FresnelConductor(oMatRecord.ThetaInCos(), mEta, mAbsorbance);
@@ -480,7 +485,7 @@ public:
     {
         // We can use local z of outgoing direction, because it's equal to incoming direction z
 
-        // TODO: This may be cached (GetRRContinuationProb and SampleBrdf compute the same Fresnel 
+        // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
         const float reflectance = FresnelConductor(aWol.z, mEta, mAbsorbance);
@@ -509,7 +514,7 @@ public:
     }
 
     // Generates a random BSDF sample.
-    virtual void SampleBrdf(
+    virtual void SampleBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
@@ -646,7 +651,7 @@ public:
     }
 
     // Generates a random BSDF sample.
-    virtual void SampleBrdf(
+    virtual void SampleBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
@@ -897,7 +902,7 @@ public:
     }
 
     // Generates a random BSDF sample.
-    virtual void SampleBrdf(
+    virtual void SampleBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override

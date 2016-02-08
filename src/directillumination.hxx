@@ -68,7 +68,7 @@ public:
             {
                 // Sample BRDF
                 MaterialRecord matRecord(wol);
-                mat.SampleBrdf(mRng, matRecord);
+                mat.SampleBsdf(mRng, matRecord);
                 if (!matRecord.IsBlocker())
                 {
                     SpectrumF LiLight;
@@ -84,7 +84,7 @@ public:
                         // Finite BRDF: Compute the two-step MC estimator.
                         LoDirect =
                               (   matRecord.mAttenuation
-                                * matRecord.ThetaInCos()
+                                * matRecord.ThetaInCosAbs()
                                 * LiLight)
                             / (   matRecord.mPdfW               // Monte Carlo est.
                                 * matRecord.mCompProbability);  // Discrete multi-component MC
@@ -92,9 +92,9 @@ public:
                         // Dirac BRDF: compute the integral analytically
                         LoDirect =
                               (   matRecord.mAttenuation
-                                * matRecord.ThetaInCos()
                                 * LiLight)
                             / matRecord.mCompProbability;      // Discrete multi-component MC
+
                     PG3_ASSERT_VEC3F_NONNEGATIVE(LoDirect);
                 }
             }
@@ -113,7 +113,7 @@ public:
 
                 // Generate one sample by sampling the BRDF
                 MaterialRecord matRecord(wol);
-                mat.SampleBrdf(mRng, matRecord);
+                mat.SampleBsdf(mRng, matRecord);
                 AddDirectIllumMISBrdfSampleContribution(
                     matRecord, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
                     LoDirect);

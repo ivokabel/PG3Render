@@ -108,7 +108,7 @@ protected:
 
                 // Sample BRDF
                 MaterialRecord matRecord(wol);
-                mat.SampleBrdf(mRng, matRecord);
+                mat.SampleBsdf(mRng, matRecord);
                 if (matRecord.IsBlocker())
                     // There is no contribution behind this reflection;
                     // we can cut the path without incorporation of bias
@@ -117,21 +117,22 @@ protected:
                 // Construct new ray from the current surface point
                 currentRay.org  = surfPt;
                 currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
-                currentRay.tmin = EPS_RAY_COS(matRecord.ThetaInCos());
+                currentRay.tmin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
 
                 if (matRecord.mPdfW != INFINITY_F)
                     pathThroughput *=
                             (  matRecord.mAttenuation
-                             * matRecord.ThetaInCos())
+                             * matRecord.ThetaInCosAbs())
                           / (  matRecord.mPdfW              // Monte Carlo est.
                              * rrContinuationProb           // Russian roulette (optional)
                              * matRecord.mCompProbability); // Discrete multi-component MC
                 else
                     pathThroughput *=
-                            (  matRecord.mAttenuation
-                             * matRecord.ThetaInCos())
+                            matRecord.mAttenuation
                           / (  rrContinuationProb           // Russian roulette (optional)
                              * matRecord.mCompProbability); // Discrete multi-component MC
+
+                PG3_ASSERT_VEC3F_NONNEGATIVE(pathThroughput);
 
                 pathLength++;
             }
@@ -297,7 +298,7 @@ protected:
                 }
 
                 MaterialRecord matRecord(wol);
-                mat.SampleBrdf(mRng, matRecord);
+                mat.SampleBsdf(mRng, matRecord);
                 if (matRecord.IsBlocker())
                     continue;
 
@@ -307,7 +308,7 @@ protected:
                 int32_t     brdfLightId = -1;
 
                 const Vec3f wig = surfFrame.ToWorld(matRecord.mWil);
-                const float rayMin = EPS_RAY_COS(matRecord.ThetaInCos());
+                const float rayMin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
                 const Ray   brdfRay(surfPt, wig, rayMin);
 
                 EstimateIncomingRadiancePT(
@@ -344,7 +345,7 @@ protected:
                         const float brdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
                         oReflectedRadianceEstimate +=
                               (   matRecord.mAttenuation
-                                * matRecord.ThetaInCos()
+                                * matRecord.ThetaInCosAbs()
                                 * brdfEmmittedRadiance
                                 * MISWeight2(brdfPdfW, brdfSamplesCount, lightPdfW, lightSamplesCount)) // MIS
                             / brdfPdfW;
@@ -354,11 +355,12 @@ protected:
                         // Dirac BRDF: compute the integral directly, without MIS
                         oReflectedRadianceEstimate +=
                               (   matRecord.mAttenuation
-                                * matRecord.ThetaInCos()
                                 * brdfEmmittedRadiance)
                             / (   static_cast<float>(brdfSamplesCount)  // Splitting
                                 * matRecord.mCompProbability);          // Discrete multi-component MC
                     }
+
+                    PG3_ASSERT_VEC3F_NONNEGATIVE(oReflectedRadianceEstimate);
                 }
 
                 // Indirect light
@@ -370,7 +372,7 @@ protected:
                         // Finite BRDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
                               (   matRecord.mAttenuation
-                                * matRecord.ThetaInCos()
+                                * matRecord.ThetaInCosAbs()
                                 * brdfReflectedRadianceEstimate)
                             / (   matRecord.mPdfW               // MC
                                 * brdfSamplesCount              // Splitting
@@ -382,12 +384,13 @@ protected:
                         // Dirac BRDF: compute the integral directly, without MIS
                         indirectRadianceEstimate =
                               (   matRecord.mAttenuation
-                                * matRecord.ThetaInCos()
                                 * brdfReflectedRadianceEstimate)
                             / (   brdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
                                 * matRecord.mCompProbability);  // Discrete multi-component MC
                     }
+
+                    PG3_ASSERT_VEC3F_NONNEGATIVE(indirectRadianceEstimate);
 
                     // Clip fireflies
                     if (mIndirectIllumClipping > 0.f)
