@@ -162,7 +162,18 @@ uint32_t g_SceneConfigs[] =
     // 29-30
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric       | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
-    
+
+
+
+    // 31-36, debug scenes, delete this
+    Scene::kLightBox   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::kLightPoint | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightPoint | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::kLightEnv | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::kLightEnv | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    // 37
+    Scene::kLightEnv | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric | Scene::kWallsPhongDiffuse,
 };
 
 std::string DefaultFilename(

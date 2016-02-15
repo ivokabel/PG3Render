@@ -249,7 +249,7 @@ public:
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
         {
             diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
@@ -267,7 +267,7 @@ public:
                 new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.20f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
         {
             diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
