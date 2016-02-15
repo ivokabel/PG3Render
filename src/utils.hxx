@@ -340,11 +340,6 @@ Vec3f HalfwayVectorReflectionLocal(
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-    PG3_ASSERT_MSG(
-        ((aWil.z >= 0.0f) && (aWol.z >= 0.0f)) ||
-        ((aWil.z <= 0.0f) && (aWol.z <= 0.0f)),
-        "Incoming (z: %.12f) and outgoing (z: %.12f) directions must be on the same side of the geometrical surface!",
-        aWil.z, aWol.z);
 
     Vec3f halfwayVec = aWil + aWol;
     
@@ -1171,11 +1166,14 @@ Vec3f SampleGgxVisibleNormals(
     const Vec2f &aSample)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-    PG3_ASSERT_FLOAT_NONNEGATIVE(aWol.z);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aWol.z, -0.0001);
 
     // Stretch Wol to canonical, unit roughness space
     Vec3f wolStretch =
-        Normalize(Vec3f(aWol.x * aRoughnessAlpha, aWol.y * aRoughnessAlpha, aWol.z));
+        Normalize(Vec3f(
+            aWol.x * aRoughnessAlpha,
+            aWol.y * aRoughnessAlpha,
+            std::max(aWol.z, 0.0f)));
 
     float thetaWolStretch = 0.0f;
     float phiWolStretch   = 0.0f;

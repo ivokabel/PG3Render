@@ -194,8 +194,7 @@ int32_t main(int32_t argc, const char *argv[])
 
 #else
 
-    // Warn when not using C++11 Mersenne Twister
-    PrintRngWarning();
+    PrintRngWarning(); // Warn when not using C++11 Mersenne Twister
 
     // Setup config based on command line
     Config config;
@@ -218,14 +217,11 @@ int32_t main(int32_t argc, const char *argv[])
         return 1;
     }
 
-    // If number of threads is invalid, set 1 thread per processor
     if (config.mNumThreads <= 0)
         config.mNumThreads  = std::max(1, omp_get_num_procs());
 
-    // Print what we are doing
     PrintConfiguration(config);
 
-    // Set up framebuffer and number of threads
     Framebuffer fbuffer;
     config.mFramebuffer = &fbuffer;
 
@@ -239,28 +235,16 @@ int32_t main(int32_t argc, const char *argv[])
         printf(" done in %s\n", timeHumanReadable.c_str());
 
     // Save the image
-    //if (!config.mQuietMode)
-    //    printf("Saving:    ");
     std::string extension = fullOutputPath.substr(fullOutputPath.length() - 3, 3);
     if (extension == "bmp")
-    {
         fbuffer.SaveBMP(fullOutputPath.c_str(), 2.2f /*gamma*/);
-        //if (!config.mQuietMode)
-        //    printf("done\n");
-    }
     else if (extension == "hdr")
-    {
         fbuffer.SaveHDR(fullOutputPath.c_str());
-        //if (!config.mQuietMode)
-        //    printf("done\n");
-    }
     else
         printf("Saving:    Used unknown extension %s!\n", extension.c_str());
 
-    // Introspection
     introspectionAggregator.PrintIntrospection();
 
-    // Scene cleanup
     delete config.mScene;
 
     // debug
