@@ -340,10 +340,7 @@ private:
             cosThetaIn = std::max(-cosThetaIn, 0.0f);
         }
         else
-        {
-            PG3_ERROR_CODE_NOT_TESTED("Materials of all types of light sampling should be tested.");
             cosThetaIn = 0.0f;
-        }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(cosThetaIn);
 
