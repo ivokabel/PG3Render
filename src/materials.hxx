@@ -695,10 +695,8 @@ public:
 
         Vec3f microfacetDir = SampleGgxVisibleNormals(oMatRecord.mWol, mRoughnessAlpha, aRng.GetVec2f());
 
-        Vec3f reflectDir;
         bool isOutDirAboveMicrofacet;
-        Reflect(reflectDir, isOutDirAboveMicrofacet, oMatRecord.mWol, microfacetDir);
-        oMatRecord.mWil = reflectDir;
+        Reflect(oMatRecord.mWil, isOutDirAboveMicrofacet, oMatRecord.mWol, microfacetDir);
 
         // TODO: Re-use already evaluated data? half-way vector, distribution value?
         MicrofacetGGXConductorMaterial::GetWholeFiniteCompProbabilities(
@@ -737,6 +735,7 @@ public:
         }
 
         #if defined MATERIAL_GGX_SAMPLING_COS
+        #error Missing reflection jacobian!
 
         aWol; // unreferenced param
 
@@ -746,13 +745,15 @@ public:
             oWholeFinCompPdfW = CosHemispherePdfW(aWil);
 
         #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
-
+        #error Missing reflection jacobian!
         oWholeFinCompPdfW = GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
 
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
         const Vec3f halfwayVec = HalfwayVectorReflectionLocal(aWil, aWol);
-        oWholeFinCompPdfW = GgxSamplingPdfVisibleNormals(aWol, halfwayVec, mRoughnessAlpha);
+        const float normalPdf          = GgxSamplingPdfVisibleNormals(aWol, halfwayVec, mRoughnessAlpha);
+        const float reflectionJacobian = MicrofacetReflectionJacobian(aWol, halfwayVec);
+        oWholeFinCompPdfW = normalPdf * reflectionJacobian;
 
         #else
         #error Undefined GGX sampling method!
