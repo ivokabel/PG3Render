@@ -45,7 +45,7 @@ public:
     bool IsBlocker() const
     {
         const float attenuationAndCos = mAttenuation.Max() * ThetaInCosAbs();
-        return attenuationAndCos <= 0.0f;
+        return attenuationAndCos <= MAT_BLOCKER_EPSILON;
     }
 
     float ThetaInCos() const
