@@ -22,9 +22,14 @@ cd "$PG3RENDER_BASE_DIR"
 
 ###################################################################################################
 
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 1  -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 12 -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i 1000 -sb 1 -iic 20 -ot ReflectionsOnly
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 31 -a pt -i 16 -sb 1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a pt -i 16 -sb 1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 33 -a pt -i 16 -sb 1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 34 -a pt -i 16 -sb 1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 35 -a pt -i 16 -sb 1 -em 1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 36 -a pt -i 16 -sb 1 -em 1
+"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 37 -a pt -i 16 -sb 1 -em 1
+exit;
 
 
 #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 10 -a pt -em 1  -i 100

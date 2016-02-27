@@ -8,7 +8,7 @@ SCENES="25"    #`seq 0 37`               #`seq 0 30`
 ENVIRONMENT_MAPS="1 10"         #`seq 0 12`
 ITERATIONS_COUNT=4      #256    #32
 SHORT_OUTPUT=true
-COMPARISON_MODE="compare_to_reference"              # "generate_references", "compare_to_reference"
+COMPARISON_MODE="generate_references"              # "generate_references", "compare_to_reference"
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    35 36 37"
 
@@ -132,7 +132,13 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-rm -f "$FULL_TEST_OUTPUT_DIR"/*_Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_Current.bmp
+if [ "$COMPARISON_MODE" = "compare_to_reference" ] then
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_Current.bmp
+else
+    if [ "$COMPARISON_MODE" = "generate_references" ]; then
+        rm -f "$FULL_TEST_OUTPUT_DIR"/*_Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_Reference.bmp
+    fi
+fi
 #read
 
 mkdir -p "$FULL_TEST_OUTPUT_DIR"

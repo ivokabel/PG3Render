@@ -11,8 +11,8 @@ void SetProcessPriority()
             NORMAL_PRIORITY_CLASS
 #else
             //BELOW_NORMAL_PRIORITY_CLASS
-            //IDLE_PRIORITY_CLASS
-            NORMAL_PRIORITY_CLASS
+            IDLE_PRIORITY_CLASS
+            //NORMAL_PRIORITY_CLASS
 #endif
             //PROCESS_MODE_BACKGROUND_BEGIN
             ))
