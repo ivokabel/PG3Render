@@ -292,8 +292,12 @@ public:
             mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
         }
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+        {
+            const float roughness =
+                (aDbgAux2 != INFINITY_F) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(roughness, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+        }
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXDielectric))
         {
             const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;

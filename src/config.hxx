@@ -144,7 +144,7 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
 
-    // Material testing, sphere: 20-26
+    // Material testing, 1 sphere: 20-26
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
