@@ -8,7 +8,8 @@ SCENES=`seq 0 37`                           #`seq 0 30`
 ENVIRONMENT_MAPS="1 10"                     #`seq 0 12`
 ITERATIONS_COUNT=4                          #256    #32
 SHORT_OUTPUT=true
-COMPARISON_MODE="compare_to_reference"      # "generate_references", "compare_to_reference"
+#COMPARISON_MODE="generate_references"
+ COMPARISON_MODE="compare_to_reference"
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    35 36 37"
 
@@ -46,7 +47,7 @@ run_single_render () {
         if [ "$3" = "" ]; then
             printf 'Testing scene %d, %-4s, %d iteration(s)... ' $2 $1 $ITERATIONS_COUNT 
         else
-            printf 'Testing scene %d, em % 2d, %-4s, %d iteration(s)... ' $2 $3 $1 $ITERATIONS_COUNT 
+            printf 'Testing scene %d, em %2d, %-4s, %d iteration(s)... ' $2 $3 $1 $ITERATIONS_COUNT 
         fi
         QUIET_SWITCH="-q"
     else
@@ -55,28 +56,36 @@ run_single_render () {
     fi
 
     if [ "$COMPARISON_MODE" = "generate_references" ]; then
-        OUTPUT_TRAIL="-ot Reference"
+        OUTPUT_TRAIL="-ot 1Reference"
     else
-        OUTPUT_TRAIL="-ot Current"
+        OUTPUT_TRAIL="-ot 2Current"
     fi
 
     # Generate image names and render
     if [ "$3" = "" ]; then
-        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot Reference -opop`
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot 1Reference -opop`
+        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot 3Diff -opop`
         RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
                         "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
     else
-        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot Reference -em $3 -opop`
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot 1Reference -em $3 -opop`
+        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot 3Diff -em $3 -opop`
         RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
                         "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
     fi
     RENDERING_RESULT=$?
+
+    # Debug
+    #echo
+    #echo "REFERENCE_IMG: $REFERENCE_IMG"
+    #echo "RENDERED_IMG:  $RENDERED_IMG"
+    #echo "DIFF_IMG:      $DIFF_IMG"
     #echo "Rendering result: $RENDERING_RESULT"
 
     # Compare to reference
     if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
         if [ $RENDERING_RESULT = 0 ]; then
-            "$DIFF_TOOL" -mode rmse -gamma 1.0 -rmsethreshold 0.60 "$RENDERED_IMG" "$REFERENCE_IMG"
+            "$DIFF_TOOL" -mode rmse -gamma 1.0 -rmsethreshold 0.60 -output "$DIFF_IMG" "$RENDERED_IMG" "$REFERENCE_IMG"
             DIFF_RESULT=$?
             if [ "$DIFF_RESULT" = "0" ]; then
                 ((TEST_COUNT_SUCCESSFUL+=1))
@@ -142,11 +151,13 @@ cd "$PG3RENDER_BASE_DIR"
 #echo
 
 if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
-    rm -f "$FULL_TEST_OUTPUT_DIR"/*_Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_Current.bmp
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_2Current.bmp
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr    "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
 else
     if [ "$COMPARISON_MODE" = "generate_references" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR"/*_Current.hdr   "$FULL_TEST_OUTPUT_DIR"/*_Current.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR"/*_Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_Reference.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_1Reference.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.hdr   "$FULL_TEST_OUTPUT_DIR"/*_2Current.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
     fi
 fi
 #read
