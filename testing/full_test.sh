@@ -4,18 +4,18 @@
 # Settings
 ###################################################################################################
 
-SCENES="25"    #`seq 0 37`               #`seq 0 30`
-ENVIRONMENT_MAPS="1 10"         #`seq 0 12`
-ITERATIONS_COUNT=4      #256    #32
+SCENES=`seq 0 37`                           #`seq 0 30`
+ENVIRONMENT_MAPS="1 10"                     #`seq 0 12`
+ITERATIONS_COUNT=4                          #256    #32
 SHORT_OUTPUT=true
-COMPARISON_MODE="generate_references"              # "generate_references", "compare_to_reference"
+COMPARISON_MODE="compare_to_reference"      # "generate_references", "compare_to_reference"
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    35 36 37"
 
 TESTING_DIR="./testing"
 TESTING_DIR_WIN=".\\testing"
-FULL_TEST_OUTPUT_DIR=$TESTING_DIR"/full_test_output"
-FULL_TEST_OUTPUT_DIR_WIN=$TESTING_DIR_WIN"\\full_test_output"
+FULL_TEST_OUTPUT_DIR="${TESTING_DIR}/full_test_output_${ITERATIONS_COUNT}s"
+FULL_TEST_OUTPUT_DIR_WIN="${TESTING_DIR_WIN}\\full_test_output_${ITERATIONS_COUNT}s"
 
 ###################################################################################################
 
@@ -27,7 +27,7 @@ PG3_TRAINING_DIR_WIN="C:\\Users\\Ivo\\Creativity\\Programming\\05 PG3 Training"
 PG3RENDER_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render/"
 PG3RENDER32=$PG3RENDER_BASE_DIR"Win32/Release/PG3Render.exe"
 PG3RENDER64=$PG3RENDER_BASE_DIR"x64/Release/PG3Render.exe"
-PG3RENDER=$PG3RENDER32 #$PG3RENDER64
+PG3RENDER=$PG3RENDER32 #$PG3RENDER64 #
 
 #DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
  DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/BinCMake/Release"
@@ -46,7 +46,7 @@ run_single_render () {
         if [ "$3" = "" ]; then
             printf 'Testing scene %d, %-4s, %d iteration(s)... ' $2 $1 $ITERATIONS_COUNT 
         else
-            printf 'Testing scene %d, em %d, %-4s, %d iteration(s)... ' $2 $3 $1 $ITERATIONS_COUNT 
+            printf 'Testing scene %d, em % 2d, %-4s, %d iteration(s)... ' $2 $3 $1 $ITERATIONS_COUNT 
         fi
         QUIET_SWITCH="-q"
     else
@@ -60,31 +60,40 @@ run_single_render () {
         OUTPUT_TRAIL="-ot Current"
     fi
 
+    # Generate image names and render
     if [ "$3" = "" ]; then
-        REFERENCE_IMG=`"$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot Reference -opop`
-        RENDERED_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
-                       "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot Reference -opop`
+        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
+                        "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
     else
-        REFERENCE_IMG=`"$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot Reference -em $3 -opop`
-        RENDERED_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
-                       "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH -ot Reference -em $3 -opop`
+        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
+                        "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
     fi
-
     RENDERING_RESULT=$?
-
     #echo "Rendering result: $RENDERING_RESULT"
 
     # Compare to reference
-    if [ "$COMPARISON_MODE" = "compare_to_reference" ] && [ $RENDERING_RESULT = 0 ]; then
-        "$DIFF_TOOL" -mode rmse -gamma 1.0 -rmsethreshold 0.60 "$RENDERED_IMG" "$REFERENCE_IMG"
-        DIFF_RESULT=$?
-    fi
-
-    if [ "$RENDERING_RESULT" = "0" ] && [ "$DIFF_RESULT" = "0" ]; then
-        ((TEST_COUNT_SUCCESSFUL+=1))
-        echo "Passed"
+    if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
+        if [ $RENDERING_RESULT = 0 ]; then
+            "$DIFF_TOOL" -mode rmse -gamma 1.0 -rmsethreshold 0.60 "$RENDERED_IMG" "$REFERENCE_IMG"
+            DIFF_RESULT=$?
+            if [ "$DIFF_RESULT" = "0" ]; then
+                ((TEST_COUNT_SUCCESSFUL+=1))
+                echo "Diff passed"
+            else
+                echo "           $RENDERED_IMG"
+            fi
+        else
+            echo "Rendering FAILED"
+        fi
     else
-        echo "           $RENDERED_IMG"
+        if [ $RENDERING_RESULT = 0 ]; then
+            ((TEST_COUNT_SUCCESSFUL+=1))
+            echo "Reference generated"
+        else
+            echo "Reference generation FAILED"
+        fi
     fi
     ((TEST_COUNT_TOTAL+=1))
 }
@@ -132,10 +141,11 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-if [ "$COMPARISON_MODE" = "compare_to_reference" ] then
+if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
     rm -f "$FULL_TEST_OUTPUT_DIR"/*_Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_Current.bmp
 else
     if [ "$COMPARISON_MODE" = "generate_references" ]; then
+        rm -f "$FULL_TEST_OUTPUT_DIR"/*_Current.hdr   "$FULL_TEST_OUTPUT_DIR"/*_Current.bmp
         rm -f "$FULL_TEST_OUTPUT_DIR"/*_Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_Reference.bmp
     fi
 fi
