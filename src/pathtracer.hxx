@@ -91,16 +91,32 @@ protected:
                 if ((mMaxPathLength > 0) && (pathLength >= mMaxPathLength))
                     return;
 
+                if (pathLength >= PATH_TRACER_MAX_PATH_LENGTH)
+                    // We cut too long paths even when Russian roulette ending is active
+                    // to avoid stack overflows
+                    return;
+
                 // Russian roulette (based on reflectance of the whole BRDF)
                 float rrContinuationProb = 1.0f;
                 if (mMaxPathLength == 0)
                 {
-                    rrContinuationProb =
-                        // We do not allow probability 1.0 because that can lead to infinite 
-                        // random walk in some pathological scenarios (completely white material).
-                        // After 100 bounces with probability of 98%, the whole path has 
-                        // probability of cca 13% of survival.
-                        Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.98f);
+                    // Const clamping
+                    //rrContinuationProb =
+                    //    // We do not allow probability 1.0 because that can lead to infinite 
+                    //    // random walk in some pathological scenarios (completely white material or 
+                    //    // light trap made of glass).
+                    //    // Probability of survival after 100 bounces:
+                    //    // local probability 98.0% -> 13% for the whole path
+                    //    // local probability 99.0% -> 37% for the whole path
+                    //    // local probability 99.3% -> 50% for the whole path
+                    //    // local probability 99.5% -> 61% for the whole path
+                    //    // local probability 99.7% -> 74% for the whole path
+                    //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
+                    //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+
+                    // No clamping
+                    rrContinuationProb = mat.GetRRContinuationProb(wol);
+
                     const float rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
                         return;
@@ -271,13 +287,6 @@ protected:
 
                 // No clamping
                 rrContinuationProb = mat.GetRRContinuationProb(wol);
-
-                // Progressive clamping experiment - more aggressive for longer paths
-                //const float lengthCoef =
-                //    Clamp(float(aPathLength) / PATH_TRACER_MAX_PATH_LENGTH, 0.0f, 1.0f);
-                //const float maxVal =
-                //    (1.0f - lengthCoef) * 1.0f + lengthCoef * 0.95f;
-                //rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.0f, maxVal);
             }
 
             // Generate requested amount of BRDF samples for both direct and indirect illumination
