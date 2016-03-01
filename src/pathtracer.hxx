@@ -115,7 +115,7 @@ protected:
                     //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                     // No clamping
-                    rrContinuationProb = mat.GetRRContinuationProb(wol);
+                   rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
 
                     const float rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
@@ -286,7 +286,7 @@ protected:
                 //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                 // No clamping
-                rrContinuationProb = mat.GetRRContinuationProb(wol);
+                rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
             }
 
             // Generate requested amount of BRDF samples for both direct and indirect illumination

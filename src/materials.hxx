@@ -377,7 +377,7 @@ public:
                                            // Replicated in SampleBsdf() and GetWholeFiniteCompProbabilities()!
         const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
-        return totalReflectance;
+        return Clamp(totalReflectance, 0.f, 1.f);
     }
 
     virtual bool IsReflectanceZero() const override
