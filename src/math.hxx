@@ -287,6 +287,7 @@ public:
     Vec3Base<T>& operator/=(const Vec3Base& a)
     { x /= a.x; y /= a.y; z /= a.z; return *this; }
 
+    //PG3_NOINLINE
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
     { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
@@ -315,6 +316,7 @@ Vec3f Cross(
     return res;
 }
 
+//PG3_NOINLINE
 Vec3f Normalize(const Vec3f& a)
 {
     const float lenSqr = Dot(a, a);

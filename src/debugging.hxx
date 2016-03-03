@@ -218,6 +218,8 @@ void pg3_exit();
 #define PG3_PROFILING_NOINLINE
 #endif
 
+#define PG3_NOINLINE __declspec(noinline)
+
 // Code markers
 #define PG3_ERROR_NOT_IMPLEMENTED(_msg) \
     PG3_FATAL_ERROR( \
