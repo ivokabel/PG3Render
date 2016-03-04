@@ -4,6 +4,8 @@
 // Hard-wired settings
 //////////////////////////////////////////////////////////////////////////
 
+//#define DEBUG_CRASHFOO  // Debugging GgxSamplingPdfVisibleNormals
+
 //#define RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
 #define ENVMAP_USE_IMPORTANCE_SAMPLING

@@ -1160,16 +1160,20 @@ void SampleGgxP11(
 // GGX sampling based on "Importance Sampling Microfacet-Based BSDFs using the Distribution of 
 // Visible Normals" by Eric Heitz and Eugene D'Eon [Heitz2014]. It generates only the front-facing
 // microfacets resulting in less wasted samples with sample weights bound to [0, 1].
+//
+// FIXME: There must be some problem with memory alignment because when change the order 
+// of parameters so that alpha is second and wol is first, it crashes on SSE movap instruction
+// accessing address no aligned to 16 bytes.
 Vec3f SampleGgxVisibleNormals(
-    const Vec3f &aWol,
     const float  aRoughnessAlpha,
+    const Vec3f &aWol,
     const Vec2f &aSample)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
     PG3_ASSERT_FLOAT_LARGER_THAN(aWol.z, -0.0001);
 
     // Stretch Wol to canonical, unit roughness space
-    Vec3f wolStretch =
+    const Vec3f wolStretch =
         Normalize(Vec3f(
             aWol.x * aRoughnessAlpha,
             aWol.y * aRoughnessAlpha,
@@ -1210,6 +1214,44 @@ Vec3f SampleGgxVisibleNormals(
 
     PG3_ASSERT_FLOAT_VALID(slopeLengthInv);
     PG3_ASSERT_VEC3F_VALID(microfacetDir);
+
+    return microfacetDir;
+}
+
+Vec3f CrashFoo(
+    const float  aFloat,
+    const Vec3f &aVec3,
+    const Vec2f &aVec2)
+{
+    const Vec3f wolStretch =
+        Normalize(Vec3f(aVec3.x, aVec3.x, std::max(aVec3.x, 0.0f)));
+
+    float thetaWolStretch = 0.0f;
+    float phiWolStretch = 0.0f;
+    if (wolStretch.z < 0.999f)
+    {
+        thetaWolStretch = std::acos(wolStretch.z);
+        phiWolStretch = std::atan2(wolStretch.y, wolStretch.x);
+    }
+    const float sinPhi = std::sin(phiWolStretch);
+    const float cosPhi = std::cos(phiWolStretch);
+
+    Vec2f slopeStretch;
+    SampleGgxP11(slopeStretch, thetaWolStretch, aVec2);
+
+    slopeStretch = Vec2f(
+        slopeStretch.x * cosPhi - slopeStretch.y * sinPhi,
+        slopeStretch.x * sinPhi + slopeStretch.y * cosPhi);
+
+    Vec2f slope(
+        slopeStretch.x * aFloat,
+        slopeStretch.y * aFloat);
+
+    const float slopeLengthInv = 1.0f / Vec3f(slope.x, slope.y, 1.0f).Length();
+    Vec3f microfacetDir(
+        -slope.x * slopeLengthInv,
+        -slope.y * slopeLengthInv,
+        slopeLengthInv);
 
     return microfacetDir;
 }
