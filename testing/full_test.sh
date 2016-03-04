@@ -8,7 +8,7 @@ SCENES=`seq 0 37`
 ENVIRONMENT_MAPS="1 10"                 #`seq 0 12`
 ITERATIONS_COUNT=4
 SHORT_OUTPUT=true
-COMPARISON_MODE="generate_references"  #"make_references_from_currents"  #"compare_to_reference"  #
+COMPARISON_MODE="compare_to_reference"  #generate_references"  #"make_references_from_currents"  #"
 ARCH_MODES="32 64"
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    35 36 37"
@@ -42,9 +42,9 @@ TEST_COUNT_SUCCESSFUL=0
 run_single_render () {
     if [ "$SHORT_OUTPUT" = "true" ]; then
         if [ "$3" = "" ]; then
-            printf '[%s] Testing scene %d, %-4s, %d iteration(s)... ' $arch_mode $2 $1 $ITERATIONS_COUNT 
+            printf '[%s] Scene %d, %-4s, %d iteration(s)... ' $arch_mode $2 $1 $ITERATIONS_COUNT 
         else
-            printf '[%s] Testing scene %d, em %2d, %-4s, %d iteration(s)... ' $arch_mode $2 $3 $1 $ITERATIONS_COUNT 
+            printf '[%s] Scene %d, em %2d, %-4s, %d iteration(s)... ' $arch_mode $2 $3 $1 $ITERATIONS_COUNT 
         fi
         QUIET_SWITCH="-q"
     else
@@ -171,7 +171,7 @@ do
     else if [ "$COMPARISON_MODE" = "make_references_from_currents" ]; then
         rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
         rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.bmp
-        rename -v '2Current' '1Reference' "$FULL_TEST_OUTPUT_DIR_ARCH/"*_2Current.*
+        rename '2Current' '1Reference' "$FULL_TEST_OUTPUT_DIR_ARCH/"*_2Current.*
     fi fi fi
 
     if [ "$COMPARISON_MODE" != "make_references_from_currents" ]; then
