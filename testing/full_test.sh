@@ -6,10 +6,9 @@
 
 SCENES=`seq 0 37`                           #`seq 0 30`
 ENVIRONMENT_MAPS="1 10"                     #`seq 0 12`
-ITERATIONS_COUNT=4                          #256    #32
+ITERATIONS_COUNT=4
 SHORT_OUTPUT=true
-#COMPARISON_MODE="generate_references"
- COMPARISON_MODE="compare_to_reference"
+COMPARISON_MODE="compare_to_reference"  # "make_references_from_currents" # "generate_references"  # 
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    35 36 37"
 
@@ -74,13 +73,6 @@ run_single_render () {
                         "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
     fi
     RENDERING_RESULT=$?
-
-    # Debug
-    #echo
-    #echo "REFERENCE_IMG: $REFERENCE_IMG"
-    #echo "RENDERED_IMG:  $RENDERED_IMG"
-    #echo "DIFF_IMG:      $DIFF_IMG"
-    #echo "Rendering result: $RENDERING_RESULT"
 
     # Compare to reference
     if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
@@ -150,35 +142,41 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
-    rm -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_2Current.bmp
-    rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr    "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
-else
-    if [ "$COMPARISON_MODE" = "generate_references" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_1Reference.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.hdr   "$FULL_TEST_OUTPUT_DIR"/*_2Current.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
-    fi
-fi
-#read
-
 mkdir -p "$FULL_TEST_OUTPUT_DIR"
 
-for scene in $SCENES;
-do
-    if [[ $SCENES_WITH_EM =~ (^| )$scene($| ) ]]; then
-        for em in $ENVIRONMENT_MAPS;
-        do
-            run_rendering_set $scene $em
-        done
-    else
-        run_rendering_set $scene
-    fi
-done
+if [ "$COMPARISON_MODE" = "generate_references" ]; then
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_1Reference.bmp
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.hdr   "$FULL_TEST_OUTPUT_DIR"/*_2Current.bmp
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
+else if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.hdr "$FULL_TEST_OUTPUT_DIR"/*_2Current.bmp
+    rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr    "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
+#else if [ "$COMPARISON_MODE" = "make_references_from_currents" ]; then
+#    rm -f "$FULL_TEST_OUTPUT_DIR"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR"/*_1Reference.bmp
+#    rm -f "$FULL_TEST_OUTPUT_DIR"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR"/*_3Diff.bmp
+#    mv -f "$FULL_TEST_OUTPUT_DIR"/*_2Current.* "$FULL_TEST_OUTPUT_DIR"/*_1Reference.*
+#fi
+fi fi
 
-echo
-echo "The script has finished."
-echo "Success: $TEST_COUNT_SUCCESSFUL/$TEST_COUNT_TOTAL"
+if [ "$COMPARISON_MODE" != "make_references_from_currents" ]; then
+    for scene in $SCENES;
+    do
+        if [[ $SCENES_WITH_EM =~ (^| )$scene($| ) ]]; then
+            for em in $ENVIRONMENT_MAPS;
+            do
+                run_rendering_set $scene $em
+            done
+        else
+            run_rendering_set $scene
+        fi
+    done
+
+    echo
+    echo "The script has finished."
+
+    TEST_COUNT_UNSUCCESSFUL=`expr $TEST_COUNT_TOTAL - $TEST_COUNT_SUCCESSFUL`
+    echo "Successful: $TEST_COUNT_SUCCESSFUL, unsuccessful: $TEST_COUNT_UNSUCCESSFUL"
+fi
 
 END_TIME=`date +%s`
 TOTAL_TIME=`expr $END_TIME - $START_TIME`
