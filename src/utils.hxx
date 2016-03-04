@@ -1177,7 +1177,7 @@ Vec3f SampleGgxVisibleNormals(
         Normalize(Vec3f(
             aWol.x * aRoughnessAlpha,
             aWol.y * aRoughnessAlpha,
-            std::max(aWol.z, 0.0f)));
+            aWol.z)); //std::max(aWol.z, 0.0f))); - causes problems related to the FIXME at this function's header
 
     float thetaWolStretch = 0.0f;
     float phiWolStretch   = 0.0f;
