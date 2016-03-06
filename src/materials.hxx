@@ -694,7 +694,7 @@ public:
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
         Vec3f microfacetDir =
-            SampleGgxVisibleNormals(mRoughnessAlpha, oMatRecord.mWol, aRng.GetVec2f());
+            SampleGgxVisibleNormals(oMatRecord.mWol, mRoughnessAlpha, aRng.GetVec2f());
 
         bool isOutDirAboveMicrofacet;
         Reflect(oMatRecord.mWil, isOutDirAboveMicrofacet, oMatRecord.mWol, microfacetDir);
@@ -964,7 +964,7 @@ public:
         #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
 
         Vec3f microfacetDirSwitched =
-            SampleGgxVisibleNormals(mRoughnessAlpha, wolSwitched, aRng.GetVec2f());
+            SampleGgxVisibleNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
 
         Vec3f wilSwitched;
         bool isOutDirAboveMicrofacet;

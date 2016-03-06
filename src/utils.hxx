@@ -1161,12 +1161,12 @@ void SampleGgxP11(
 // Visible Normals" by Eric Heitz and Eugene D'Eon [Heitz2014]. It generates only the front-facing
 // microfacets resulting in less wasted samples with sample weights bound to [0, 1].
 //
-// FIXME: There must be some problem with memory alignment because when change the order 
-// of parameters so that alpha is second and wol is first, it crashes on SSE movap instruction
-// accessing address no aligned to 16 bytes.
+// FIXME: There is a problem with memory alignment because it crashes on SSE movap instruction
+// accessing address not aligned to 16 bytes when compiling for SSE2 extension. 
+// This is, although very unlikely, possibly a compiler bug. Workaround: commpiling for AVX
 Vec3f SampleGgxVisibleNormals(
-    const float  aRoughnessAlpha,
     const Vec3f &aWol,
+    const float  aRoughnessAlpha,
     const Vec2f &aSample)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
@@ -1177,7 +1177,7 @@ Vec3f SampleGgxVisibleNormals(
         Normalize(Vec3f(
             aWol.x * aRoughnessAlpha,
             aWol.y * aRoughnessAlpha,
-            aWol.z)); //std::max(aWol.z, 0.0f))); - causes problems related to the FIXME at this function's header
+            std::max(aWol.z, 0.0f)));
 
     float thetaWolStretch = 0.0f;
     float phiWolStretch   = 0.0f;
@@ -1218,26 +1218,89 @@ Vec3f SampleGgxVisibleNormals(
     return microfacetDir;
 }
 
+#ifdef DEBUG_CRASHFOO
+
+void CrashFooSample(
+    Vec2f       &aSlope,
+    const float  aThetaI,
+    const Vec2f &aSample)
+{
+    if (aThetaI < 0.0001f)
+    {
+        // Normal incidence - avoid division by zero later
+        const float sampleXClamped = std::min(aSample.x, 0.9999f);
+        const float radius = SafeSqrt(sampleXClamped / (1 - sampleXClamped));
+        const float phi = 2 * PI_F * aSample.y;
+        const float sinPhi = std::sin(phi);
+        const float cosPhi = std::cos(phi);
+        aSlope = Vec2f(radius * cosPhi, radius * sinPhi);
+    }
+    else
+    {
+        const float tanThetaI = std::tan(aThetaI);
+        const float tanThetaIInv = 1.0f / tanThetaI;
+        const float G1 =
+            2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
+
+        // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
+        float A = 2.0f * aSample.x / G1 - 1.0f;
+        if (std::abs(A) == 1.0f)
+            A -= SignNum(A) * 1e-4f; // avoid division by zero later
+        const float B = tanThetaI;
+        const float tmpFract = 1.0f / (A * A - 1.0f);
+        const float D = SafeSqrt(B * B * tmpFract * tmpFract - (A * A - B * B) * tmpFract);
+        const float slopeX1 = B * tmpFract - D;
+        const float slopeX2 = B * tmpFract + D;
+        aSlope.x = (A < 0.0f || slopeX2 >(1.0f / tanThetaI)) ? slopeX1 : slopeX2;
+
+        // Sample y dimension
+        // Using conditional PDF; however, CDF is not directly invertible, so we use rational fit of CDF^-1.
+        // We sample just one half-space - PDF is symmetrical in y dimension.
+        // We use improved fit from Mitsuba renderer rather than the original fit from the paper.
+        float ySign;
+        float yHalfSample;
+        if (aSample.y > 0.5f) // pick one positive/negative interval
+        {
+            ySign = 1.0f;
+            yHalfSample = 2.0f * (aSample.y - 0.5f);
+        }
+        else
+        {
+            ySign = -1.0f;
+            yHalfSample = 2.0f * (0.5f - aSample.y);
+        }
+        const float z =
+            (yHalfSample * (yHalfSample * (yHalfSample *
+            -(float)0.365728915865723 + (float)0.790235037209296) -
+            (float)0.424965825137544) + (float)0.000152998850436920)
+            /
+            (yHalfSample * (yHalfSample * (yHalfSample * (yHalfSample *
+            (float)0.169507819808272 - (float)0.397203533833404) -
+            (float)0.232500544458471) + (float)1) - (float)0.539825872510702);
+        aSlope.y = ySign * z * std::sqrt(1.0f + aSlope.x * aSlope.x);
+    }
+}
+
 Vec3f CrashFoo(
-    const float  aFloat,
     const Vec3f &aVec3,
+    const float  aFloat,
     const Vec2f &aVec2)
 {
-    const Vec3f wolStretch =
+    const Vec3f vec3Stretch =
         Normalize(Vec3f(aVec3.x, aVec3.x, std::max(aVec3.x, 0.0f)));
 
     float thetaWolStretch = 0.0f;
     float phiWolStretch = 0.0f;
-    if (wolStretch.z < 0.999f)
+    if (vec3Stretch.z < 0.999f)
     {
-        thetaWolStretch = std::acos(wolStretch.z);
-        phiWolStretch = std::atan2(wolStretch.y, wolStretch.x);
+        thetaWolStretch = std::acos(vec3Stretch.z);
+        phiWolStretch = std::atan2(vec3Stretch.y, vec3Stretch.x);
     }
     const float sinPhi = std::sin(phiWolStretch);
     const float cosPhi = std::cos(phiWolStretch);
 
     Vec2f slopeStretch;
-    SampleGgxP11(slopeStretch, thetaWolStretch, aVec2);
+    CrashFooSample(slopeStretch, thetaWolStretch, aVec2);
 
     slopeStretch = Vec2f(
         slopeStretch.x * cosPhi - slopeStretch.y * sinPhi,
@@ -1247,14 +1310,10 @@ Vec3f CrashFoo(
         slopeStretch.x * aFloat,
         slopeStretch.y * aFloat);
 
-    const float slopeLengthInv = 1.0f / Vec3f(slope.x, slope.y, 1.0f).Length();
-    Vec3f microfacetDir(
-        -slope.x * slopeLengthInv,
-        -slope.y * slopeLengthInv,
-        slopeLengthInv);
-
-    return microfacetDir;
+    return Vec3f(slope.x, slope.y, 1.0f);
 }
+
+#endif
 
 // Sampling density of GGX sampling based on [Heitz2014]
 float GgxSamplingPdfVisibleNormals(
