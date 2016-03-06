@@ -180,23 +180,6 @@ void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 }
 #endif
 
-#ifdef DEBUG_CRASHFOO
-
-//////////////////////////////////////////////////////////////////////////
-// CrashFoo debugging
-int32_t main(int32_t argc, const char *argv[])
-{
-    Vec3f vec3{ 0.00628005248f, -0.999814332f, 0.0182171166f };
-    Vec2f vec2{ 0.947231591f, 0.0522233732f };
-    float floatVal{ 0.010f };
-
-    Vec3f vecResult = CrashFoo(vec3, floatVal, vec2);
-
-    return (int32_t)vecResult.x;
-}
-
-#else
-
 //////////////////////////////////////////////////////////////////////////
 // Main
 int32_t main(int32_t argc, const char *argv[])
@@ -270,5 +253,3 @@ int32_t main(int32_t argc, const char *argv[])
 
 #endif
 }
-
-#endif
