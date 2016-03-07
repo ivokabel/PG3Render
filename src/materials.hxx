@@ -848,52 +848,55 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        const bool isOutDirFromBelow = (oMatRecord.mWol.z < 0.f);
+        EvalContext ctx;
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        const Vec3f wolSwitched = oMatRecord.mWol * (isOutDirFromBelow ? -1.0f : 1.0f); // TODO: Use just mirror symmetry instead of center symmetry?
-        const float etaSwitched = (isOutDirFromBelow ? mEtaInv : mEta);
+        // TODO: Use just mirror symmetry instead of center symmetry?
+        ctx.isOutDirFromBelow   = (oMatRecord.mWol.z < 0.f);
+        ctx.wolSwitched         = oMatRecord.mWol * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
+        ctx.etaSwitched         = (ctx.isOutDirFromBelow ? mEtaInv : mEta);
+        ctx.etaInvSwitched      = (ctx.isOutDirFromBelow ? mEta : mEtaInv);
 
-        Vec3f microfacetDirSwitched =
-            SampleGgxVisibleNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
+        ctx.microfacetDirSwitched =
+            SampleGgxVisibleNormals(ctx.wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
+        ctx.distrVal =
+            MicrofacetDistributionGgx(ctx.microfacetDirSwitched, mRoughnessAlpha);
 
-        Vec3f wilSwitched;
-        bool isOutDirAboveMicrofacet;
         float thetaInCosAbs;
 
         // Randomly choose between reflection or refraction
-        const float cosThetaOM      = Dot(microfacetDirSwitched, wolSwitched);
-        const float fresnelReflOut  = FresnelDielectric(cosThetaOM, etaSwitched);
+        float cosThetaOM = Dot(ctx.microfacetDirSwitched, ctx.wolSwitched);
+        ctx.fresnelReflectance  = FresnelDielectric(cosThetaOM, ctx.etaSwitched);
         const float rnd = aRng.GetFloat();
-        if (rnd <= fresnelReflOut)
+        if (rnd <= ctx.fresnelReflectance)
         {
             // This branch also handles TIR cases
-            Reflect(wilSwitched, isOutDirAboveMicrofacet, wolSwitched, microfacetDirSwitched);
-            thetaInCosAbs = wilSwitched.z;
+            Reflect(ctx.wilSwitched, ctx.isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched);
+            thetaInCosAbs = ctx.wilSwitched.z;
         }
         else
         {
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
-            Refract(wilSwitched, isOutDirAboveMicrofacet, wolSwitched, microfacetDirSwitched, etaSwitched);
-            thetaInCosAbs = -wilSwitched.z;
+            Refract(ctx.wilSwitched, ctx.isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched, ctx.etaSwitched);
+            thetaInCosAbs = -ctx.wilSwitched.z;
         }
 
         // Switch up-down back if necessary
-        oMatRecord.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
+        oMatRecord.mWil = ctx.wilSwitched * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
 
-        // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
+        // TODO: Re-use already evaluated data
         MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW, oMatRecord.mCompProbability,
             oMatRecord.mWol, oMatRecord.mWil);
 
-        if (!isOutDirAboveMicrofacet)
+        if (!ctx.isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
             oMatRecord.mAttenuation.MakeZero();
         else if (thetaInCosAbs < 0.0f)
             // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
             oMatRecord.mAttenuation.MakeZero();
         else
-            // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
+            // TODO: Re-use already evaluated data
             oMatRecord.mAttenuation =
                 MicrofacetGGXDielectricMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
     }
@@ -969,6 +972,27 @@ public:
     {
         return false; // there always is non-zero reflectance
     }
+
+protected:
+
+    class EvalContext
+    {
+    public:
+        Vec3f wolSwitched;
+        Vec3f wilSwitched;
+
+        bool isOutDirFromBelow;
+        bool isOutDirAboveMicrofacet;
+        float etaSwitched;
+        float etaInvSwitched;
+
+        //float cosThetaOM;
+        //float cosThetaIM = Dot(halfwayVecSwitched, wilSwitched);
+
+        Vec3f microfacetDirSwitched;
+        float fresnelReflectance;
+        float distrVal;
+    };
 
 protected:
     float           mEta;               // inner IOR / outer IOR
