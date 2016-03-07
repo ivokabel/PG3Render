@@ -326,7 +326,7 @@ public:
             + glossyProbability  * PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
-    virtual void GetWholeFiniteCompProbabilities(
+    void GetWholeFiniteCompProbabilities(
               float &oWholeFinCompPdfW,
               float &oWholeFinCompProbability,
         const Vec3f &aWol,
@@ -429,7 +429,7 @@ public:
             oMatRecord.mWil);
     }
 
-    virtual void GetWholeFiniteCompProbabilities(
+    void GetWholeFiniteCompProbabilities(
               float &oWholeFinCompPdfW,
               float &oWholeFinCompProbability,
         const Vec3f &aWol,
@@ -679,7 +679,7 @@ public:
                 MicrofacetGGXConductorMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
     }
 
-    virtual void GetWholeFiniteCompProbabilities(
+    void GetWholeFiniteCompProbabilities(
               float &oWholeFinCompPdfW,
               float &oWholeFinCompProbability,
         const Vec3f &aWol,
@@ -898,7 +898,7 @@ public:
                 MicrofacetGGXDielectricMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
     }
 
-    virtual void GetWholeFiniteCompProbabilities(
+    void GetWholeFiniteCompProbabilities(
               float &oWholeFinCompPdfW,
               float &oWholeFinCompProbability,
         const Vec3f &aWol,
