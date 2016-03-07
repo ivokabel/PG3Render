@@ -1222,6 +1222,7 @@ Vec3f SampleGgxVisibleNormals(
 float GgxSamplingPdfVisibleNormals(
     const Vec3f &aWol,
     const Vec3f &aHalfwayVec,
+    const float  distrVal,
     const float  aRoughnessAlpha)
 {
     // TODO: Reuse computations when (if) combined with sampling routine??
@@ -1233,7 +1234,6 @@ float GgxSamplingPdfVisibleNormals(
     if (aHalfwayVec.z <= 0.f)
         return 0.0f;
 
-    const float distrVal    = MicrofacetDistributionGgx(aHalfwayVec, aRoughnessAlpha);
     const float masking     = MicrofacetSmithMaskingFunctionGgx(aWol, aHalfwayVec, aRoughnessAlpha);
     const float cosThetaOM  = Dot(aHalfwayVec, aWol);
     const float cosThetaO   = std::max(aWol.z, 0.00001f);
