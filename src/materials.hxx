@@ -656,43 +656,6 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        #if defined MATERIAL_GGX_SAMPLING_COS
-
-        oMatRecord.mWil =
-            SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
-        oMatRecord.mCompProbability = 1.0f;
-
-        const float thetaInCos = oMatRecord.ThetaInCos();
-        if (thetaInCos > 0.0f)
-            // Above surface: Evaluate the whole BSDF
-            oMatRecord.mAttenuation =
-                MicrofacetGGXConductorMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        else
-            // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
-
-        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
-
-        // Distribution sampling
-        bool isAboveMicrofacet =
-            SampleGgxAllNormals(oMatRecord.mWol, mRoughnessAlpha, aRng.GetVec2f(), oMatRecord.mWil);
-
-        // TODO: Re-use already evaluated data? half-way vector, distribution value?
-        MicrofacetGGXConductorMaterial::GetWholeFiniteCompProbabilities(
-            oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            oMatRecord.mWol, oMatRecord.mWil);
-
-        const float thetaInCos = oMatRecord.ThetaInCos();
-        if ((thetaInCos > 0.0f) && isAboveMicrofacet)
-            // Above surface: Evaluate the whole BSDF
-            oMatRecord.mAttenuation =
-                MicrofacetGGXConductorMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        else
-            // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
-
-        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
-
         Vec3f microfacetDir =
             SampleGgxVisibleNormals(oMatRecord.mWol, mRoughnessAlpha, aRng.GetVec2f());
 
@@ -714,10 +677,6 @@ public:
         else
             oMatRecord.mAttenuation =
                 MicrofacetGGXConductorMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-
-        #else
-        #error Undefined GGX sampling method!
-        #endif
     }
 
     virtual void GetWholeFiniteCompProbabilities(
@@ -735,30 +694,10 @@ public:
             return;
         }
 
-        #if defined MATERIAL_GGX_SAMPLING_COS
-        #error Missing reflection jacobian!
-
-        aWol; // unreferenced param
-
-        if (aWil.z < 0.f)
-            oWholeFinCompPdfW = 0.0f;
-        else
-            oWholeFinCompPdfW = CosHemispherePdfW(aWil);
-
-        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
-        #error Missing reflection jacobian!
-        oWholeFinCompPdfW = GgxSamplingPdfAllNormals(aWol, aWil, mRoughnessAlpha);
-
-        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
-
         const Vec3f halfwayVec = HalfwayVectorReflectionLocal(aWil, aWol);
         const float normalPdf          = GgxSamplingPdfVisibleNormals(aWol, halfwayVec, mRoughnessAlpha);
         const float reflectionJacobian = MicrofacetReflectionJacobian(aWol, halfwayVec);
         oWholeFinCompPdfW = normalPdf * reflectionJacobian;
-
-        #else
-        #error Undefined GGX sampling method!
-        #endif
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -915,54 +854,6 @@ public:
         const Vec3f wolSwitched = oMatRecord.mWol * (isOutDirFromBelow ? -1.0f : 1.0f); // TODO: Use just mirror symmetry instead of center symmetry?
         const float etaSwitched = (isOutDirFromBelow ? mEtaInv : mEta);
 
-        #if defined MATERIAL_GGX_SAMPLING_COS
-        #error not tested!
-
-        Vec3f wilSwitched = SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
-
-        // Switch up-down back if necessary
-        oMatRecord.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
-
-        MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
-            oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            oMatRecord.mWol, oMatRecord.mWil);
-
-        const float thetaInCos = oMatRecord.ThetaInCos();
-        if (thetaInCos > 0.0f)
-            // Above surface: Evaluate the whole BSDF
-            oMatRecord.mAttenuation =
-                MicrofacetGGXDielectricMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        else
-            // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
-
-        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
-        #error not tested!
-
-        // Distribution sampling
-        Vec3f wilSwitched;
-        bool isAboveMicrofacet =
-            SampleGgxAllNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f(), wilSwitched);
-
-        // Switch up-down back if necessary
-        oMatRecord.mWil = wilSwitched * (isOutDirFromBelow ? -1.0f : 1.0f);
-
-        // TODO: Re-use already evaluated data? half-way vector, distribution value?
-        MicrofacetGGXDielectricMaterial::GetWholeFiniteCompProbabilities(
-            oMatRecord.mPdfW, oMatRecord.mCompProbability,
-            oMatRecord.mWol, oMatRecord.mWil);
-
-        const float thetaInCos = oMatRecord.ThetaInCos();
-        if ((thetaInCos > 0.0f) && isAboveMicrofacet)
-            // Above surface: Evaluate the whole BSDF
-            oMatRecord.mAttenuation =
-                MicrofacetGGXDielectricMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        else
-            // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
-
-        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
-
         Vec3f microfacetDirSwitched =
             SampleGgxVisibleNormals(wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
 
@@ -1005,10 +896,6 @@ public:
             // TODO: Re-use already evaluated data? (half-way vector, distribution value, fresnel, pdf from sampling?)
             oMatRecord.mAttenuation =
                 MicrofacetGGXDielectricMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-
-        #else
-        #error Undefined GGX sampling method!
-        #endif
     }
 
     virtual void GetWholeFiniteCompProbabilities(
@@ -1038,23 +925,6 @@ public:
             return;
         }
 
-        #if defined MATERIAL_GGX_SAMPLING_COS
-        #error not tested!
-
-        wolSwitched; // unreferenced param
-
-        if (wilSwitched.z < 0.f)
-            oWholeFinCompPdfW = 0.0f;
-        else
-            oWholeFinCompPdfW = CosHemispherePdfW(wilSwitched * 1.0f);
-
-        #elif defined MATERIAL_GGX_SAMPLING_ALL_NORMALS
-        #error not tested!
-
-        oWholeFinCompPdfW = GgxSamplingPdfAllNormals(wolSwitched, wilSwitched, mRoughnessAlpha);
-
-        #elif defined MATERIAL_GGX_SAMPLING_VISIBLE_NORMALS
-
         // Halfway vector (microfacet normal)
         Vec3f halfwayVecSwitched;
         if (isReflection)
@@ -1082,10 +952,6 @@ public:
         oWholeFinCompPdfW = visNormalsPdf * transfJacobian * compProbability;
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(oWholeFinCompPdfW);
-
-#else
-        #error Undefined GGX sampling method!
-        #endif
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
