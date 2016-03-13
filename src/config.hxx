@@ -43,7 +43,7 @@ struct Config
             "direct illumination - light sampling (single sample)",
             "direct illumination - multiple importance sampling",
             "naive path tracing",
-            "path tracing (NEE, MIS)",
+            "path tracing",
         };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
