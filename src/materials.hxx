@@ -217,7 +217,7 @@ public:
 
         oMatRecord.mAttenuation = PhongMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
 
-        PhongMaterial::GetWholeFiniteCompProbabilities(
+        GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW,
             oMatRecord.mCompProbability,
             oMatRecord.mWol,
@@ -365,6 +365,28 @@ public:
         return mDiffuseReflectance.IsZero() && mPhongReflectance.IsZero();
     }
 
+protected:
+
+    void GetWholeFiniteCompProbabilities(
+              float &oWholeFinCompPdfW,
+              float &oWholeFinCompProbability,
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const
+    {
+        // Compute scalar reflectances. Replicated in SampleBsdf()!
+        const float diffuseReflectanceEst = GetDiffuseReflectance();
+        const float cosThetaOut = std::max(aWol.z, 0.f);
+        const float glossyReflectanceEst =
+              GetGlossyReflectance()
+            * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
+                                           // Cheap, but relatively good approximation of actual glossy reflectance
+                                           // (part of the glossy lobe can be under the surface).
+
+        oWholeFinCompPdfW        = GetPdfW(aWol, aWil, diffuseReflectanceEst, glossyReflectanceEst);
+        oWholeFinCompProbability = 1.0f;
+    }
+
     SpectrumF   mDiffuseReflectance;
     SpectrumF   mPhongReflectance;
     float       mPhongExponent;
@@ -402,7 +424,7 @@ public:
         oMatRecord.mAttenuation =
             AbstractSmoothMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
 
-        AbstractSmoothMaterial::GetWholeFiniteCompProbabilities(
+        GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW,
             oMatRecord.mCompProbability,
             oMatRecord.mWol,
@@ -740,6 +762,7 @@ protected:
 class MicrofacetGGXDielectricMaterial : public AbstractMaterial
 {
 public:
+
     MicrofacetGGXDielectricMaterial(
         float aRoughnessAlpha,
         float aInnerIor /* n */,
@@ -766,106 +789,6 @@ public:
 
         mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.001f, 1.0f);
     }
-
-protected:
-
-    class EvalContext
-    {
-    public:
-        Vec3f wolSwitched;
-        Vec3f wilSwitched;
-
-        bool isOutDirFromBelow;
-        bool isReflection;
-        float etaSwitched;
-        float etaInvSwitched;
-
-        Vec3f microfacetDirSwitched;
-        float fresnelReflectance;
-        float distrVal;
-    };
-
-    void InitEvalContextFromInOut(
-        EvalContext &oCtx,
-        const Vec3f &aWil,
-        const Vec3f &aWol
-        ) const
-    {
-        // Warning: Partially replicated in SampleBsdf()!
-
-        PG3_ASSERT_VEC3F_NORMALIZED(aWil);
-        PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-
-        // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        // TODO: Use just mirror symmetry instead of center symmetry?
-        oCtx.isOutDirFromBelow  = (aWol.z < 0.f);
-        oCtx.isReflection       = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
-        oCtx.wolSwitched        = aWol * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
-        oCtx.wilSwitched        = aWil * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
-        oCtx.etaSwitched        = (oCtx.isOutDirFromBelow ? mEtaInv : mEta);
-        oCtx.etaInvSwitched     = (oCtx.isOutDirFromBelow ? mEta : mEtaInv);
-
-        if (oCtx.isReflection)
-            oCtx.microfacetDirSwitched = HalfwayVectorReflectionLocal(
-                oCtx.wilSwitched, oCtx.wolSwitched);
-        else
-            // Since the incident direction is below geometrical surface, we use inverse eta
-            oCtx.microfacetDirSwitched = HalfwayVectorRefractionLocal(
-                oCtx.wilSwitched, oCtx.wolSwitched, oCtx.etaInvSwitched);
-
-        oCtx.distrVal = MicrofacetDistributionGgx(oCtx.microfacetDirSwitched, mRoughnessAlpha);
-        const float cosThetaOM = Dot(oCtx.microfacetDirSwitched, oCtx.wolSwitched);
-        oCtx.fresnelReflectance = FresnelDielectric(cosThetaOM, oCtx.etaSwitched);
-    }
-
-    SpectrumF EvalBsdf(EvalContext &aCtx) const
-    {
-        const float cosThetaIAbs = std::abs(aCtx.wilSwitched.z);
-        const float cosThetaOAbs = std::abs(aCtx.wolSwitched.z);
-
-        // Check BSDF denominator
-        if (aCtx.isReflection && IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
-            return SpectrumF().MakeZero();
-        else if (!aCtx.isReflection && IsTiny(cosThetaIAbs * cosThetaOAbs))
-            return SpectrumF().MakeZero();
-
-        // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
-        const float shadowing = MicrofacetSmithMaskingFunctionGgx(aCtx.wilSwitched, aCtx.microfacetDirSwitched, mRoughnessAlpha);
-        const float masking   = MicrofacetSmithMaskingFunctionGgx(aCtx.wolSwitched, aCtx.microfacetDirSwitched, mRoughnessAlpha);
-        const float geometricalFactor = shadowing * masking;
-
-        PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
-
-        // The whole BSDF
-        float brdfVal;
-        const float fresnelRefl = aCtx.fresnelReflectance;
-        if (aCtx.isReflection)
-            brdfVal =
-                  (fresnelRefl * geometricalFactor * aCtx.distrVal)
-                / (4.0f * cosThetaIAbs * cosThetaOAbs);
-        else
-        {
-            const float cosThetaMI = Dot(aCtx.microfacetDirSwitched, aCtx.wilSwitched);
-            const float cosThetaMO = Dot(aCtx.microfacetDirSwitched, aCtx.wolSwitched);
-            brdfVal =
-                  (   (std::abs(cosThetaMI) * std::abs(cosThetaMO))
-                    / (cosThetaIAbs * cosThetaOAbs))
-                * (   (Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
-                    / (Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
-                       // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
-
-            brdfVal *= Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
-        }
-
-        PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
-
-        // TODO: Color (from fresnel?)
-        SpectrumF result;
-        result.SetGreyAttenuation(brdfVal);
-        return result;
-    }
-
-public:
 
     virtual SpectrumF EvalBsdf(
         const Vec3f& aWil,
@@ -953,15 +876,126 @@ public:
             oMatRecord.mAttenuation = EvalBsdf(ctx);
     }
 
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        aWol; // unreferenced param
+
+        return 1.0f;
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        return false; // there always is non-zero reflectance
+    }
+
+protected:
+
+    class EvalContext
+    {
+    public:
+        Vec3f wolSwitched;
+        Vec3f wilSwitched;
+
+        bool isOutDirFromBelow;
+        bool isReflection;
+        float etaSwitched;
+        float etaInvSwitched;
+
+        Vec3f microfacetDirSwitched;
+        float fresnelReflectance;
+        float distrVal;
+    };
+
+    void InitEvalContextFromInOut(
+        EvalContext &oCtx,
+        const Vec3f &aWil,
+        const Vec3f &aWol
+        ) const
+    {
+        // Warning: Partially replicated in SampleBsdf()!
+
+        PG3_ASSERT_VEC3F_NORMALIZED(aWil);
+        PG3_ASSERT_VEC3F_NORMALIZED(aWol);
+
+        // Make sure that the underlying code always deals with outgoing direction which is above the surface
+        // TODO: Use just mirror symmetry instead of center symmetry?
+        oCtx.isOutDirFromBelow = (aWol.z < 0.f);
+        oCtx.isReflection = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
+        oCtx.wolSwitched = aWol * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
+        oCtx.wilSwitched = aWil * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
+        oCtx.etaSwitched = (oCtx.isOutDirFromBelow ? mEtaInv : mEta);
+        oCtx.etaInvSwitched = (oCtx.isOutDirFromBelow ? mEta : mEtaInv);
+
+        if (oCtx.isReflection)
+            oCtx.microfacetDirSwitched = HalfwayVectorReflectionLocal(
+            oCtx.wilSwitched, oCtx.wolSwitched);
+        else
+            // Since the incident direction is below geometrical surface, we use inverse eta
+            oCtx.microfacetDirSwitched = HalfwayVectorRefractionLocal(
+            oCtx.wilSwitched, oCtx.wolSwitched, oCtx.etaInvSwitched);
+
+        oCtx.distrVal = MicrofacetDistributionGgx(oCtx.microfacetDirSwitched, mRoughnessAlpha);
+        const float cosThetaOM = Dot(oCtx.microfacetDirSwitched, oCtx.wolSwitched);
+        oCtx.fresnelReflectance = FresnelDielectric(cosThetaOM, oCtx.etaSwitched);
+    }
+
+    SpectrumF EvalBsdf(EvalContext &aCtx) const
+    {
+        const float cosThetaIAbs = std::abs(aCtx.wilSwitched.z);
+        const float cosThetaOAbs = std::abs(aCtx.wolSwitched.z);
+
+        // Check BSDF denominator
+        if (aCtx.isReflection && IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
+            return SpectrumF().MakeZero();
+        else if (!aCtx.isReflection && IsTiny(cosThetaIAbs * cosThetaOAbs))
+            return SpectrumF().MakeZero();
+
+        // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
+        const float shadowing = MicrofacetSmithMaskingFunctionGgx(aCtx.wilSwitched, aCtx.microfacetDirSwitched, mRoughnessAlpha);
+        const float masking = MicrofacetSmithMaskingFunctionGgx(aCtx.wolSwitched, aCtx.microfacetDirSwitched, mRoughnessAlpha);
+        const float geometricalFactor = shadowing * masking;
+
+        PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
+
+        // The whole BSDF
+        float brdfVal;
+        const float fresnelRefl = aCtx.fresnelReflectance;
+        if (aCtx.isReflection)
+            brdfVal =
+            (fresnelRefl * geometricalFactor * aCtx.distrVal)
+            / (4.0f * cosThetaIAbs * cosThetaOAbs);
+        else
+        {
+            const float cosThetaMI = Dot(aCtx.microfacetDirSwitched, aCtx.wilSwitched);
+            const float cosThetaMO = Dot(aCtx.microfacetDirSwitched, aCtx.wolSwitched);
+            brdfVal =
+                ((std::abs(cosThetaMI) * std::abs(cosThetaMO))
+                / (cosThetaIAbs * cosThetaOAbs))
+                * ((Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
+                / (Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
+            // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
+
+            brdfVal *= Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
+        }
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
+
+        // TODO: Color (from fresnel?)
+        SpectrumF result;
+        result.SetGreyAttenuation(brdfVal);
+        return result;
+    }
+
     void GetWholeFiniteCompProbabilities(
               float         &oWholeFinCompPdfW,
               float         &oWholeFinCompProbability,
         const EvalContext   &aCtx
         ) const
     {
-        PG3_ASSERT_VEC3F_NORMALIZED(aWil);
-        PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-
         oWholeFinCompProbability = 1.0f;
 
         if (aCtx.wolSwitched.z < 0.f)
@@ -990,23 +1024,8 @@ public:
         PG3_ASSERT_FLOAT_NONNEGATIVE(oWholeFinCompPdfW);
     }
 
-    // Computes the probability of surviving for Russian roulette in path tracer
-    // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
-    {
-        aWol; // unreferenced param
-
-        return 1.0f;
-    }
-
-    virtual bool IsReflectanceZero() const override
-    {
-        return false; // there always is non-zero reflectance
-    }
-
 protected:
+
     float           mEta;               // inner IOR / outer IOR
     float           mEtaInv;            // outer IOR / inner IOR
     float           mRoughnessAlpha;    // GGX isotropic roughness
