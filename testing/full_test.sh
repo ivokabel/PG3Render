@@ -8,7 +8,7 @@ SCENES=`seq 0 37`
 ENVIRONMENT_MAPS="1 10"                 #`seq 0 12`
 ITERATIONS_COUNT=4
 SHORT_OUTPUT=true
-COMPARISON_MODE="compare_to_reference"  #generate_references"  #"make_references_from_currents"  #"
+COMPARISON_MODE="compare_to_reference"  #"generate_references"  #"make_references_from_currents"  #"
 ARCH_MODES="32 64"
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    35 36 37"
@@ -101,11 +101,8 @@ run_single_render () {
 # $2 ... environment map (optional)
 run_rendering_set () {
     if [ "$SHORT_OUTPUT" != "true" ]; then
-        echo "===================================================================="
-    fi
-
-    if [ "$SHORT_OUTPUT" != "true" ]; then
-        echo "Rendering scene $1"
+        echo "Scene $1"
+        #echo "========="
     fi
 
     run_single_render "dbs " $1 $2
