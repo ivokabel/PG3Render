@@ -18,11 +18,11 @@ protected:
     {
     public:
         LightSamplingContext(size_t aLightCount) :
-            mLightContribEstimsCache(aLightCount, 0.f),
+            mLightContribEstsCache(aLightCount, 0.f),
             mValid(false)
         {};
 
-        std::vector<float>      mLightContribEstimsCache;
+        std::vector<float>      mLightContribEstsCache;
         bool                    mValid;
     };
 
@@ -204,7 +204,7 @@ public:
             // TODO: Make it a PT's member to avoid unnecessary allocations?
             std::vector<float> lightContrPseudoCdf(lightCount + 1);
 
-            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+            PG3_ASSERT(aContext.mLightContribEstsCache.size() == lightCount);
 
             // Estimate the contribution of all available light sources
             float estimatesSum = 0.f;
@@ -216,10 +216,10 @@ public:
 
                 if (!aContext.mValid)
                     // Fill light contribution cache
-                    aContext.mLightContribEstimsCache[i] =
+                    aContext.mLightContribEstsCache[i] =
                         light->EstimateContribution(aSurfPt, aSurfFrame, aSurfMaterial, mRng);
 
-                estimatesSum += aContext.mLightContribEstimsCache[i];
+                estimatesSum += aContext.mLightContribEstsCache[i];
                 lightContrPseudoCdf[i + 1] = estimatesSum;
             }
             aContext.mValid = true;
@@ -272,7 +272,7 @@ public:
         }
         else
         {
-            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+            PG3_ASSERT(aContext.mLightContribEstsCache.size() == lightCount);
 
             // Estimate the contribution of all available light sources
             float estimatesSum  = 0.f;
@@ -284,10 +284,10 @@ public:
 
                 if (!aContext.mValid)
                     // Fill light contribution cache
-                    aContext.mLightContribEstimsCache[i] =
+                    aContext.mLightContribEstsCache[i] =
                         light->EstimateContribution(aSurfPt, aSurfFrame, aSurfMaterial, mRng);
 
-                const float estimate = aContext.mLightContribEstimsCache[i];
+                const float estimate = aContext.mLightContribEstsCache[i];
                 if (i == aLightId)
                     lightEstimate = estimate;
                 estimatesSum += estimate;
