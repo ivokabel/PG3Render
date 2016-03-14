@@ -828,7 +828,6 @@ public:
         // Warning: Partially replicated in InitEvalContextFromInOut()!
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        // TODO: Use just mirror symmetry instead of center symmetry?
         ctx.isOutDirFromBelow   = (oMatRecord.mWol.z < 0.f);
         ctx.wolSwitched         = oMatRecord.mWol * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
         ctx.etaSwitched         = (ctx.isOutDirFromBelow ? mEtaInv : mEta);
@@ -922,7 +921,6 @@ protected:
         PG3_ASSERT_VEC3F_NORMALIZED(aWol);
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        // TODO: Use just mirror symmetry instead of center symmetry?
         oCtx.isOutDirFromBelow = (aWol.z < 0.f);
         oCtx.isReflection = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
         oCtx.wolSwitched = aWol * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
