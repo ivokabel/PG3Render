@@ -61,12 +61,12 @@ run_single_render () {
     # Generate image names and render
     if [ "$3" = "" ]; then
         REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -opop`
-        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Diff -opop`
+        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -opop`
         RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
                         "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
     else
         REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -em $3 -opop`
-        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Diff -em $3 -opop`
+        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -em $3 -opop`
         RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
                         "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
     fi
@@ -79,7 +79,7 @@ run_single_render () {
             DIFF_RESULT=$?
             if [ "$DIFF_RESULT" = "0" ]; then
                 ((TEST_COUNT_SUCCESSFUL+=1))
-                echo "Diff passed"
+                echo "Difference passed"
             else
                 echo "           $RENDERED_IMG"
             fi
@@ -159,15 +159,15 @@ do
     mkdir -p "$FULL_TEST_OUTPUT_DIR_ARCH"
 
     if [ "$COMPARISON_MODE" = "generate_references" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr   "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr     "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr       "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
     else if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr       "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
     else if [ "$COMPARISON_MODE" = "make_references_from_currents" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.hdr      "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Diff.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr     "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
+        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
         rename '2Current' '1Reference' "$FULL_TEST_OUTPUT_DIR_ARCH/"*_2Current.*
     fi fi fi
 
