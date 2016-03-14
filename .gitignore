@@ -10,5 +10,6 @@ Light Probes/
 *.hdr
 *.tiff
 *.vspx
+*.diagsession
 desktop.ini
 *.user
