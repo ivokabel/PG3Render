@@ -6,7 +6,7 @@ PG3_TRAINING_DIR_WIN="C:\\Users\\Ivo\\Creativity\\Programming\\05 PG3 Training"
 PG3RENDER_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render"
 PG3RENDER32="$PG3RENDER_BASE_DIR/Win32/Release/PG3Render.exe"
 PG3RENDER64="$PG3RENDER_BASE_DIR/x64/Release/PG3Render.exe"
-PG3RENDER=$PG3RENDER64
+PG3RENDER=$PG3RENDER64 #$PG3RENDER32 #
 
 DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
 PATH="$DIFF_TOOL_BASE_DIR:$PATH"
@@ -22,13 +22,20 @@ cd "$PG3RENDER_BASE_DIR"
 
 ###################################################################################################
 
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 31 -a pt -i 16 -sb 1
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a pt -i 16 -sb 1
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 33 -a pt -i 16 -sb 1
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 34 -a pt -i 16 -sb 1
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 35 -a pt -i 16 -sb 1 -em 1
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 36 -a pt -i 16 -sb 1 -em 1
-"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 37 -a pt -i 16 -sb 1 -em 1
+# Rough dielectrics light sampling testing
+#ITERS=4
+#ENV_MAPS="1 10"
+#SCENES="24 26 27 28"
+#for EM in $ENV_MAPS; do
+#    for SCENE in $SCENES; do
+#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a dbs      -em $EM -auxf2 0.400
+#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a dlsa     -em $EM -auxf2 0.400
+#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a dmis     -em $EM -auxf2 0.400
+#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a pt -sb 1 -em $EM -auxf2 0.400
+#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a pt -sb 1 -em $EM -auxf2 0.400 -maxpl 500
+#    done
+#done
+
 exit;
 
 
@@ -56,14 +63,6 @@ exit;
 #echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
 #echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt8,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
 #echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt8,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
-
-#for EM in `echo 1 12 10`; do
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dbs      -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dlss     -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a dmis     -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a pt -sb 1 -em $EM -ot VisNormSampling0010
-    #"$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -i 10 -a pt       -em $EM -ot VisNormSampling0010
-#done
 
 #for ITERS in `echo 1 5 10 50 100 500`; do
 #    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i $ITERS -sb 1
