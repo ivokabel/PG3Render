@@ -82,7 +82,7 @@ public:
         float len    = normal.Length();
         mArea        = len / 2.f;
         mInvArea     = 2.f / len;
-        mFrame.SetFromZ(normal);
+        mFrame.SetFromZ(normal.Normalize());
     }
 
     // Returns amount of outgoing radiance from the point in the direction
