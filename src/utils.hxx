@@ -340,11 +340,6 @@ Vec3f HalfwayVectorReflectionLocal(
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWil);
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-    PG3_ASSERT_MSG(
-        ((aWil.z >= 0.0f) && (aWol.z >= 0.0f)) ||
-        ((aWil.z <= 0.0f) && (aWol.z <= 0.0f)),
-        "Incoming (z: %.12f) and outgoing (z: %.12f) directions must be on the same side of the geometrical surface!",
-        aWil.z, aWol.z);
 
     Vec3f halfwayVec = aWil + aWol;
     
@@ -1037,7 +1032,7 @@ float MicrofacetSmithMaskingFunctionGgx(
 
     const float roughnessAlphaSqr = aRoughnessAlpha * aRoughnessAlpha;
     const float tanThetaSqr = TanThetaSqr(aDir);
-    const float root = std::sqrt(1.0f + roughnessAlphaSqr * tanThetaSqr); // TODO: Optimize sqrt
+    const float root = std::sqrt(1.0f + roughnessAlphaSqr * tanThetaSqr);
 
     const float result = 2.0f / (1.0f + root);
 
@@ -1114,8 +1109,7 @@ void SampleGgxP11(
     {
         const float tanThetaI    = std::tan(aThetaI);
         const float tanThetaIInv = 1.0f / tanThetaI;
-        const float G1 =
-            2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
+        const float G1 = 2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
 
         // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
         float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
@@ -1165,17 +1159,24 @@ void SampleGgxP11(
 // GGX sampling based on "Importance Sampling Microfacet-Based BSDFs using the Distribution of 
 // Visible Normals" by Eric Heitz and Eugene D'Eon [Heitz2014]. It generates only the front-facing
 // microfacets resulting in less wasted samples with sample weights bound to [0, 1].
+//
+// FIXME: There is a problem with memory alignment because it crashes on SSE movap instruction
+// accessing address not aligned to 16 bytes when compiling for SSE2 extension. 
+// This is, although very unlikely, possibly a compiler bug. Workaround: commpiling for AVX
 Vec3f SampleGgxVisibleNormals(
     const Vec3f &aWol,
     const float  aRoughnessAlpha,
     const Vec2f &aSample)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-    PG3_ASSERT_FLOAT_NONNEGATIVE(aWol.z);
+    PG3_ASSERT_FLOAT_LARGER_THAN(aWol.z, -0.0001);
 
     // Stretch Wol to canonical, unit roughness space
-    Vec3f wolStretch =
-        Normalize(Vec3f(aWol.x * aRoughnessAlpha, aWol.y * aRoughnessAlpha, aWol.z));
+    const Vec3f wolStretch =
+        Normalize(Vec3f(
+            aWol.x * aRoughnessAlpha,
+            aWol.y * aRoughnessAlpha,
+            std::max(aWol.z, 0.0f)));
 
     float thetaWolStretch = 0.0f;
     float phiWolStretch   = 0.0f;
@@ -1220,6 +1221,7 @@ Vec3f SampleGgxVisibleNormals(
 float GgxSamplingPdfVisibleNormals(
     const Vec3f &aWol,
     const Vec3f &aHalfwayVec,
+    const float  distrVal,
     const float  aRoughnessAlpha)
 {
     // TODO: Reuse computations when (if) combined with sampling routine??
@@ -1231,7 +1233,6 @@ float GgxSamplingPdfVisibleNormals(
     if (aHalfwayVec.z <= 0.f)
         return 0.0f;
 
-    const float distrVal    = MicrofacetDistributionGgx(aHalfwayVec, aRoughnessAlpha);
     const float masking     = MicrofacetSmithMaskingFunctionGgx(aWol, aHalfwayVec, aRoughnessAlpha);
     const float cosThetaOM  = Dot(aHalfwayVec, aWol);
     const float cosThetaO   = std::max(aWol.z, 0.00001f);

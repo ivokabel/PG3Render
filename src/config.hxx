@@ -21,10 +21,10 @@
 enum Algorithm
 {
     kEyeLight,
-    kDirectIllumBRDFSampling,
+    kDirectIllumBsdfSampling,
     kDirectIllumLightSamplingAll,
     kDirectIllumLightSamplingSingle,
-    kDirectIllumMIS,
+    kDirectIllumMis,
     kPathTracingNaive,
     kPathTracing,
     kAlgorithmCount
@@ -38,12 +38,12 @@ struct Config
         static const char* algorithmNames[kAlgorithmCount] =
         {
             "eye light",
-            "direct illumination - BRDF sampling",
+            "direct illumination - BSDF sampling",
             "direct illumination - light sampling (all)",
             "direct illumination - light sampling (single sample)",
             "direct illumination - multiple importance sampling",
             "naive path tracing",
-            "path tracing (NEE, MIS)",
+            "path tracing",
         };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
@@ -89,7 +89,7 @@ struct Config
 
     // debug, temporary
     float        mDbgSplittingLevel;
-    float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one brdf sample.
+    float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one BSDF sample.
 
     // Auxiliary debugging ad hoc parameters
     float        mDbgAuxiliaryFloat1;
@@ -144,7 +144,7 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
 
-    // Material testing, sphere: 20-26
+    // Material testing, 1 sphere: 20-26
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy,
     Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
@@ -164,6 +164,13 @@ uint32_t g_SceneConfigs[] =
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric       | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor  | Scene::kWallsPhongDiffuse,
     Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+
+    // 33-37, debug scenes, delete this
+    Scene::kLightBox   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::kLightPoint | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightPoint | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::kLightEnv   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
 };
 
 std::string DefaultFilename(
@@ -208,7 +215,7 @@ std::string DefaultFilename(
         outStream2 << std::fixed << aConfig.mDbgSplittingLevel;
         filename += "," + outStream2.str();
 
-        // debug, temporary: light-to-brdf samples ratio
+        // debug, temporary: light-to-bsdf samples ratio
         std::ostringstream outStream1;
         outStream1.precision(1);
         outStream1 << std::fixed << aConfig.mDbgSplittingLightToBrdfSmplRatio;
@@ -228,7 +235,7 @@ std::string DefaultFilename(
 #ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
     // Debug info
     if (   (aConfig.mAlgorithm >= kDirectIllumLightSamplingAll)
-        && (aConfig.mAlgorithm <= kDirectIllumMIS))
+        && (aConfig.mAlgorithm <= kDirectIllumMis))
     {
         filename += "_emcw";
     }
@@ -361,7 +368,7 @@ void PrintHelp(const char *argv[])
         "[-s <scene_id>] [-a <algorithm>] [-t <time> | -i <iterations>] [-minpl <min_path_length>] "
         "[-maxpl <max_path_length>] [-iic <indirect_illum_clipping_value>] "
         "[-sb|--splitting-budget <splitting_budget>] "
-        "[-slbr|--splitting-light-to-brdf-ratio <splitting_light_to_brdf_ratio>] "
+        "[-slbr|--splitting-light-to-bsdf-ratio <splitting_light_to_bsdf_ratio>] "
         "[-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] "
         "[-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] "
         "[-auxf1|--dbg_aux_float1 <value>] [-auxf2|--dbg_aux_float2 <value>] \n\n",
@@ -389,8 +396,8 @@ void PrintHelp(const char *argv[])
     printf("           Only valid for path tracer (pt).\n");
     printf("    -sb | --splitting-budget \n");
     printf("           Splitting budget: maximal total amount of splitted paths per one camera ray (default 4).\n");
-    printf("    -slbr | --splitting-light-to-brdf-ratio \n");
-    printf("           Number of light samples per one brdf sample (default 1.0)\n");
+    printf("    -slbr | --splitting-light-to-bsdf-ratio \n");
+    printf("           Number of light samples per one bsdf sample (default 1.0)\n");
 
     printf("    -t     Number of seconds to run the algorithm\n");
     printf("    -i     Number of iterations to run the algorithm (default 1)\n");
@@ -712,11 +719,11 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
 
             oConfig.mDbgSplittingLevel = tmp;
         }
-        else if ((arg == "-slbr") || (arg == "--splitting-light-to-brdf-ratio")) // debug, temporary: splitting light-to-brdf samples ratio
+        else if ((arg == "-slbr") || (arg == "--splitting-light-to-bsdf-ratio")) // debug, temporary: splitting light-to-bsdf samples ratio
         {
             if (++i == argc)
             {
-                printf("Error: Missing <splitting_light_to_brdf_ratio> argument, please see help (-h)\n");
+                printf("Error: Missing <splitting_light_to_bsdf_ratio> argument, please see help (-h)\n");
                 return false;
             }
 
@@ -724,7 +731,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             {
                 printf(
                     "\n"
-                    "Warning: You specified light-to-brdf samples ratio for splitting; however, "
+                    "Warning: You specified light-to-bsdf samples ratio for splitting; however, "
                     "the rendering algorithm was either not set yet or it doesn't support this option.\n\n");
             }
 
@@ -735,7 +742,7 @@ bool ParseCommandline(int32_t argc, const char *argv[], Config &oConfig)
             if (iss.fail() || tmp <= 0.f)
             {
                 printf(
-                    "Error: Invalid <splitting_light_to_brdf_ratio> argument \"%s\", please see help (-h)\n",
+                    "Error: Invalid <splitting_light_to_bsdf_ratio> argument \"%s\", please see help (-h)\n",
                     argv[i]);
                 return false;
             }

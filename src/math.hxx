@@ -287,6 +287,7 @@ public:
     Vec3Base<T>& operator/=(const Vec3Base& a)
     { x /= a.x; y /= a.y; z /= a.z; return *this; }
 
+    //PG3_NOINLINE
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
     { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
@@ -315,6 +316,7 @@ Vec3f Cross(
     return res;
 }
 
+//PG3_NOINLINE
 Vec3f Normalize(const Vec3f& a)
 {
     const float lenSqr = Dot(a, a);
@@ -614,10 +616,12 @@ public:
 
     void SetFromZ(const Vec3f& z)
     {
-        Vec3f tmpZ = mZ = Normalize(z);
-        Vec3f tmpX = (std::abs(tmpZ.x) > 0.99f) ? Vec3f(0,1,0) : Vec3f(1,0,0);
-        mY = Normalize( Cross(tmpZ, tmpX) );
-        mX = Cross(mY, tmpZ);
+        PG3_ASSERT_VEC3F_NORMALIZED(z);
+
+        mZ = z;
+        Vec3f tmpX = (std::abs(mZ.x) > 0.99f) ? Vec3f(0, 1, 0) : Vec3f(1, 0, 0);
+        mY = Normalize(Cross(mZ, tmpX));
+        mX = Cross(mY, mZ);
     }
 
     Vec3f ToWorld(const Vec3f& a) const

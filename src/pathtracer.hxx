@@ -4,7 +4,7 @@
 
 // Empirical values for cutting too long paths
 #ifdef _DEBUG
-#define PATH_TRACER_MAX_PATH_LENGTH 750     // crash at 812
+#define PATH_TRACER_MAX_PATH_LENGTH 700     // crash at 700
 #else
 #define PATH_TRACER_MAX_PATH_LENGTH 1500    // 1700 crashes for sure
 #endif
@@ -91,45 +91,64 @@ protected:
                 if ((mMaxPathLength > 0) && (pathLength >= mMaxPathLength))
                     return;
 
-                // Russian roulette (based on reflectance of the whole BRDF)
+                if (pathLength >= PATH_TRACER_MAX_PATH_LENGTH)
+                    // We cut too long paths even when Russian roulette ending is active
+                    // to avoid stack overflows
+                    return;
+
+                // Russian roulette (based on reflectance of the whole BSDF)
                 float rrContinuationProb = 1.0f;
                 if (mMaxPathLength == 0)
                 {
-                    rrContinuationProb =
-                        // We do not allow probability 1.0 because that can lead to infinite 
-                        // random walk in some pathological scenarios (completely white material).
-                        // After 100 bounces with probability of 98%, the whole path has 
-                        // probability of cca 13% of survival.
-                        Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.98f);
+                    // Const clamping
+                    //rrContinuationProb =
+                    //    // We do not allow probability 1.0 because that can lead to infinite 
+                    //    // random walk in some pathological scenarios (completely white material or 
+                    //    // light trap made of glass).
+                    //    // Probability of survival after 100 bounces:
+                    //    // local probability 98.0% -> 13% for the whole path
+                    //    // local probability 99.0% -> 37% for the whole path
+                    //    // local probability 99.3% -> 50% for the whole path
+                    //    // local probability 99.5% -> 61% for the whole path
+                    //    // local probability 99.7% -> 74% for the whole path
+                    //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
+                    //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+
+                    // No clamping
+                   rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
+
                     const float rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
                         return;
                 }
 
-                // Sample BRDF
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
-                if (brdfSample.mSample.Max() <= 0.)
-                    // There is no contribution behing this reflection;
+                // Sample BSDF
+                MaterialRecord matRecord(wol);
+                mat.SampleBsdf(mRng, matRecord);
+                if (matRecord.IsBlocker())
+                    // There is no contribution behind this reflection;
                     // we can cut the path without incorporation of bias
                     return;
 
                 // Construct new ray from the current surface point
                 currentRay.org  = surfPt;
-                currentRay.dir  = surfFrame.ToWorld(brdfSample.mWil);
-                currentRay.tmin = EPS_RAY_COS(brdfSample.mWil.z);
+                currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
+                currentRay.tmin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
 
-                if (brdfSample.mPdfW != INFINITY_F)
+                if (matRecord.mPdfW != INFINITY_F)
                     pathThroughput *=
-                            brdfSample.mSample
-                          / (  brdfSample.mPdfW             // Monte Carlo est.
+                            (  matRecord.mAttenuation
+                             * matRecord.ThetaInCosAbs())
+                          / (  matRecord.mPdfW              // Monte Carlo est.
                              * rrContinuationProb           // Russian roulette (optional)
-                             * brdfSample.mCompProbability);// Discrete multi-component MC
+                             * matRecord.mCompProbability); // Discrete multi-component MC
                 else
                     pathThroughput *=
-                            brdfSample.mSample
+                            matRecord.mAttenuation
                           / (  rrContinuationProb           // Russian roulette (optional)
-                             * brdfSample.mCompProbability);// Discrete multi-component MC
+                             * matRecord.mCompProbability); // Discrete multi-component MC
+
+                PG3_ASSERT_VEC3F_NONNEGATIVE(pathThroughput);
 
                 pathLength++;
             }
@@ -223,14 +242,14 @@ protected:
             }
 
             // Splitting
-            uint32_t brdfSamplesCount;
+            uint32_t bsdfSamplesCount;
             uint32_t lightSamplesCount;
             float nextStepSplitBudget;
-            // TODO: Use BRDF settings
+            // TODO: Use BSDF settings
             float splitLevel = mDbgSplittingLevel; // [0,1]: 0: no split, 1: full split
             ComputeSplittingCounts(
                 aSplitBudget, splitLevel,
-                brdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
+                bsdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
 
             // Generate requested amount of light samples for direct illumination
             // ...if one more path step is allowed
@@ -242,8 +261,8 @@ protected:
                     if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                     {
                         AddMISLightSampleContribution(
-                            lightSample, lightSamplesCount, brdfSamplesCount,
-                            surfPt, surfFrame, wol, mat,
+                            lightSample, lightSamplesCount, bsdfSamplesCount,
+                            surfPt, surfFrame, wol, mat, mRng,
                             oReflectedRadianceEstimate);
                     }
                 }
@@ -267,22 +286,15 @@ protected:
                 //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                 // No clamping
-                rrContinuationProb = mat.GetRRContinuationProb(wol);
-
-                // Progressive clamping experiment - more aggressive for longer paths
-                //const float lengthCoef =
-                //    Clamp(float(aPathLength) / PATH_TRACER_MAX_PATH_LENGTH, 0.0f, 1.0f);
-                //const float maxVal =
-                //    (1.0f - lengthCoef) * 1.0f + lengthCoef * 0.95f;
-                //rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.0f, maxVal);
+                rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
             }
 
-            // Generate requested amount of BRDF samples for both direct and indirect illumination
-            for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
+            // Generate requested amount of BSDF samples for both direct and indirect illumination
+            for (uint32_t sampleNum = 0; sampleNum < bsdfSamplesCount; sampleNum++)
             {
                 bool bCutIndirect = false;
 
-                // Russian roulette (based on reflectance of the whole BRDF)
+                // Russian roulette (based on reflectance of the whole BSDF)
                 float rnd = -1.0f;
                 if (mMaxPathLength == 0)
                 {
@@ -294,90 +306,100 @@ protected:
                     }
                 }
 
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
-                if (brdfSample.mSample.Max() <= 0.f)
+                MaterialRecord matRecord(wol);
+                mat.SampleBsdf(mRng, matRecord);
+                if (matRecord.IsBlocker())
                     continue;
 
-                SpectrumF   brdfEmmittedRadiance;
-                SpectrumF   brdfReflectedRadianceEstimate;
-                float       brdfLightPdfW = 0.f;
-                int32_t     brdfLightId = -1;
+                SpectrumF   bsdfEmmittedRadiance;
+                SpectrumF   bsdfReflectedRadianceEstimate;
+                float       bsdfLightPdfW = 0.f;
+                int32_t     bsdfLightId = -1;
 
-                const Vec3f wig = surfFrame.ToWorld(brdfSample.mWil);
-                const float rayMin = EPS_RAY_COS(brdfSample.mWil.z);
-                const Ray   brdfRay(surfPt, wig, rayMin);
+                const Vec3f wig = surfFrame.ToWorld(matRecord.mWil);
+                const float rayMin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
+                const Ray   bsdfRay(surfPt, wig, rayMin);
 
                 EstimateIncomingRadiancePT(
-                    brdfRay, aPathLength + 1, !bCutIndirect, nextStepSplitBudget,
-                    brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
-                    &surfFrame, &brdfLightPdfW, &brdfLightId);
+                    bsdfRay, aPathLength + 1, !bCutIndirect, nextStepSplitBudget,
+                    bsdfEmmittedRadiance, bsdfReflectedRadianceEstimate,
+                    &surfFrame, &bsdfLightPdfW, &bsdfLightId);
 
-                PG3_ASSERT(!bCutIndirect || brdfReflectedRadianceEstimate.IsZero());
+                PG3_ASSERT(!bCutIndirect || bsdfReflectedRadianceEstimate.IsZero());
 
                 // Direct light
-                if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
+                if ((!bsdfEmmittedRadiance.IsZero()) && (bsdfLightId >= 0))
                 {
-                    // Since Monte Carlo estimation works only for finite (non-Dirac) BSDFs,
+                    // Since Monte Carlo estimation works for finite (non-Dirac) BSDFs only,
                     // we split the integral into two parts - one for finite components and 
                     // one for Dirac components of the BSDF. This is analogical and well working 
                     // together with the separate light sampling scheme used in 
                     // AddMISLightSampleContribution() - see comments there for more information.
-                    if (brdfSample.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != INFINITY_F)
                     {
-                        // Finite BRDF: Compute MIS MC estimator. 
+                        // Finite BSDF: Compute MIS MC estimator. 
 
-                        float brdfLightPickingProb = 0.f;
+                        float bsdfLightPickingProb = 0.f;
                         LightPickingProbability(
-                            surfPt, surfFrame, mat, brdfLightId, lightSamplingCtx,
-                            brdfLightPickingProb);
+                            surfPt, surfFrame, mat, bsdfLightId, lightSamplingCtx,
+                            bsdfLightPickingProb);
 
                         // TODO: Uncomment this once proper environment map estimate is implemented.
                         //       Now there can be zero contribution estimate (and therefore zero picking probability)
                         //       even if the actual contribution is non-zero.
                         //PG3_ASSERT(lightPickingProbability > 0.f);
-                        PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
+                        PG3_ASSERT(bsdfLightPdfW != INFINITY_F); // BSDF sampling should never hit a point light
 
-                        const float lightPdfW = brdfLightPdfW * brdfLightPickingProb;
-                        const float brdfPdfW  = brdfSample.mPdfW * brdfSample.mCompProbability;
+                        const float lightPdfW = bsdfLightPdfW * bsdfLightPickingProb;
+                        const float bsdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
                         oReflectedRadianceEstimate +=
-                              (brdfSample.mSample * brdfEmmittedRadiance)
-                            * MISWeight2(brdfPdfW, brdfSamplesCount, lightPdfW, lightSamplesCount) // MIS
-                            / brdfPdfW;
+                              (   matRecord.mAttenuation
+                                * matRecord.ThetaInCosAbs()
+                                * bsdfEmmittedRadiance
+                                * MISWeight2(bsdfPdfW, bsdfSamplesCount, lightPdfW, lightSamplesCount)) // MIS
+                            / bsdfPdfW;
                     }
                     else
                     {
-                        // Dirac BRDF: compute the integral directly, without MIS
+                        // Dirac BSDF: compute the integral directly, without MIS
                         oReflectedRadianceEstimate +=
-                              (brdfSample.mSample * brdfEmmittedRadiance)
-                            / (   static_cast<float>(brdfSamplesCount)  // Splitting
-                                * brdfSample.mCompProbability);         // Discrete multi-component MC
+                              (   matRecord.mAttenuation
+                                * bsdfEmmittedRadiance)
+                            / (   static_cast<float>(bsdfSamplesCount)  // Splitting
+                                * matRecord.mCompProbability);          // Discrete multi-component MC
                     }
+
+                    PG3_ASSERT_VEC3F_NONNEGATIVE(oReflectedRadianceEstimate);
                 }
 
                 // Indirect light
-                if (!bCutIndirect && !brdfReflectedRadianceEstimate.IsZero())
+                if (!bCutIndirect && !bsdfReflectedRadianceEstimate.IsZero())
                 {
                     SpectrumF indirectRadianceEstimate;
-                    if (brdfSample.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != INFINITY_F)
                     {
-                        // Finite BRDF: Compute simple MC estimator. 
+                        // Finite BSDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
-                              (brdfSample.mSample * brdfReflectedRadianceEstimate)
-                            / (   brdfSample.mPdfW              // MC
-                                * brdfSamplesCount              // Splitting
+                              (   matRecord.mAttenuation
+                                * matRecord.ThetaInCosAbs()
+                                * bsdfReflectedRadianceEstimate)
+                            / (   matRecord.mPdfW               // MC
+                                * bsdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
-                                * brdfSample.mCompProbability); // Discrete multi-component MC
+                                * matRecord.mCompProbability);  // Discrete multi-component MC
                     }
                     else
                     {
-                        // Dirac BRDF: compute the integral directly, without MIS
+                        // Dirac BSDF: compute the integral directly, without MIS
                         indirectRadianceEstimate =
-                              (brdfSample.mSample * brdfReflectedRadianceEstimate)
-                            / (   brdfSamplesCount              // Splitting
+                              (   matRecord.mAttenuation
+                                * bsdfReflectedRadianceEstimate)
+                            / (   bsdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
-                                * brdfSample.mCompProbability); // Discrete multi-component MC
+                                * matRecord.mCompProbability);  // Discrete multi-component MC
                     }
+
+                    PG3_ASSERT_VEC3F_NONNEGATIVE(indirectRadianceEstimate);
 
                     // Clip fireflies
                     if (mIndirectIllumClipping > 0.f)

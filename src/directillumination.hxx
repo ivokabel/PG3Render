@@ -64,36 +64,41 @@ public:
                         lightSample, surfPt, surfFrame, mat, wol,
                         LoDirect);
             }
-            else if (aAlgorithm == kDirectIllumBRDFSampling)
+            else if (aAlgorithm == kDirectIllumBsdfSampling)
             {
-                // Sample BRDF
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
-                if (brdfSample.mSample.Max() > 0.)
+                // Sample BSDF
+                MaterialRecord matRecord(wol);
+                mat.SampleBsdf(mRng, matRecord);
+                if (!matRecord.IsBlocker())
                 {
                     SpectrumF LiLight;
                     GetDirectRadianceFromDirection(
                         surfPt,
                         surfFrame,
                         mat,
-                        brdfSample.mWil,
+                        matRecord.mWil,
                         lightSamplingCtx,
                         LiLight);
 
-                    if (brdfSample.mPdfW != INFINITY_F)
-                        // Finite BRDF: Compute the two-step MC estimator.
+                    if (matRecord.mPdfW != INFINITY_F)
+                        // Finite BSDF: Compute the two-step MC estimator.
                         LoDirect =
-                              (brdfSample.mSample * LiLight)
-                            / (  brdfSample.mPdfW               // Monte Carlo est.
-                               * brdfSample.mCompProbability);  // Discrete multi-component MC
+                              (   matRecord.mAttenuation
+                                * matRecord.ThetaInCosAbs()
+                                * LiLight)
+                            / (   matRecord.mPdfW               // Monte Carlo est.
+                                * matRecord.mCompProbability);  // Discrete multi-component MC
                     else
-                        // Dirac BRDF: compute the integral analytically
+                        // Dirac BSDF: compute the integral analytically
                         LoDirect =
-                              brdfSample.mSample * LiLight
-                            / brdfSample.mCompProbability;      // Discrete multi-component MC
+                              (   matRecord.mAttenuation
+                                * LiLight)
+                            / matRecord.mCompProbability;      // Discrete multi-component MC
+
+                    PG3_ASSERT_VEC3F_NONNEGATIVE(LoDirect);
                 }
             }
-            else if (aAlgorithm == kDirectIllumMIS)
+            else if (aAlgorithm == kDirectIllumMis)
             {
                 // Multiple importance sampling
 
@@ -102,15 +107,15 @@ public:
                 if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                 {
                     AddMISLightSampleContribution(
-                        lightSample, 1, 1, surfPt, surfFrame, wol, mat,
+                        lightSample, 1, 1, surfPt, surfFrame, wol, mat, mRng,
                         LoDirect);
                 }
 
-                // Generate one sample by sampling the BRDF
-                BRDFSample brdfSample;
-                mat.SampleBrdf(mRng, wol, brdfSample);
+                // Generate one sample by sampling the BSDF
+                MaterialRecord matRecord(wol);
+                mat.SampleBsdf(mRng, matRecord);
                 AddDirectIllumMISBrdfSampleContribution(
-                    brdfSample, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
+                    matRecord, 1, 1, surfPt, surfFrame, mat, lightSamplingCtx,
                     LoDirect);
             }
             else

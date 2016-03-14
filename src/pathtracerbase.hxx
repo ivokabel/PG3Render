@@ -18,11 +18,11 @@ protected:
     {
     public:
         LightSamplingContext(size_t aLightCount) :
-            mLightContribEstimsCache(aLightCount, 0.f),
+            mLightContribEstsCache(aLightCount, 0.f),
             mValid(false)
         {};
 
-        std::vector<float>      mLightContribEstimsCache;
+        std::vector<float>      mLightContribEstsCache;
         bool                    mValid;
     };
 
@@ -99,21 +99,21 @@ public:
 
         const Vec3f wig = aSurfFrame.ToWorld(aWil);
         const float rayMin = EPS_RAY_COS(aWil.z);
-        const Ray brdfRay(aSurfPt, wig, rayMin);
-        Isect brdfIsect(1e36f);
-        if (mConfig.mScene->Intersect(brdfRay, brdfIsect))
+        const Ray bsdfRay(aSurfPt, wig, rayMin);
+        Isect bsdfIsect(1e36f);
+        if (mConfig.mScene->Intersect(bsdfRay, bsdfIsect))
         {
-            if (brdfIsect.lightID >= 0)
+            if (bsdfIsect.lightID >= 0)
             {
                 // We hit light source geometry, get outgoing radiance
-                const Vec3f lightPt = brdfRay.org + brdfRay.dir * brdfIsect.dist;
-                const AbstractLight *light = mConfig.mScene->GetLightPtr(brdfIsect.lightID);
+                const Vec3f lightPt = bsdfRay.org + bsdfRay.dir * bsdfIsect.dist;
+                const AbstractLight *light = mConfig.mScene->GetLightPtr(bsdfIsect.lightID);
                 Frame frame;
-                frame.SetFromZ(brdfIsect.normal);
-                const Vec3f ligthWol = frame.ToLocal(-brdfRay.dir);
+                frame.SetFromZ(bsdfIsect.normal);
+                const Vec3f ligthWol = frame.ToLocal(-bsdfRay.dir);
                 oLight = light->GetEmmision(lightPt, ligthWol, aSurfPt, oPdfW, &aSurfFrame);
 
-                lightId = brdfIsect.lightID;
+                lightId = bsdfIsect.lightID;
             }
             else
             {
@@ -204,7 +204,7 @@ public:
             // TODO: Make it a PT's member to avoid unnecessary allocations?
             std::vector<float> lightContrPseudoCdf(lightCount + 1);
 
-            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+            PG3_ASSERT(aContext.mLightContribEstsCache.size() == lightCount);
 
             // Estimate the contribution of all available light sources
             float estimatesSum = 0.f;
@@ -216,10 +216,10 @@ public:
 
                 if (!aContext.mValid)
                     // Fill light contribution cache
-                    aContext.mLightContribEstimsCache[i] =
+                    aContext.mLightContribEstsCache[i] =
                         light->EstimateContribution(aSurfPt, aSurfFrame, aSurfMaterial, mRng);
 
-                estimatesSum += aContext.mLightContribEstimsCache[i];
+                estimatesSum += aContext.mLightContribEstsCache[i];
                 lightContrPseudoCdf[i + 1] = estimatesSum;
             }
             aContext.mValid = true;
@@ -272,7 +272,7 @@ public:
         }
         else
         {
-            PG3_ASSERT(aContext.mLightContribEstimsCache.size() == lightCount);
+            PG3_ASSERT(aContext.mLightContribEstsCache.size() == lightCount);
 
             // Estimate the contribution of all available light sources
             float estimatesSum  = 0.f;
@@ -284,10 +284,10 @@ public:
 
                 if (!aContext.mValid)
                     // Fill light contribution cache
-                    aContext.mLightContribEstimsCache[i] =
+                    aContext.mLightContribEstsCache[i] =
                         light->EstimateContribution(aSurfPt, aSurfFrame, aSurfMaterial, mRng);
 
-                const float estimate = aContext.mLightContribEstimsCache[i];
+                const float estimate = aContext.mLightContribEstsCache[i];
                 if (i == aLightId)
                     lightEstimate = estimate;
                 estimatesSum += estimate;
@@ -324,7 +324,7 @@ public:
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
                   aLightSample.mSample
-                * aSurfMaterial.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
+                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
                 / (aLightSample.mPdfW * aLightSample.mLightProbability);
         else
             // Point light - the contribution of a single light is computed 
@@ -333,7 +333,7 @@ public:
             // of all light sources.
             oLightBuffer +=
                   aLightSample.mSample
-                * aSurfMaterial.EvalBrdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
+                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
                 / aLightSample.mLightProbability;
     }
 
@@ -345,6 +345,7 @@ public:
         const Frame             &aSurfFrame, 
         const Vec3f             &aWol,
         const AbstractMaterial  &aSurfMaterial,
+              Rng               &aRng,
               SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
@@ -359,7 +360,7 @@ public:
         // Since Monte Carlo estimation works only for planar and angular light sources, we can't 
         // use the multiple importance sampling scheme for the whole reflectance integral. We split 
         // the integral into two parts - one for planar and angular light sources, and one 
-        // for point light sources. The first part can be handled by both BRDF and light 
+        // for point light sources. The first part can be handled by both BSDF and light 
         // sampling strategies; therefore, we can combine the two with MIS. The second part 
         // (point lights) can only be hadled by the light sampling strategy.
         //
@@ -385,15 +386,16 @@ public:
         if (aLightSample.mPdfW != INFINITY_F)
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
-            float brdfCompPdfW, brdfCompProbability;
-            aSurfMaterial.GetWholeFiniteCompProbabilities(
-                brdfCompPdfW, brdfCompProbability, aWol, wil);
-            const float brdfTotalPdfW = brdfCompPdfW * brdfCompProbability;
-            const float lightPdfW     = aLightSample.mPdfW * aLightSample.mLightProbability;
+            MaterialRecord matRecord(wil, aWol);
+            aSurfMaterial.EvalBsdf(aRng, matRecord);
+            const float bsdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProbability;
+            const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
+
             oLightBuffer +=
-                    (aLightSample.mSample * aSurfMaterial.EvalBrdf(wil, aWol))
-                  * (MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalPdfW, aBrdfSamplesCount)
-                    / lightPdfW);
+                    (   aLightSample.mSample
+                      * matRecord.mAttenuation
+                      * MISWeight2(lightPdfW, aLightSamplesCount, bsdfTotalFinitePdfW, aBrdfSamplesCount))
+                    / lightPdfW;
         }
         else
         {
@@ -401,13 +403,13 @@ public:
             // there is only one MC estimation left - the estimation of the sum of contributions
             // of all light sources.
             oLightBuffer +=
-                  (aLightSample.mSample * aSurfMaterial.EvalBrdf(wil, aWol))
+                  (aLightSample.mSample * aSurfMaterial.EvalBsdf(wil, aWol))
                 / (aLightSample.mLightProbability * aLightSamplesCount);
         }
     }
 
     void AddDirectIllumMISBrdfSampleContribution(
-        const BRDFSample            &aBrdfSample,
+        const MaterialRecord        &aMatRecord,
         const uint32_t               aLightSamplesCount,
         const uint32_t               aBrdfSamplesCount,
         const Vec3f                 &aSurfPt,
@@ -416,7 +418,7 @@ public:
               LightSamplingContext  &aContext,
               SpectrumF             &oLightBuffer)
     {
-        if (aBrdfSample.mSample.Max() <= 0.f)
+        if (aMatRecord.IsBlocker())
             // The material is a complete blocker in this direction
             return;
 
@@ -427,7 +429,7 @@ public:
             aSurfPt,
             aSurfFrame,
             aSurfMaterial,
-            aBrdfSample.mWil,
+            aMatRecord.mWil,
             aContext,
             LiLight,
             &lightPdfW,
@@ -441,29 +443,34 @@ public:
         //       Now there can be zero contribution estimate (and therefore zero picking probability)
         //       even if the actual contribution is non-zero.
         //PG3_ASSERT(lightPickingProbability > 0.f);
-        PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
+        PG3_ASSERT(lightPdfW != INFINITY_F); // BSDF sampling should never hit a point light
 
-        if (aBrdfSample.mPdfW != INFINITY_F)
+        if (aMatRecord.mPdfW != INFINITY_F)
         {
-            // Finite BRDF: Compute two-step MIS MC estimator. 
-            const float brdfPdfW = aBrdfSample.mPdfW * aBrdfSample.mCompProbability;
+            // Finite BSDF: Compute two-step MIS MC estimator. 
+            const float bsdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProbability;
             const float misWeight =
                 MISWeight2(
-                    brdfPdfW, aBrdfSamplesCount,
+                    bsdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
-                  (aBrdfSample.mSample * LiLight)
-                * misWeight
-                / brdfPdfW;
+                  (   aMatRecord.mAttenuation
+                    * aMatRecord.ThetaInCosAbs()
+                    * LiLight
+                    * misWeight)
+                / bsdfPdfW;
         }
         else
         {
-            // Dirac BRDF: compute the integral directly, without MIS
+            // Dirac BSDF: compute the integral directly, without MIS
             oLightBuffer +=
-                  aBrdfSample.mSample * LiLight
-                / (static_cast<float>(aBrdfSamplesCount)    // Splitting
-                * aBrdfSample.mCompProbability);            // Discrete multi-component MC
+                  (   aMatRecord.mAttenuation
+                    * LiLight)
+                / (   static_cast<float>(aBrdfSamplesCount)     // Splitting
+                    * aMatRecord.mCompProbability);             // Discrete multi-component MC
         }
+
+        PG3_ASSERT_VEC3F_NONNEGATIVE(oLightBuffer);
     }
 
     float MISWeight2(
