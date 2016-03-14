@@ -1032,7 +1032,7 @@ float MicrofacetSmithMaskingFunctionGgx(
 
     const float roughnessAlphaSqr = aRoughnessAlpha * aRoughnessAlpha;
     const float tanThetaSqr = TanThetaSqr(aDir);
-    const float root = std::sqrt(1.0f + roughnessAlphaSqr * tanThetaSqr); // TODO: Optimize sqrt
+    const float root = std::sqrt(1.0f + roughnessAlphaSqr * tanThetaSqr);
 
     const float result = 2.0f / (1.0f + root);
 
@@ -1109,8 +1109,7 @@ void SampleGgxP11(
     {
         const float tanThetaI    = std::tan(aThetaI);
         const float tanThetaIInv = 1.0f / tanThetaI;
-        const float G1 =
-            2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
+        const float G1 = 2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
 
         // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
         float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
