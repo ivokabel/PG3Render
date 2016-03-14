@@ -99,21 +99,21 @@ public:
 
         const Vec3f wig = aSurfFrame.ToWorld(aWil);
         const float rayMin = EPS_RAY_COS(aWil.z);
-        const Ray brdfRay(aSurfPt, wig, rayMin);
-        Isect brdfIsect(1e36f);
-        if (mConfig.mScene->Intersect(brdfRay, brdfIsect))
+        const Ray bsdfRay(aSurfPt, wig, rayMin);
+        Isect bsdfIsect(1e36f);
+        if (mConfig.mScene->Intersect(bsdfRay, bsdfIsect))
         {
-            if (brdfIsect.lightID >= 0)
+            if (bsdfIsect.lightID >= 0)
             {
                 // We hit light source geometry, get outgoing radiance
-                const Vec3f lightPt = brdfRay.org + brdfRay.dir * brdfIsect.dist;
-                const AbstractLight *light = mConfig.mScene->GetLightPtr(brdfIsect.lightID);
+                const Vec3f lightPt = bsdfRay.org + bsdfRay.dir * bsdfIsect.dist;
+                const AbstractLight *light = mConfig.mScene->GetLightPtr(bsdfIsect.lightID);
                 Frame frame;
-                frame.SetFromZ(brdfIsect.normal);
-                const Vec3f ligthWol = frame.ToLocal(-brdfRay.dir);
+                frame.SetFromZ(bsdfIsect.normal);
+                const Vec3f ligthWol = frame.ToLocal(-bsdfRay.dir);
                 oLight = light->GetEmmision(lightPt, ligthWol, aSurfPt, oPdfW, &aSurfFrame);
 
-                lightId = brdfIsect.lightID;
+                lightId = bsdfIsect.lightID;
             }
             else
             {
@@ -360,7 +360,7 @@ public:
         // Since Monte Carlo estimation works only for planar and angular light sources, we can't 
         // use the multiple importance sampling scheme for the whole reflectance integral. We split 
         // the integral into two parts - one for planar and angular light sources, and one 
-        // for point light sources. The first part can be handled by both BRDF and light 
+        // for point light sources. The first part can be handled by both BSDF and light 
         // sampling strategies; therefore, we can combine the two with MIS. The second part 
         // (point lights) can only be hadled by the light sampling strategy.
         //
@@ -388,13 +388,13 @@ public:
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             MaterialRecord matRecord(wil, aWol);
             aSurfMaterial.EvalBsdf(aRng, matRecord);
-            const float brdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProbability;
+            const float bsdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProbability;
             const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
 
             oLightBuffer +=
                     (   aLightSample.mSample
                       * matRecord.mAttenuation
-                      * MISWeight2(lightPdfW, aLightSamplesCount, brdfTotalFinitePdfW, aBrdfSamplesCount))
+                      * MISWeight2(lightPdfW, aLightSamplesCount, bsdfTotalFinitePdfW, aBrdfSamplesCount))
                     / lightPdfW;
         }
         else
@@ -443,26 +443,26 @@ public:
         //       Now there can be zero contribution estimate (and therefore zero picking probability)
         //       even if the actual contribution is non-zero.
         //PG3_ASSERT(lightPickingProbability > 0.f);
-        PG3_ASSERT(lightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
+        PG3_ASSERT(lightPdfW != INFINITY_F); // BSDF sampling should never hit a point light
 
         if (aMatRecord.mPdfW != INFINITY_F)
         {
-            // Finite BRDF: Compute two-step MIS MC estimator. 
-            const float brdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProbability;
+            // Finite BSDF: Compute two-step MIS MC estimator. 
+            const float bsdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProbability;
             const float misWeight =
                 MISWeight2(
-                    brdfPdfW, aBrdfSamplesCount,
+                    bsdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
                   (   aMatRecord.mAttenuation
                     * aMatRecord.ThetaInCosAbs()
                     * LiLight
                     * misWeight)
-                / brdfPdfW;
+                / bsdfPdfW;
         }
         else
         {
-            // Dirac BRDF: compute the integral directly, without MIS
+            // Dirac BSDF: compute the integral directly, without MIS
             oLightBuffer +=
                   (   aMatRecord.mAttenuation
                     * LiLight)

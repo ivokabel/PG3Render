@@ -154,7 +154,7 @@ public:
 
         // TODO: The result has to be cached because the estimate is computed twice 
         //       for the same point during MIS (once when picking a light randomly and 
-        //       once when computing the probability of picking a light after BRDF sampling).
+        //       once when computing the probability of picking a light after BSDF sampling).
 
         // Doesn't work: 
         // Estimate the contribution using a "sample" in the centre of gravity of the triangle
@@ -204,8 +204,8 @@ private:
         float cosThetaIn        =  Dot(aSurfFrame.mZ, oSample.mWig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
@@ -225,7 +225,7 @@ private:
         PG3_ASSERT_FLOAT_NONNEGATIVE(cosThetaIn);
 
         if (cosThetaOut > 0.f)
-            // Planar version: BRDF * Li * ((cos_in * cos_out) / dist^2)
+            // Planar version: BSDF * Li * ((cos_in * cos_out) / dist^2)
             oSample.mSample = mRadiance * cosThetaIn; // Angular version
         else
             oSample.mSample.MakeZero();
@@ -324,8 +324,8 @@ private:
         float cosThetaIn = Dot(aSurfFrame.mZ, oSample.mWig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
@@ -438,8 +438,8 @@ public:
             // Sample the requested (hemi)sphere(s) in a cosine-weighted fashion
 
             const MaterialProperties matProps = aSurfMaterial.GetProperties();
-            const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
-            const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+            const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
+            const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
             Vec3f wil = SampleCosSphereParamPdfW(
                 aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
@@ -465,7 +465,7 @@ public:
 
         // TODO: The result has to be cached because the estimate is computed twice 
         //       for the same point during MIS (once when picking a light randomly and 
-        //       once when computing the probability of picking a light after BRDF sampling).
+        //       once when computing the probability of picking a light after BSDF sampling).
 
         if (mEnvMap != NULL)
         {
@@ -507,7 +507,7 @@ public:
         else
         {
             // A constant environment illumination.
-            // Assuming constant BRDF, we can compute the integral analytically.
+            // Assuming constant BSDF, we can compute the integral analytically.
             // \int{f_r * L_i * \cos{theta_i} d\omega} = f_r * L_i * \int{\cos{theta_i} d\omega} = f_r * L_i * \pi
             return mConstantRadiance.Luminance() * PI_F;
         }
@@ -521,8 +521,8 @@ public:
         LightSample             &oSample) const
     {
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
         Vec3f wil = SampleCosSphereParamPdfW(
             aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
@@ -554,8 +554,8 @@ public:
         oSample.mLightProbability   = 1.0f;
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBSDFFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBSDFBackSideLightSampling);
+        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
         const float cosThetaIn = Dot(oSample.mWig, aSurfFrame.Normal());
         if ((sampleFrontSide && (cosThetaIn > 0.0f)) || (sampleBackSide && (cosThetaIn < 0.0f)))

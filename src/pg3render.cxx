@@ -30,8 +30,8 @@ AbstractRenderer* CreateRenderer(
 
     case kDirectIllumLightSamplingAll:
     case kDirectIllumLightSamplingSingle:
-    case kDirectIllumBRDFSampling:
-    case kDirectIllumMIS:
+    case kDirectIllumBsdfSampling:
+    case kDirectIllumMis:
         return new DirectIllumination(aConfig, aSeed);
 
     case kPathTracingNaive:

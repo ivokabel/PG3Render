@@ -84,7 +84,7 @@ typedef SRGBSpectrumBase<double>    SRGBSpectrumD;
 
 // The SpectrumX class stores a Spectral Power Distribution used for various physical quantities.
 // The two main usages are: light-related quantities (flux, irradiance, radiance, etc.) and 
-// attenuation properties (BRDF/BSDF attenuation and reflectance).
+// attenuation properties (BSDF attenuation and reflectance).
 //
 // Implementation note:
 //

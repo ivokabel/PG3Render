@@ -96,7 +96,7 @@ protected:
                     // to avoid stack overflows
                     return;
 
-                // Russian roulette (based on reflectance of the whole BRDF)
+                // Russian roulette (based on reflectance of the whole BSDF)
                 float rrContinuationProb = 1.0f;
                 if (mMaxPathLength == 0)
                 {
@@ -122,7 +122,7 @@ protected:
                         return;
                 }
 
-                // Sample BRDF
+                // Sample BSDF
                 MaterialRecord matRecord(wol);
                 mat.SampleBsdf(mRng, matRecord);
                 if (matRecord.IsBlocker())
@@ -242,14 +242,14 @@ protected:
             }
 
             // Splitting
-            uint32_t brdfSamplesCount;
+            uint32_t bsdfSamplesCount;
             uint32_t lightSamplesCount;
             float nextStepSplitBudget;
-            // TODO: Use BRDF settings
+            // TODO: Use BSDF settings
             float splitLevel = mDbgSplittingLevel; // [0,1]: 0: no split, 1: full split
             ComputeSplittingCounts(
                 aSplitBudget, splitLevel,
-                brdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
+                bsdfSamplesCount, lightSamplesCount, nextStepSplitBudget);
 
             // Generate requested amount of light samples for direct illumination
             // ...if one more path step is allowed
@@ -261,7 +261,7 @@ protected:
                     if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                     {
                         AddMISLightSampleContribution(
-                            lightSample, lightSamplesCount, brdfSamplesCount,
+                            lightSample, lightSamplesCount, bsdfSamplesCount,
                             surfPt, surfFrame, wol, mat, mRng,
                             oReflectedRadianceEstimate);
                     }
@@ -289,12 +289,12 @@ protected:
                 rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
             }
 
-            // Generate requested amount of BRDF samples for both direct and indirect illumination
-            for (uint32_t sampleNum = 0; sampleNum < brdfSamplesCount; sampleNum++)
+            // Generate requested amount of BSDF samples for both direct and indirect illumination
+            for (uint32_t sampleNum = 0; sampleNum < bsdfSamplesCount; sampleNum++)
             {
                 bool bCutIndirect = false;
 
-                // Russian roulette (based on reflectance of the whole BRDF)
+                // Russian roulette (based on reflectance of the whole BSDF)
                 float rnd = -1.0f;
                 if (mMaxPathLength == 0)
                 {
@@ -311,24 +311,24 @@ protected:
                 if (matRecord.IsBlocker())
                     continue;
 
-                SpectrumF   brdfEmmittedRadiance;
-                SpectrumF   brdfReflectedRadianceEstimate;
-                float       brdfLightPdfW = 0.f;
-                int32_t     brdfLightId = -1;
+                SpectrumF   bsdfEmmittedRadiance;
+                SpectrumF   bsdfReflectedRadianceEstimate;
+                float       bsdfLightPdfW = 0.f;
+                int32_t     bsdfLightId = -1;
 
                 const Vec3f wig = surfFrame.ToWorld(matRecord.mWil);
                 const float rayMin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
-                const Ray   brdfRay(surfPt, wig, rayMin);
+                const Ray   bsdfRay(surfPt, wig, rayMin);
 
                 EstimateIncomingRadiancePT(
-                    brdfRay, aPathLength + 1, !bCutIndirect, nextStepSplitBudget,
-                    brdfEmmittedRadiance, brdfReflectedRadianceEstimate,
-                    &surfFrame, &brdfLightPdfW, &brdfLightId);
+                    bsdfRay, aPathLength + 1, !bCutIndirect, nextStepSplitBudget,
+                    bsdfEmmittedRadiance, bsdfReflectedRadianceEstimate,
+                    &surfFrame, &bsdfLightPdfW, &bsdfLightId);
 
-                PG3_ASSERT(!bCutIndirect || brdfReflectedRadianceEstimate.IsZero());
+                PG3_ASSERT(!bCutIndirect || bsdfReflectedRadianceEstimate.IsZero());
 
                 // Direct light
-                if ((!brdfEmmittedRadiance.IsZero()) && (brdfLightId >= 0))
+                if ((!bsdfEmmittedRadiance.IsZero()) && (bsdfLightId >= 0))
                 {
                     // Since Monte Carlo estimation works for finite (non-Dirac) BSDFs only,
                     // we split the integral into two parts - one for finite components and 
@@ -337,35 +337,35 @@ protected:
                     // AddMISLightSampleContribution() - see comments there for more information.
                     if (matRecord.mPdfW != INFINITY_F)
                     {
-                        // Finite BRDF: Compute MIS MC estimator. 
+                        // Finite BSDF: Compute MIS MC estimator. 
 
-                        float brdfLightPickingProb = 0.f;
+                        float bsdfLightPickingProb = 0.f;
                         LightPickingProbability(
-                            surfPt, surfFrame, mat, brdfLightId, lightSamplingCtx,
-                            brdfLightPickingProb);
+                            surfPt, surfFrame, mat, bsdfLightId, lightSamplingCtx,
+                            bsdfLightPickingProb);
 
                         // TODO: Uncomment this once proper environment map estimate is implemented.
                         //       Now there can be zero contribution estimate (and therefore zero picking probability)
                         //       even if the actual contribution is non-zero.
                         //PG3_ASSERT(lightPickingProbability > 0.f);
-                        PG3_ASSERT(brdfLightPdfW != INFINITY_F); // BRDF sampling should never hit a point light
+                        PG3_ASSERT(bsdfLightPdfW != INFINITY_F); // BSDF sampling should never hit a point light
 
-                        const float lightPdfW = brdfLightPdfW * brdfLightPickingProb;
-                        const float brdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
+                        const float lightPdfW = bsdfLightPdfW * bsdfLightPickingProb;
+                        const float bsdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
                         oReflectedRadianceEstimate +=
                               (   matRecord.mAttenuation
                                 * matRecord.ThetaInCosAbs()
-                                * brdfEmmittedRadiance
-                                * MISWeight2(brdfPdfW, brdfSamplesCount, lightPdfW, lightSamplesCount)) // MIS
-                            / brdfPdfW;
+                                * bsdfEmmittedRadiance
+                                * MISWeight2(bsdfPdfW, bsdfSamplesCount, lightPdfW, lightSamplesCount)) // MIS
+                            / bsdfPdfW;
                     }
                     else
                     {
-                        // Dirac BRDF: compute the integral directly, without MIS
+                        // Dirac BSDF: compute the integral directly, without MIS
                         oReflectedRadianceEstimate +=
                               (   matRecord.mAttenuation
-                                * brdfEmmittedRadiance)
-                            / (   static_cast<float>(brdfSamplesCount)  // Splitting
+                                * bsdfEmmittedRadiance)
+                            / (   static_cast<float>(bsdfSamplesCount)  // Splitting
                                 * matRecord.mCompProbability);          // Discrete multi-component MC
                     }
 
@@ -373,28 +373,28 @@ protected:
                 }
 
                 // Indirect light
-                if (!bCutIndirect && !brdfReflectedRadianceEstimate.IsZero())
+                if (!bCutIndirect && !bsdfReflectedRadianceEstimate.IsZero())
                 {
                     SpectrumF indirectRadianceEstimate;
                     if (matRecord.mPdfW != INFINITY_F)
                     {
-                        // Finite BRDF: Compute simple MC estimator. 
+                        // Finite BSDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
                               (   matRecord.mAttenuation
                                 * matRecord.ThetaInCosAbs()
-                                * brdfReflectedRadianceEstimate)
+                                * bsdfReflectedRadianceEstimate)
                             / (   matRecord.mPdfW               // MC
-                                * brdfSamplesCount              // Splitting
+                                * bsdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
                                 * matRecord.mCompProbability);  // Discrete multi-component MC
                     }
                     else
                     {
-                        // Dirac BRDF: compute the integral directly, without MIS
+                        // Dirac BSDF: compute the integral directly, without MIS
                         indirectRadianceEstimate =
                               (   matRecord.mAttenuation
-                                * brdfReflectedRadianceEstimate)
-                            / (   brdfSamplesCount              // Splitting
+                                * bsdfReflectedRadianceEstimate)
+                            / (   bsdfSamplesCount              // Splitting
                                 * rrContinuationProb            // Russian roulette
                                 * matRecord.mCompProbability);  // Discrete multi-component MC
                     }

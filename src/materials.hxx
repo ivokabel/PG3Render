@@ -20,14 +20,14 @@
 
 enum MaterialProperties
 {
-    kBSDFNone                       = 0x00000000,
+    kBsdfNone                       = 0x00000000,
 
     // What sides of surface should lights sample
 
-    kBSDFFrontSideLightSampling     = 0x00000001,
+    kBsdfFrontSideLightSampling     = 0x00000001,
     // Only needed if the back surface is not occluded by the surrounding geometry
     // (e.g. single polygons or other non-watertight geometry)
-    kBSDFBackSideLightSampling      = 0x00000002,
+    kBsdfBackSideLightSampling      = 0x00000002,
 };
 
 // Structure that holds data for sampling & evaluation or just evaluation of materials.
@@ -112,7 +112,7 @@ public:
         const Vec3f& aWol   // Outgoing radiance direction
         ) const = 0;
 
-    // Evaluates the BSDF and also computes the probabilities needed for MIS computations
+    // Evaluates the BSDF and computes the probabilities needed for MIS computations
     virtual void EvalBsdf(
         Rng             &aRng,
         MaterialRecord  &oMatRecord
@@ -140,7 +140,7 @@ class PhongMaterial : public AbstractMaterial
 {
 public:
     PhongMaterial() :
-        AbstractMaterial(kBSDFFrontSideLightSampling)
+        AbstractMaterial(kBsdfFrontSideLightSampling)
     {
         mDiffuseReflectance.SetGreyAttenuation(0.0f);
         mPhongReflectance.SetGreyAttenuation(0.0f);
@@ -153,7 +153,7 @@ public:
         float            aPhongExponent,
         uint32_t         aDiffuse,
         uint32_t         aGlossy) :
-        AbstractMaterial(kBSDFFrontSideLightSampling)
+        AbstractMaterial(kBsdfFrontSideLightSampling)
     {
         mDiffuseReflectance = aDiffuse ? aDiffuseReflectance : SpectrumF().MakeZero();
         mPhongReflectance   = aGlossy  ? aGlossyReflectance  : SpectrumF().MakeZero();
@@ -396,7 +396,7 @@ class AbstractSmoothMaterial : public AbstractMaterial
 {
 protected:
     AbstractSmoothMaterial() :
-        AbstractMaterial(kBSDFNone) // Dirac materials don't work with light sampling
+        AbstractMaterial(kBsdfNone) // Dirac materials don't work with light sampling
     {}
 
 public:
@@ -582,7 +582,7 @@ public:
         float aOuterIor,
         float aAbsorbance /* k */)
         :
-        AbstractMaterial(kBSDFFrontSideLightSampling)
+        AbstractMaterial(kBsdfFrontSideLightSampling)
     {
         if (!IsTiny(aOuterIor))
             mEta = aInnerIor / aOuterIor;
@@ -721,15 +721,15 @@ protected:
         // The whole BSDF
         const float cosThetaI = aCtx.wil.z;
         const float cosThetaO = aCtx.wol.z;
-        const float brdfVal =
+        const float bsdfVal =
                 (aCtx.fresnelReflectance * geometricalFactor * aCtx.distrVal)
               / (4.0f * cosThetaI * cosThetaO);
 
-        PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);
 
         // TODO: Color (from fresnel?)
         SpectrumF result;
-        result.SetGreyAttenuation(brdfVal);
+        result.SetGreyAttenuation(bsdfVal);
         return result;
     }
 
@@ -773,8 +773,8 @@ public:
         ) :
         AbstractMaterial(
             MaterialProperties(
-                  kBSDFFrontSideLightSampling
-                | (aAllowBackSideLightSampling ? kBSDFBackSideLightSampling : 0)))
+                  kBsdfFrontSideLightSampling
+                | (aAllowBackSideLightSampling ? kBsdfBackSideLightSampling : 0)))
     {
         if (!IsTiny(aOuterIor))
         {
@@ -962,31 +962,31 @@ protected:
         PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
 
         // The whole BSDF
-        float brdfVal;
+        float bsdfVal;
         const float fresnelRefl = aCtx.fresnelReflectance;
         if (aCtx.isReflection)
-            brdfVal =
+            bsdfVal =
             (fresnelRefl * geometricalFactor * aCtx.distrVal)
             / (4.0f * cosThetaIAbs * cosThetaOAbs);
         else
         {
             const float cosThetaMI = Dot(aCtx.microfacetDirSwitched, aCtx.wilSwitched);
             const float cosThetaMO = Dot(aCtx.microfacetDirSwitched, aCtx.wolSwitched);
-            brdfVal =
+            bsdfVal =
                 ((std::abs(cosThetaMI) * std::abs(cosThetaMO))
                 / (cosThetaIAbs * cosThetaOAbs))
                 * ((Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
                 / (Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
-            brdfVal *= Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
+            bsdfVal *= Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
         }
 
-        PG3_ASSERT_FLOAT_NONNEGATIVE(brdfVal);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);
 
         // TODO: Color (from fresnel?)
         SpectrumF result;
-        result.SetGreyAttenuation(brdfVal);
+        result.SetGreyAttenuation(bsdfVal);
         return result;
     }
 

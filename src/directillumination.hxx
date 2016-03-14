@@ -64,9 +64,9 @@ public:
                         lightSample, surfPt, surfFrame, mat, wol,
                         LoDirect);
             }
-            else if (aAlgorithm == kDirectIllumBRDFSampling)
+            else if (aAlgorithm == kDirectIllumBsdfSampling)
             {
-                // Sample BRDF
+                // Sample BSDF
                 MaterialRecord matRecord(wol);
                 mat.SampleBsdf(mRng, matRecord);
                 if (!matRecord.IsBlocker())
@@ -81,7 +81,7 @@ public:
                         LiLight);
 
                     if (matRecord.mPdfW != INFINITY_F)
-                        // Finite BRDF: Compute the two-step MC estimator.
+                        // Finite BSDF: Compute the two-step MC estimator.
                         LoDirect =
                               (   matRecord.mAttenuation
                                 * matRecord.ThetaInCosAbs()
@@ -89,7 +89,7 @@ public:
                             / (   matRecord.mPdfW               // Monte Carlo est.
                                 * matRecord.mCompProbability);  // Discrete multi-component MC
                     else
-                        // Dirac BRDF: compute the integral analytically
+                        // Dirac BSDF: compute the integral analytically
                         LoDirect =
                               (   matRecord.mAttenuation
                                 * LiLight)
@@ -98,7 +98,7 @@ public:
                     PG3_ASSERT_VEC3F_NONNEGATIVE(LoDirect);
                 }
             }
-            else if (aAlgorithm == kDirectIllumMIS)
+            else if (aAlgorithm == kDirectIllumMis)
             {
                 // Multiple importance sampling
 
@@ -111,7 +111,7 @@ public:
                         LoDirect);
                 }
 
-                // Generate one sample by sampling the BRDF
+                // Generate one sample by sampling the BSDF
                 MaterialRecord matRecord(wol);
                 mat.SampleBsdf(mRng, matRecord);
                 AddDirectIllumMISBrdfSampleContribution(
