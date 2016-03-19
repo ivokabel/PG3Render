@@ -1169,7 +1169,6 @@ Vec3f SampleGgxVisibleNormals(
     const Vec2f &aSample)
 {
     PG3_ASSERT_VEC3F_NORMALIZED(aWol);
-    PG3_ASSERT_FLOAT_LARGER_THAN(aWol.z, -0.0001);
 
     // Stretch Wol to canonical, unit roughness space
     const Vec3f wolStretch =
