@@ -73,7 +73,7 @@ float Render(
     if (aConfig.mMaxTime > 0)
     {
         if (!aConfig.mQuietMode)
-            Utils::PrintProgressBarTime(0.f, 0.f);
+            Utils::ProgressBar::PrintTime(0.f, 0.f);
 
         // Time based loop
 #pragma omp parallel
@@ -89,7 +89,7 @@ float Render(
                 {
                     const float currentClock = (float)clock();
                     const float progress = (float)((currentClock - startT) / (endT - startT));
-                    Utils::PrintProgressBarTime(progress, (currentClock - startT) / CLOCKS_PER_SEC);
+                    Utils::ProgressBar::PrintTime(progress, (currentClock - startT) / CLOCKS_PER_SEC);
                 }
             }
 
@@ -100,7 +100,7 @@ float Render(
     else
     {
         if (!aConfig.mQuietMode)
-            Utils::PrintProgressBarIterations(0.f, 0);
+            Utils::ProgressBar::PrintIterations(0.f, 0);
 
         // Iterations based loop
         uint32_t globalCounter = 0;
@@ -117,7 +117,7 @@ float Render(
                 if (!aConfig.mQuietMode)
                 {
                     const float progress = (float)globalCounter / aConfig.mIterations;
-                    Utils::PrintProgressBarIterations(progress, globalCounter);
+                    Utils::ProgressBar::PrintIterations(progress, globalCounter);
                 }
             }
         }
@@ -174,7 +174,7 @@ float Render(
 #ifdef UNIT_TESTS_CODE_ENABLED
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
-    _UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+    Utils::Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
 
     exit(0);
 }

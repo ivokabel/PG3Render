@@ -132,7 +132,7 @@ public:
     {
         // Sample the whole triangle surface
         const Vec2f rnd = aRng.GetVec2f();
-        const Vec2f baryCoords = Utils::SampleUniformTriangle(rnd);
+        const Vec2f baryCoords = Utils::Sampling::SampleUniformTriangle(rnd);
         const Vec3f P1 = mP0 + mE1;
         const Vec3f P2 = mP0 + mE2;
         const Vec3f samplePoint =
@@ -393,7 +393,7 @@ public:
         else
         {
             if ((oPdfW != NULL) && (aSurfFrame != NULL))
-                *oPdfW = Utils::CosHemispherePdfW(aSurfFrame->Normal(), aWig);
+                *oPdfW = Utils::Sampling::CosHemispherePdfW(aSurfFrame->Normal(), aWig);
             return mConstantRadiance;
         }
     };
@@ -441,7 +441,7 @@ public:
             const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
             const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
-            Vec3f wil = Utils::SampleCosSphereParamPdfW(
+            Vec3f wil = Utils::Sampling::SampleCosSphereParamPdfW(
                 aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
 
             oSample.mWig    = aSurfFrame.ToWorld(wil);
@@ -490,7 +490,7 @@ public:
                 LightSample sample2;
                 SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, sample2);
                 const float pdf2EM  = sample2.mPdfW;
-                const float pdf2Cos = Utils::CosHemispherePdfW(aSurfFrame.Normal(), sample2.mWig);
+                const float pdf2Cos = Utils::Sampling::CosHemispherePdfW(aSurfFrame.Normal(), sample2.mWig);
 
                 // Combine the two samples via MIS (balanced heuristics)
                 const float part1 =
@@ -524,7 +524,7 @@ public:
         const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
         const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
 
-        Vec3f wil = Utils::SampleCosSphereParamPdfW(
+        Vec3f wil = Utils::Sampling::SampleCosSphereParamPdfW(
             aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
 
         oSample.mWig    = aSurfFrame.ToWorld(wil);

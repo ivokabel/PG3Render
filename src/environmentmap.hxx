@@ -277,7 +277,7 @@ private:
         const float phi   = -(uv.x - 0.5f) * 2 * PI_F; // we rotate in the opposite direction
         const float theta = uv.y * PI_F;
 
-        return Utils::CreateDirection(theta, phi);
+        return Utils::Geom::CreateDirection(theta, phi);
     }
 
     // Returns vector [u,v] in [0,1]x[0,1]. The direction must be non-zero and normalized.
