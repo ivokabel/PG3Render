@@ -1358,4 +1358,11 @@ namespace Utils
         return true;
     }
 
+    // Returns the length of an array
+    template <typename T, size_t N>
+    inline int32_t ArrayLength(const T(&)[N])
+    {
+        return int32_t(N);
+    }
+
 } // namespace Utils

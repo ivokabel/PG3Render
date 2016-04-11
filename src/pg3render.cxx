@@ -194,11 +194,11 @@ int32_t main(int32_t argc, const char *argv[])
 
 #else
 
-    PrintRngWarning(); // Warn when not using C++11 Mersenne Twister
+    Config::PrintRngWarning(); // Warn when not using C++11 Mersenne Twister
 
     // Setup config based on command line
     Config config;
-    if (!ParseCommandline(argc, argv, config))
+    if (!config.ParseCommandline(argc, argv))
     {
         // When some error has been encountered, exit
         //getchar(); // debug
@@ -220,7 +220,7 @@ int32_t main(int32_t argc, const char *argv[])
     if (config.mNumThreads <= 0)
         config.mNumThreads  = std::max(1, omp_get_num_procs());
 
-    PrintConfiguration(config);
+    config.PrintConfiguration();
 
     Framebuffer fbuffer;
     config.mFramebuffer = &fbuffer;
