@@ -53,8 +53,8 @@ namespace Utils
             else
                 workingEta = 1.f / aEtaAbs;
 
-            const float sinThetaTSqr    = Sqr(workingEta) * (1.f - Sqr(aCosThetaI));
-            const float cosThetaT       = SafeSqrt(1.f - sinThetaTSqr);
+            const float sinThetaTSqr    = Math::Sqr(workingEta) * (1.f - Math::Sqr(aCosThetaI));
+            const float cosThetaT       = Math::SafeSqrt(1.f - sinThetaTSqr);
 
             if (sinThetaTSqr > 1.0f)
                 return 1.0f; // TIR
@@ -62,12 +62,12 @@ namespace Utils
             // Perpendicular (senkrecht) polarization
             const float term2                   = workingEta * aCosThetaI;
             const float reflPerpendicularSqrt   = (term2 - cosThetaT) / (term2 + cosThetaT);
-            const float reflPerpendicular       = Sqr(reflPerpendicularSqrt);
+            const float reflPerpendicular       = Math::Sqr(reflPerpendicularSqrt);
 
             // Parallel polarization
             const float term1               = workingEta * cosThetaT;
             const float reflParallelSqrt    = (aCosThetaI - term1) / (aCosThetaI + term1);
-            const float reflParallel        = Sqr(reflParallelSqrt);
+            const float reflParallel        = Math::Sqr(reflParallelSqrt);
 
             const float reflectance = 0.5f * (reflParallel + reflPerpendicular);
 
@@ -93,22 +93,22 @@ namespace Utils
                 // a numerical error in object intersection code.
                 return 0.0f;
 
-            aCosThetaI = Clamp(aCosThetaI, 0.0f, 1.0f);
+            aCosThetaI = Math::Clamp(aCosThetaI, 0.0f, 1.0f);
 
 //#define USE_ART_FRESNEL
 #define USE_MITSUBA_FRESNEL
 
 #ifdef USE_ART_FRESNEL
 
-            const float cosThetaSqr = Sqr(aCosThetaI);
+            const float cosThetaSqr = Math::Sqr(aCosThetaI);
             const float sinThetaSqr = std::max(1.0f - cosThetaSqr, 0.0f);
             const float sinTheta    = std::sqrt(sinThetaSqr);
 
-            const float iorSqr    = Sqr(aEtaAbs);
-            const float absorbSqr = Sqr(aAbsorbance);
+            const float iorSqr    = Math::Sqr(aEtaAbs);
+            const float absorbSqr = Math::Sqr(aAbsorbance);
 
             const float tmp1 = iorSqr - absorbSqr - sinThetaSqr;
-            const float tmp2 = std::sqrt(Sqr(tmp1) + 4 * iorSqr * absorbSqr);
+            const float tmp2 = std::sqrt(Math::Sqr(tmp1) + 4 * iorSqr * absorbSqr);
 
             const float aSqr     = (tmp2 + tmp1) * 0.5f;
             const float bSqr     = (tmp2 - tmp1) * 0.5f;
@@ -116,10 +116,10 @@ namespace Utils
 
             float tanTheta, tanThetaSqr;
 
-            if (!IsTiny(aCosThetaI))
+            if (!Math::IsTiny(aCosThetaI))
             {
                 tanTheta    = sinTheta / aCosThetaI;
-                tanThetaSqr = Sqr(tanTheta);
+                tanThetaSqr = Math::Sqr(tanTheta);
             }
             else
             {
@@ -156,8 +156,8 @@ namespace Utils
             const float aAbsorbance2 = aAbsorbance * aAbsorbance;
 
             const float temp1 = aEta2 - aAbsorbance2 - sinThetaI2;
-            const float a2pb2 = SafeSqrt(temp1 * temp1 + 4 * aAbsorbance2 * aEta2);
-            const float a = SafeSqrt(0.5f * (a2pb2 + temp1));
+            const float a2pb2 = Math::SafeSqrt(temp1 * temp1 + 4 * aAbsorbance2 * aEta2);
+            const float a = Math::SafeSqrt(0.5f * (a2pb2 + temp1));
 
             const float term1 = a2pb2 + cosThetaI2;
             const float term2 = 2 * a * aCosThetaI;
@@ -339,7 +339,7 @@ namespace Utils
             const float cosThetaIM = Dot(aMicrofacetNormal, aWil);
 
             const float numerator      = std::abs(cosThetaOM);
-            const float denominator    = Sqr(aEtaOutIn * cosThetaIM + cosThetaOM);
+            const float denominator    = Math::Sqr(aEtaOutIn * cosThetaIM + cosThetaOM);
             const float transfJacobian = (numerator / std::max(denominator, 0.000001f));
 
             PG3_ASSERT_FLOAT_NONNEGATIVE(transfJacobian);
@@ -360,7 +360,7 @@ namespace Utils
             Vec3f halfwayVec = aWil + aWol;
     
             const float length = halfwayVec.Length();
-            if (IsTiny(length))
+            if (Math::IsTiny(length))
                 // This happens if an only if the in/out vectors are on the same line 
                 // (in the oposite directions)
                 halfwayVec = Vec3f(0.0f, 0.0f, 1.0f); // Geometrical normal
@@ -399,7 +399,7 @@ namespace Utils
             Vec3f halfwayVec = aWil + aWol * aEtaInOut;
     
             const float length = halfwayVec.Length();
-            if (IsTiny(length))
+            if (Math::IsTiny(length))
                 // This happens if and only if the in/out vectors are on the same line 
                 // (in the oposite directions) and eta equals 1
                 halfwayVec = aWil;
@@ -609,7 +609,7 @@ namespace Utils
                 const float subCoef1 = -1.0f * cosThetaIMComp * cosThetaOMComp;
                 const float subCoef2 = dirIn.z  * cosThetaIMComp;
                 const float subCoef3 = dirOut.z * cosThetaOMComp;
-                const float halwayVectCompValidityCoef = Min3(subCoef1, subCoef2, subCoef3);
+                const float halwayVectCompValidityCoef = Math::Min3(subCoef1, subCoef2, subCoef3);
 
                 // Sanity test
                 if (isHalfwayVectorValid != (halwayVectCompValidityCoef >= 0.0f))
@@ -901,7 +901,7 @@ namespace Utils
             {
                 // Normal incidence - avoid division by zero later
                 const float sampleXClamped  = std::min(aSample.x, 0.9999f);
-                const float radius          = SafeSqrt(sampleXClamped / (1 - sampleXClamped));
+                const float radius          = Math::SafeSqrt(sampleXClamped / (1 - sampleXClamped));
                 const float phi             = 2 * PI_F * aSample.y;
                 const float sinPhi          = std::sin(phi);
                 const float cosPhi          = std::cos(phi);
@@ -911,15 +911,15 @@ namespace Utils
             {
                 const float tanThetaI    = std::tan(aThetaI);
                 const float tanThetaIInv = 1.0f / tanThetaI;
-                const float G1 = 2.0f / (1.0f + SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
+                const float G1 = 2.0f / (1.0f + Math::SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
 
                 // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
                 float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
                 if (std::abs(A) == 1.0f)
-                    A -= SignNum(A) * 1e-4f; // avoid division by zero later
+                    A -= Math::SignNum(A) * 1e-4f; // avoid division by zero later
                 const float B = tanThetaI;
                 const float tmpFract = 1.0f / (A * A - 1.0f);
-                const float D = SafeSqrt(B * B * tmpFract * tmpFract - (A * A - B * B) * tmpFract);
+                const float D = Math::SafeSqrt(B * B * tmpFract * tmpFract - (A * A - B * B) * tmpFract);
                 const float slopeX1 = B * tmpFract - D;
                 const float slopeX2 = B * tmpFract + D;
                 aSlope.x = (A < 0.0f || slopeX2 > (1.0f / tanThetaI)) ? slopeX1 : slopeX2;
@@ -1241,7 +1241,7 @@ namespace Utils
             const float aDist,
             const float aCosThere)
         {
-            return aPdfW * std::abs(aCosThere) / Sqr(aDist);
+            return aPdfW * std::abs(aCosThere) / Math::Sqr(aDist);
         }
 
         float PdfAtoW(
@@ -1249,7 +1249,7 @@ namespace Utils
             const float aDist,
             const float aCosThere)
         {
-            return aPdfA * Sqr(aDist) / std::abs(aCosThere);
+            return aPdfA * Math::Sqr(aDist) / std::abs(aCosThere);
         }
     } // namespace Sampling
 
@@ -1261,7 +1261,7 @@ namespace Utils
 
             const uint32_t aBarCount = 30;
 
-            aProgress = Clamp(aProgress, 0.f, 1.f);
+            aProgress = Math::Clamp(aProgress, 0.f, 1.f);
 
             printf("\rProgress:  [");
 

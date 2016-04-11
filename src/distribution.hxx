@@ -90,7 +90,7 @@ public:
     {
         // Find surrounding CDF segments and _offset_
         float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
-        oSegm = Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
+        oSegm = Math::Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
 
         PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mCount - 1);
         PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
@@ -198,9 +198,9 @@ public:
     {
         // Find u and v segments
         uint32_t iu = 
-            Clamp((uint32_t)(aUV.x * pConditionalV[0]->mCount), 0u, pConditionalV[0]->mCount - 1);
+            Math::Clamp((uint32_t)(aUV.x * pConditionalV[0]->mCount), 0u, pConditionalV[0]->mCount - 1);
         uint32_t iv = 
-            Clamp((uint32_t)(aUV.y * pMarginal->mCount), 0u, pMarginal->mCount - 1);
+            Math::Clamp((uint32_t)(aUV.y * pMarginal->mCount), 0u, pMarginal->mCount - 1);
 
         // Compute probabilities
         return pConditionalV[iv]->mPdf[iu] * pMarginal->mPdf[iv];

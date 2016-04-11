@@ -112,10 +112,10 @@ protected:
                     //    // local probability 99.5% -> 61% for the whole path
                     //    // local probability 99.7% -> 74% for the whole path
                     //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
-                    //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+                    //    Math::Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                     // No clamping
-                   rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
+                   rrContinuationProb = Math::Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
 
                     const float rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
@@ -135,7 +135,7 @@ protected:
                 currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
                 currentRay.tmin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
 
-                if (matRecord.mPdfW != INFINITY_F)
+                if (matRecord.mPdfW != Math::InfinityF())
                     pathThroughput *=
                             (  matRecord.mAttenuation
                              * matRecord.ThetaInCosAbs())
@@ -283,10 +283,10 @@ protected:
                 //    // local probability 99.5% -> 61% for the whole path
                 //    // local probability 99.7% -> 74% for the whole path
                 //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
-                //    Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+                //    Math::Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                 // No clamping
-                rrContinuationProb = Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
+                rrContinuationProb = Math::Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
             }
 
             // Generate requested amount of BSDF samples for both direct and indirect illumination
@@ -335,7 +335,7 @@ protected:
                     // one for Dirac components of the BSDF. This is analogical and well working 
                     // together with the separate light sampling scheme used in 
                     // AddMISLightSampleContribution() - see comments there for more information.
-                    if (matRecord.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != Math::InfinityF())
                     {
                         // Finite BSDF: Compute MIS MC estimator. 
 
@@ -348,7 +348,7 @@ protected:
                         //       Now there can be zero contribution estimate (and therefore zero picking probability)
                         //       even if the actual contribution is non-zero.
                         //PG3_ASSERT(lightPickingProbability > 0.f);
-                        PG3_ASSERT(bsdfLightPdfW != INFINITY_F); // BSDF sampling should never hit a point light
+                        PG3_ASSERT(bsdfLightPdfW != Math::InfinityF()); // BSDF sampling should never hit a point light
 
                         const float lightPdfW = bsdfLightPdfW * bsdfLightPickingProb;
                         const float bsdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
@@ -376,7 +376,7 @@ protected:
                 if (!bCutIndirect && !bsdfReflectedRadianceEstimate.IsZero())
                 {
                     SpectrumF indirectRadianceEstimate;
-                    if (matRecord.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != Math::InfinityF())
                     {
                         // Finite BSDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
@@ -443,7 +443,7 @@ protected:
         // TODO: Control by material glossines
         oBrdfSamplesCount =
             std::lroundf(
-                LinInterpol(aSplitLevel, 1.f, aSplitBudget));
+                Math::Lerp(aSplitLevel, 1.f, aSplitBudget));
 
         // TODO: Light samples count should be controlled by both 
         //  - material glossines (the more glossy it is, the less efficient the light sampling is; for mirros it doesn't work at all)

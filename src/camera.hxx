@@ -35,12 +35,12 @@ public:
         worldToCamera.SetRow(1, left,     -pos.y);
         worldToCamera.SetRow(2, -forward, -pos.z);
 
-        const float halfHorzFOVRad = DegToRad(0.5f * aHorizontalFOVDeg);
+        const float halfHorzFOVRad = Math::DegToRad(0.5f * aHorizontalFOVDeg);
 
         const float pixelSize =
             std::tan(halfHorzFOVRad) / (0.5f * aResolution.x);
         const float verticalFOV =
-            RadToDeg(2.f * std::atan(pixelSize * 0.5f * aResolution.y));
+            Math::RadToDeg(2.f * std::atan(pixelSize * 0.5f * aResolution.y));
 
         const Mat4f perspective = Mat4f::Perspective(aHorizontalFOVDeg, verticalFOV, 0.1f, 10000.f);
         const Mat4f worldToNScreen = perspective * worldToCamera;
@@ -55,7 +55,7 @@ public:
             Mat4f::Scale(Vec3f(2.f / aResolution.x, 2.f / aResolution.y, 0));
 
         const float tanHalfAngle = std::tan(halfHorzFOVRad);
-        mPixelArea = 4.f * Sqr(tanHalfAngle) / Sqr(aResolution.x);
+        mPixelArea = 4.f * Math::Sqr(tanHalfAngle) / Math::Sqr(aResolution.x);
     }
 
     int32_t RasterToIndex(const Vec2f &aPixelCoords) const

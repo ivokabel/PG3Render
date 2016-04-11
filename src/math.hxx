@@ -6,156 +6,159 @@
 #include <cmath>
 #include <algorithm>
 
-// for portability issues
-#define PI_F        3.14159265358979f
-#define INV_PI_F    (1.f / PI_F)
-#define PI_DIV_2_F  1.5707963f
-
-#define INFINITY_F  (std::numeric_limits<float>::infinity())
-#define INFINITY_D  (std::numeric_limits<double>::infinity())
-
-// Tools be used instead of floating point values comparison against zero.
-// For IEEE floats and doubles this constant was set to 2^-20 and 2^-49 respectively, resulting in
-// 8 * float_eps and 8 * double_eps respectively.
-// Originally, this was set to  2^-21 and 2^-50 respectively, resulting in 4 * float_eps and 
-// 4 * double_eps respectively, but it was too sensitive in some situations.
-
-//#define TINY_F	4.76837158203125E-7f            // 2^-21
-#define TINY_F		9.5367431640625E-7f             // 2^-20
-//#define TINY_D	8.8817841970012523233891E-16    // 2^-50
-#define TINY_D	    1.7763568394002504646778E-15    // 2^-49
-
-inline float IsTiny(float x)
+namespace Math
 {
-    return std::abs(x) < TINY_F;
-}
+    // Due to portability issues
+    #define PI_F        3.14159265358979f
+    #define INV_PI_F    (1.f / PI_F)
+    #define PI_DIV_2_F  1.5707963f
 
-inline double IsTiny(double x)
-{
-    return std::abs(x) < TINY_D;
-}
+    float  InfinityF() { return std::numeric_limits<float>::infinity(); }
+    double InfinityD() { return std::numeric_limits<double>::infinity(); }
 
-// Defines huge float and double constants that can be regarded infinity for
-// this type of floating point arithmetic.
-//
-// For IEEE floats this constant was set to 2^31, so that multiplying
-// its exponent by 4 yields a float that is still valid.
-//
-// For  IEEE doubles this constant was set to 2^255, so that multiplying
-// its exponent by 4 yields a double that is still valid.
+    // Tools be used instead of floating point values comparison against zero.
+    // For IEEE floats and doubles this constant was set to 2^-20 and 2^-49 respectively, resulting in
+    // 8 * float_eps and 8 * double_eps respectively.
+    // Originally, this was set to  2^-21 and 2^-50 respectively, resulting in 4 * float_eps and 
+    // 4 * double_eps respectively, but it was too sensitive in some situations.
 
-#define HUGE_F	    2.147483648E+9f
-#define HUGE_D      5.78960446186580977117855E+76
+    //#define TINY_F	4.76837158203125E-7f            // 2^-21
+    #define TINY_F		9.5367431640625E-7f             // 2^-20
+    //#define TINY_D	8.8817841970012523233891E-16    // 2^-50
+    #define TINY_D	    1.7763568394002504646778E-15    // 2^-49
 
-//////////////////////////////////////////////////////////////////////////
-// Math section
-
-float DegToRad(float deg)
-{
-    return (deg / 360.f) * (2.f * PI_F);
-}
-
-float RadToDeg(float rad)
-{
-    return 360.f * (rad / (2.f * PI_F));
-}
-
-template<typename T>
-T Sqr(const T& a)
-{
-    return a*a;
-}
-
-template<typename T>
-T SafeSqrt(const T& a)
-{
-    return std::sqrt(std::max<T>(0, a));
-}
-
-template<typename T>
-T SignNum(const T& a)
-{
-    return std::signbit(a) ? T(-1) : T(1);
-}
-
-float FmodX(float x, float y)
-{
-    float result = fmod(x, y);
-    if (result < 0.0f)
-        result += y;
-
-    PG3_ASSERT_FLOAT_IN_RANGE(result, 0.0f, y);
-
-    return result;
-}
-
-template <typename T>
-inline T Clamp(const T& n, const T& lower, const T& upper)
-{
-    PG3_ASSERT(lower <= upper);
-    return std::max(lower, std::min(n, upper));
-}
-
-template <typename T>
-inline T Min3(const T& n1, const T& n2, const T& n3)
-{
-    return std::min(n1, std::min(n2, n3));
-}
-
-template <typename T>
-inline T Max3(const T& n1, const T& n2, const T& n3)
-{
-    return std::max(n1, std::max(n2, n3));
-}
-
-template <
-    typename T,
-    typename = typename
-        std::enable_if<
-               std::is_same<double, T>::value
-            || std::is_same<float, T>::value
-            >::type
-    >
-T LinInterpol(T c, T x1, T x2)
-{
-    return ((T)1. - c) * x1 + c * x2;
-}
-
-// 50-year old atan approximation due to Hastings
-// Taken from http://lists.apple.com/archives/PerfOptimization-dev/2005/Jan/msg00051.html
-// |error| < 0.005
-PG3_PROFILING_NOINLINE
-float fast_atan2f(float y, float x)
-{
-    if (x == 0.0f)
+    inline float IsTiny(float x)
     {
-        if (y > 0.0f)
-            return PI_DIV_2_F;
-        if (y == 0.0f)
-            return 0.0f;
-        return -PI_DIV_2_F;
+        return std::abs(x) < TINY_F;
     }
 
-    float atan;
-    const float z = y / x;
-    if (fabsf(z) < 1.0f)
+    inline double IsTiny(double x)
     {
-        atan = z / (1.0f + 0.28f*z*z);
-        if (x < 0.0f)
+        return std::abs(x) < TINY_D;
+    }
+
+    // Defines huge float and double constants that can be regarded infinity for
+    // this type of floating point arithmetic.
+    //
+    // For IEEE floats this constant was set to 2^31, so that multiplying
+    // its exponent by 4 yields a float that is still valid.
+    //
+    // For  IEEE doubles this constant was set to 2^255, so that multiplying
+    // its exponent by 4 yields a double that is still valid.
+
+    #define HUGE_F	    2.147483648E+9f
+    #define HUGE_D      5.78960446186580977117855E+76
+
+    //////////////////////////////////////////////////////////////////////////
+    // Math section
+
+    float DegToRad(float deg)
+    {
+        return (deg / 360.f) * (2.f * PI_F);
+    }
+
+    float RadToDeg(float rad)
+    {
+        return 360.f * (rad / (2.f * PI_F));
+    }
+
+    template<typename T>
+    T Sqr(const T& a)
+    {
+        return a*a;
+    }
+
+    template<typename T>
+    T SafeSqrt(const T& a)
+    {
+        return std::sqrt(std::max<T>(0, a));
+    }
+
+    template<typename T>
+    T SignNum(const T& a)
+    {
+        return std::signbit(a) ? T(-1) : T(1);
+    }
+
+    float FmodX(float x, float y)
+    {
+        float result = fmod(x, y);
+        if (result < 0.0f)
+            result += y;
+
+        PG3_ASSERT_FLOAT_IN_RANGE(result, 0.0f, y);
+
+        return result;
+    }
+
+    template <typename T>
+    inline T Clamp(const T& n, const T& lower, const T& upper)
+    {
+        PG3_ASSERT(lower <= upper);
+        return std::max(lower, std::min(n, upper));
+    }
+
+    template <typename T>
+    inline T Min3(const T& n1, const T& n2, const T& n3)
+    {
+        return std::min(n1, std::min(n2, n3));
+    }
+
+    template <typename T>
+    inline T Max3(const T& n1, const T& n2, const T& n3)
+    {
+        return std::max(n1, std::max(n2, n3));
+    }
+
+    template <
+        typename T,
+        typename = typename
+            std::enable_if<
+                   std::is_same<double, T>::value
+                || std::is_same<float, T>::value
+                >::type
+        >
+    T Lerp(T c, T x1, T x2)
+    {
+        return ((T)1. - c) * x1 + c * x2;
+    }
+
+    // 50-year old atan approximation due to Hastings
+    // Taken from http://lists.apple.com/archives/PerfOptimization-dev/2005/Jan/msg00051.html
+    // |error| < 0.005
+    PG3_PROFILING_NOINLINE
+    float FastAtan2(float y, float x)
+    {
+        if (x == 0.0f)
         {
+            if (y > 0.0f)
+                return PI_DIV_2_F;
+            if (y == 0.0f)
+                return 0.0f;
+            return -PI_DIV_2_F;
+        }
+
+        float atan;
+        const float z = y / x;
+        if (fabsf(z) < 1.0f)
+        {
+            atan = z / (1.0f + 0.28f*z*z);
+            if (x < 0.0f)
+            {
+                if (y < 0.0f)
+                    return atan - PI_F;
+                return atan + PI_F;
+            }
+        }
+        else
+        {
+            atan = PI_DIV_2_F - z / (z*z + 0.28f);
             if (y < 0.0f)
                 return atan - PI_F;
-            return atan + PI_F;
         }
-    }
-    else
-    {
-        atan = PI_DIV_2_F - z / (z*z + 0.28f);
-        if (y < 0.0f)
-            return atan - PI_F;
-    }
 
-    return atan;
+        return atan;
+    }
 }
 
 template<typename T>
@@ -423,8 +426,8 @@ public:
         // Camera points towards -z.  0 < near < far.
         // Matrix maps z range [-near, -far] to [-1, 1], after homogeneous division.
 
-        const float fx = 1.f / std::tan(DegToRad(0.5f * aFovX));
-        const float fy = 1.f / std::tan(DegToRad(0.5f * aFovY));
+        const float fx = 1.f / std::tan(Math::DegToRad(0.5f * aFovX));
+        const float fy = 1.f / std::tan(Math::DegToRad(0.5f * aFovY));
         const float d  = 1.f / (aNear - aFar);
 
         Mat4f r;

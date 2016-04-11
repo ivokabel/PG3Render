@@ -276,7 +276,7 @@ public:
         aSurfPt; aLightPt; aSurfFrame; aWol; // unused parameter
 
         if (oPdfW != NULL)
-            *oPdfW = INFINITY_F;
+            *oPdfW = Math::InfinityF();
 
         return SpectrumF().MakeZero();
     };
@@ -349,7 +349,7 @@ private:
         else
             oSample.mSample.MakeZero();
 
-        oSample.mPdfW               = INFINITY_F;
+        oSample.mPdfW               = Math::InfinityF();
         oSample.mLightProbability   = 1.0f;
     }
 

@@ -197,7 +197,7 @@ private:
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
     InputImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
     {
-        aRotate = FmodX(aRotate, 1.0f);
+        aRotate = Math::FmodX(aRotate, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aRotate, 0.0f, 1.0f);
 
         Imf::RgbaInputFile file(aFilename, 1);
@@ -287,17 +287,17 @@ private:
         PG3_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
 
         // minus sign because we rotate in the opposite direction
-        // fast_atan2f is 50 times faster than atan2f at the price of slightly horizontally distorted background
-        const float phi     = -fast_atan2f(aDirection.y, aDirection.x);
+        // Math::FastAtan2 is 50 times faster than atan2f at the price of slightly horizontally distorted background
+        const float phi     = -Math::FastAtan2(aDirection.y, aDirection.x);
         const float theta   = acosf(aDirection.z);
 
         // Convert from [-Pi,Pi] to [0,1]
         //const float uTemp = fmodf(phi * 0.5f * INV_PI_F, 1.0f);
-        //const float u = Clamp(uTemp, 0.f, 1.f); // TODO: maybe not necessary
-        const float u = Clamp(0.5f + phi * 0.5f * INV_PI_F, 0.f, 1.f);
+        //const float u = Math::Clamp(uTemp, 0.f, 1.f); // TODO: maybe not necessary
+        const float u = Math::Clamp(0.5f + phi * 0.5f * INV_PI_F, 0.f, 1.f);
 
         // Convert from [0,Pi] to [0,1]
-        const float v = Clamp(theta * INV_PI_F, 0.f, 1.0f);
+        const float v = Math::Clamp(theta * INV_PI_F, 0.f, 1.0f);
 
         return Vec2f(u, v);
     }
@@ -326,8 +326,8 @@ private:
         Vec2f xy = uv * Vec2f((float)imageSize.x, (float)imageSize.y);
 
         return mImage->ElementAt(
-            Clamp((uint32_t)xy.x, 0u, imageSize.x - 1),
-            Clamp((uint32_t)xy.y, 0u, imageSize.y - 1));
+            Math::Clamp((uint32_t)xy.x, 0u, imageSize.x - 1),
+            Math::Clamp((uint32_t)xy.y, 0u, imageSize.y - 1));
 
         // TODO: bilinear filtering
         aDoBilinFiltering;

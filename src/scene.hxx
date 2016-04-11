@@ -171,8 +171,8 @@ public:
         const Vec2i &aResolution,
         uint32_t aBoxMask = kDefault,
         uint32_t aEnvironmentMapType = kEMDefault,
-        float aDbgAux1 = INFINITY_F,
-        float aDbgAux2 = INFINITY_F
+        float aDbgAux1 = Math::InfinityF(),
+        float aDbgAux2 = Math::InfinityF()
         )
     {
         aDbgAux1, aDbgAux2; // possibly unused parameters
@@ -293,7 +293,7 @@ public:
         else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
         {
             const float roughness =
-                (aDbgAux2 != INFINITY_F) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
+                (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(roughness, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         }
@@ -302,7 +302,7 @@ public:
             const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
             const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
             const float roughness =
-                (aDbgAux2 != INFINITY_F) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
+                (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
         }
         else

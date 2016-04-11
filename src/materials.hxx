@@ -73,7 +73,7 @@ public:
     SpectrumF   mAttenuation;
 
     // In finite BSDF cases it contains the angular PDF of all finite components summed up.
-    // In infinite cases it equals INFINITY_F.
+    // In infinite cases it equals Math::InfinityF().
     //
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
@@ -357,7 +357,7 @@ public:
                                            // Replicated in SampleBsdf() and GetWholeFiniteCompProbabilities()!
         const float totalReflectance = (diffuseReflectanceEst + glossyReflectanceEst);
 
-        return Clamp(totalReflectance, 0.f, 1.f);
+        return Math::Clamp(totalReflectance, 0.f, 1.f);
     }
 
     virtual bool IsReflectanceZero() const override
@@ -455,7 +455,7 @@ public:
         float aInnerIor, float aOuterIor,   // n
         float aAbsorbance)                  // k
     {
-        if (!IsTiny(aOuterIor))
+        if (!Math::IsTiny(aOuterIor))
             mEta = aInnerIor / aOuterIor;
         else
             mEta = 1.0f;
@@ -471,7 +471,7 @@ public:
         aRng; // unreferenced params
 
         oMatRecord.mWil             = Utils::Geom::ReflectLocal(oMatRecord.mWol);
-        oMatRecord.mPdfW            = INFINITY_F;
+        oMatRecord.mPdfW            = Math::InfinityF();
         oMatRecord.mCompProbability = 1.f;
 
         // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
@@ -511,7 +511,7 @@ class SmoothDielectricMaterial : public AbstractSmoothMaterial
 public:
     SmoothDielectricMaterial(float aInnerIor, float aOuterIor)
     {
-        if (!IsTiny(aOuterIor))
+        if (!Math::IsTiny(aOuterIor))
             mEta = aInnerIor / aOuterIor;
         else
             mEta = 1.0f;
@@ -549,7 +549,7 @@ public:
         }
 
         oMatRecord.mCompProbability = attenuation;
-        oMatRecord.mPdfW            = INFINITY_F;
+        oMatRecord.mPdfW            = Math::InfinityF();
         oMatRecord.mAttenuation.SetGreyAttenuation(attenuation);
     }
 
@@ -584,13 +584,13 @@ public:
         :
         AbstractMaterial(kBsdfFrontSideLightSampling)
     {
-        if (!IsTiny(aOuterIor))
+        if (!Math::IsTiny(aOuterIor))
             mEta = aInnerIor / aOuterIor;
         else
             mEta = 1.0f;
         mAbsorbance = aAbsorbance;
 
-        mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.001f, 1.0f);
+        mRoughnessAlpha = Math::Clamp(aRoughnessAlpha, 0.001f, 1.0f);
     }
 
     virtual SpectrumF EvalBsdf(
@@ -706,7 +706,7 @@ protected:
     {
         if (   aCtx.wil.z <= 0.f
             || aCtx.wol.z <= 0.f
-            || IsTiny(4.0f * aCtx.wil.z * aCtx.wol.z)) // BSDF denominator
+            || Math::IsTiny(4.0f * aCtx.wil.z * aCtx.wol.z)) // BSDF denominator
         {
             return SpectrumF().MakeZero();
         }
@@ -779,7 +779,7 @@ public:
                   kBsdfFrontSideLightSampling
                 | (aAllowBackSideLightSampling ? kBsdfBackSideLightSampling : 0)))
     {
-        if (!IsTiny(aOuterIor))
+        if (!Math::IsTiny(aOuterIor))
         {
             mEta    = aInnerIor / aOuterIor;
             mEtaInv = aOuterIor / aInnerIor;
@@ -790,7 +790,7 @@ public:
             mEtaInv = 1.0f;
         }
 
-        mRoughnessAlpha = Clamp(aRoughnessAlpha, 0.001f, 1.0f);
+        mRoughnessAlpha = Math::Clamp(aRoughnessAlpha, 0.001f, 1.0f);
     }
 
     virtual SpectrumF EvalBsdf(
@@ -953,9 +953,9 @@ protected:
         const float cosThetaOAbs = std::abs(aCtx.wolSwitched.z);
 
         // Check BSDF denominator
-        if (aCtx.isReflection && IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
+        if (aCtx.isReflection && Math::IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
             return SpectrumF().MakeZero();
-        else if (!aCtx.isReflection && IsTiny(cosThetaIAbs * cosThetaOAbs))
+        else if (!aCtx.isReflection && Math::IsTiny(cosThetaIAbs * cosThetaOAbs))
             return SpectrumF().MakeZero();
 
         // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
@@ -983,11 +983,11 @@ protected:
             bsdfVal =
                 ((std::abs(cosThetaMI) * std::abs(cosThetaMO))
                 / (cosThetaIAbs * cosThetaOAbs))
-                * ((Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
-                / (Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
+                * ((Math::Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
+                / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
-            bsdfVal *= Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
+            bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
         }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);

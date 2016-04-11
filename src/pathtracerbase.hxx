@@ -320,7 +320,7 @@ public:
             // The light is not visible from this point
             return;
 
-        if (aLightSample.mPdfW != INFINITY_F)
+        if (aLightSample.mPdfW != Math::InfinityF())
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
                   aLightSample.mSample
@@ -383,7 +383,7 @@ public:
         //       filtering a proper set of lights when choosing a light and also when computing 
         //       the probability of picking one.
 
-        if (aLightSample.mPdfW != INFINITY_F)
+        if (aLightSample.mPdfW != Math::InfinityF())
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             MaterialRecord matRecord(wil, aWol);
@@ -443,9 +443,9 @@ public:
         //       Now there can be zero contribution estimate (and therefore zero picking probability)
         //       even if the actual contribution is non-zero.
         //PG3_ASSERT(lightPickingProbability > 0.f);
-        PG3_ASSERT(lightPdfW != INFINITY_F); // BSDF sampling should never hit a point light
+        PG3_ASSERT(lightPdfW != Math::InfinityF()); // BSDF sampling should never hit a point light
 
-        if (aMatRecord.mPdfW != INFINITY_F)
+        if (aMatRecord.mPdfW != Math::InfinityF())
         {
             // Finite BSDF: Compute two-step MIS MC estimator. 
             const float bsdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProbability;

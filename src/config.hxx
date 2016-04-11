@@ -304,7 +304,7 @@ public:
             );
 
         // Debugging options
-        if ((mDbgAuxiliaryFloat1 != INFINITY_F) || (mDbgAuxiliaryFloat2 != INFINITY_F))
+        if ((mDbgAuxiliaryFloat1 != Math::InfinityF()) || (mDbgAuxiliaryFloat2 != Math::InfinityF()))
             printf(
                 "Debugging: Aux float param1 %f, aux float param2 %f\n",
                 mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2);
@@ -412,8 +412,8 @@ public:
         mDbgSplittingLevel = 1.f;                                   // [cmd]
         mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
 
-        mDbgAuxiliaryFloat1              = INFINITY_F;              // [cmd]
-        mDbgAuxiliaryFloat2              = INFINITY_F;              // [cmd]
+        mDbgAuxiliaryFloat1              = Math::InfinityF();              // [cmd]
+        mDbgAuxiliaryFloat2              = Math::InfinityF();              // [cmd]
 
         int32_t sceneID     = 0; // default 0
         uint32_t envMapID   = Scene::kEMDefault;

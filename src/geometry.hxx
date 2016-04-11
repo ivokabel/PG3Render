@@ -223,7 +223,7 @@ public:
         {
             const float pt0DistSqr = (aRay.PointAt((float)t0) - mCenter).LenSqr();
             const float pt1DistSqr = (aRay.PointAt((float)t1) - mCenter).LenSqr();
-            const float radiusSqr = Sqr(mRadius);
+            const float radiusSqr = Math::Sqr(mRadius);
             PG3_ASSERT_FLOAT_EQUAL(pt0DistSqr, radiusSqr, 0.0001f);
             PG3_ASSERT_FLOAT_EQUAL(pt1DistSqr, radiusSqr, 0.0001f);
         }

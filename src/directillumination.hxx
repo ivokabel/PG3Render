@@ -80,7 +80,7 @@ public:
                         lightSamplingCtx,
                         LiLight);
 
-                    if (matRecord.mPdfW != INFINITY_F)
+                    if (matRecord.mPdfW != Math::InfinityF())
                         // Finite BSDF: Compute the two-step MC estimator.
                         LoDirect =
                               (   matRecord.mAttenuation
