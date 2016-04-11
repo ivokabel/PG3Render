@@ -242,7 +242,7 @@ public:
                 )
             );
 
-        // 6) sphere1 (yellow)
+        // 6) sphere1 (left, yellow)
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
@@ -260,7 +260,7 @@ public:
                 );
         }
 
-        // 7) sphere2 (blue)
+        // 7) sphere2 (right, blue)
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
@@ -278,7 +278,7 @@ public:
                 );
         }
 
-        // 8) large sphere (white)
+        // 8) large sphere  
         if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));

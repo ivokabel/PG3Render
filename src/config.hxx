@@ -159,18 +159,19 @@ uint32_t g_SceneConfigs[] =
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    // 29-32
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelConductor        | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric       | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor  | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    // Box with sphere: 29-36
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelConductor         | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric        | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse,
+    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse,
+    Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightPoint   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::kLightEnv     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
 
-    // 33-37, debug scenes, delete this
-    Scene::kLightBox   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
-    Scene::kLightPoint | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
-    Scene::kLightPoint | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
-    Scene::kLightEnv   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    // 37-38, debug scenes, delete this
+    Scene::kLightBox     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::kLightPoint   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
 };
 
 std::string DefaultFilename(
