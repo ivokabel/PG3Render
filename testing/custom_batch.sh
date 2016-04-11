@@ -12,6 +12,7 @@ DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
 PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 DIFF_TOOL=PerceptualDiff.exe
 
+IMAGES_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render/output images"
 IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
 
 #echo
@@ -20,50 +21,54 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
+display_time () {
+    local T=$1
+    local D=$((T/60/60/24))
+    local H=$((T/60/60%24))
+    local M=$((T/60%60))
+    local S=$((T%60))
+    (( $D > 0 )) && printf '%d days ' $D
+    (( $H > 0 )) && printf '%d hours ' $H
+    (( $M > 0 )) && printf '%d minutes ' $M
+    (( $D > 0 || $H > 0 || $M > 0 )) && printf 'and '
+    printf '%d seconds\n' $S
+}
+
+render () {
+    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr "$@"; echo
+}
+
 ###################################################################################################
 
-# Rough dielectrics light sampling testing
-#ITERS=4
-#ENV_MAPS="1 10"
-#SCENES="24 26 27 28"
-#for EM in $ENV_MAPS; do
-#    for SCENE in $SCENES; do
-#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a dbs      -em $EM -auxf2 0.400
-#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a dlsa     -em $EM -auxf2 0.400
-#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a dmis     -em $EM -auxf2 0.400
-#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a pt -sb 1 -em $EM -auxf2 0.400
-#        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s $SCENE -i $ITERS -a pt -sb 1 -em $EM -auxf2 0.400 -maxpl 500
-#    done
-#done
+START_TIME=`date +%s`
 
-exit;
+###################################################################################################
 
-            # Air sphere in glass
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AirInGlass -auxf1 1; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot AirInGlass -auxf1 1; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AirInGlass_0030 -auxf2 0.030 -auxf1 1; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 26 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot AirInGlass_0030 -auxf2 0.030 -auxf1 1; echo
+ENVIRONMENT_MAPS="1 10 12"
+BASE_ITERS=600   #900  #107=1hr
+IIC=18
 
-            # Rectangles
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 27 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AdjacentNormal;      echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1         -em $EM  -i $ITERS -ot AdjacentNormal_0100; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot AdjacentNormal_0100; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 27 -a $ALG -sb 1         -em $EM  -i $ITERS -ot ReverseNormal      -auxf1 1; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1         -em $EM  -i $ITERS -ot ReverseNormal_0100 -auxf1 1; echo
-            "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 28 -a $ALG -sb 1 -iic 18 -em $EM  -i $ITERS -ot ReverseNormal_0100 -auxf1 1; echo
-        done
+#render -s 24 -a pt -sb 4 -i `expr $BASE_ITERS \* 1`  -iic $IIC -em 10
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 2`  -iic $IIC -em 10 -auxf2 0.010 -ot 0010
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 8`  -iic $IIC -em 10 -auxf2 0.050 -ot 0050
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 10` -iic $IIC -em 10 -auxf2 0.100 -ot 0100
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 10` -iic $IIC -em 10 -auxf2 0.150 -ot 0150
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 5`  -iic $IIC -em 10 -auxf2 0.400 -ot 0400
 
-        # Glass sphere in Cornell Box
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 30 -a $ALG -sb 4         -i $ITERS -ot GlassInAir; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 30 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4         -i $ITERS -ot GlassInAir_0001 -auxf2 0.001; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir_0001 -auxf2 0.001; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4         -i $ITERS -ot GlassInAir_0010 -auxf2 0.010; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir_0010 -auxf2 0.010; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4         -i $ITERS -ot GlassInAir_0100 -auxf2 0.100; echo
-        "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 32 -a $ALG -sb 4 -iic 18 -i $ITERS -ot GlassInAir_0100 -auxf2 0.100; echo
-    done
-done
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 1`  -iic $IIC -em 1  -auxf2 0.040 -ot 0040
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 8`  -iic $IIC -em 10 -auxf2 0.040 -ot 0040
+#render -s 26 -a pt -sb 4 -i `expr $BASE_ITERS \* 23` -iic $IIC -em 12 -auxf2 0.040 -ot 0040
+
+#render -s 26 -a dmis -i `expr $BASE_ITERS \* 8`  -em 1  -auxf2 0.040 -ot 0040
+#render -s 26 -a dmis -i `expr $BASE_ITERS \* 8`  -em 10 -auxf2 0.040 -ot 0040
+#render -s 26 -a dmis -i `expr $BASE_ITERS \* 23` -em 12 -auxf2 0.040 -ot 0040
+
+#cd "$IMAGES_BASE_DIR/ggx conductor tiff"
+#CONVERT="/bin/convert"
+#$CONVERT 1s_e1_Smgd_pt_rr_splt4,1.0,1.0_iic18.0_900s_0040.tiff 1s_e12_Smgd_pt_rr_splt4,1.0,1.0_iic18.0_20700s_0040.tiff 1s_e10_Smgd_pt_rr_splt4,1.0,1.0_iic18.0_7200s_0040.tiff +append rough_dielectric.tiff
+#$CONVERT 1s_e1_Smgd_dmis_4800s_0040.tiff 1s_e12_Smgd_dmis_13800s_0040.tiff 1s_e10_Smgd_dmis_4800s_0040.tiff +append rough_dielectric_reflections.tiff
+
+
 
 
 #REFERENCE_IMG="$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_82800sec_RR99.7.hdr"
@@ -130,4 +135,7 @@ done
 
 echo
 echo "The script has finished."
+END_TIME=`date +%s`
+TOTAL_TIME=`expr $END_TIME - $START_TIME`
+echo "Total execution time:" `display_time $TOTAL_TIME`.
 read

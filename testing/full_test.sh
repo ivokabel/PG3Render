@@ -4,7 +4,7 @@
 # Settings
 ###################################################################################################
 
-SCENES=`seq 0 34`   #`seq 0 37`
+SCENES=`seq 0 37`
 ENVIRONMENT_MAPS="1 10"                 #`seq 0 12`
 ITERATIONS_COUNT=4
 SHORT_OUTPUT=true
