@@ -360,7 +360,7 @@ void PrintConfiguration(const Config &config)
 void PrintHelp(const char *argv[])
 {
     std::string filename;
-    if (!GetFileName(argv[0], filename))
+    if (!Utils::GetFileName(argv[0], filename))
         filename = argv[0];
 
     printf("\n");

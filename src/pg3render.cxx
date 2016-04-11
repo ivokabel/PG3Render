@@ -73,7 +73,7 @@ float Render(
     if (aConfig.mMaxTime > 0)
     {
         if (!aConfig.mQuietMode)
-            PrintProgressBarTime(0.f, 0.f);
+            Utils::PrintProgressBarTime(0.f, 0.f);
 
         // Time based loop
 #pragma omp parallel
@@ -89,7 +89,7 @@ float Render(
                 {
                     const float currentClock = (float)clock();
                     const float progress = (float)((currentClock - startT) / (endT - startT));
-                    PrintProgressBarTime(progress, (currentClock - startT) / CLOCKS_PER_SEC);
+                    Utils::PrintProgressBarTime(progress, (currentClock - startT) / CLOCKS_PER_SEC);
                 }
             }
 
@@ -100,7 +100,7 @@ float Render(
     else
     {
         if (!aConfig.mQuietMode)
-            PrintProgressBarIterations(0.f, 0);
+            Utils::PrintProgressBarIterations(0.f, 0);
 
         // Iterations based loop
         uint32_t globalCounter = 0;
@@ -117,7 +117,7 @@ float Render(
                 if (!aConfig.mQuietMode)
                 {
                     const float progress = (float)globalCounter / aConfig.mIterations;
-                    PrintProgressBarIterations(progress, globalCounter);
+                    Utils::PrintProgressBarIterations(progress, globalCounter);
                 }
             }
         }
@@ -230,7 +230,7 @@ int32_t main(int32_t argc, const char *argv[])
     // Render the image
     float time = Render(config, introspectionAggregator);
     std::string timeHumanReadable;
-    SecondsToHumanReadable(time, timeHumanReadable);
+    Utils::SecondsToHumanReadable(time, timeHumanReadable);
     if (!config.mQuietMode)
         printf(" done in %s\n", timeHumanReadable.c_str());
 
