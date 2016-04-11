@@ -170,7 +170,6 @@ float Render(
 
 //////////////////////////////////////////////////////////////////////////
 // Unit testing
-
 #ifdef UNIT_TESTS_CODE_ENABLED
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
