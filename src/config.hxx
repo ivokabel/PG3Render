@@ -64,7 +64,7 @@ const uint32_t g_SceneConfigs[] =
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     // Multiple lights, diffuse: 10-13
-                            Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
+                         Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint | Scene::kLightBox |                    GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
     Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
