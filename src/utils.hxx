@@ -192,8 +192,8 @@ namespace Utils
             }
             else
             {
-                tanTheta    = HUGE_F;
-                tanThetaSqr = HUGE_F;
+                tanTheta    = Math::kHugeF;
+                tanThetaSqr = Math::kHugeF;
             }
 
             const float reflPerpendicular =
@@ -740,16 +740,16 @@ namespace Utils
             // Deterministic directions generation
 
             const float thetaInStepCount    = 32;
-            const float thetaInStart        = 0.0f * PI_F;
-            const float thetaInEnd          = 2.0f * PI_F;
+            const float thetaInStart        = 0.0f * Math::kPiF;
+            const float thetaInEnd          = 2.0f * Math::kPiF;
 
             const float thetaOutStepCount   = 32;
-            const float thetaOutStart       = 0.0f * PI_F;
-            const float thetaOutEnd         = 2.0f * PI_F;
+            const float thetaOutStart       = 0.0f * Math::kPiF;
+            const float thetaOutEnd         = 2.0f * Math::kPiF;
 
             const float phiOutStepCount     = 16;
-            const float phiOutStart         = 0.0f * PI_F;
-            const float phiOutEnd           = 2.0f * PI_F;
+            const float phiOutStart         = 0.0f * Math::kPiF;
+            const float phiOutEnd           = 2.0f * Math::kPiF;
 
             UT_BEGIN(
                 aMaxUtBlockPrintLevel, eutblSubTest,
@@ -807,7 +807,7 @@ namespace Utils
                 const Vec3f samples = rng.GetVec3f();
                 const float thetaIn     = std::acos(1.f - 2.f * samples.x);
                 const float thetaOut    = std::acos(1.f - 2.f * samples.y);
-                const float phiOut      = samples.z * 2.0f * PI_F;
+                const float phiOut      = samples.z * 2.0f * Math::kPiF;
 
                 bool success;
 
@@ -878,7 +878,7 @@ namespace Utils
             const float temp1 = roughnessAlphaSqr + tanThetaSqr;
             const float temp2 = cosThetaSqr * temp1;
 
-            const float result = roughnessAlphaSqr / (PI_F * temp2 * temp2);
+            const float result = roughnessAlphaSqr / (Math::kPiF * temp2 * temp2);
 
             PG3_ASSERT_FLOAT_NONNEGATIVE(result);
 
@@ -926,7 +926,7 @@ namespace Utils
                   (aRoughnessAlpha * std::sqrt(aSample.x))
                 / std::sqrt(1.0f - aSample.x);
             const float thetaM  = std::atan(tmp1);
-            const float phiM    = 2 * PI_F * aSample.y;
+            const float phiM    = 2 * Math::kPiF * aSample.y;
 
             const float cosThetaM   = std::cos(thetaM);
             const float sinThetaM   = std::sin(thetaM);
@@ -971,7 +971,7 @@ namespace Utils
                 // Normal incidence - avoid division by zero later
                 const float sampleXClamped  = std::min(aSample.x, 0.9999f);
                 const float radius          = Math::SafeSqrt(sampleXClamped / (1 - sampleXClamped));
-                const float phi             = 2 * PI_F * aSample.y;
+                const float phi             = 2 * Math::kPiF * aSample.y;
                 const float sinPhi          = std::sin(phi);
                 const float cosPhi          = std::cos(phi);
                 aSlope = Vec2f(radius * cosPhi, radius * sinPhi);
@@ -1134,12 +1134,12 @@ namespace Utils
                 if (a > b)   /* region 1, also |a| > |b| */
                 {
                     r = a;
-                    phi = (PI_F / 4.f) * (b / a);
+                    phi = (Math::kPiF / 4.f) * (b / a);
                 }
                 else        /* region 2, also |b| > |a| */
                 {
                     r = b;
-                    phi = (PI_F / 4.f) * (2.f - (a / b));
+                    phi = (Math::kPiF / 4.f) * (2.f - (a / b));
                 }
             }
             else            /* region 3 or 4 */
@@ -1147,14 +1147,14 @@ namespace Utils
                 if (a < b)   /* region 3, also |a| >= |b|, a != 0 */
                 {
                     r = -a;
-                    phi = (PI_F / 4.f) * (4.f + (b / a));
+                    phi = (Math::kPiF / 4.f) * (4.f + (b / a));
                 }
                 else        /* region 4, |b| >= |a|, but a==0 and b==0 could occur. */
                 {
                     r = -b;
 
                     if (b != 0)
-                        phi = (PI_F / 4.f) * (6.f - (a / b));
+                        phi = (Math::kPiF / 4.f) * (6.f - (a / b));
                     else
                         phi = 0;
                 }
@@ -1168,7 +1168,7 @@ namespace Utils
 
         float ConcentricDiscPdfA()
         {
-            return INV_PI_F;
+            return Math::kPiInvF;
         }
 
         // Sample Triangle
@@ -1186,12 +1186,12 @@ namespace Utils
             const float   aPower,
             float        *oPdfW = NULL)
         {
-            const float term1 = 2.f * PI_F * aSamples.x;
+            const float term1 = 2.f * Math::kPiF * aSamples.x;
             const float term2 = std::pow(aSamples.y, 1.f / (aPower + 1.f));
             const float term3 = std::sqrt(1.f - term2 * term2);
 
             if (oPdfW)
-                *oPdfW = (aPower + 1.f) * std::pow(term2, aPower) * (0.5f * INV_PI_F);
+                *oPdfW = (aPower + 1.f) * std::pow(term2, aPower) * (0.5f * Math::kPiInvF);
 
             return Vec3f(
                 std::cos(term1) * term3,
@@ -1206,7 +1206,7 @@ namespace Utils
         {
             const float cosTheta = std::max(0.f, Dot(aNormal, aDirection));
 
-            return (aPower + 1.f) * std::pow(cosTheta, aPower) * (INV_PI_F * 0.5f);
+            return (aPower + 1.f) * std::pow(cosTheta, aPower) * (Math::kPiInvF * 0.5f);
         }
 
         float PowerCosHemispherePdfW(
@@ -1215,7 +1215,7 @@ namespace Utils
         {
             const float cosTheta = std::max(0.f, aDirectionLocal.z);
 
-            return (aPower + 1.f) * std::pow(cosTheta, aPower) * (INV_PI_F * 0.5f);
+            return (aPower + 1.f) * std::pow(cosTheta, aPower) * (Math::kPiInvF * 0.5f);
         }
 
         // Sample direction in the upper hemisphere with cosine-proportional pdf
@@ -1224,7 +1224,7 @@ namespace Utils
             const Vec2f &aSamples,
             float       *oPdfW = NULL)
         {
-            const float term1 = 2.f * PI_F * aSamples.x;
+            const float term1 = 2.f * Math::kPiF * aSamples.x;
             const float term2 = std::sqrt(1.f - aSamples.y);
 
             const Vec3f ret(
@@ -1233,7 +1233,7 @@ namespace Utils
                 std::sqrt(aSamples.y));
 
             if (oPdfW)
-                *oPdfW = ret.z * INV_PI_F;
+                *oPdfW = ret.z * Math::kPiInvF;
 
             PG3_ASSERT_FLOAT_NONNEGATIVE(ret.z);
 
@@ -1244,13 +1244,13 @@ namespace Utils
             const Vec3f  &aNormal,
             const Vec3f  &aDirection)
         {
-            return std::max(0.f, Dot(aNormal, aDirection)) * INV_PI_F;
+            return std::max(0.f, Dot(aNormal, aDirection)) * Math::kPiInvF;
         }
 
         float CosHemispherePdfW(
             const Vec3f  &aDirectionLocal)
         {
-            return std::max(0.f, aDirectionLocal.z) * INV_PI_F;
+            return std::max(0.f, aDirectionLocal.z) * Math::kPiInvF;
         }
 
         Vec3f SampleCosSphereParamPdfW(
@@ -1276,15 +1276,15 @@ namespace Utils
 
         float UniformSpherePdfW()
         {
-            //return (1.f / (4.f * PI_F));
-            return INV_PI_F * 0.25f;
+            //return (1.f / (4.f * Math::kPiF));
+            return Math::kPiInvF * 0.25f;
         }
 
         Vec3f SampleUniformSphereW(
             const Vec2f  &aSamples,
             float        *oPdfSA)
         {
-            const float phi      = 2.f * PI_F * aSamples.x;
+            const float phi      = 2.f * Math::kPiF * aSamples.x;
             const float sinTheta = 2.f * std::sqrt(aSamples.y - aSamples.y * aSamples.y);
             const float cosTheta = 1.f - 2.f * aSamples.y;
 

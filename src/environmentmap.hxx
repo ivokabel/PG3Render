@@ -88,7 +88,7 @@ class EnvironmentMap
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
     EnvironmentMap(const std::string aFilename, float aRotate, float aScale) :
-        mPlan2AngPdfCoeff(1.0f / (2.0f * PI_F * PI_F))
+        mPlan2AngPdfCoeff(1.0f / (2.0f * Math::kPiF * Math::kPiF))
     {
         mImage = NULL;
         mDistribution = NULL;
@@ -274,8 +274,8 @@ private:
         PG3_ASSERT_FLOAT_IN_RANGE(uv.x, 0.f, 1.f);
         PG3_ASSERT_FLOAT_IN_RANGE(uv.y, 0.f, 1.f);
 
-        const float phi   = -(uv.x - 0.5f) * 2 * PI_F; // we rotate in the opposite direction
-        const float theta = uv.y * PI_F;
+        const float phi   = -(uv.x - 0.5f) * 2 * Math::kPiF; // we rotate in the opposite direction
+        const float theta = uv.y * Math::kPiF;
 
         return Utils::Geom::CreateDirection(theta, phi);
     }
@@ -292,12 +292,12 @@ private:
         const float theta   = acosf(aDirection.z);
 
         // Convert from [-Pi,Pi] to [0,1]
-        //const float uTemp = fmodf(phi * 0.5f * INV_PI_F, 1.0f);
+        //const float uTemp = fmodf(phi * 0.5f * Math::kPiInvF, 1.0f);
         //const float u = Math::Clamp(uTemp, 0.f, 1.f); // TODO: maybe not necessary
-        const float u = Math::Clamp(0.5f + phi * 0.5f * INV_PI_F, 0.f, 1.f);
+        const float u = Math::Clamp(0.5f + phi * 0.5f * Math::kPiInvF, 0.f, 1.f);
 
         // Convert from [0,Pi] to [0,1]
-        const float v = Math::Clamp(theta * INV_PI_F, 0.f, 1.0f);
+        const float v = Math::Clamp(theta * Math::kPiInvF, 0.f, 1.0f);
 
         return Vec2f(u, v);
     }
@@ -367,7 +367,7 @@ private:
 
         PG3_ASSERT_INTEGER_LESS_THAN(aSegmY, height);
 
-        const float result = sinf(PI_F * (aSegmY + 0.5f) / height);
+        const float result = sinf(Math::kPiF * (aSegmY + 0.5f) / height);
 
         PG3_ASSERT(result > 0.f && result <= 1.f);
 

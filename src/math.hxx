@@ -9,9 +9,9 @@
 namespace Math
 {
     // Due to portability issues
-    #define PI_F        3.14159265358979f
-    #define INV_PI_F    (1.f / PI_F)
-    #define PI_DIV_2_F  1.5707963f
+    const float kPiF        = 3.14159265358979f;
+    const float kPiInvF     = 1.f / Math::kPiF;
+    const float kPiDiv2F    = 1.5707963f;
 
     float  InfinityF() { return std::numeric_limits<float>::infinity(); }
     double InfinityD() { return std::numeric_limits<double>::infinity(); }
@@ -22,19 +22,19 @@ namespace Math
     // Originally, this was set to  2^-21 and 2^-50 respectively, resulting in 4 * float_eps and 
     // 4 * double_eps respectively, but it was too sensitive in some situations.
 
-    //#define TINY_F	4.76837158203125E-7f            // 2^-21
-    #define TINY_F		9.5367431640625E-7f             // 2^-20
-    //#define TINY_D	8.8817841970012523233891E-16    // 2^-50
-    #define TINY_D	    1.7763568394002504646778E-15    // 2^-49
+    //const float kTinyF    = 4.76837158203125E-7f;             // 2^-21
+    //const double kTinyD   = 8.8817841970012523233891E-16;     // 2^-50
+    const float kTinyF      = 9.5367431640625E-7f;              // 2^-20
+    const double kTinyD     = 1.7763568394002504646778E-15;     // 2^-49
 
     inline float IsTiny(float x)
     {
-        return std::abs(x) < TINY_F;
+        return std::abs(x) < Math::kTinyF;
     }
 
     inline double IsTiny(double x)
     {
-        return std::abs(x) < TINY_D;
+        return std::abs(x) < Math::kTinyD;
     }
 
     // Defines huge float and double constants that can be regarded infinity for
@@ -46,20 +46,20 @@ namespace Math
     // For  IEEE doubles this constant was set to 2^255, so that multiplying
     // its exponent by 4 yields a double that is still valid.
 
-    #define HUGE_F	    2.147483648E+9f
-    #define HUGE_D      5.78960446186580977117855E+76
+    const float kHugeF  = 2.147483648E+9f;
+    const double kHugeD = 5.78960446186580977117855E+76;
 
     //////////////////////////////////////////////////////////////////////////
     // Math section
 
     float DegToRad(float deg)
     {
-        return (deg / 360.f) * (2.f * PI_F);
+        return (deg / 360.f) * (2.f * Math::kPiF);
     }
 
     float RadToDeg(float rad)
     {
-        return 360.f * (rad / (2.f * PI_F));
+        return 360.f * (rad / (2.f * Math::kPiF));
     }
 
     template<typename T>
@@ -132,10 +132,10 @@ namespace Math
         if (x == 0.0f)
         {
             if (y > 0.0f)
-                return PI_DIV_2_F;
+                return Math::kPiDiv2F;
             if (y == 0.0f)
                 return 0.0f;
-            return -PI_DIV_2_F;
+            return -Math::kPiDiv2F;
         }
 
         float atan;
@@ -146,15 +146,15 @@ namespace Math
             if (x < 0.0f)
             {
                 if (y < 0.0f)
-                    return atan - PI_F;
-                return atan + PI_F;
+                    return atan - Math::kPiF;
+                return atan + Math::kPiF;
             }
         }
         else
         {
-            atan = PI_DIV_2_F - z / (z*z + 0.28f);
+            atan = Math::kPiDiv2F - z / (z*z + 0.28f);
             if (y < 0.0f)
-                return atan - PI_F;
+                return atan - Math::kPiF;
         }
 
         return atan;
@@ -294,6 +294,23 @@ public:
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
     { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
+    friend Vec3Base Cross(const Vec3Base &a, const Vec3Base &b)
+    {
+        Vec3Base res;
+        res.x = a.y * b.z - a.z * b.y;
+        res.y = a.z * b.x - a.x * b.z;
+        res.z = a.x * b.y - a.y * b.x;
+        return res;
+    }
+
+    //PG3_NOINLINE
+    friend Vec3Base Normalize(const Vec3Base& a)
+    {
+        const T lenSqr = Dot(a, a);
+        const T len    = std::sqrt(lenSqr);
+        return a / len;
+    }
+
     float           LenSqr() const  { return Dot(*this, *this);   }
     float           Length() const  { return std::sqrt(LenSqr()); }
     Vec3Base<T>&    Normalize()     { this->operator/=(Length()); return *this; }
@@ -307,25 +324,6 @@ typedef Vec3Base<float>     Vec3f;
 typedef Vec3Base<double>    Vec3d;
 typedef Vec3Base<int32_t>   Vec3i;
 typedef Vec3Base<uint32_t>  Vec3ui;
-
-Vec3f Cross(
-    const Vec3f &a,
-    const Vec3f &b)
-{
-    Vec3f res;
-    res.x = a.y * b.z - a.z * b.y;
-    res.y = a.z * b.x - a.x * b.z;
-    res.z = a.x * b.y - a.y * b.x;
-    return res;
-}
-
-//PG3_NOINLINE
-Vec3f Normalize(const Vec3f& a)
-{
-    const float lenSqr = Dot(a, a);
-    const float len    = std::sqrt(lenSqr);
-    return a / len;
-}
 
 class Mat4f
 {
@@ -438,6 +436,152 @@ public:
 
         return r;
     }
+
+    friend Mat4f operator*(const Mat4f& left, const Mat4f& right)
+    {
+        Mat4f res(0);
+        for (uint32_t row=0; row<4; row++)
+            for (uint32_t col=0; col<4; col++)
+                for (uint32_t i=0; i<4; i++)
+                    res.Get(row, col) += left.Get(row, i) * right.Get(i, col);
+
+        return res;
+    }
+
+    // Code for inversion taken from:
+    // http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+    friend Mat4f Invert(const Mat4f& aMatrix)
+    {
+        const float *m = aMatrix.GetPtr();
+        float inv[16], det;
+        uint32_t i;
+
+        inv[0] = m[5] * m[10] * m[15] -
+            m[5]  * m[11] * m[14] -
+            m[9]  * m[6]  * m[15] +
+            m[9]  * m[7]  * m[14] +
+            m[13] * m[6]  * m[11] -
+            m[13] * m[7]  * m[10];
+
+        inv[4] = -m[4]  * m[10] * m[15] +
+            m[4]  * m[11] * m[14] +
+            m[8]  * m[6]  * m[15] -
+            m[8]  * m[7]  * m[14] -
+            m[12] * m[6]  * m[11] +
+            m[12] * m[7]  * m[10];
+
+        inv[8] = m[4]  * m[9] * m[15] -
+            m[4]  * m[11] * m[13] -
+            m[8]  * m[5] * m[15] +
+            m[8]  * m[7] * m[13] +
+            m[12] * m[5] * m[11] -
+            m[12] * m[7] * m[9];
+
+        inv[12] = -m[4]  * m[9] * m[14] +
+            m[4]  * m[10] * m[13] +
+            m[8]  * m[5] * m[14] -
+            m[8]  * m[6] * m[13] -
+            m[12] * m[5] * m[10] +
+            m[12] * m[6] * m[9];
+
+        inv[1] = -m[1]  * m[10] * m[15] +
+            m[1]  * m[11] * m[14] +
+            m[9]  * m[2] * m[15] -
+            m[9]  * m[3] * m[14] -
+            m[13] * m[2] * m[11] +
+            m[13] * m[3] * m[10];
+
+        inv[5] = m[0]  * m[10] * m[15] -
+            m[0]  * m[11] * m[14] -
+            m[8]  * m[2] * m[15] +
+            m[8]  * m[3] * m[14] +
+            m[12] * m[2] * m[11] -
+            m[12] * m[3] * m[10];
+
+        inv[9] = -m[0]  * m[9] * m[15] +
+            m[0]  * m[11] * m[13] +
+            m[8]  * m[1] * m[15] -
+            m[8]  * m[3] * m[13] -
+            m[12] * m[1] * m[11] +
+            m[12] * m[3] * m[9];
+
+        inv[13] = m[0]  * m[9] * m[14] -
+            m[0]  * m[10] * m[13] -
+            m[8]  * m[1] * m[14] +
+            m[8]  * m[2] * m[13] +
+            m[12] * m[1] * m[10] -
+            m[12] * m[2] * m[9];
+
+        inv[2] = m[1]  * m[6] * m[15] -
+            m[1]  * m[7] * m[14] -
+            m[5]  * m[2] * m[15] +
+            m[5]  * m[3] * m[14] +
+            m[13] * m[2] * m[7] -
+            m[13] * m[3] * m[6];
+
+        inv[6] = -m[0]  * m[6] * m[15] +
+            m[0]  * m[7] * m[14] +
+            m[4]  * m[2] * m[15] -
+            m[4]  * m[3] * m[14] -
+            m[12] * m[2] * m[7] +
+            m[12] * m[3] * m[6];
+
+        inv[10] = m[0]  * m[5] * m[15] -
+            m[0]  * m[7] * m[13] -
+            m[4]  * m[1] * m[15] +
+            m[4]  * m[3] * m[13] +
+            m[12] * m[1] * m[7] -
+            m[12] * m[3] * m[5];
+
+        inv[14] = -m[0]  * m[5] * m[14] +
+            m[0]  * m[6] * m[13] +
+            m[4]  * m[1] * m[14] -
+            m[4]  * m[2] * m[13] -
+            m[12] * m[1] * m[6] +
+            m[12] * m[2] * m[5];
+
+        inv[3] = -m[1] * m[6] * m[11] +
+            m[1] * m[7] * m[10] +
+            m[5] * m[2] * m[11] -
+            m[5] * m[3] * m[10] -
+            m[9] * m[2] * m[7] +
+            m[9] * m[3] * m[6];
+
+        inv[7] = m[0] * m[6] * m[11] -
+            m[0] * m[7] * m[10] -
+            m[4] * m[2] * m[11] +
+            m[4] * m[3] * m[10] +
+            m[8] * m[2] * m[7] -
+            m[8] * m[3] * m[6];
+
+        inv[11] = -m[0] * m[5] * m[11] +
+            m[0] * m[7] * m[9] +
+            m[4] * m[1] * m[11] -
+            m[4] * m[3] * m[9] -
+            m[8] * m[1] * m[7] +
+            m[8] * m[3] * m[5];
+
+        inv[15] = m[0] * m[5] * m[10] -
+            m[0] * m[6] * m[9] -
+            m[4] * m[1] * m[10] +
+            m[4] * m[2] * m[9] +
+            m[8] * m[1] * m[6] -
+            m[8] * m[2] * m[5];
+
+        det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+        if (det == 0)
+            return Mat4f::Indetity();
+
+        det = 1.f / det;
+
+        Mat4f res;
+        for (i = 0; i < 16; i++)
+            res.GetPtr()[i] = inv[i] * det;
+
+        return res;
+    }
+
 public:
 
     // m_row_col; stored column major
@@ -446,151 +590,6 @@ public:
     float m02, m12, m22, m32;
     float m03, m13, m23, m33;
 };
-
-Mat4f operator*(const Mat4f& left, const Mat4f& right)
-{
-    Mat4f res(0);
-    for (uint32_t row=0; row<4; row++)
-        for (uint32_t col=0; col<4; col++)
-            for (uint32_t i=0; i<4; i++)
-                res.Get(row, col) += left.Get(row, i) * right.Get(i, col);
-
-    return res;
-}
-
-// Code for inversion taken from:
-// http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
-Mat4f Invert(const Mat4f& aMatrix)
-{
-    const float *m = aMatrix.GetPtr();
-    float inv[16], det;
-    uint32_t i;
-
-    inv[0] = m[5] * m[10] * m[15] -
-        m[5]  * m[11] * m[14] -
-        m[9]  * m[6]  * m[15] +
-        m[9]  * m[7]  * m[14] +
-        m[13] * m[6]  * m[11] -
-        m[13] * m[7]  * m[10];
-
-    inv[4] = -m[4]  * m[10] * m[15] +
-        m[4]  * m[11] * m[14] +
-        m[8]  * m[6]  * m[15] -
-        m[8]  * m[7]  * m[14] -
-        m[12] * m[6]  * m[11] +
-        m[12] * m[7]  * m[10];
-
-    inv[8] = m[4]  * m[9] * m[15] -
-        m[4]  * m[11] * m[13] -
-        m[8]  * m[5] * m[15] +
-        m[8]  * m[7] * m[13] +
-        m[12] * m[5] * m[11] -
-        m[12] * m[7] * m[9];
-
-    inv[12] = -m[4]  * m[9] * m[14] +
-        m[4]  * m[10] * m[13] +
-        m[8]  * m[5] * m[14] -
-        m[8]  * m[6] * m[13] -
-        m[12] * m[5] * m[10] +
-        m[12] * m[6] * m[9];
-
-    inv[1] = -m[1]  * m[10] * m[15] +
-        m[1]  * m[11] * m[14] +
-        m[9]  * m[2] * m[15] -
-        m[9]  * m[3] * m[14] -
-        m[13] * m[2] * m[11] +
-        m[13] * m[3] * m[10];
-
-    inv[5] = m[0]  * m[10] * m[15] -
-        m[0]  * m[11] * m[14] -
-        m[8]  * m[2] * m[15] +
-        m[8]  * m[3] * m[14] +
-        m[12] * m[2] * m[11] -
-        m[12] * m[3] * m[10];
-
-    inv[9] = -m[0]  * m[9] * m[15] +
-        m[0]  * m[11] * m[13] +
-        m[8]  * m[1] * m[15] -
-        m[8]  * m[3] * m[13] -
-        m[12] * m[1] * m[11] +
-        m[12] * m[3] * m[9];
-
-    inv[13] = m[0]  * m[9] * m[14] -
-        m[0]  * m[10] * m[13] -
-        m[8]  * m[1] * m[14] +
-        m[8]  * m[2] * m[13] +
-        m[12] * m[1] * m[10] -
-        m[12] * m[2] * m[9];
-
-    inv[2] = m[1]  * m[6] * m[15] -
-        m[1]  * m[7] * m[14] -
-        m[5]  * m[2] * m[15] +
-        m[5]  * m[3] * m[14] +
-        m[13] * m[2] * m[7] -
-        m[13] * m[3] * m[6];
-
-    inv[6] = -m[0]  * m[6] * m[15] +
-        m[0]  * m[7] * m[14] +
-        m[4]  * m[2] * m[15] -
-        m[4]  * m[3] * m[14] -
-        m[12] * m[2] * m[7] +
-        m[12] * m[3] * m[6];
-
-    inv[10] = m[0]  * m[5] * m[15] -
-        m[0]  * m[7] * m[13] -
-        m[4]  * m[1] * m[15] +
-        m[4]  * m[3] * m[13] +
-        m[12] * m[1] * m[7] -
-        m[12] * m[3] * m[5];
-
-    inv[14] = -m[0]  * m[5] * m[14] +
-        m[0]  * m[6] * m[13] +
-        m[4]  * m[1] * m[14] -
-        m[4]  * m[2] * m[13] -
-        m[12] * m[1] * m[6] +
-        m[12] * m[2] * m[5];
-
-    inv[3] = -m[1] * m[6] * m[11] +
-        m[1] * m[7] * m[10] +
-        m[5] * m[2] * m[11] -
-        m[5] * m[3] * m[10] -
-        m[9] * m[2] * m[7] +
-        m[9] * m[3] * m[6];
-
-    inv[7] = m[0] * m[6] * m[11] -
-        m[0] * m[7] * m[10] -
-        m[4] * m[2] * m[11] +
-        m[4] * m[3] * m[10] +
-        m[8] * m[2] * m[7] -
-        m[8] * m[3] * m[6];
-
-    inv[11] = -m[0] * m[5] * m[11] +
-        m[0] * m[7] * m[9] +
-        m[4] * m[1] * m[11] -
-        m[4] * m[3] * m[9] -
-        m[8] * m[1] * m[7] +
-        m[8] * m[3] * m[5];
-
-    inv[15] = m[0] * m[5] * m[10] -
-        m[0] * m[6] * m[9] -
-        m[4] * m[1] * m[10] +
-        m[4] * m[2] * m[9] +
-        m[8] * m[1] * m[6] -
-        m[8] * m[2] * m[5];
-
-    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
-
-    if (det == 0)
-        return Mat4f::Indetity();
-
-    det = 1.f / det;
-
-    Mat4f res;
-    for (i = 0; i < 16; i++)
-        res.GetPtr()[i] = inv[i] * det;
-
-    return res;
-}
 
 //////////////////////////////////////////////////////////////////////////
 // Frame

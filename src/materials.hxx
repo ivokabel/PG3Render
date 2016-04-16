@@ -166,7 +166,7 @@ public:
 
     SpectrumF EvalDiffuseComponent() const
     {
-        return mDiffuseReflectance / PI_F; // TODO: Pre-compute?
+        return mDiffuseReflectance / Math::kPiF; // TODO: Pre-compute?
     }
 
     float GetDiffuseReflectance() const
@@ -179,7 +179,7 @@ public:
         const Vec3f& aWol
         ) const
     {
-        const float constComponent = (mPhongExponent + 2.0f) / (2.0f * PI_F); // TODO: Pre-compute?
+        const float constComponent = (mPhongExponent + 2.0f) / (2.0f * Math::kPiF); // TODO: Pre-compute?
         const Vec3f wrl = Utils::Geom::ReflectLocal(aWil);
         // We need to restrict to positive cos values only, otherwise we get unwanted behaviour 
         // in the retroreflection zone.

@@ -119,7 +119,7 @@ public:
     {
         // Radiance = Flux/(Pi*Area)  [W * sr^-1 * m^2]
 
-        mRadiance = aPower * (mInvArea / PI_F);
+        mRadiance = aPower * (mInvArea / Math::kPiF);
     }
 
     virtual void SampleIllumination(
@@ -260,7 +260,7 @@ public:
 
     virtual void SetPower(const SpectrumF& aPower)
     {
-        mIntensity = aPower / (4 * PI_F);
+        mIntensity = aPower / (4 * Math::kPiF);
     }
 
     // Returns amount of outgoing radiance in the direction.
@@ -509,7 +509,7 @@ public:
             // A constant environment illumination.
             // Assuming constant BSDF, we can compute the integral analytically.
             // \int{f_r * L_i * \cos{theta_i} d\omega} = f_r * L_i * \int{\cos{theta_i} d\omega} = f_r * L_i * \pi
-            return mConstantRadiance.Luminance() * PI_F;
+            return mConstantRadiance.Luminance() * Math::kPiF;
         }
     }
 
