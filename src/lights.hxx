@@ -204,8 +204,8 @@ private:
         float cosThetaIn        =  Dot(aSurfFrame.mZ, oSample.mWig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
+        const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
@@ -324,8 +324,8 @@ private:
         float cosThetaIn = Dot(aSurfFrame.mZ, oSample.mWig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
+        const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
         // Materials do this checking on their own, but since we use this code also 
         // for light contribution estimation, it is better to cut the light which is not going 
@@ -438,8 +438,8 @@ public:
             // Sample the requested (hemi)sphere(s) in a cosine-weighted fashion
 
             const MaterialProperties matProps = aSurfMaterial.GetProperties();
-            const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
-            const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
+            const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+            const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
             Vec3f wil = Utils::Sampling::SampleCosSphereParamPdfW(
                 aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
@@ -521,8 +521,8 @@ public:
         LightSample             &oSample) const
     {
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
+        const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
         Vec3f wil = Utils::Sampling::SampleCosSphereParamPdfW(
             aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
@@ -554,8 +554,8 @@ public:
         oSample.mLightProbability   = 1.0f;
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = IS_MASKED(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide   = IS_MASKED(matProps, kBsdfBackSideLightSampling);
+        const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
         const float cosThetaIn = Dot(oSample.mWig, aSurfFrame.Normal());
         if ((sampleFrontSide && (cosThetaIn > 0.0f)) || (sampleBackSide && (cosThetaIn < 0.0f)))

@@ -23,13 +23,82 @@
 #define EPS_RAY_COS(_cos)       ((1.f + 2.f * (1.f - (_cos))) * EPS_RAY)
 #define EPS_DIST                1e-6f
 
-#define IS_MASKED(val, mask)   (((val) & (mask)) == (mask))
-
 //////////////////////////////////////////////////////////////////////////
 // Various utility functions
 //////////////////////////////////////////////////////////////////////////
 namespace Utils
 {
+    template <typename T>
+    inline bool IsMasked(const T &aVal, const T &aMask)
+    {
+        return ((aVal & aMask) == aMask);
+    }
+
+    void SecondsToHumanReadable(const float aSeconds, std::string &oResult)
+    {
+        std::ostringstream outStream;
+
+        uint32_t tmp = (uint32_t)std::roundf(aSeconds);
+        if (tmp > 0)
+        {
+            uint32_t seconds = tmp % 60;
+            tmp /= 60;
+            uint32_t minutes = tmp % 60;
+            tmp /= 60;
+            uint32_t hours = tmp % 24;
+            tmp /= 24;
+            uint32_t days = tmp;
+
+            if (days > 0)
+                outStream << days << " d "; // " day" << ((days > 1) ? "s " : " ");
+            if (hours > 0)
+                outStream << hours << " h "; // " hour" << ((hours > 1) ? "s " : " ");
+            if (minutes > 0)
+                outStream << minutes << " m "; // " minute" << ((minutes > 1) ? "s " : " ");
+            if (seconds > 0)
+                outStream << seconds << " s "; // " second" << ((seconds > 1) ? "s " : " ");
+
+            outStream << "(" << std::fixed << std::setprecision(1) << aSeconds << " s)";
+        }
+        else
+            outStream << std::fixed << std::setprecision(2) << aSeconds << " s"; // " seconds";
+
+        oResult = outStream.str();
+    }
+
+    bool GetFileName(const char *aPath, std::string &oResult)
+    {
+        //char path_buffer[_MAX_PATH];
+        //char drive[_MAX_DRIVE];
+        //char dir[_MAX_DIR];
+        char fname[_MAX_FNAME];
+        char ext[_MAX_EXT];
+        errno_t err;
+
+        err = _splitpath_s(aPath, NULL, 0, NULL, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
+        if (err != 0)
+        {
+            //printf("Error splitting the path. Error code %d.\n", err);
+            return false;
+        }
+        //printf("Path extracted with _splitpath_s:\n");
+        //printf("  Drive: %s\n", drive);
+        //printf("  Dir: %s\n", dir);
+        //printf("  Filename: %s\n", fname);
+        //printf("  Ext: %s\n", ext);
+
+        oResult  = fname;
+        oResult += ext;
+        return true;
+    }
+
+    // Returns the length of an array
+    template <typename T, size_t N>
+    inline int32_t ArrayLength(const T(&)[N])
+    {
+        return int32_t(N);
+    }
+
     //////////////////////////////////////////////////////////////////////////
     // Fresnel-related routines
     //////////////////////////////////////////////////////////////////////////
@@ -1295,74 +1364,4 @@ namespace Utils
             fflush(stdout);
         }
     } // namespace ProgressBar
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // Others
-    //////////////////////////////////////////////////////////////////////////
-
-    void SecondsToHumanReadable(const float aSeconds, std::string &oResult)
-    {
-        std::ostringstream outStream;
-
-        uint32_t tmp = (uint32_t)std::roundf(aSeconds);
-        if (tmp > 0)
-        {
-            uint32_t seconds = tmp % 60;
-            tmp /= 60;
-            uint32_t minutes = tmp % 60;
-            tmp /= 60;
-            uint32_t hours = tmp % 24;
-            tmp /= 24;
-            uint32_t days = tmp;
-
-            if (days > 0)
-                outStream << days << " d "; // " day" << ((days > 1) ? "s " : " ");
-            if (hours > 0)
-                outStream << hours << " h "; // " hour" << ((hours > 1) ? "s " : " ");
-            if (minutes > 0)
-                outStream << minutes << " m "; // " minute" << ((minutes > 1) ? "s " : " ");
-            if (seconds > 0)
-                outStream << seconds << " s "; // " second" << ((seconds > 1) ? "s " : " ");
-
-            outStream << "(" << std::fixed << std::setprecision(1) << aSeconds << " s)";
-        }
-        else
-            outStream << std::fixed << std::setprecision(2) << aSeconds << " s"; // " seconds";
-
-        oResult = outStream.str();
-    }
-
-    bool GetFileName(const char *aPath, std::string &oResult)
-    {
-        //char path_buffer[_MAX_PATH];
-        //char drive[_MAX_DRIVE];
-        //char dir[_MAX_DIR];
-        char fname[_MAX_FNAME];
-        char ext[_MAX_EXT];
-        errno_t err;
-
-        err = _splitpath_s(aPath, NULL, 0, NULL, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
-        if (err != 0)
-        {
-            //printf("Error splitting the path. Error code %d.\n", err);
-            return false;
-        }
-        //printf("Path extracted with _splitpath_s:\n");
-        //printf("  Drive: %s\n", drive);
-        //printf("  Dir: %s\n", dir);
-        //printf("  Filename: %s\n", fname);
-        //printf("  Ext: %s\n", ext);
-
-        oResult  = fname;
-        oResult += ext;
-        return true;
-    }
-
-    // Returns the length of an array
-    template <typename T, size_t N>
-    inline int32_t ArrayLength(const T(&)[N])
-    {
-        return int32_t(N);
-    }
-
 } // namespace Utils

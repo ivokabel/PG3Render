@@ -168,11 +168,11 @@ public:
     };
 
     void LoadCornellBox(
-        const Vec2i &aResolution,
-        uint32_t aBoxMask = kDefault,
-        uint32_t aEnvironmentMapType = kEMDefault,
-        float aDbgAux1 = Math::InfinityF(),
-        float aDbgAux2 = Math::InfinityF()
+        const Vec2i         &aResolution,
+        BoxMask              aBoxMask = kDefault,
+        EnvironmentMapType   aEnvironmentMapType = kEMDefault,
+        float                aDbgAux1 = Math::InfinityF(),
+        float                aDbgAux2 = Math::InfinityF()
         )
     {
         aDbgAux1, aDbgAux2; // possibly unused parameters
@@ -243,10 +243,10 @@ public:
             );
 
         // 6) sphere1 (left, yellow)
-        if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
-        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+        else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
@@ -261,10 +261,10 @@ public:
         }
 
         // 7) sphere2 (right, blue)
-        if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
-        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+        else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         else
@@ -279,25 +279,25 @@ public:
         }
 
         // 8) large sphere  
-        if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
                 new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
                 //new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
                 //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
-        else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectric))
+        else if (Utils::IsMasked(aBoxMask, kSpheresFresnelDielectric))
         {
             const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
             const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
             mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
         }
-        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+        else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
         {
             const float roughness =
                 (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(roughness, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
         }
-        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXDielectric))
+        else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXDielectric))
         {
             const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
             const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
@@ -317,11 +317,11 @@ public:
         }
 
         // 9) front vertical rectangle
-        if (IS_MASKED(aBoxMask, kVertRectFresnelDielectric))
+        if (Utils::IsMasked(aBoxMask, kVertRectFresnelDielectric))
             mMaterials.push_back(
                 new SmoothDielectricMaterial(MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
                 //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
-        else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
+        else if (Utils::IsMasked(aBoxMask, kVertRectMicrofacetGGXDielectric))
             mMaterials.push_back(
                 //new MicrofacetGGXDielectricMaterial(0.001f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
                 //new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
@@ -771,9 +771,9 @@ public:
     }
 
     static std::string GetSceneName(
-        uint32_t     aBoxMask,
-        uint32_t     aEnvironmentMapType = kEMInvalid,
-        std::string *oAcronym = NULL)
+        BoxMask              aBoxMask = kDefault,
+        EnvironmentMapType   aEnvironmentMapType = kEMInvalid,
+        std::string         *oAcronym = NULL)
     {
         std::string name;
         std::string acronym;
@@ -793,35 +793,35 @@ public:
             if (geometryUsed)      \
                 name += " ";    
 
-        if (IS_MASKED(aBoxMask, kWalls))
+        if (Utils::IsMasked(aBoxMask, kWalls))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name += "walls";
             acronym += "w";
         }
 
-        if (IS_MASKED(aBoxMask, k2Spheres))
+        if (Utils::IsMasked(aBoxMask, k2Spheres))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "2 spheres";
             acronym += "2s";
         }
 
-        if (IS_MASKED(aBoxMask, k1Sphere))
+        if (Utils::IsMasked(aBoxMask, k1Sphere))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "1 sphere";
             acronym += "1s";
         }
 
-        if (IS_MASKED(aBoxMask, kVerticalRectangle))
+        if (Utils::IsMasked(aBoxMask, kVerticalRectangle))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "vertical rectangle";
             acronym += "vr";
         }
 
-        if (IS_MASKED(aBoxMask, kDiagonalRectangles))
+        if (Utils::IsMasked(aBoxMask, kDiagonalRectangles))
         {
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "diagonal rectangles";
@@ -852,28 +852,28 @@ public:
             if (lightUsed)      \
                 name += " ";    
 
-        if (IS_MASKED(aBoxMask, kLightCeiling))
+        if (Utils::IsMasked(aBoxMask, kLightCeiling))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "ceiling light";
             acronym += "c";
         }
 
-        if (IS_MASKED(aBoxMask, kLightBox))
+        if (Utils::IsMasked(aBoxMask, kLightBox))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "light box";
             acronym += "b";
         }
 
-        if (IS_MASKED(aBoxMask, kLightPoint))
+        if (Utils::IsMasked(aBoxMask, kLightPoint))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "point light";
             acronym += "p";
         }
         
-        if (IS_MASKED(aBoxMask, kLightEnv))
+        if (Utils::IsMasked(aBoxMask, kLightEnv))
         {
             LIGHTS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "env. light";
@@ -904,79 +904,79 @@ public:
             if (materialUsed)      \
                 name += " ";    
 
-        if (IS_MASKED(aBoxMask, kSpheresPhongDiffuse) ||
-            IS_MASKED(aBoxMask, kSpheresPhongGlossy))
+        if (Utils::IsMasked(aBoxMask, kSpheresPhongDiffuse) ||
+            Utils::IsMasked(aBoxMask, kSpheresPhongGlossy))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. Phong";
             acronym += "Sp";
 
-            if (IS_MASKED(aBoxMask, kSpheresPhongDiffuse))
+            if (Utils::IsMasked(aBoxMask, kSpheresPhongDiffuse))
             {
                 name    += " diffuse";
                 acronym += "d";
             }
 
-            if (IS_MASKED(aBoxMask, kSpheresPhongGlossy))
+            if (Utils::IsMasked(aBoxMask, kSpheresPhongGlossy))
             {
                 name    += " glossy";
                 acronym += "g";
             }
         }
-        else if (IS_MASKED(aBoxMask, kSpheresFresnelConductor))
+        else if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. full fresnel conductor";
             acronym += "Sffc";
         }
-        else if (IS_MASKED(aBoxMask, kSpheresFresnelDielectric))
+        else if (Utils::IsMasked(aBoxMask, kSpheresFresnelDielectric))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. full fresnel dielectric";
             acronym += "Sffd";
         }
-        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXConductor))
+        else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. microfacet ggx conductor";
             acronym += "Smgc";
         }
-        else if (IS_MASKED(aBoxMask, kSpheresMicrofacetGGXDielectric))
+        else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXDielectric))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. microfacet ggx dielectric";
             acronym += "Smgd";
         }
 
-        if (IS_MASKED(aBoxMask, kWallsPhongDiffuse) ||
-            IS_MASKED(aBoxMask, kWallsPhongGlossy))
+        if (Utils::IsMasked(aBoxMask, kWallsPhongDiffuse) ||
+            Utils::IsMasked(aBoxMask, kWallsPhongGlossy))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "walls Phong";
             acronym += "Wp";
 
-            if (IS_MASKED(aBoxMask, kWallsPhongDiffuse))
+            if (Utils::IsMasked(aBoxMask, kWallsPhongDiffuse))
             {
                 name    += " diffuse";
                 acronym += "d";
             }
 
-            if (IS_MASKED(aBoxMask, kWallsPhongGlossy))
+            if (Utils::IsMasked(aBoxMask, kWallsPhongGlossy))
             {
                 name    += " glossy";
                 acronym += "g";
             }
         }
 
-        if (IS_MASKED(aBoxMask, kVerticalRectangle))
+        if (Utils::IsMasked(aBoxMask, kVerticalRectangle))
         {
-            if (IS_MASKED(aBoxMask, kVertRectFresnelDielectric))
+            if (Utils::IsMasked(aBoxMask, kVertRectFresnelDielectric))
             {
                 MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
                 name    += "rectangle full fresnel dielectric";
                 acronym += "Rffd";
             }
-            else if (IS_MASKED(aBoxMask, kVertRectMicrofacetGGXDielectric))
+            else if (Utils::IsMasked(aBoxMask, kVertRectMicrofacetGGXDielectric))
             {
                 MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
                 name    += "rectangle microfacet ggx dielectric";

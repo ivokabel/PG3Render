@@ -39,74 +39,74 @@ enum Algorithm
 #define GEOM_RECTANTGLES        Scene::kVerticalRectangle | Scene::kDiagonalRectangles
 #define MATS_PHONG_DIFFUSE      Scene::kWallsPhongDiffuse | Scene::kSpheresPhongDiffuse
 #define MATS_PHONG_GLOSSY       Scene::kWallsPhongGlossy | Scene::kSpheresPhongGlossy
-const uint32_t g_SceneConfigs[] =
+const Scene::BoxMask g_SceneConfigs[] =
 {
     // Point light, box: 0, 1
-    Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
-    Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::BoxMask(Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightPoint   | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
 
     // Ceiling light, box: 2, 3
-    Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
-    Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::BoxMask(Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightCeiling | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
 
     // Light box, box: 4, 5
-    Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
-    Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::BoxMask(Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightBox     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
 
     // Environment map, box: 6, 7
-    Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE,
-    Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_FULL_BOX | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
 
     // Environment map, no walls: 8, 9
-    Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
-    Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     // Multiple lights, diffuse: 10-13
-                         Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
-    Scene::kLightPoint | Scene::kLightBox |                    GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE,
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE,
+    Scene::BoxMask(                     Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightPoint | Scene::kLightBox |                    GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE),
+    Scene::BoxMask(Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE),
 
     // Multiple lights, glossy: 14, 15
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
-    Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY,
+    Scene::BoxMask(Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_2SPHERES_ON_FLOOR | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
+    Scene::BoxMask(Scene::kLightPoint | Scene::kLightBox | Scene::kLightEnv | GEOM_FULL_BOX          | MATS_PHONG_DIFFUSE | MATS_PHONG_GLOSSY),
 
     // Material testing, Full box: 16-19
-    Scene::kLightPoint   | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
-    Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy,
+    Scene::BoxMask(Scene::kLightPoint   | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy),
 
     // Material testing, 1 sphere: 20-26
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse,
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy,
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy,
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelConductor,
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelDielectric,
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXConductor,
-    Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXDielectric,
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelConductor),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelDielectric),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXConductor),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXDielectric),
 
     // Material testing, rectangles: 27-28
-    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric,
-    Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric,
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric),
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric),
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     // Box with sphere: 29-36
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelConductor         | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric        | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse,
-    Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
-    Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse,
-    Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
-    Scene::kLightPoint   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
-    Scene::kLightEnv     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse,
+    Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelConductor         | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric        | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightPoint   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightEnv     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
 
     // 37-38, debug scenes, delete this
-    Scene::kLightBox     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
-    Scene::kLightPoint   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse,
+    Scene::BoxMask(Scene::kLightBox     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse),
+    Scene::BoxMask(Scene::kLightPoint   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse),
 };
 
 // Renderer configuration, holds algorithm, scene, and all other settings. Provides related routines.
@@ -900,7 +900,7 @@ public:
         // Load scene
         Scene *scene = new Scene;
         scene->LoadCornellBox(
-            mResolution, g_SceneConfigs[sceneID], envMapID,
+            mResolution, g_SceneConfigs[sceneID], Scene::EnvironmentMapType(envMapID),
             mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2);
         mScene = scene;
 
