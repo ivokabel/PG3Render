@@ -22,7 +22,7 @@ enum PathTerminationReason
     // (safety recursion limit doesn't count into this)
     kTerminatedByMaxLimit,
 
-    // Stopped by hardwired safety recursion limit (e.g. PATH_TRACER_MAX_PATH_LENGTH)
+    // Stopped by hardwired safety recursion limit (e.g. PathTracer::kMaxPathLength)
     // to avoid stack overflow problems
     kTerminatedBySafetyLimit
 };

@@ -2,13 +2,6 @@
 
 #include "pathtracerbase.hxx"
 
-// Empirical values for cutting too long paths
-#ifdef _DEBUG
-#define PATH_TRACER_MAX_PATH_LENGTH 700     // crash at 700
-#else
-#define PATH_TRACER_MAX_PATH_LENGTH 1500    // 1700 crashes for sure
-#endif
-
 class PathTracer : public PathTracerBase
 {
 public:
@@ -91,7 +84,7 @@ protected:
                 if ((mMaxPathLength > 0) && (pathLength >= mMaxPathLength))
                     return;
 
-                if (pathLength >= PATH_TRACER_MAX_PATH_LENGTH)
+                if (pathLength >= kMaxPathLength)
                     // We cut too long paths even when Russian roulette ending is active
                     // to avoid stack overflows
                     return;
@@ -233,7 +226,7 @@ protected:
                 return;
             }
             
-            if (aPathLength >= PATH_TRACER_MAX_PATH_LENGTH)
+            if (aPathLength >= kMaxPathLength)
             {
                 // We cut too long paths even when Russian roulette ending is active
                 // to avoid stack overflows
@@ -455,4 +448,14 @@ protected:
         oNextStepSplitBudget =
             1 + ((aSplitBudget - oBrdfSamplesCount) / (float)oBrdfSamplesCount);
     }
+
+protected:
+
+// Empirical values for cutting too long paths
+#ifdef _DEBUG
+    const uint32_t kMaxPathLength = 700;     // crash at 700
+#else
+    const uint32_t kMaxPathLength = 1500    // 1700 crashes for sure
+#endif
+
 };
