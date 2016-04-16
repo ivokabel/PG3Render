@@ -1,8 +1,9 @@
+#include "process.hxx"
 #include "debugging.hxx"
 
 #include <windows.h>
 
-void SetProcessPriority()
+void Process::SetPriority()
 {
     if (!SetPriorityClass(
             GetCurrentProcess(), 

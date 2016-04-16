@@ -1,3 +1,6 @@
 #pragma once
 
-void SetProcessPriority();
+namespace Process
+{
+    void SetPriority();
+}

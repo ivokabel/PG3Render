@@ -51,7 +51,7 @@ float Render(
     RendererIntrospectionDataAggregator &aIntrospectionAggregator,
     uint32_t                            *oUsedIterations = NULL)
 {
-    SetProcessPriority();
+    Process::SetPriority();
 
     // Set number of used threads
     omp_set_num_threads(aConfig.mNumThreads);
