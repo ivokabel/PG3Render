@@ -4,14 +4,21 @@
 
 #include <iostream>
 
-void init_debugging();
-
 #ifndef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 // Uncomment this to activate all asserts in the code
 //#define PG3_ASSERT_ENABLED
 #endif
 
-void pg3_exit();
+class Debugging
+{
+public:
+    static void Init();
+
+    static void Exit();
+
+private:
+    static bool trueValue;
+};
 
 #define PG3_WARNING( _message, ... ) \
     for(;;) \
@@ -53,7 +60,7 @@ void pg3_exit();
         \
         fflush(stderr); \
         \
-        pg3_exit(); \
+        Debugging::Exit(); \
         \
         break; \
     }
@@ -68,7 +75,7 @@ void pg3_exit();
                 std::cerr << std::endl << std::endl << \
                     "Assertion\n\t'" #__expr "'\nfailed at " << __FILE__ << ":" << __LINE__ << \
                     std::endl << std::flush; \
-                pg3_exit(); \
+                Debugging::Exit(); \
             } \
             break; \
         }
@@ -87,7 +94,7 @@ void pg3_exit();
                     , __FILE__, __LINE__, __VA_ARGS__ \
                     ); \
                 fflush(stderr); \
-                pg3_exit(); \
+                Debugging::Exit(); \
             } \
             break; \
         }

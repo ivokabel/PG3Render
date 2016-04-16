@@ -2,18 +2,18 @@
 #include <stdio.h>
 #include "debugging.hxx"
 
-bool gTrueValue = false;
+bool Debugging::trueValue = false;
 
-void pg3_exit()
+void Debugging::Exit()
 {
     //getchar(); // Wait for pressing the enter key on the command line
 
-    if (gTrueValue) // Avoid "unreachable code" warning by making sure that compiler doesn't know 
+    if (trueValue)  // Avoid "unreachable code" warning by making sure that compiler doesn't know 
                     // at compile time whether exit() gets execuded
         exit(-1);
 }
 
-void init_debugging()
+void Debugging::Init()
 {
-    gTrueValue = true;
+    trueValue = true;
 }

@@ -183,7 +183,7 @@ void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 // Main
 int32_t main(int32_t argc, const char *argv[])
 {
-    init_debugging();
+    Debugging::Init();
 
 #ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
