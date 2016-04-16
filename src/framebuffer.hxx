@@ -8,7 +8,6 @@
 #include "utils.hxx"
 #include "types.hxx"
 
-#define USE_DOUBLE_FRAMEBUFFER
 #ifdef USE_DOUBLE_FRAMEBUFFER
 typedef SpectrumD       FramebufferSpectrum;
 typedef SRGBSpectrumD   FramebufferSRGBSpectrum;
