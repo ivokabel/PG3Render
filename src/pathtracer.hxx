@@ -126,7 +126,7 @@ protected:
                 // Construct new ray from the current surface point
                 currentRay.org  = surfPt;
                 currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
-                currentRay.tmin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
+                currentRay.tmin = Utils::Geom::EpsRayCos(matRecord.ThetaInCosAbs());
 
                 if (matRecord.mPdfW != Math::InfinityF())
                     pathThroughput *=
@@ -310,7 +310,7 @@ protected:
                 int32_t     bsdfLightId = -1;
 
                 const Vec3f wig = surfFrame.ToWorld(matRecord.mWil);
-                const float rayMin = EPS_RAY_COS(matRecord.ThetaInCosAbs());
+                const float rayMin = Utils::Geom::EpsRayCos(matRecord.ThetaInCosAbs());
                 const Ray   bsdfRay(surfPt, wig, rayMin);
 
                 EstimateIncomingRadiancePT(

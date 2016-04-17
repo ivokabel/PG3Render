@@ -106,7 +106,7 @@ public:
             const float distSqr = wig.LenSqr();
             wig /= sqrt(distSqr);
             const float absCosThetaOut = abs(Dot(mFrame.mZ, wig));
-            *oPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), EPS_DIST);
+            *oPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), Utils::Geom::kEpsDist);
         }
 
         if (aWol.z <= 0.)
@@ -232,9 +232,9 @@ private:
 
         // Angular PDF. We use low epsilon boundary to avoid division by very small PDFs.
         const float absCosThetaOut = abs(cosThetaOut);
-        oSample.mPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), EPS_DIST);
+        oSample.mPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), Utils::Geom::kEpsDist);
 
-        PG3_ASSERT(oSample.mPdfW >= EPS_DIST);
+        PG3_ASSERT(oSample.mPdfW >= Utils::Geom::kEpsDist);
 
         oSample.mLightProbability = 1.0f;
     }

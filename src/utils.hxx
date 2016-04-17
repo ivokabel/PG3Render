@@ -13,16 +13,6 @@
 #include <iomanip>
 #include <cstdlib>
 
-//#define EPS_COSINE            1e-6f
-#define EPS_RAY                 1e-3f
-// Dynamic version (chooses from [EPS_RAY, N*EPS_RAY])
-// eps + n * (1-cos) * eps = (1 + n * (1-cos)) * eps
-// The smaller the cosine is, the larger epsilon we use to avoid 
-// numerical problems, e.g. causing self-intersection when shooting rays from a surface,
-// while starting as close to the surface as possible to avoid light leaks
-#define EPS_RAY_COS(_cos)       ((1.f + 2.f * (1.f - (_cos))) * EPS_RAY)
-#define EPS_DIST                1e-6f
-
 //////////////////////////////////////////////////////////////////////////
 // Various utility functions
 //////////////////////////////////////////////////////////////////////////
@@ -258,6 +248,19 @@ namespace Utils
     //////////////////////////////////////////////////////////////////////////
     namespace Geom
     {
+        const float kEpsRay = 1e-3f;
+
+        // Dynamic version (chooses from [kEpsRay, N*kEpsRay])
+        // eps + n * (1-cos) * eps = (1 + n * (1-cos)) * eps
+        // The smaller the cosine is, the larger epsilon we use to avoid 
+        // numerical problems, e.g. causing self-intersection when shooting rays from a surface,
+        // while starting as close to the surface as possible to avoid light leaks
+        float EpsRayCos(float aCos)
+        {
+            return (1.f + 2.f * (1.f - aCos)) * kEpsRay;
+        }
+
+        const float kEpsDist = 1e-6f;
 
         // Theta - inclination angle
         // Phi   - azimuth angle

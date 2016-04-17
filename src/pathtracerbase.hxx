@@ -98,7 +98,7 @@ public:
         int32_t lightId = -1;
 
         const Vec3f wig = aSurfFrame.ToWorld(aWil);
-        const float rayMin = EPS_RAY_COS(aWil.z);
+        const float rayMin = Utils::Geom::EpsRayCos(aWil.z);
         const Ray bsdfRay(aSurfPt, wig, rayMin);
         Isect bsdfIsect(1e36f);
         if (mConfig.mScene->Intersect(bsdfRay, bsdfIsect))

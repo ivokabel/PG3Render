@@ -8,6 +8,7 @@
 #include "lights.hxx"
 #include "types.hxx"
 #include "debugging.hxx"
+#include "utils.hxx"
 
 #include <algorithm>
 #include <string>
@@ -63,11 +64,11 @@ public:
         float aTMax) const
     {
         Ray ray;
-        ray.org  = aPoint + aDir * EPS_RAY;
+        ray.org  = aPoint + aDir * Utils::Geom::kEpsRay;
         ray.dir  = aDir;
         ray.tmin = 0;
         Isect isect;
-        isect.dist = aTMax - 2*EPS_RAY;
+        isect.dist = aTMax - 2 * Utils::Geom::kEpsRay;
 
         return mGeometry->IntersectP(ray, isect);
     }
