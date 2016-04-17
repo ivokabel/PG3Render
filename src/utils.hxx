@@ -154,9 +154,6 @@ namespace Utils
 
             aCosThetaI = Math::Clamp(aCosThetaI, 0.0f, 1.0f);
 
-//#define USE_ART_FRESNEL
-#define USE_MITSUBA_FRESNEL
-
 #ifdef USE_ART_FRESNEL
 
             const float cosThetaSqr = Math::Sqr(aCosThetaI);
