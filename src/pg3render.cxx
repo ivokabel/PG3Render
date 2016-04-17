@@ -170,7 +170,7 @@ float Render(
 
 //////////////////////////////////////////////////////////////////////////
 // Unit testing
-#ifdef UNIT_TESTS_CODE_ENABLED
+#ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
     Utils::Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);

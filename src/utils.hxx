@@ -483,7 +483,7 @@ namespace Utils
             return halfwayVec;
         }
 
-        #ifdef UNIT_TESTS_CODE_ENABLED
+        #ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
         bool _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel,

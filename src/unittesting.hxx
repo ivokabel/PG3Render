@@ -2,10 +2,7 @@
 
 #include "hardsettings.hxx"
 
-// Unit testing code switch
-#if defined RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
-#define UNIT_TESTS_CODE_ENABLED
-#endif
+// Unit testing if switched on by defining RUN_UNIT_TESTS_INSTEAD_OF_RENDERER in hard-wired settings
 
 enum UnitTestBlockLevel
 {
