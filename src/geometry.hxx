@@ -18,10 +18,10 @@ public:
     virtual ~AbstractGeometry(){};
 
     // Finds the closest intersection
-    virtual bool Intersect (const Ray& aRay, Isect& oResult) const = 0;
+    virtual bool Intersect (const Ray& aRay, RayIntersection& oResult) const = 0;
 
     // Finds any intersection, default calls Intersect
-    virtual bool IntersectP(const Ray& aRay, Isect& oResult) const
+    virtual bool IntersectP(const Ray& aRay, RayIntersection& oResult) const
     {
         return Intersect(aRay, oResult);
     }
@@ -40,7 +40,7 @@ public:
             delete mGeometry[i];
     };
 
-    virtual bool Intersect(const Ray& aRay, Isect& oResult) const
+    virtual bool Intersect(const Ray& aRay, RayIntersection& oResult) const
     {
         bool anyIntersection = false;
 
@@ -56,8 +56,8 @@ public:
     }
 
     virtual bool IntersectP(
-        const Ray &aRay,
-        Isect     &oResult) const
+        const Ray       &aRay,
+        RayIntersection &oResult) const
     {
         for (uint32_t i=0; i<mGeometry.size(); i++)
         {
@@ -101,8 +101,8 @@ public:
     }
 
     virtual bool Intersect(
-        const Ray &aRay,
-        Isect     &oResult) const
+        const Ray       &aRay,
+        RayIntersection &oResult) const
     {
         const Vec3f ao = p[0] - aRay.org;
         const Vec3f bo = p[1] - aRay.org;
@@ -174,8 +174,8 @@ public:
     // http://wiki.cgsociety.org/index.php/Ray_Sphere_Intersection
 
     virtual bool Intersect(
-        const Ray &aRay,
-        Isect     &oResult) const
+        const Ray       &aRay,
+        RayIntersection &oResult) const
     {
         // we transform ray origin into object space (mCenter == origin)
         const Vec3f transformedOrigin = aRay.org - mCenter;

@@ -20,7 +20,7 @@ public:
     {
         LightSamplingContext lightSamplingCtx(mConfig.mScene->GetLightCount());
 
-        Isect isect(1e36f);
+        RayIntersection isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
         {
             const Vec3f surfPt = aRay.PointAt(isect.dist);

@@ -39,7 +39,7 @@ public:
                 (aIteration == 0 ? Vec2f(0.5f) : mRng.GetVec2f());
 
             Ray   ray = mConfig.mScene->mCamera.GenerateRay(sample);
-            Isect isect;
+            RayIntersection isect;
             isect.dist = 1e36f;
 
             if (mConfig.mScene->Intersect(ray, isect))

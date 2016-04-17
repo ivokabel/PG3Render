@@ -27,21 +27,21 @@ struct Ray
         return org + dir * aT;
     }
 
-    Vec3f org;  //!< Ray origin
-    Vec3f dir;  //!< Ray direction
-    float tmin; //!< Minimal distance to intersection
+    Vec3f org;  // Ray origin
+    Vec3f dir;  // Ray direction
+    float tmin; // Minimal distance to intersection
 };
 
-struct Isect
+struct RayIntersection
 {
-    Isect()
+    RayIntersection()
     {}
 
-    Isect(float aMaxDist):dist(aMaxDist)
+    RayIntersection(float aMaxDist):dist(aMaxDist)
     {}
 
-    float       dist;    //!< Distance to closest intersection (serves as ray.tmax)
-    int32_t     matID;   //!< ID of intersected material
-    int32_t     lightID; //!< ID of intersected light (if < 0, then none)
-    Vec3f       normal;  //!< Normal at the intersection
+    float       dist;    // Distance to closest intersection (serves as ray.tmax)
+    int32_t     matID;   // ID of intersected material
+    int32_t     lightID; // ID of intersected light (if < 0, then none)
+    Vec3f       normal;  // Normal at the intersection
 };

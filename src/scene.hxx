@@ -41,7 +41,7 @@ public:
 
     bool Intersect(
         const Ray &aRay,
-        Isect     &oResult) const
+        RayIntersection     &oResult) const
     {
         bool hit = mGeometry->Intersect(aRay, oResult);
 
@@ -67,7 +67,7 @@ public:
         ray.org  = aPoint + aDir * Utils::Geom::kEpsRay;
         ray.dir  = aDir;
         ray.tmin = 0;
-        Isect isect;
+        RayIntersection isect;
         isect.dist = aTMax - 2 * Utils::Geom::kEpsRay;
 
         return mGeometry->IntersectP(ray, isect);

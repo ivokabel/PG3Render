@@ -55,7 +55,7 @@ protected:
 
         for (uint32_t pathLength = 1;;)
         {
-            Isect isect(1e36f);
+            RayIntersection isect(1e36f);
             if (mConfig.mScene->Intersect(currentRay, isect))
             {
                 // We hit some geometry
@@ -182,7 +182,7 @@ protected:
 
         LightSamplingContext lightSamplingCtx(mConfig.mScene->GetLightCount());
 
-        Isect isect(1e36f);
+        RayIntersection isect(1e36f);
         if (mConfig.mScene->Intersect(aRay, isect))
         {
             // We hit some geometry
