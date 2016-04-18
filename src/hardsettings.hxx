@@ -4,7 +4,7 @@
 // Hard-wired settings
 //////////////////////////////////////////////////////////////////////////
 
-//#define PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+//#define PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
 #define PG3_USE_DOUBLE_FRAMEBUFFER
 
@@ -16,4 +16,4 @@
 //#define PG3_USE_BALANCE_MIS_HEURISTIC
 #define PG3_USE_POWER_MIS_HEURISTIC
 
-//#define PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+//#define PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
