@@ -51,7 +51,7 @@ public:
 
     virtual void RunIteration(
         const Algorithm     aAlgorithm,
-        uint32_t            aIteration)
+        uint32_t            aIteration) override
     {
         aIteration; // unused parameter
 

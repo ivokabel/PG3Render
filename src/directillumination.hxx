@@ -16,7 +16,7 @@ public:
         const Algorithm      aAlgorithm,
         const Ray           &aRay,
               SpectrumF     &oRadiance
-        )
+        ) override
     {
         LightSamplingContext lightSamplingCtx(mConfig.mScene->GetLightCount());
 

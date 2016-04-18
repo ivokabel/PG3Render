@@ -92,7 +92,7 @@ public:
         const Vec3f &aSurfPt,
               float *oPdfW = NULL,
         const Frame *aSurfFrame = NULL
-        ) const
+        ) const override
     {
         aSurfFrame; // unused param
 
@@ -128,7 +128,7 @@ public:
         const AbstractMaterial  &aSurfMaterial,
         Rng                     &aRng,
         LightSample             &oSample
-        ) const
+        ) const override
     {
         // Sample the whole triangle surface
         const Vec2f rnd = aRng.GetVec2f();
@@ -148,7 +148,7 @@ public:
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
               Rng               &aRng
-        ) const
+        ) const override
     {
         aRng; // unused param
 
@@ -271,7 +271,7 @@ public:
         const Vec3f &aSurfPt,
               float *oPdfW = NULL,
         const Frame *aSurfFrame = NULL
-        ) const
+        ) const override
     {
         aSurfPt; aLightPt; aSurfFrame; aWol; // unused parameter
 
@@ -287,7 +287,7 @@ public:
         const AbstractMaterial  &aSurfMaterial,
         Rng                     &aRng,
         LightSample             &oSample
-        ) const
+        ) const override
     {
         aRng; // unused param
 
@@ -299,7 +299,7 @@ public:
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
               Rng               &aRng
-        ) const
+        ) const override
     {
         aRng; // unused param
 
@@ -406,7 +406,7 @@ public:
         const Vec3f &aSurfPt,
               float *oPdfW = NULL,
         const Frame *aSurfFrame = NULL
-        ) const
+        ) const override
     {
         aSurfPt;  aLightPt; // unused params
 
@@ -420,7 +420,7 @@ public:
         const AbstractMaterial  &aSurfMaterial,
         Rng                     &aRng,
         LightSample             &oSample
-        ) const
+        ) const override
     {
         aSurfPt; // unused parameter
 
@@ -459,7 +459,7 @@ public:
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
               Rng               &aRng
-        ) const
+        ) const override
     {
         aSurfPt; // unused param
 

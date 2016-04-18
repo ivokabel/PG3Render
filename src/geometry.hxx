@@ -18,7 +18,7 @@ public:
     virtual ~AbstractGeometry(){};
 
     // Finds the closest intersection
-    virtual bool Intersect (const Ray& aRay, RayIntersection& oResult) const = 0;
+    virtual bool Intersect(const Ray& aRay, RayIntersection& oResult) const = 0;
 
     // Finds any intersection, default calls Intersect
     virtual bool IntersectP(const Ray& aRay, RayIntersection& oResult) const
@@ -27,7 +27,7 @@ public:
     }
 
     // Grows given bounding box by this object
-    virtual void GrowBBox(Vec3f &aoBBoxMin, Vec3f &aoBBoxMax) = 0;
+    virtual void GrowBBox(Vec3f &aoBBoxMin, Vec3f &aoBBoxMax) const = 0;
 };
 
 class GeometryList : public AbstractGeometry
@@ -40,7 +40,7 @@ public:
             delete mGeometry[i];
     };
 
-    virtual bool Intersect(const Ray& aRay, RayIntersection& oResult) const
+    virtual bool Intersect(const Ray& aRay, RayIntersection& oResult) const override
     {
         bool anyIntersection = false;
 
@@ -57,7 +57,7 @@ public:
 
     virtual bool IntersectP(
         const Ray       &aRay,
-        RayIntersection &oResult) const
+        RayIntersection &oResult) const override
     {
         for (uint32_t i=0; i<mGeometry.size(); i++)
         {
@@ -70,7 +70,7 @@ public:
 
     virtual void GrowBBox(
         Vec3f &aoBBoxMin,
-        Vec3f &aoBBoxMax)
+        Vec3f &aoBBoxMax) const override
     {
         for (uint32_t i=0; i<mGeometry.size(); i++)
             mGeometry[i]->GrowBBox(aoBBoxMin, aoBBoxMax);
@@ -102,7 +102,7 @@ public:
 
     virtual bool Intersect(
         const Ray       &aRay,
-        RayIntersection &oResult) const
+        RayIntersection &oResult) const override
     {
         const Vec3f ao = p[0] - aRay.org;
         const Vec3f bo = p[1] - aRay.org;
@@ -135,7 +135,7 @@ public:
 
     virtual void GrowBBox(
         Vec3f &aoBBoxMin,
-        Vec3f &aoBBoxMax)
+        Vec3f &aoBBoxMax) const override
     {
         for (uint32_t i=0; i<3; i++)
         {
@@ -175,7 +175,7 @@ public:
 
     virtual bool Intersect(
         const Ray       &aRay,
-        RayIntersection &oResult) const
+        RayIntersection &oResult) const override
     {
         // we transform ray origin into object space (mCenter == origin)
         const Vec3f transformedOrigin = aRay.org - mCenter;
@@ -246,7 +246,7 @@ public:
 
     virtual void GrowBBox(
         Vec3f &aoBBoxMin,
-        Vec3f &aoBBoxMax)
+        Vec3f &aoBBoxMax) const override
     {
         for (uint32_t i=0; i<8; i++)
         {
@@ -254,7 +254,8 @@ public:
             Vec3f half(mRadius);
 
             for (uint32_t j=0; j<3; j++)
-                if (i & (1 << j)) half.Get(j) = -half.Get(j);
+                if (i & (1 << j))
+                    half.Get(j) = -half.Get(j);
             
             p += half;
 
