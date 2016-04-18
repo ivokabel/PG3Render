@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#ifndef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+#ifndef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 // Uncomment this to activate all asserts in the code
 //#define PG3_ASSERT_ENABLED
 #endif

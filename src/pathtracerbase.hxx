@@ -480,9 +480,9 @@ public:
         const uint32_t      aStrategy2Count
         )
     {
-#if defined MIS_BALANCE_HEURISTIC
+#if defined PG3_USE_BALANCE_MIS_HEURISTIC
         return MISWeight2Balanced(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
-#elif defined MIS_POWER_HEURISTIC
+#elif defined PG3_USE_POWER_MIS_HEURISTIC
         return MISWeight2Power(aStrategy1Pdf, aStrategy1Count, aStrategy2Pdf, aStrategy2Count);
 #else
 #error Undefined MIS heuristic mode!

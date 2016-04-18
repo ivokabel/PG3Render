@@ -154,7 +154,7 @@ namespace Utils
 
             aCosThetaI = Math::Clamp(aCosThetaI, 0.0f, 1.0f);
 
-#ifdef USE_ART_FRESNEL
+#ifdef PG3_USE_ART_FRESNEL
 
             const float cosThetaSqr = Math::Sqr(aCosThetaI);
             const float sinThetaSqr = std::max(1.0f - cosThetaSqr, 0.0f);
@@ -199,7 +199,7 @@ namespace Utils
             PG3_ASSERT_FLOAT_IN_RANGE(reflectance,       0.0f, 1.0f);
             PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(reflPerpendicular, reflParallel);
 
-#elif defined USE_MITSUBA_FRESNEL
+#elif defined PG3_USE_MITSUBA_FRESNEL
 
             // Taken and modified from Mitsuba renderer, which states:
             //      "Modified from "Optics" by K.D. Moeller, University Science Books, 1988"
@@ -483,7 +483,7 @@ namespace Utils
             return halfwayVec;
         }
 
-        #ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+        #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
         bool _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel,

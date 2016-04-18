@@ -29,7 +29,7 @@ enum PathTerminationReason
 
 class RendererIntrospectionDataBase
 {
-#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
 public:
     RendererIntrospectionDataBase()
@@ -81,7 +81,7 @@ public:
     {
         aLength; aTerminationReason; // potentially unused params
 
-#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
         mCorePathsCount++;
         mCorePathsMinLength = std::min(mCorePathsMinLength, aLength);
@@ -127,7 +127,7 @@ public:
     {
         aRendererData;
 
-#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
         mCorePathsCount += aRendererData.mCorePathsCount;
 
@@ -153,7 +153,7 @@ public:
 
     void PrintIntrospection() const
     {
-#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
         printf("\nIntrospection (core paths): ");
         if (mCorePathsCount > 0)
@@ -197,7 +197,7 @@ protected:
     {
         aLowerBound; aUpperBound;  aTerminatedCount; // potentially unused params
 
-#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
         auto percentage = (100.f * aTerminatedCount) / mCorePathsCount;
         printf(
@@ -214,7 +214,7 @@ protected:
     {
         aTerminatedCount; aTermReasonDescr; // potentially unused params
 
-#ifdef COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
         const auto percentage = (100.f * aTerminatedCount) / mCorePathsCount;
         printf(

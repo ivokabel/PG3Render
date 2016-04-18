@@ -201,7 +201,7 @@ public:
             filename += outStream.str();
         }
 
-    #ifndef ENVMAP_USE_IMPORTANCE_SAMPLING
+    #ifndef PG3_USE_ENVMAP_IMPORTANCE_SAMPLING
         // Debug info
         if (   (mAlgorithm >= kDirectIllumLightSamplingAll)
             && (mAlgorithm <= kDirectIllumMis))

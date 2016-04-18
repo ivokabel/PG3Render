@@ -2,7 +2,7 @@
 
 #include "hardsettings.hxx"
 
-// Unit testing if switched on by defining RUN_UNIT_TESTS_INSTEAD_OF_RENDERER in hard-wired settings
+// Unit testing if switched on by defining PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER in hard-wired settings
 
 enum UnitTestBlockLevel
 {

@@ -170,7 +170,7 @@ float Render(
 
 //////////////////////////////////////////////////////////////////////////
 // Unit testing
-#ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
     Utils::Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
@@ -185,7 +185,7 @@ int32_t main(int32_t argc, const char *argv[])
 {
     Debugging::Init();
 
-#ifdef RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
     argc; argv; // unused params
 

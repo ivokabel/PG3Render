@@ -426,7 +426,7 @@ public:
 
         if (mEnvMap != NULL)
         {
-            #ifdef ENVMAP_USE_IMPORTANCE_SAMPLING
+            #ifdef PG3_USE_ENVMAP_IMPORTANCE_SAMPLING
                 SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, oSample);
             #else
                 SampleEnvMapCosSphere(aRng, aSurfFrame, aSurfMaterial, oSample);
