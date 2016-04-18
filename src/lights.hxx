@@ -5,7 +5,7 @@
 #include "rng.hxx"
 #include "environmentmap.hxx"
 #include "types.hxx"
-#include "hardsettings.hxx"
+#include "hardconfig.hxx"
 
 #include <vector>
 #include <cmath>

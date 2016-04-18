@@ -8,7 +8,7 @@
 #include "scene.hxx"
 #include "types.hxx"
 #include "utils.hxx"
-#include "hardsettings.hxx"
+#include "hardconfig.hxx"
 
 #include <omp.h>
 #include <string>

@@ -6,7 +6,7 @@
 #include "framebuffer.hxx"
 #include "config.hxx"
 #include "types.hxx"
-#include "hardsettings.hxx"
+#include "hardconfig.hxx"
 
 enum PathTerminationReason
 {

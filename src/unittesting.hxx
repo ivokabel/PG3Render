@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hardsettings.hxx"
+#include "hardconfig.hxx"
 
 // Unit testing if switched on by defining PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER in hard-wired settings
 

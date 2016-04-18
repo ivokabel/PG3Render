@@ -4,7 +4,7 @@
 #include "renderer.hxx"
 #include "rng.hxx"
 #include "types.hxx"
-#include "hardsettings.hxx"
+#include "hardconfig.hxx"
 
 #include <vector>
 #include <cmath>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hardsettings.hxx"
+#include "hardconfig.hxx"
 
 #include <iostream>
 
