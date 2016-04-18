@@ -72,8 +72,8 @@ public:
         FramebufferSpectrum scaleAttenuation;
         scaleAttenuation.SetGreyAttenuation(aScale);
 
-        for (size_t i = 0; i < mRadiance.size(); i++)
-            mRadiance[i] *= scaleAttenuation;
+        for (auto& spectrum : mRadiance)
+            spectrum *= scaleAttenuation;
     }
 
     //////////////////////////////////////////////////////////////////////////

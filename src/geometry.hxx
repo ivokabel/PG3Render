@@ -36,17 +36,17 @@ public:
 
     virtual ~GeometryList()
     {
-        for (uint32_t i=0; i<mGeometry.size(); i++)
-            delete mGeometry[i];
+        for (auto& geometry : mGeometry)
+            delete geometry;
     };
 
     virtual bool Intersect(const Ray& aRay, RayIntersection& oResult) const override
     {
         bool anyIntersection = false;
 
-        for (uint32_t i=0; i<mGeometry.size(); i++)
+        for (const auto& geometry : mGeometry)
         {
-            bool hit = mGeometry[i]->Intersect(aRay, oResult);
+            bool hit = geometry->Intersect(aRay, oResult);
 
             if (hit)
                 anyIntersection = true;
@@ -59,9 +59,9 @@ public:
         const Ray       &aRay,
         RayIntersection &oResult) const override
     {
-        for (uint32_t i=0; i<mGeometry.size(); i++)
+        for (const auto& geometry : mGeometry)
         {
-            if (mGeometry[i]->IntersectP(aRay, oResult))
+            if (geometry->IntersectP(aRay, oResult))
                 return true;
         }
 
@@ -72,8 +72,8 @@ public:
         Vec3f &aoBBoxMin,
         Vec3f &aoBBoxMax) const override
     {
-        for (uint32_t i=0; i<mGeometry.size(); i++)
-            mGeometry[i]->GrowBBox(aoBBoxMin, aoBBoxMax);
+        for (const auto& geometry : mGeometry)
+            geometry->GrowBBox(aoBBoxMin, aoBBoxMax);
     }
 
 public:

@@ -31,13 +31,13 @@ public:
         if (mGeometry != NULL)
             delete mGeometry;
 
-        for (size_t i=0; i<mLights.size(); i++)
-            if (mLights[i] != NULL)
-                delete mLights[i];
+        for (auto& light : mLights)
+            if (light != NULL)
+                delete light;
         
-         for (size_t i = 0; i<mMaterials.size(); i++)
-            if (mMaterials[i] != NULL)
-                delete mMaterials[i];
+        for (auto& material : mMaterials)
+            if (material != NULL)
+                delete material;
 
          // mBackground gets deleted with all other lights
          // TODO: Use shared pointer for this?
@@ -94,7 +94,7 @@ public:
     {
         PG3_ASSERT_INTEGER_IN_RANGE(aLightIdx, 0, (int32_t)(mLights.size() - 1));
 
-        aLightIdx = std::min<int32_t>(aLightIdx, (int32_t)mLights.size()-1);
+        aLightIdx = std::min<int32_t>(aLightIdx, (int32_t)mLights.size() - 1);
         return mLights[aLightIdx];
     }
 
