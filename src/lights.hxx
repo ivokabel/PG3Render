@@ -33,6 +33,8 @@ class AbstractLight
 {
 public:
 
+    virtual ~AbstractLight() {};
+
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: outgoing radiance * geometric component
     virtual void SampleIllumination(
@@ -368,6 +370,12 @@ public:
         mEnvMap(NULL)
     {
         mConstantRadiance.MakeZero();
+    }
+
+    virtual ~BackgroundLight() override
+    {
+        if (mEnvMap != NULL)
+            delete mEnvMap;
     }
 
     virtual void SetConstantRadiance(const SpectrumF &aRadiance)

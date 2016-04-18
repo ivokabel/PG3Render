@@ -28,7 +28,8 @@ public:
 
     ~Scene()
     {
-        delete mGeometry;
+        if (mGeometry != NULL)
+            delete mGeometry;
 
         for (size_t i=0; i<mLights.size(); i++)
             if (mLights[i] != NULL)
@@ -37,6 +38,9 @@ public:
          for (size_t i = 0; i<mMaterials.size(); i++)
             if (mMaterials[i] != NULL)
                 delete mMaterials[i];
+
+         // mBackground gets deleted with all other lights
+         // TODO: Use shared pointer for this?
     }
 
     bool Intersect(
