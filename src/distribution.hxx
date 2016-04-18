@@ -159,26 +159,26 @@ struct Distribution2D
 public:
     Distribution2D(const float *aFunc, int32_t sCountU, int32_t sCountV)
     {
-        pConditionalV.reserve(sCountV);
+        mConditionalV.reserve(sCountV);
         for (int32_t v = 0; v < sCountV; ++v) 
         {
             // Compute conditional sampling distribution for $\tilde{v}$
-            pConditionalV.push_back(new Distribution1D(&aFunc[v*sCountU], sCountU));
+            mConditionalV.push_back(new Distribution1D(&aFunc[v*sCountU], sCountU));
         }
 
         // Compute marginal sampling distribution $p[\tilde{v}]$
         std::vector<float> marginalFunc;
         marginalFunc.reserve(sCountV);
         for (int32_t v = 0; v < sCountV; ++v)
-            marginalFunc.push_back(pConditionalV[v]->mFuncIntegral);
-        pMarginal = new Distribution1D(&marginalFunc[0], sCountV);
+            marginalFunc.push_back(mConditionalV[v]->mFuncIntegral);
+        mMarginal = new Distribution1D(&marginalFunc[0], sCountV);
     }
 
     ~Distribution2D()
     {
-        delete pMarginal;
-        for (uint32_t i = 0; i < pConditionalV.size(); ++i)
-            delete pConditionalV[i];
+        delete mMarginal;
+        for (auto& conditional : mConditionalV)
+            delete conditional;
     }
 
     void SampleContinuous(const Vec2f &rndSamples, Vec2f &oUV, Vec2ui &oSegm, float *oPdf) const
@@ -186,8 +186,8 @@ public:
         float margPdf;
         float condPdf;
 
-        pMarginal->SampleContinuous(rndSamples.x, oUV.y, oSegm.y, margPdf);
-        pConditionalV[oSegm.y]->SampleContinuous(rndSamples.y, oUV.x, oSegm.x, condPdf);
+        mMarginal->SampleContinuous(rndSamples.x, oUV.y, oSegm.y, margPdf);
+        mConditionalV[oSegm.y]->SampleContinuous(rndSamples.y, oUV.x, oSegm.x, condPdf);
 
         if (oPdf != NULL)
             *oPdf = margPdf * condPdf;
@@ -198,15 +198,15 @@ public:
     {
         // Find u and v segments
         uint32_t iu = 
-            Math::Clamp((uint32_t)(aUV.x * pConditionalV[0]->mCount), 0u, pConditionalV[0]->mCount - 1);
+            Math::Clamp((uint32_t)(aUV.x * mConditionalV[0]->mCount), 0u, mConditionalV[0]->mCount - 1);
         uint32_t iv = 
-            Math::Clamp((uint32_t)(aUV.y * pMarginal->mCount), 0u, pMarginal->mCount - 1);
+            Math::Clamp((uint32_t)(aUV.y * mMarginal->mCount), 0u, mMarginal->mCount - 1);
 
         // Compute probabilities
-        return pConditionalV[iv]->mPdf[iu] * pMarginal->mPdf[iv];
+        return mConditionalV[iv]->mPdf[iu] * mMarginal->mPdf[iv];
     }
 
 private:
-    std::vector<Distribution1D*>     pConditionalV;
-    Distribution1D                  *pMarginal;
+    std::vector<Distribution1D*>     mConditionalV;
+    Distribution1D                  *mMarginal;
 };
