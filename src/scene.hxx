@@ -40,8 +40,8 @@ public:
     }
 
     bool Intersect(
-        const Ray &aRay,
-        RayIntersection     &oResult) const
+        const Ray       &aRay,
+        RayIntersection &oResult) const
     {
         bool hit = mGeometry->Intersect(aRay, oResult);
 

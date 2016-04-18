@@ -265,7 +265,7 @@ public:
         return mIntrospectionData;
     }
 
-    //! Whether this renderer was used at all
+    // Whether this renderer was used at all
     bool WasUsed() const { return mIterations > 0; }
 
 protected:
