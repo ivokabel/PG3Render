@@ -64,11 +64,11 @@ public:
         float aTMax) const
     {
         Ray ray;
-        ray.org  = aPoint + aDir * Utils::Geom::kEpsRay;
+        ray.org  = aPoint + aDir * Geom::kEpsRay;
         ray.dir  = aDir;
         ray.tmin = 0;
         RayIntersection isect;
-        isect.dist = aTMax - 2 * Utils::Geom::kEpsRay;
+        isect.dist = aTMax - 2 * Geom::kEpsRay;
 
         return mGeometry->IntersectP(ray, isect);
     }

@@ -101,6 +101,15 @@
     <ClInclude Include="src\unittesting.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\microfacet.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sampling.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geom.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

@@ -2,8 +2,8 @@
 
 #include "spectrum.hxx"
 #include <ImfRgbaFile.h>    // OpenEXR
-//#include "pdf.hxx"
 #include "debugging.hxx"
+#include "geom.hxx"
 #include "math.hxx"
 #include "distribution.hxx"
 #include "types.hxx"
@@ -277,7 +277,7 @@ private:
         const float phi   = -(uv.x - 0.5f) * 2 * Math::kPiF; // we rotate in the opposite direction
         const float theta = uv.y * Math::kPiF;
 
-        return Utils::Geom::CreateDirection(theta, phi);
+        return Geom::CreateDirection(theta, phi);
     }
 
     // Returns vector [u,v] in [0,1]x[0,1]. The direction must be non-zero and normalized.

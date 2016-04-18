@@ -1,6 +1,8 @@
 #pragma once 
 
 #include "hardsettings.hxx"
+#include "microfacet.hxx"
+#include "sampling.hxx"
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
@@ -180,7 +182,7 @@ public:
         ) const
     {
         const float constComponent = (mPhongExponent + 2.0f) / (2.0f * Math::kPiF); // TODO: Pre-compute?
-        const Vec3f wrl = Utils::Geom::ReflectLocal(aWil);
+        const Vec3f wrl = Geom::ReflectLocal(aWil);
         // We need to restrict to positive cos values only, otherwise we get unwanted behaviour 
         // in the retroreflection zone.
         const float thetaRCos = std::max(Dot(wrl, aWol), 0.f);
@@ -246,7 +248,7 @@ public:
         {
             // Diffuse fallback for blocker materials
             oMatRecord.mAttenuation.MakeZero();
-            oMatRecord.mWil = Utils::Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
+            oMatRecord.mWil = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
             oMatRecord.mCompProbability = 1.f;
             return;
         }
@@ -260,7 +262,7 @@ public:
         if (randomVal < diffuseReflectanceEst)
         {
             // Diffuse, cosine-weighted sampling
-            oMatRecord.mWil = Utils::Sampling::SampleCosHemisphereW(aRng.GetVec2f());
+            oMatRecord.mWil = Sampling::SampleCosHemisphereW(aRng.GetVec2f());
         }
         else
         {
@@ -268,10 +270,10 @@ public:
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample =
-                Utils::Sampling::SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oMatRecord.mPdfW*/);
+                Sampling::SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oMatRecord.mPdfW*/);
 
             // Rotate sample to mirror-reflection
-            const Vec3f wrl = Utils::Geom::ReflectLocal(oMatRecord.mWol);
+            const Vec3f wrl = Geom::ReflectLocal(oMatRecord.mWol);
             Frame lobeFrame;
             lobeFrame.SetFromZ(wrl);
             oMatRecord.mWil = lobeFrame.ToWorld(canonicalSample);
@@ -308,10 +310,10 @@ public:
 
         if (totalReflectance < MAT_BLOCKER_EPSILON)
             // Diffuse fallback for blocker materials
-            return Utils::Sampling::CosHemispherePdfW(aWil);
+            return Sampling::CosHemispherePdfW(aWil);
 
         // Rotate the outgoing direction back to canonical lobe coordinates (lobe around normal)
-        const Vec3f wrl = Utils::Geom::ReflectLocal(aWol);
+        const Vec3f wrl = Geom::ReflectLocal(aWol);
         Frame lobeFrame;
         lobeFrame.SetFromZ(wrl);
         const Vec3f wiCanonical = lobeFrame.ToLocal(aWil);
@@ -322,8 +324,8 @@ public:
 
         PG3_ASSERT_FLOAT_IN_RANGE(diffuseProbability + glossyProbability, 0.0f, 1.001f);
         return
-              diffuseProbability * Utils::Sampling::CosHemispherePdfW(aWil)
-            + glossyProbability  * Utils::Sampling::PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
+              diffuseProbability * Sampling::CosHemispherePdfW(aWil)
+            + glossyProbability  * Sampling::PowerCosHemispherePdfW(wiCanonical, mPhongExponent);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -470,7 +472,7 @@ public:
     {
         aRng; // unreferenced params
 
-        oMatRecord.mWil             = Utils::Geom::ReflectLocal(oMatRecord.mWol);
+        oMatRecord.mWil             = Geom::ReflectLocal(oMatRecord.mWol);
         oMatRecord.mPdfW            = Math::InfinityF();
         oMatRecord.mCompProbability = 1.f;
 
@@ -533,7 +535,7 @@ public:
         {
             // Reflect
             // This branch also handles TIR cases
-            oMatRecord.mWil = Utils::Geom::ReflectLocal(oMatRecord.mWol);
+            oMatRecord.mWil = Geom::ReflectLocal(oMatRecord.mWol);
             attenuation     = fresnelRefl;
         }
         else
@@ -542,7 +544,7 @@ public:
             // TODO: local version of refract?
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
             bool isAboveMicrofacet;
-            Utils::Geom::Refract(oMatRecord.mWil, isAboveMicrofacet, oMatRecord.mWol, Vec3f(0.f, 0.f, 1.f), mEta);
+            Geom::Refract(oMatRecord.mWil, isAboveMicrofacet, oMatRecord.mWol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
             // TODO: Radiance (de)compression?
@@ -630,12 +632,12 @@ public:
         ctx.wol = oMatRecord.mWol;
 
         ctx.microfacetDir =
-            Utils::Microfacet::SampleGgxVisibleNormals(ctx.wol, mRoughnessAlpha, aRng.GetVec2f());
+            Microfacet::SampleGgxVisibleNormals(ctx.wol, mRoughnessAlpha, aRng.GetVec2f());
         ctx.distrVal =
-            Utils::Microfacet::DistributionGgx(ctx.microfacetDir, mRoughnessAlpha);
+            Microfacet::DistributionGgx(ctx.microfacetDir, mRoughnessAlpha);
 
         bool isOutDirAboveMicrofacet;
-        Utils::Geom::Reflect(ctx.wil, isOutDirAboveMicrofacet, ctx.wol, ctx.microfacetDir);
+        Geom::Reflect(ctx.wil, isOutDirAboveMicrofacet, ctx.wol, ctx.microfacetDir);
         oMatRecord.mWil = ctx.wil;
 
         const float cosThetaOM = Dot(ctx.microfacetDir, ctx.wol);
@@ -694,9 +696,9 @@ protected:
         oCtx.wol = aWol;
         oCtx.wil = aWil;
 
-        oCtx.microfacetDir = Utils::Microfacet::HalfwayVectorReflectionLocal(oCtx.wil, oCtx.wol);
+        oCtx.microfacetDir = Microfacet::HalfwayVectorReflectionLocal(oCtx.wil, oCtx.wol);
 
-        oCtx.distrVal = Utils::Microfacet::DistributionGgx(oCtx.microfacetDir, mRoughnessAlpha);
+        oCtx.distrVal = Microfacet::DistributionGgx(oCtx.microfacetDir, mRoughnessAlpha);
 
         const float cosThetaOM = Dot(oCtx.microfacetDir, oCtx.wol);
         oCtx.fresnelReflectance = Utils::Fresnel::Conductor(cosThetaOM, mEta, mAbsorbance);
@@ -712,8 +714,8 @@ protected:
         }
 
         // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
-        const float shadowing = Utils::Microfacet::SmithMaskingFunctionGgx(aCtx.wil, aCtx.microfacetDir, mRoughnessAlpha);
-        const float masking   = Utils::Microfacet::SmithMaskingFunctionGgx(aCtx.wol, aCtx.microfacetDir, mRoughnessAlpha);
+        const float shadowing = Microfacet::SmithMaskingFunctionGgx(aCtx.wil, aCtx.microfacetDir, mRoughnessAlpha);
+        const float masking   = Microfacet::SmithMaskingFunctionGgx(aCtx.wol, aCtx.microfacetDir, mRoughnessAlpha);
         const float geometricalFactor = shadowing * masking;
 
         PG3_ASSERT_FLOAT_IN_RANGE(geometricalFactor, 0.0f, 1.0f);
@@ -748,10 +750,10 @@ protected:
         }
 
         const float normalPdf =
-            Utils::Microfacet::GgxSamplingPdfVisibleNormals(
+            Microfacet::GgxSamplingPdfVisibleNormals(
                 aCtx.wol, aCtx.microfacetDir, aCtx.distrVal, mRoughnessAlpha);
         const float reflectionJacobian =
-            Utils::Microfacet::ReflectionJacobian(aCtx.wol, aCtx.microfacetDir);
+            Microfacet::ReflectionJacobian(aCtx.wol, aCtx.microfacetDir);
         oWholeFinCompPdfW = normalPdf * reflectionJacobian;
     }
 
@@ -837,9 +839,9 @@ public:
         ctx.etaInvSwitched      = (ctx.isOutDirFromBelow ? mEta : mEtaInv);
 
         ctx.microfacetDirSwitched =
-            Utils::Microfacet::SampleGgxVisibleNormals(ctx.wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
+            Microfacet::SampleGgxVisibleNormals(ctx.wolSwitched, mRoughnessAlpha, aRng.GetVec2f());
         ctx.distrVal =
-            Utils::Microfacet::DistributionGgx(ctx.microfacetDirSwitched, mRoughnessAlpha);
+            Microfacet::DistributionGgx(ctx.microfacetDirSwitched, mRoughnessAlpha);
 
         float thetaInCosAbs;
 
@@ -851,14 +853,14 @@ public:
         if (rnd <= ctx.fresnelReflectance)
         {
             // This branch also handles TIR cases
-            Utils::Geom::Reflect(ctx.wilSwitched, isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched);
+            Geom::Reflect(ctx.wilSwitched, isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched);
             thetaInCosAbs = ctx.wilSwitched.z;
             ctx.isReflection = true;
         }
         else
         {
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
-            Utils::Geom::Refract(ctx.wilSwitched, isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched, ctx.etaSwitched);
+            Geom::Refract(ctx.wilSwitched, isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched, ctx.etaSwitched);
             thetaInCosAbs = -ctx.wilSwitched.z;
             ctx.isReflection = false;
         }
@@ -933,16 +935,16 @@ protected:
 
         if (oCtx.isReflection)
             oCtx.microfacetDirSwitched =
-                Utils::Microfacet::HalfwayVectorReflectionLocal(
+                Microfacet::HalfwayVectorReflectionLocal(
                     oCtx.wilSwitched, oCtx.wolSwitched);
         else
             // Since the incident direction is below geometrical surface, we use inverse eta
             oCtx.microfacetDirSwitched =
-                Utils::Microfacet::HalfwayVectorRefractionLocal(
+                Microfacet::HalfwayVectorRefractionLocal(
                     oCtx.wilSwitched, oCtx.wolSwitched, oCtx.etaInvSwitched);
 
         oCtx.distrVal =
-            Utils::Microfacet::DistributionGgx(oCtx.microfacetDirSwitched, mRoughnessAlpha);
+            Microfacet::DistributionGgx(oCtx.microfacetDirSwitched, mRoughnessAlpha);
         const float cosThetaOM = Dot(oCtx.microfacetDirSwitched, oCtx.wolSwitched);
         oCtx.fresnelReflectance = Utils::Fresnel::Dielectric(cosThetaOM, oCtx.etaSwitched);
     }
@@ -960,10 +962,10 @@ protected:
 
         // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
         const float shadowing =
-            Utils::Microfacet::SmithMaskingFunctionGgx(
+            Microfacet::SmithMaskingFunctionGgx(
                 aCtx.wilSwitched, aCtx.microfacetDirSwitched, mRoughnessAlpha);
         const float masking =
-            Utils::Microfacet::SmithMaskingFunctionGgx(
+            Microfacet::SmithMaskingFunctionGgx(
                 aCtx.wolSwitched, aCtx.microfacetDirSwitched, mRoughnessAlpha);
         const float geometricalFactor = shadowing * masking;
 
@@ -1013,15 +1015,15 @@ protected:
         }
 
         const float visNormalsPdf =
-            Utils::Microfacet::GgxSamplingPdfVisibleNormals(
+            Microfacet::GgxSamplingPdfVisibleNormals(
                 aCtx.wolSwitched, aCtx.microfacetDirSwitched, aCtx.distrVal, mRoughnessAlpha);
 
         float transfJacobian;
         if (aCtx.isReflection)
-            transfJacobian = Utils::Microfacet::ReflectionJacobian(
+            transfJacobian = Microfacet::ReflectionJacobian(
                 aCtx.wilSwitched, aCtx.microfacetDirSwitched);
         else
-            transfJacobian = Utils::Microfacet::RefractionJacobian(
+            transfJacobian = Microfacet::RefractionJacobian(
                 aCtx.wolSwitched, aCtx.wilSwitched, aCtx.microfacetDirSwitched, aCtx.etaInvSwitched);
 
         const float compProbability =

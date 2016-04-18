@@ -7,6 +7,7 @@
 #include "eyelight.hxx"
 #include "directillumination.hxx"
 #include "pathtracer.hxx"
+#include "microfacet.hxx"
 #include "config.hxx"
 #include "process.hxx"
 
@@ -173,7 +174,7 @@ float Render(
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
-    Utils::Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+    Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
 
     exit(0);
 }
