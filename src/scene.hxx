@@ -356,6 +356,7 @@ public:
             new PhongMaterial(diffuseReflectance, glossyReflectance, 1, 1, 0));
 
         delete mGeometry;
+        mGeometry = nullptr;
 
         //////////////////////////////////////////////////////////////////////////
         // Cornell box - geometry
