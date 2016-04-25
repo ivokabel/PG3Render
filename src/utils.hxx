@@ -58,7 +58,7 @@ namespace Utils
         char ext[_MAX_EXT];
         errno_t err;
 
-        err = _splitpath_s(aPath, NULL, 0, NULL, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
+        err = _splitpath_s(aPath, nullptr, 0, nullptr, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
         if (err != 0)
         {
             //printf("Error splitting the path. Error code %d.\n", err);

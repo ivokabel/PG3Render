@@ -21,22 +21,22 @@ class Scene
 {
 public:
     Scene() :
-        mGeometry(NULL),
-        mBackground(NULL),
+        mGeometry(nullptr),
+        mBackground(nullptr),
         mBackgroundLightId(-1)
     {}
 
     ~Scene()
     {
-        if (mGeometry != NULL)
+        if (mGeometry != nullptr)
             delete mGeometry;
 
         for (auto& light : mLights)
-            if (light != NULL)
+            if (light != nullptr)
                 delete light;
         
         for (auto& material : mMaterials)
-            if (material != NULL)
+            if (material != nullptr)
                 delete material;
 
          // mBackground gets deleted with all other lights
@@ -80,7 +80,7 @@ public:
     const AbstractMaterial& GetMaterial(int32_t aMaterialIdx) const
     {
         PG3_ASSERT_INTEGER_IN_RANGE(aMaterialIdx, 0, (int32_t)(mMaterials.size() - 1));
-        PG3_ASSERT(mMaterials[aMaterialIdx] != NULL);
+        PG3_ASSERT(mMaterials[aMaterialIdx] != nullptr);
 
         return *mMaterials[aMaterialIdx];
     }
@@ -700,7 +700,7 @@ public:
                     PG3_FATAL_ERROR("Unknown environment map type");
             }
 
-            if (light != NULL)
+            if (light != nullptr)
             {
                 mLights.push_back(light);
                 mBackground = light;
@@ -711,7 +711,7 @@ public:
 
     static std::string GetEnvMapName(
         uint32_t     aEnvironmentMapType,
-        std::string *oAcronym = NULL
+        std::string *oAcronym = nullptr
         )
     {
         std::string oName;
@@ -790,7 +790,7 @@ public:
     static std::string GetSceneName(
         BoxMask              aBoxMask = kDefault,
         EnvironmentMapType   aEnvironmentMapType = kEMInvalid,
-        std::string         *oAcronym = NULL)
+        std::string         *oAcronym = nullptr)
     {
         std::string name;
         std::string acronym;

@@ -41,7 +41,7 @@ AbstractRenderer* CreateRenderer(
 
     default:
         PG3_FATAL_ERROR("Unknown algorithm!!");
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -50,7 +50,7 @@ AbstractRenderer* CreateRenderer(
 float Render(
     const Config                        &aConfig,
     RendererIntrospectionDataAggregator &aIntrospectionAggregator,
-    uint32_t                            *oUsedIterations = NULL)
+    uint32_t                            *oUsedIterations = nullptr)
 {
     Process::SetPriority();
 

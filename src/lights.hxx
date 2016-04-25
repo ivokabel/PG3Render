@@ -50,8 +50,8 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW = NULL,
-        const Frame *aSurfFrame = NULL
+              float *oPdfW = nullptr,
+        const Frame *aSurfFrame = nullptr
         ) const = 0;
 
     // Returns an estimate of light contribution of this light-source to the given point.
@@ -92,15 +92,15 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW = NULL,
-        const Frame *aSurfFrame = NULL
+              float *oPdfW = nullptr,
+        const Frame *aSurfFrame = nullptr
         ) const override
     {
         aSurfFrame; // unused param
 
         // We don't check the point since we expect it to be within the light surface
 
-        if (oPdfW != NULL)
+        if (oPdfW != nullptr)
         {
             // Angular PDF. We use low epsilon boundary to avoid division by very small PDFs.
             // Replicated in ComputeSample()!
@@ -271,13 +271,13 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW = NULL,
-        const Frame *aSurfFrame = NULL
+              float *oPdfW = nullptr,
+        const Frame *aSurfFrame = nullptr
         ) const override
     {
         aSurfPt; aLightPt; aSurfFrame; aWol; // unused parameter
 
-        if (oPdfW != NULL)
+        if (oPdfW != nullptr)
             *oPdfW = Math::InfinityF();
 
         return SpectrumF().MakeZero();
@@ -367,14 +367,14 @@ class BackgroundLight : public AbstractLight
 {
 public:
     BackgroundLight() :
-        mEnvMap(NULL)
+        mEnvMap(nullptr)
     {
         mConstantRadiance.MakeZero();
     }
 
     virtual ~BackgroundLight() override
     {
-        if (mEnvMap != NULL)
+        if (mEnvMap != nullptr)
             delete mEnvMap;
     }
 
@@ -392,15 +392,15 @@ public:
     SpectrumF GetEmmision(
         const Vec3f &aWig,
               bool   bDoBilinFiltering,
-              float *oPdfW = NULL,
-        const Frame *aSurfFrame = NULL
+              float *oPdfW = nullptr,
+        const Frame *aSurfFrame = nullptr
         ) const
     {
-        if (mEnvMap != NULL)
+        if (mEnvMap != nullptr)
             return mEnvMap->Lookup(aWig, bDoBilinFiltering, oPdfW);
         else
         {
-            if ((oPdfW != NULL) && (aSurfFrame != NULL))
+            if ((oPdfW != nullptr) && (aSurfFrame != nullptr))
                 *oPdfW = Sampling::CosHemispherePdfW(aSurfFrame->Normal(), aWig);
             return mConstantRadiance;
         }
@@ -412,8 +412,8 @@ public:
         const Vec3f &aLightPt,
         const Vec3f &aWol,
         const Vec3f &aSurfPt,
-              float *oPdfW = NULL,
-        const Frame *aSurfFrame = NULL
+              float *oPdfW = nullptr,
+        const Frame *aSurfFrame = nullptr
         ) const override
     {
         aSurfPt;  aLightPt; // unused params
@@ -432,7 +432,7 @@ public:
     {
         aSurfPt; // unused parameter
 
-        if (mEnvMap != NULL)
+        if (mEnvMap != nullptr)
         {
             #ifdef PG3_USE_ENVMAP_IMPORTANCE_SAMPLING
                 SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, oSample);
@@ -475,7 +475,7 @@ public:
         //       for the same point during MIS (once when picking a light randomly and 
         //       once when computing the probability of picking a light after BSDF sampling).
 
-        if (mEnvMap != NULL)
+        if (mEnvMap != nullptr)
         {
             // Estimate the contribution of the environment map: \int{L_e * f_r * \cos\theta}
 
@@ -552,7 +552,7 @@ public:
         const AbstractMaterial  &aSurfMaterial,
         LightSample             &oSample) const
     {
-        PG3_ASSERT(mEnvMap != NULL);
+        PG3_ASSERT(mEnvMap != nullptr);
 
         SpectrumF radiance;
 
@@ -574,7 +574,7 @@ public:
 
     float EMPdfW(const Vec3f &aDirection) const
     {
-        PG3_ASSERT(mEnvMap != NULL);
+        PG3_ASSERT(mEnvMap != nullptr);
         PG3_ASSERT(!aDirection.IsZero());
 
         return mEnvMap->PdfW(aDirection);

@@ -189,7 +189,7 @@ public:
         mMarginal->SampleContinuous(rndSamples.x, oUV.y, oSegm.y, margPdf);
         mConditionalV[oSegm.y]->SampleContinuous(rndSamples.y, oUV.x, oSegm.x, condPdf);
 
-        if (oPdf != NULL)
+        if (oPdf != nullptr)
             *oPdf = margPdf * condPdf;
     }
 

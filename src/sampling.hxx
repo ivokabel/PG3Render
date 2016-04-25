@@ -73,7 +73,7 @@ namespace Sampling
     Vec3f SamplePowerCosHemisphereW(
         const Vec2f  &aSamples,
         const float   aPower,
-        float        *oPdfW = NULL)
+        float        *oPdfW = nullptr)
     {
         const float term1 = 2.f * Math::kPiF * aSamples.x;
         const float term2 = std::pow(aSamples.y, 1.f / (aPower + 1.f));
@@ -111,7 +111,7 @@ namespace Sampling
     // The returned PDF is with respect to solid angle measure
     Vec3f SampleCosHemisphereW(
         const Vec2f &aSamples,
-        float       *oPdfW = NULL)
+        float       *oPdfW = nullptr)
     {
         const float term1 = 2.f * Math::kPiF * aSamples.x;
         const float term2 = std::sqrt(1.f - aSamples.y);

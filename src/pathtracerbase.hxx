@@ -91,8 +91,8 @@ public:
         const Vec3f                 &aWil,
               LightSamplingContext  &aContext,
               SpectrumF             &oLight,
-              float                 *oPdfW = NULL,
-              float                 *oLightProbability = NULL
+              float                 *oPdfW = nullptr,
+              float                 *oLightProbability = nullptr
         )
     {
         int32_t lightId = -1;
@@ -126,7 +126,7 @@ public:
         {
             // No geometry intersection, get radiance from background
             const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
-            if (backgroundLight != NULL)
+            if (backgroundLight != nullptr)
             {
                 oLight = backgroundLight->GetEmmision(wig, false, oPdfW, &aSurfFrame);
                 lightId = mConfig.mScene->GetBackgroundLightId();
@@ -137,7 +137,7 @@ public:
 
         PG3_ASSERT(oLight.IsZero() || (lightId >= 0));
 
-        if ((oLightProbability != NULL) && (lightId >= 0))
+        if ((oLightProbability != nullptr) && (lightId >= 0))
         {
             LightPickingProbability(
                 aSurfPt, aSurfFrame, aSurfMaterial, lightId, aContext, *oLightProbability);

@@ -388,7 +388,7 @@ public:
     bool ParseCommandline(int32_t argc, const char *argv[])
     {
         // Parameters marked with [cmd] can be changed from command line
-        mScene                          = NULL;                     // [cmd] When NULL, renderer will not run
+        mScene                          = nullptr;                  // [cmd] When nullptr, renderer will not run
 
         mOnlyPrintOutputPath            = false;                    // [cmd]
 

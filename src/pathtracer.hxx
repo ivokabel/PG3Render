@@ -70,7 +70,7 @@ protected:
                 {
                     // Light source - get emmision
                     const AbstractLight *light = mConfig.mScene->GetLightPtr(isect.lightID);
-                    if (light != NULL)
+                    if (light != nullptr)
                         oRadiance +=
                               light->GetEmmision(surfPt, wol, Vec3f())
                             * pathThroughput;
@@ -151,7 +151,7 @@ protected:
                 if (pathLength >= mMinPathLength)
                 {
                     const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
-                    if (backgroundLight != NULL)
+                    if (backgroundLight != nullptr)
                         oRadiance +=
                               backgroundLight->GetEmmision(currentRay.dir, true)
                             * pathThroughput;
@@ -170,9 +170,9 @@ protected:
         const float      aSplitBudget,
         SpectrumF       &oEmmittedRadiance,
         SpectrumF       &oReflectedRadianceEstimate,
-        const Frame     *aSurfFrame = NULL, // Only needed when you to compute PDF of a const env. light source sample
-        float           *oEmmittedLightPdfW = NULL,
-        int32_t         *oLightID = NULL
+        const Frame     *aSurfFrame = nullptr, // Only needed when you to compute PDF of a const env. light source sample
+        float           *oEmmittedLightPdfW = nullptr,
+        int32_t         *oLightID = nullptr
         )
     {
         PG3_ASSERT((mMaxPathLength == 0) || (aPathLength <= mMaxPathLength));
@@ -197,11 +197,11 @@ protected:
             if ((isect.lightID >= 0) && (aPathLength >= mMinPathLength))
             {
                 const AbstractLight *light = mConfig.mScene->GetLightPtr(isect.lightID);
-                if (light != NULL)
+                if (light != nullptr)
                 {
                     oEmmittedRadiance +=
                         light->GetEmmision(surfPt, wol, aRay.org, oEmmittedLightPdfW, aSurfFrame);
-                    if (oLightID != NULL)
+                    if (oLightID != nullptr)
                         *oLightID = isect.lightID;
                 }
             }
@@ -408,11 +408,11 @@ protected:
             if (aPathLength >= mMinPathLength)
             {
                 const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
-                if (backgroundLight != NULL)
+                if (backgroundLight != nullptr)
                 {
                     oEmmittedRadiance +=
                         backgroundLight->GetEmmision(aRay.dir, true, oEmmittedLightPdfW, aSurfFrame);
-                    if (oLightID != NULL)
+                    if (oLightID != nullptr)
                         *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }
             }

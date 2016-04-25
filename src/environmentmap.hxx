@@ -28,7 +28,7 @@ public:
     {
         if (mData)
             delete mData;
-        mData   = NULL;
+        mData   = nullptr;
         mWidth  = 0;
         mHeight = 0;
     }
@@ -90,8 +90,8 @@ public:
     EnvironmentMap(const std::string aFilename, float aRotate, float aScale) :
         mPlan2AngPdfCoeff(1.0f / (2.0f * Math::kPiF * Math::kPiF))
     {
-        mImage = NULL;
-        mDistribution = NULL;
+        mImage = nullptr;
+        mDistribution = nullptr;
 
         try
         {
@@ -118,11 +118,11 @@ public:
     Vec3f Sample(
         const Vec2f &aSamples,
         float       &oPdfW,
-        SpectrumF   *oRadiance = NULL,
-        float       *oSinMidTheta = NULL
+        SpectrumF   *oRadiance = nullptr,
+        float       *oSinMidTheta = nullptr
         ) const
     {
-        PG3_ASSERT(mImage != NULL);
+        PG3_ASSERT(mImage != nullptr);
 
         const Vec2ui imageSize = mImage->Size();
         Vec2f uv;
@@ -148,7 +148,7 @@ public:
         // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
         const float sinMidTheta = SinMidTheta(mImage, segm.y);
         oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta;
-        if (oSinMidTheta != NULL)
+        if (oSinMidTheta != nullptr)
             *oSinMidTheta = sinMidTheta;
 
         if (oRadiance)
@@ -163,10 +163,10 @@ public:
     SpectrumF Lookup(
         const Vec3f &aDirection, 
         bool         aDoBilinFiltering,
-        float       *oPdfW = NULL
+        float       *oPdfW = nullptr
         ) const
     {
-        PG3_ASSERT(mDistribution != NULL);
+        PG3_ASSERT(mDistribution != nullptr);
         PG3_ASSERT(!aDirection.IsZero());
 
         const Vec2f uv              = Dir2LatLong(aDirection);
@@ -187,7 +187,7 @@ public:
 
     float PdfW(const Vec3f &aDirection) const
     {
-        PG3_ASSERT(mDistribution != NULL);
+        PG3_ASSERT(mDistribution != nullptr);
 
         const Vec2f uv = Dir2LatLong(aDirection);
         return mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
@@ -305,7 +305,7 @@ private:
     // Returns radiance for the given segment of the image
     SpectrumF LookupRadiance(const Vec2ui &aSegm) const
     {
-        PG3_ASSERT(mImage != NULL);
+        PG3_ASSERT(mImage != nullptr);
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
 
@@ -316,7 +316,7 @@ private:
     PG3_PROFILING_NOINLINE 
     SpectrumF LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
     {
-        PG3_ASSERT(mImage != NULL);
+        PG3_ASSERT(mImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(uv.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(uv.y, 0.0f, 1.0f);
 
@@ -361,7 +361,7 @@ private:
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
     float SinMidTheta(const InputImage* aImage, const uint32_t aSegmY) const
     {
-        PG3_ASSERT(aImage != NULL);
+        PG3_ASSERT(aImage != nullptr);
 
         const uint32_t height = aImage->Height();
 
@@ -377,7 +377,7 @@ private:
     // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
     float SinMidTheta(const InputImage* aImage, const float aV) const
     {
-        PG3_ASSERT(aImage != NULL);
+        PG3_ASSERT(aImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(aV, 0.0f, 1.0f);
 
         const uint32_t height   = aImage->Height();
