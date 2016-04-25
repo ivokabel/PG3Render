@@ -125,7 +125,7 @@ public:
         else
         {
             // No geometry intersection, get radiance from background
-            const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
+            const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
             if (backgroundLight != nullptr)
             {
                 oLight = backgroundLight->GetEmmision(wig, false, oPdfW, &aSurfFrame);

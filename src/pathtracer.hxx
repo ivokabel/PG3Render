@@ -150,7 +150,7 @@ protected:
                 // No intersection - get radiance from the background
                 if (pathLength >= mMinPathLength)
                 {
-                    const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
+                    const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
                     if (backgroundLight != nullptr)
                         oRadiance +=
                               backgroundLight->GetEmmision(currentRay.dir, true)
@@ -407,7 +407,7 @@ protected:
             // No intersection - get radiance from the background
             if (aPathLength >= mMinPathLength)
             {
-                const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
+                const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
                 if (backgroundLight != nullptr)
                 {
                     oEmmittedRadiance +=

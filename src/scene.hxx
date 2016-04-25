@@ -103,7 +103,7 @@ public:
         return mLights.size();
     }
 
-    const BackgroundLight* GetBackground() const
+    const BackgroundLight* GetBackgroundLight() const
     {
         return mBackground;
     }

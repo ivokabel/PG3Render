@@ -145,7 +145,7 @@ public:
         else
         {
             // No intersection - get radiance from the background
-            const BackgroundLight *backgroundLight = mConfig.mScene->GetBackground();
+            const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
             if (backgroundLight != nullptr)
                 oRadiance = backgroundLight->GetEmmision(aRay.dir, true);
             else
