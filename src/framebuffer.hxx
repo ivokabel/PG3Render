@@ -90,51 +90,6 @@ public:
     }
 
     //////////////////////////////////////////////////////////////////////////
-    // Saving
-
-    //void SavePPM(
-    //    const char *aFilename,
-    //    float       aGamma = 1.f)
-    //{
-    //    const float invGamma = 1.f / aGamma;
-
-    //    std::ofstream ppm(aFilename);
-    //    ppm << "P3" << std::endl;
-    //    ppm << mResX << " " << mResY << std::endl;
-    //    ppm << "255" << std::endl;
-
-    //    Vec3f *ptr = &mRadiance[0];
-
-    //    for (int32_t y=0; y<mResY; y++)
-    //    {
-    //        for (int32_t x=0; x<mResX; x++)
-    //        {
-    //            ptr = &mRadiance[x + y*mResX];
-    //            int32_t r = int32_t(std::pow(ptr->x, invGamma) * 255.f);
-    //            int32_t g = int32_t(std::pow(ptr->y, invGamma) * 255.f);
-    //            int32_t b = int32_t(std::pow(ptr->z, invGamma) * 255.f);
-
-    //            ppm << std::min(255, std::max(0, r)) << " "
-    //                << std::min(255, std::max(0, g)) << " "
-    //                << std::min(255, std::max(0, b)) << " ";
-    //        }
-
-    //        ppm << std::endl;
-    //    }
-    //}
-
-    //void SavePFM(const char* aFilename)
-    //{
-    //    std::ofstream ppm(aFilename, std::ios::binary);
-    //    ppm << "PF" << std::endl;
-    //    ppm << mResX << " " << mResY << std::endl;
-    //    ppm << "-1" << std::endl;
-
-    //    ppm.write(reinterpret_cast<const char*>(&mRadiance[0]),
-    //        mRadiance.size() * sizeof(Vec3f));
-    //}
-
-    //////////////////////////////////////////////////////////////////////////
     // Saving BMP
     struct BmpHeader
     {
