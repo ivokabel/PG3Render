@@ -250,10 +250,15 @@ public:
         // 6) sphere1 (left, yellow)
         if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
-                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new SmoothConductorMaterial(
+                    SpectralData::kCopperIor, SpectralData::kAirIor, SpectralData::kCopperAbsorb)
+                );
         else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(
+                    0.100f,
+                    SpectralData::kCopperIor, SpectralData::kAirIor, SpectralData::kCopperAbsorb)
+                );
         else
         {
             diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.152941f);
@@ -268,10 +273,15 @@ public:
         // 7) sphere2 (right, blue)
         if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
-                new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
+                new SmoothConductorMaterial(
+                    SpectralData::kSilverIor, SpectralData::kAirIor, SpectralData::kSilverAbsorb)
+                );
         else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(0.100f, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(
+                    0.100f,
+                    SpectralData::kCopperIor, SpectralData::kAirIor, SpectralData::kCopperAbsorb)
+                );
         else
         {
             diffuseReflectance.SetSRGBAttenuation(0.152941f, 0.152941f, 0.803922f);
@@ -286,13 +296,13 @@ public:
         // 8) large sphere  
         if (Utils::IsMasked(aBoxMask, kSpheresFresnelConductor))
             mMaterials.push_back(
-                new SmoothConductorMaterial(MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
-                //new SmoothConductorMaterial(MAT_SILVER_IOR, MAT_AIR_IOR, MAT_SILVER_ABSORBANCE));
-                //new SmoothConductorMaterial(MAT_GOLD_IOR, MAT_AIR_IOR, MAT_GOLD_ABSORBANCE));
+                new SmoothConductorMaterial(SpectralData::kCopperIor, SpectralData::kAirIor, SpectralData::kCopperAbsorb));
+                //new SmoothConductorMaterial(SpectralData::kSilverIor, SpectralData::kAirIor, SpectralData::kSilverAbsorb));
+                //new SmoothConductorMaterial(SpectralData::kGoldIor, SpectralData::kAirIor, SpectralData::kGoldAbsorb));
         else if (Utils::IsMasked(aBoxMask, kSpheresFresnelDielectric))
         {
-            const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
-            const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
+            const float innerIor = (aDbgAux1 != 1.0f) ? SpectralData::kGlassCorningIor  : SpectralData::kAirIor;
+            const float outerIor = (aDbgAux1 != 1.0f) ? SpectralData::kAirIor           : SpectralData::kGlassCorningIor;
             mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
         }
         else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
@@ -300,12 +310,14 @@ public:
             const float roughness =
                 (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(
-                new MicrofacetGGXConductorMaterial(roughness, MAT_COPPER_IOR, MAT_AIR_IOR, MAT_COPPER_ABSORBANCE));
+                new MicrofacetGGXConductorMaterial(
+                    roughness,
+                    SpectralData::kCopperIor, SpectralData::kAirIor, SpectralData::kCopperAbsorb));
         }
         else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXDielectric))
         {
-            const float innerIor = (aDbgAux1 != 1.0f) ? MAT_GLASS_CORNING_IOR : MAT_AIR_IOR;
-            const float outerIor = (aDbgAux1 != 1.0f) ? MAT_AIR_IOR           : MAT_GLASS_CORNING_IOR;
+            const float innerIor = (aDbgAux1 != 1.0f) ? SpectralData::kGlassCorningIor   : SpectralData::kAirIor;
+            const float outerIor = (aDbgAux1 != 1.0f) ? SpectralData::kAirIor            : SpectralData::kGlassCorningIor;
             const float roughness =
                 (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
@@ -324,13 +336,13 @@ public:
         // 9) front vertical rectangle
         if (Utils::IsMasked(aBoxMask, kVertRectFresnelDielectric))
             mMaterials.push_back(
-                new SmoothDielectricMaterial(MAT_GLASS_CORNING_IOR, MAT_AIR_IOR));
-                //new SmoothDielectricMaterial(MAT_AIR_IOR, MAT_GLASS_CORNING_IOR));
+                new SmoothDielectricMaterial(SpectralData::kGlassCorningIor, SpectralData::kAirIor));
+                //new SmoothDielectricMaterial(SpectralData::kAirIor, SpectralData::kGlassCorningIor));
         else if (Utils::IsMasked(aBoxMask, kVertRectMicrofacetGGXDielectric))
             mMaterials.push_back(
-                //new MicrofacetGGXDielectricMaterial(0.001f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
-                //new MicrofacetGGXDielectricMaterial(0.010f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
-                  new MicrofacetGGXDielectricMaterial(0.100f, MAT_GLASS_CORNING_IOR, MAT_AIR_IOR, true));
+                //new MicrofacetGGXDielectricMaterial(0.001f, SpectralData::kGlassCorningIor, SpectralData::kAirIor, true));
+                //new MicrofacetGGXDielectricMaterial(0.010f, SpectralData::kGlassCorningIor, SpectralData::kAirIor, true));
+                  new MicrofacetGGXDielectricMaterial(0.100f, SpectralData::kGlassCorningIor, SpectralData::kAirIor, true));
         else
         {
             diffuseReflectance.SetGreyAttenuation(0.8f);

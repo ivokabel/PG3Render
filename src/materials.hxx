@@ -11,14 +11,20 @@
 #define MAT_BLOCKER_EPSILON    1e-5
 
 // Various material IoRs and absorbances at roughly 590 nm
-#define MAT_AIR_IOR             1.000277f
-#define MAT_GLASS_CORNING_IOR   1.510000f
-#define MAT_COPPER_IOR          0.468000f
-#define MAT_COPPER_ABSORBANCE   2.810000f
-#define MAT_SILVER_IOR          0.121000f
-#define MAT_SILVER_ABSORBANCE   3.660000f
-#define MAT_GOLD_IOR            0.236000f
-#define MAT_GOLD_ABSORBANCE     2.960089f
+namespace SpectralData
+{
+    // Dielectrics
+    const float kAirIor             = 1.000277f;
+    const float kGlassCorningIor    = 1.510000f;
+
+    // Conductors
+    const float kCopperIor          = 0.468000f;
+    const float kCopperAbsorb       = 2.810000f;
+    const float kSilverIor          = 0.121000f;
+    const float kSilverAbsorb       = 3.660000f;
+    const float kGoldIor            = 0.236000f;
+    const float kGoldAbsorb         = 2.960089f;
+}
 
 enum MaterialProperties
 {
