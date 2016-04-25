@@ -7,6 +7,8 @@
 template<typename T>
 class SRGBSpectrumBase : public Vec3Base<T>
 {
+    static_assert(std::is_arithmetic<T>::value, "T must be arithmetic");
+
 public:
 
     SRGBSpectrumBase() {};

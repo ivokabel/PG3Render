@@ -65,6 +65,8 @@ namespace Math
     template<typename T>
     T Sqr(const T& a)
     {
+        static_assert(std::is_arithmetic<T>::value, "T must be arithmetic");
+
         return a*a;
     }
 
@@ -164,6 +166,8 @@ namespace Math
 template<typename T>
 class Vec2Base
 {
+    static_assert(std::is_arithmetic<T>::value, "T must be arithmetic");
+
 public:
 
     Vec2Base() {}
@@ -221,6 +225,8 @@ typedef Vec2Base<uint32_t>  Vec2ui;
 template<typename T>
 class Vec3Base
 {
+    static_assert(std::is_arithmetic<T>::value, "T must be arithmetic");
+
 public:
 
     Vec3Base() {}
