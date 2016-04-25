@@ -10,6 +10,7 @@
 #include "debugging.hxx"
 #include "utils.hxx"
 
+#include <memory>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -22,7 +23,6 @@ class Scene
 public:
     Scene() :
         mGeometry(nullptr),
-        mBackground(nullptr),
         mBackgroundLightId(-1)
     {}
 
@@ -30,17 +30,12 @@ public:
     {
         if (mGeometry != nullptr)
             delete mGeometry;
-
-        for (auto& light : mLights)
-            if (light != nullptr)
-                delete light;
         
         for (auto& material : mMaterials)
             if (material != nullptr)
                 delete material;
 
-         // mBackground gets deleted with all other lights
-         // TODO: Use shared pointer for this?
+        // Lights get released using the shared_ptr mechanism
     }
 
     bool Intersect(
@@ -95,7 +90,7 @@ public:
         PG3_ASSERT_INTEGER_IN_RANGE(aLightIdx, 0, (int32_t)(mLights.size() - 1));
 
         aLightIdx = std::min<int32_t>(aLightIdx, (int32_t)mLights.size() - 1);
-        return mLights[aLightIdx];
+        return mLights[aLightIdx].get();
     }
 
     size_t GetLightCount() const
@@ -105,7 +100,10 @@ public:
 
     const BackgroundLight* GetBackgroundLight() const
     {
-        return mBackground;
+        if (mBackgroundLight)
+            return static_cast<BackgroundLight*>(mBackgroundLight.get());
+        else
+            return nullptr;
     }
 
     int32_t GetBackgroundLightId() const
@@ -543,12 +541,12 @@ public:
             
             light = new AreaLight(cb[2], cb[6], cb[7]);
             light->SetPower(lightPower);
-            mLights[0] = light;
+            mLights[0] = TLightSharedPtr(light);
             mMaterial2Light.insert(std::make_pair(0, 0));
 
             light = new AreaLight(cb[7], cb[3], cb[2]);
             light->SetPower(lightPower);
-            mLights[1] = light;
+            mLights[1] = TLightSharedPtr(light);
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
@@ -567,12 +565,12 @@ public:
             
             light = new AreaLight(lb[0], lb[5], lb[4]);
             light->SetPower(lightPower);
-            mLights[0] = light;
+            mLights[0] = TLightSharedPtr(light);
             mMaterial2Light.insert(std::make_pair(0, 0));
 
             light = new AreaLight(lb[5], lb[0], lb[1]);
             light->SetPower(lightPower);
-            mLights[1] = light;
+            mLights[1] = TLightSharedPtr(light);
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
@@ -584,12 +582,12 @@ public:
             lightPower.SetSRGBGreyLight(50.f/*Watts*/);
             light->SetPower(lightPower);
 
-            mLights.push_back(light);
+            mLights.push_back(TLightSharedPtr(light));
         }
 
         if (useEnvMap)
         {
-            BackgroundLight *light = new BackgroundLight;
+            BackgroundLight *light = new BackgroundLight();
 
             switch (aEnvironmentMapType)
             {
@@ -702,8 +700,8 @@ public:
 
             if (light != nullptr)
             {
-                mLights.push_back(light);
-                mBackground = light;
+                mBackgroundLight = TLightSharedPtr(light);
+                mLights.push_back(mBackgroundLight);
                 mBackgroundLightId = (int32_t)(mLights.size() - 1);
             }
         }
@@ -1016,14 +1014,16 @@ public:
 
 public:
 
-    AbstractGeometry                *mGeometry;
-    Camera                           mCamera;
-    std::vector<AbstractMaterial*>   mMaterials;
-    std::vector<AbstractLight*>      mLights;
-    std::map<int32_t, int32_t>       mMaterial2Light;
-    BackgroundLight*                 mBackground;
-    int32_t                          mBackgroundLightId;
+    typedef std::shared_ptr<AbstractLight> TLightSharedPtr;
 
-    std::string                      mSceneName;
-    std::string                      mSceneAcronym;
+    AbstractGeometry                    *mGeometry;
+    Camera                               mCamera;
+    std::vector<AbstractMaterial*>       mMaterials;
+    std::vector<TLightSharedPtr>         mLights;
+    std::map<int32_t, int32_t>           mMaterial2Light;
+    TLightSharedPtr                      mBackgroundLight;
+    int32_t                              mBackgroundLightId;
+
+    std::string                          mSceneName;
+    std::string                          mSceneAcronym;
 };
