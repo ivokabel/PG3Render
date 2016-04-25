@@ -184,10 +184,10 @@ public:
 
         mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
 
-        bool light_ceiling = (aBoxMask & kLightCeiling)    != 0;
-        bool light_box     = (aBoxMask & kLightBox)        != 0;
-        bool light_point   = (aBoxMask & kLightPoint)      != 0;
-        bool light_env     = (aBoxMask & kLightEnv)        != 0;
+        bool useCeilingLight = (aBoxMask & kLightCeiling)    != 0;
+        bool useLightBox     = (aBoxMask & kLightBox)        != 0;
+        bool usePointLight   = (aBoxMask & kLightPoint)      != 0;
+        bool useEnvMap       = (aBoxMask & kLightEnv)        != 0;
 
         // Camera
         mCamera.Setup(
@@ -399,7 +399,7 @@ public:
 
 
             // Ceiling
-            if (light_ceiling && !light_box)
+            if (useCeilingLight && !useLightBox)
             {
                 geometryList->mGeometry.push_back(new Triangle(cb[2], cb[6], cb[7], 0));
                 geometryList->mGeometry.push_back(new Triangle(cb[7], cb[3], cb[2], 1));
@@ -506,7 +506,7 @@ public:
             Vec3f(-0.25f, -0.25f, 1.28002f)
         };
 
-        if (light_box && !light_ceiling)
+        if (useLightBox && !useCeilingLight)
         {
             // Back wall
             geometryList->mGeometry.push_back(new Triangle(lb[0], lb[2], lb[1], 5));
@@ -528,7 +528,7 @@ public:
         //////////////////////////////////////////////////////////////////////////
         // Lights
         
-        if (light_ceiling && !light_box)
+        if (useCeilingLight && !useLightBox)
         {
             // The entire ceiling is a light source
 
@@ -552,7 +552,7 @@ public:
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
-        if (light_box && !light_ceiling)
+        if (useLightBox && !useCeilingLight)
         {
             // With light box
 
@@ -576,7 +576,7 @@ public:
             mMaterial2Light.insert(std::make_pair(1, 1));
         }
 
-        if (light_point)
+        if (usePointLight)
         {
             PointLight *light = new PointLight(Vec3f(0.0, -0.5, 1.0));
 
@@ -587,7 +587,7 @@ public:
             mLights.push_back(light);
         }
 
-        if (light_env)
+        if (useEnvMap)
         {
             BackgroundLight *light = new BackgroundLight;
 
