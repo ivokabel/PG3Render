@@ -13,10 +13,10 @@
 // The image-loading code was used directly without almost any significant change.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-class InputImage
+class EnvMapImage
 {
 public:
-    InputImage(uint32_t aWidth, uint32_t aHeight)
+    EnvMapImage(uint32_t aWidth, uint32_t aHeight)
     {
         mWidth  = aWidth;
         mHeight = aHeight;
@@ -24,7 +24,7 @@ public:
         mData = new SpectrumF[mWidth * mHeight];
     }
 
-    ~InputImage()
+    ~EnvMapImage()
     {
         if (mData)
             delete mData;
@@ -195,7 +195,7 @@ public:
 
 private:
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
-    InputImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
+    EnvMapImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
     {
         aRotate = Math::FmodX(aRotate, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aRotate, 0.0f, 1.0f);
@@ -210,7 +210,7 @@ private:
         file.setFrameBuffer(rgbaData - dw.min.x - dw.min.y * width, 1, width);
         file.readPixels(dw.min.y, dw.max.y);
 
-        InputImage* image = new InputImage(width, height);
+        EnvMapImage* image = new EnvMapImage(width, height);
 
         int32_t c = 0;
         int32_t iRot = (int32_t)(aRotate * width);
@@ -236,7 +236,7 @@ private:
 
     // Generates a 2D distribution with latitude-longitude mapping 
     // based on the luminance of the provided environment map image
-    Distribution2D* ConvertImageToPdf(const InputImage* aImage) const
+    Distribution2D* ConvertImageToPdf(const EnvMapImage* aImage) const
     {
         // Prepare source distribution data from the original environment map image data, 
         // i.e. convert image values so that the probability of a pixel within 
@@ -359,7 +359,7 @@ private:
     }
 
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
-    float SinMidTheta(const InputImage* aImage, const uint32_t aSegmY) const
+    float SinMidTheta(const EnvMapImage* aImage, const uint32_t aSegmY) const
     {
         PG3_ASSERT(aImage != nullptr);
 
@@ -375,7 +375,7 @@ private:
     }
 
     // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
-    float SinMidTheta(const InputImage* aImage, const float aV) const
+    float SinMidTheta(const EnvMapImage* aImage, const float aV) const
     {
         PG3_ASSERT(aImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(aV, 0.0f, 1.0f);
@@ -393,7 +393,7 @@ private:
     EnvironmentMap & operator=(const EnvironmentMap&) = delete;
     EnvironmentMap(const EnvironmentMap&) = delete;
 
-    InputImage*     mImage;             // Environment map itself
+    EnvMapImage*    mImage;             // Environment map itself
     Distribution2D* mDistribution;      // 2D distribution of the environment map
     const float     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
 };
