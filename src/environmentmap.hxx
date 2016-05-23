@@ -1,5 +1,7 @@
 #pragma once
 
+#include "environmentmapimage.hxx"
+#include "environmentmapsteeringsampler.hxx"
 #include "spectrum.hxx"
 #include <ImfRgbaFile.h>    // OpenEXR
 #include "debugging.hxx"
@@ -9,90 +11,20 @@
 #include "types.hxx"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Adopted from SmallUPBP project and used as a reference for my own implementations.
-// The image-loading code was used directly without almost any significant change.
+// EnvironmentMap is adopted from SmallUPBP project and used as a reference for my own 
+// implementation. The image-loading code was used directly without almost any significant change.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-class EnvMapImage
-{
-public:
-    EnvMapImage(uint32_t aWidth, uint32_t aHeight)
-    {
-        mWidth  = aWidth;
-        mHeight = aHeight;
-
-        mData = new SpectrumF[mWidth * mHeight];
-    }
-
-    ~EnvMapImage()
-    {
-        if (mData)
-            delete mData;
-        mData   = nullptr;
-        mWidth  = 0;
-        mHeight = 0;
-    }
-
-    SpectrumF& ElementAt(uint32_t aX, uint32_t aY)
-    {
-        PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
-        PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
-
-        return mData[mWidth*aY + aX];
-    }
-
-    const SpectrumF& ElementAt(uint32_t aX, uint32_t aY) const
-    {
-        PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
-        PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
-
-        return mData[mWidth*aY + aX];
-    }
-
-    SpectrumF& ElementAt(uint32_t aIdx)
-    {
-        PG3_ASSERT_INTEGER_IN_RANGE(aIdx, 0, mWidth*mHeight);
-
-        return mData[aIdx];
-    }
-
-    const SpectrumF& ElementAt(uint32_t aIdx) const
-    {
-        PG3_ASSERT_INTEGER_IN_RANGE(aIdx, 0, mWidth*mHeight);
-
-        return mData[aIdx];
-    }
-
-    Vec2ui Size() const
-    {
-        return Vec2ui(mWidth, mHeight);
-    }
-
-    uint32_t Width() const
-    {
-        return mWidth;
-    }
-
-    uint32_t Height() const
-    { 
-        return mHeight; 
-    }
-
-    SpectrumF   *mData;
-    uint32_t     mWidth;
-    uint32_t     mHeight;
-};
 
 class EnvironmentMap
 {
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
     EnvironmentMap(const std::string aFilename, float aRotate, float aScale) :
+        mImage(nullptr),
+        mDistribution(nullptr),
+        mSteeringSampler(nullptr),
         mPlan2AngPdfCoeff(1.0f / (2.0f * Math::kPiF * Math::kPiF))
     {
-        mImage = nullptr;
-        mDistribution = nullptr;
-
         try
         {
             //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
@@ -103,13 +35,14 @@ public:
             PG3_FATAL_ERROR("Environment map load failed! \"%s\"", aFilename.c_str());
         }
 
-        mDistribution = ConvertImageToPdf(mImage);
+        mDistribution = GenerateImageDistribution(mImage);
     }
 
     ~EnvironmentMap()
     {
         delete(mImage);
         delete(mDistribution);
+        delete(mSteeringSampler);
     }
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
@@ -195,7 +128,7 @@ public:
 
 private:
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
-    EnvMapImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
+    EnvironmentMapImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
     {
         aRotate = Math::FmodX(aRotate, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aRotate, 0.0f, 1.0f);
@@ -210,7 +143,7 @@ private:
         file.setFrameBuffer(rgbaData - dw.min.x - dw.min.y * width, 1, width);
         file.readPixels(dw.min.y, dw.max.y);
 
-        EnvMapImage* image = new EnvMapImage(width, height);
+        EnvironmentMapImage* image = new EnvironmentMapImage(width, height);
 
         int32_t c = 0;
         int32_t iRot = (int32_t)(aRotate * width);
@@ -236,9 +169,9 @@ private:
 
     // Generates a 2D distribution with latitude-longitude mapping 
     // based on the luminance of the provided environment map image
-    Distribution2D* ConvertImageToPdf(const EnvMapImage* aImage) const
+    Distribution2D* GenerateImageDistribution(const EnvironmentMapImage* aImage) const
     {
-        // Prepare source distribution data from the original environment map image data, 
+        // Prepare source distribution data from the environment map image data, 
         // i.e. convert image values so that the probability of a pixel within 
         // the lattitute-longitude parametrization is equal to the angular probability of 
         // the projected segment on a unit sphere.
@@ -251,7 +184,7 @@ private:
 
         for (uint32_t row = 0; row < size.y; ++row)
         {
-            // We compute the relative surface area of the current segment on the unit sphere.
+            // We compute the projected surface area of the current segment on the unit sphere.
             // We can ommit the height of the segment because it only changes the result 
             // by a multiplication constant and thus doesn't affect the shape of the resulting PDF.
             const float sinAvgTheta = SinMidTheta(mImage, row);
@@ -260,10 +193,8 @@ private:
 
             for (uint32_t column = 0; column < size.x; ++column)
             {
-                const float luminance =
-                    aImage->ElementAt(column, row).Luminance();
-                srcData[rowOffset + column] =
-                    sinAvgTheta * luminance;
+                const float luminance = aImage->ElementAt(column, row).Luminance();
+                srcData[rowOffset + column] = sinAvgTheta * luminance;
             }
         }
 
@@ -341,32 +272,12 @@ private:
 
 
 
-
-
-
-
-
-        //int32_t width = mImage->Width();
-        //int32_t height = mImage->Height();
-
-        //float xf = u * width;
-        //float yf = v * height;
-
-        //int32_t xi1 = Utils::clamp<int32_t>((int32_t)xf, 0, width - 1);
-        //int32_t yi1 = Utils::clamp<int32_t>((int32_t)yf, 0, height - 1);
-
-        //int32_t xi2 = xi1 == width - 1 ? xi1 : xi1 + 1;
-        //int32_t yi2 = yi1 == height - 1 ? yi1 : yi1 + 1;
-
-        //float tx = xf - (float)xi1;
-        //float ty = yf - (float)yi1;
-
         //return (1 - ty) * ((1 - tx) * mImage->ElementAt(xi1, yi1) + tx * mImage->ElementAt(xi2, yi1))
         //    + ty * ((1 - tx) * mImage->ElementAt(xi1, yi2) + tx * mImage->ElementAt(xi2, yi2));
     }
 
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
-    float SinMidTheta(const EnvMapImage* aImage, const uint32_t aSegmY) const
+    float SinMidTheta(const EnvironmentMapImage* aImage, const uint32_t aSegmY) const
     {
         PG3_ASSERT(aImage != nullptr);
 
@@ -382,7 +293,7 @@ private:
     }
 
     // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
-    float SinMidTheta(const EnvMapImage* aImage, const float aV) const
+    float SinMidTheta(const EnvironmentMapImage* aImage, const float aV) const
     {
         PG3_ASSERT(aImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(aV, 0.0f, 1.0f);
@@ -400,7 +311,8 @@ private:
     EnvironmentMap & operator=(const EnvironmentMap&) = delete;
     EnvironmentMap(const EnvironmentMap&) = delete;
 
-    EnvMapImage*    mImage;             // Environment map itself
-    Distribution2D* mDistribution;      // 2D distribution of the environment map
-    const float     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
+    EnvironmentMapImage*            mImage;             // Environment map itself
+    EnvironmentMapSteeringSampler*  mSteeringSampler;   // TODO: Describe...
+    Distribution2D*                 mDistribution;      // 2D distribution of the environment map
+    const float                     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
 };

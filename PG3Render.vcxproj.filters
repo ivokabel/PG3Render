@@ -110,6 +110,12 @@
     <ClInclude Include="src\hardconfig.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\environmentmapimage.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\environmentmapsteeringsampler.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

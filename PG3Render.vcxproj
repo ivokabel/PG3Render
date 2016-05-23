@@ -194,6 +194,8 @@
     <ClInclude Include="src\directillumination.hxx" />
     <ClInclude Include="src\distribution.hxx" />
     <ClInclude Include="src\environmentmap.hxx" />
+    <ClInclude Include="src\environmentmapimage.hxx" />
+    <ClInclude Include="src\environmentmapsteeringsampler.hxx" />
     <ClInclude Include="src\eyelight.hxx" />
     <ClInclude Include="src\framebuffer.hxx" />
     <ClInclude Include="src\geom.hxx" />
