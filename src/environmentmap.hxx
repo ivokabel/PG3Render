@@ -246,6 +246,9 @@ private:
         const Vec2ui size   = aImage->Size();
         float *srcData      = new float[size.x * size.y];
 
+        if (srcData == nullptr)
+            return nullptr;
+
         for (uint32_t row = 0; row < size.y; ++row)
         {
             // We compute the relative surface area of the current segment on the unit sphere.
@@ -264,7 +267,11 @@ private:
             }
         }
 
-        return new Distribution2D(srcData, size.x, size.y);
+        Distribution2D* distribution = new Distribution2D(srcData, size.x, size.y);
+
+        delete srcData;
+
+        return distribution;
     }
 
     // Returns direction on unit sphere such that its longitude equals 2*PI*u and its latitude equals PI*v.
