@@ -511,6 +511,8 @@ namespace Microfacet
         if (aMicrofacetNormal.z <= 0.f)
             return 0.0f;
 
+        // TODO: Optimize using the simplified version (only containing cosine, not tangent)
+
         const float roughnessAlphaSqr = aRoughnessAlpha * aRoughnessAlpha;
         const float cosThetaSqr = aMicrofacetNormal.z * aMicrofacetNormal.z;
         const float tanThetaSqr = Geom::TanThetaSqr(aMicrofacetNormal);
