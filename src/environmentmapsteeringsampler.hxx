@@ -19,9 +19,36 @@ public:
 
 protected:
 
-    class SteerableWeight
+    class SteeringBasisValue
     {
-    protected:
+    public:
+
+        // Sets the value of spherical harmonic base at given direction multiplied by the factor
+        void GenerateForSphericalHarmonic(const Vec3f &aDirection, float aMulFactor)
+        {
+            // TODO: Get from paper...
+        }
+
+        float mBasisValues[9];
+    };
+
+
+    class SteeringCoefficients
+    {
+    public:
+
+        // Generate clamped cosine spherical harmonic coefficients for the given normal
+        void GenerateForClampedCosSh(const Vec3f &aNormal)
+        {
+            // TODO: Get from paper...
+        }
+
+        // TODO
+        float operator* (const SteeringBasisValue &aBasisValue)
+        {
+            return 0.0f;
+        }
+
         float mCoeffs[9]; // the first 9 coefficients for spherical harmonics or derived bases
     };
 
@@ -29,8 +56,8 @@ protected:
     class Vertex
     {
     public:
-        Vec3f           mDirection; // TODO: Use (2D) spherical coordinates to save memory?
-        SteerableWeight mWeight;
+        Vec3f               mDirection; // TODO: Use (2D) spherical coordinates to save memory?
+        SteeringBasisValue  mWeight;
     };
 
 
@@ -76,7 +103,7 @@ protected:
         TriangleNode() : TreeNode(true) {}
 
     protected:
-        SteerableWeight         mWeight;
+        SteeringBasisValue      mWeight;
         //Vertex*               mVertices[3]; // Weak pointers - not owned by the triangle
         std::shared_ptr<Vertex> mVertices[3];
     };
@@ -101,8 +128,19 @@ public:
     }
 
     // TODO: Sample(const Normal &)
+    void Sample(
+        Vec3f       &oSampleDirection,
+        float       &oSamplePdf,
+        const Vec3f &aNormal,
+        const Vec2f &aSample
+        ) const
+    {
+        // TODO: Generate clamped cosine spherical hamonics coefficients for given normal
 
-    // TODO: ...
+        // TODO: Pick a triangle (descend the tree)
+
+        // TODO: Sample triangle surface (bi-linear surface sampling)
+    }
 
 protected:
 
