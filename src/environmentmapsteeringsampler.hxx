@@ -17,35 +17,6 @@ public:
      EnvironmentMapSteeringSampler() {}
     ~EnvironmentMapSteeringSampler() {}
 
-    bool Build(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
-    {
-        // TODO: Clean up
-
-        std::list<TriangleNode> tmpTriangles;
-        std::list<Vertex>       tmpVertices;
-
-        if (!TriangulateEm(tmpTriangles, tmpVertices, aEmImage, aUseBilinearFiltering))
-            return false;
-
-        // Move list if vertices to vector to save some memory and maybe increase memory locality
-        // a bit. We do it before building the tree to minimizes memory consumption peak.
-        if (!FinalizeVertices(tmpVertices))
-            return false;
-        
-        tmpVertices.clear();
-
-        if (!BuildTriangleTree(tmpTriangles))
-            return false;
-
-        return true;
-    }
-
-    // TODO: Sample(const Normal &)
-
-    // TODO: ...
-
 protected:
 
     class SteerableWeight
@@ -79,28 +50,23 @@ protected:
     {
     public:
         InnerNode() :
-            TreeNode(false),
-            mLeftChild(nullptr),
-            mRightChild(nullptr)
+            TreeNode(false)
         {}
 
         ~InnerNode()
-        {
-            delete mLeftChild;
-            delete mRightChild;
-        }
+        {}
 
         // The node becomes the owner of the children and is responsible for releasing them
-        void SetLeftChild( TreeNode* aLeftChild)  { mLeftChild  = aLeftChild; }
-        void SetRightChild(TreeNode* aRightChild) { mRightChild = aRightChild; }
+        void SetLeftChild( TreeNode* aLeftChild)  { mLeftChild.reset(aLeftChild); }
+        void SetRightChild(TreeNode* aRightChild) { mLeftChild.reset(aRightChild); }
 
-        const TreeNode* GetLeftChild()  { return mLeftChild; }
-        const TreeNode* GetRightChild() { return mRightChild; }
+        const TreeNode* GetLeftChild()  { return mLeftChild.get(); }
+        const TreeNode* GetRightChild() { return mRightChild.get(); }
 
     protected:
         // Children - owned by the node
-        TreeNode *mLeftChild;
-        TreeNode *mRightChild;
+        std::unique_ptr<TreeNode> mLeftChild;
+        std::unique_ptr<TreeNode> mRightChild;
     };
 
 
@@ -110,40 +76,64 @@ protected:
         TriangleNode() : TreeNode(true) {}
 
     protected:
-        SteerableWeight mWeight;
-        Vertex*         mVertices[3]; // Weak pointers - not owned by the triangle
+        SteerableWeight         mWeight;
+        //Vertex*               mVertices[3]; // Weak pointers - not owned by the triangle
+        std::shared_ptr<Vertex> mVertices[3];
     };
+
+public:
+
+    bool Build(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        Cleanup();
+
+        std::list<TriangleNode*> tmpTriangles;
+
+        if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering))
+            return false;
+
+        if (!BuildTriangleTree(tmpTriangles))
+            return false;
+
+        return true;
+    }
+
+    // TODO: Sample(const Normal &)
+
+    // TODO: ...
 
 protected:
 
-    // Generates adaptive triangulation of the given environment map:
-    // fills the list of triangles and list of vertices
-    bool TriangulateEm(
-        std::list<TriangleNode>     &oTriangles,
-        std::list<Vertex>           &oVertices,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering
-        //float                  aAproximationThreshold    // How much error can we accept
-        // TODO: Maximal triangle count?
-        )
+    // Releases the current data structures
+    void Cleanup()
     {
-        std::stack<TriangleNode> toDoTriangles;
+        mTreeRoot.reset(nullptr);
+    }
 
-        if (!GenerateInitialEmTriangulation(toDoTriangles, oVertices, 
-                                            aEmImage, aUseBilinearFiltering))
+    // Generates adaptive triangulation of the given environment map: fills the list of triangles
+    bool TriangulateEm(
+        std::list<TriangleNode*>    &oTriangles,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        std::stack<TriangleNode*> toDoTriangles;
+
+        if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        if (!RefineEmTriangulation(oTriangles, oVertices, toDoTriangles,
-                                   aEmImage, aUseBilinearFiltering))
+        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
+
+        // Assert: stack must be empty
 
         return true;
     }
 
     // Generates initial set of triangles and their vertices
     bool GenerateInitialEmTriangulation(
-        std::stack<TriangleNode>    &oTriangles,
-        std::list<Vertex>           &oVertices,
+        std::stack<TriangleNode*>   &oTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
@@ -151,38 +141,40 @@ protected:
     }
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
-    // fills the output list of triangles
+    // fills the output list of triangles. The refined triangles are released. The triangles 
+    // are removed from the "to do" set and placed into the output list or deleted on error.
     bool RefineEmTriangulation(
-        std::list<TriangleNode>     &oRefinedTriangles,
-        std::list<Vertex>           &oVertices,
-        std::stack<TriangleNode>    &aToDoTriangles,
+        std::list<TriangleNode*>    &oRefinedTriangles,
+        std::stack<TriangleNode*>   &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
-              bool                   aUseBilinearFiltering
-              //float                  aAproximationThreshold    // How much error can we accept
-              // TODO: Maximal triangle count?
-              )
+        bool                         aUseBilinearFiltering
+        )
     {
+        // TODO: While TO DO list is not empty
+        // - If the current triangle is OK, move it to the output list
+        // - If the current triangle is NOT OK, generate sub-division triangles into TO DO list and delete it
+
+        // On error, delete the TO DO list
+
+        // Assert: TO DO list must be empty
+
         return false;
     }
 
-    // Move list of vertices to the vector
-    bool FinalizeVertices(std::list<Vertex> &aVertices)
+    // Build a balanced tree from the provided triangles.
+    // The triangles are removed from the list and placed into the tree or deleted on error
+    bool BuildTriangleTree(std::list<TriangleNode*> &aTriangles)
     {
-        // TODO: ...
+        // TODO: Build the tree in bottom-to-top manner accumulating the children data into their parent
+
+        // Assert: triangles list is empty
     }
 
-    // Build a balanced tree from the provided triangles
-    bool BuildTriangleTree(std::list<TriangleNode> &aTriangles)
-    {
-        // TODO: ...
-    }
+    // TODO: Pick triangle, const
 
-    // TODO: Pick triangle
-
-    // TODO: Sample triangle
+    // TODO: Sample triangle, const
 
 protected:
 
     std::unique_ptr<TreeNode>   mTreeRoot;
-    std::vector<Vertex>         mVertices; // triangle vertices, referenced from mTreeRoot
 };
