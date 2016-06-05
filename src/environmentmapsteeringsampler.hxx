@@ -19,7 +19,24 @@ public:
 
 protected:
 
-    class SteeringBasisValue
+    class SteeringValue
+    {
+    public:
+
+        float operator* (const SteeringValue &aValue)
+        {
+            float retval = 0.0f;
+            for (size_t i = 0; i < 9; i++)
+                retval += mBasisValues[i] * aValue.mBasisValues[i];
+            return retval;
+        }
+
+    protected:
+        float mBasisValues[9];
+    };
+
+
+    class SteeringBasisValue : public SteeringValue
     {
     public:
 
@@ -28,28 +45,20 @@ protected:
         {
             // TODO: Get from paper...
         }
-
-        float mBasisValues[9];
     };
 
 
-    class SteeringCoefficients
+    class SteeringCoefficients : public SteeringValue
     {
     public:
 
         // Generate clamped cosine spherical harmonic coefficients for the given normal
         void GenerateForClampedCosSh(const Vec3f &aNormal)
         {
+            aNormal;
+
             // TODO: Get from paper...
         }
-
-        // TODO
-        float operator* (const SteeringBasisValue &aBasisValue)
-        {
-            return 0.0f;
-        }
-
-        float mCoeffs[9]; // the first 9 coefficients for spherical harmonics or derived bases
     };
 
 
