@@ -23,7 +23,7 @@ protected:
     {
     public:
 
-        float operator* (const SteeringValue &aValue)
+        float operator* (const SteeringValue &aValue) const
         {
             float retval = 0.0f;
             for (size_t i = 0; i < 9; i++)
@@ -43,6 +43,10 @@ protected:
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
         void GenerateForSphericalHarmonic(const Vec3f &aDirection, float aMulFactor)
         {
+            // TODO: Asserts:
+            //  - direction: normalized
+            //  - factor: non-negative
+
             // TODO: Get from paper...
         }
     };
@@ -55,7 +59,8 @@ protected:
         // Generate clamped cosine spherical harmonic coefficients for the given normal
         void GenerateForClampedCosSh(const Vec3f &aNormal)
         {
-            aNormal;
+            // TODO: Asserts:
+            //  - normal: normalized
 
             // TODO: Get from paper...
         }
@@ -78,26 +83,23 @@ protected:
         bool IsTriangleNode() { return mIsTriangleNode; }
 
     protected:
-        bool mIsTriangleNode; // either triangle node or inner node
+        bool mIsTriangleNode; // node can be either triangle (leaf) or inner node
     };
 
 
     class InnerNode : public TreeNode
     {
     public:
-        InnerNode() :
-            TreeNode(false)
-        {}
+        InnerNode() : TreeNode(false) {}
 
-        ~InnerNode()
-        {}
+        ~InnerNode() {}
 
         // The node becomes the owner of the children and is responsible for releasing them
         void SetLeftChild( TreeNode* aLeftChild)  { mLeftChild.reset(aLeftChild); }
         void SetRightChild(TreeNode* aRightChild) { mLeftChild.reset(aRightChild); }
 
-        const TreeNode* GetLeftChild()  { return mLeftChild.get(); }
-        const TreeNode* GetRightChild() { return mRightChild.get(); }
+        const TreeNode* GetLeftChild()  const { return mLeftChild.get(); }
+        const TreeNode* GetRightChild() const { return mRightChild.get(); }
 
     protected:
         // Children - owned by the node
@@ -113,19 +115,23 @@ protected:
 
     protected:
         SteeringBasisValue      mWeight;
+
         //Vertex*               mVertices[3]; // Weak pointers - not owned by the triangle
+
+        // FIXME: This is suboptimal, both in terms of memory consumption and memory non-locality
         std::shared_ptr<Vertex> mVertices[3];
     };
 
 public:
 
+    // Builds the internal structures needed for sampling
     bool Build(
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
         Cleanup();
 
-        std::list<TriangleNode*> tmpTriangles;
+        std::list<TreeNode*> tmpTriangles;
 
         if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering))
             return false;
@@ -136,19 +142,37 @@ public:
         return true;
     }
 
-    // TODO: Sample(const Normal &)
-    void Sample(
+    // Generate a random direction on a sphere proportional to an adaptive piece-wise 
+    // bilinear approximation of the environment map luminance.
+    bool Sample(
         Vec3f       &oSampleDirection,
         float       &oSamplePdf,
         const Vec3f &aNormal,
         const Vec2f &aSample
         ) const
     {
-        // TODO: Generate clamped cosine spherical hamonics coefficients for given normal
+        // TODO: Asserts:
+        //  - normal: normalized
+        //  - sample: [0,1]?
+
+        // TODO: Spherical harmonics coefficients of clamped cosine for given normal
+        SteeringCoefficients directionCoeffs;
+        directionCoeffs.GenerateForClampedCosSh(aNormal);
 
         // TODO: Pick a triangle (descend the tree)
+        const TriangleNode *triangle = nullptr;
+        float triangleProbability = 0.0f;
+        PickTriangle(triangle, triangleProbability, directionCoeffs, aSample/*may need some adjustments*/);
+        if (triangle == nullptr)
+            return false;
 
         // TODO: Sample triangle surface (bi-linear surface sampling)
+        float triangleSamplePdf = 0.0f;
+        SampleTriangleSurface(oSampleDirection, triangleSamplePdf, *triangle,
+                              directionCoeffs, aSample/*may need some adjustments*/);
+        oSamplePdf = triangleSamplePdf * triangleSamplePdf;
+
+        return true;
     }
 
 protected:
@@ -161,11 +185,14 @@ protected:
 
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     bool TriangulateEm(
-        std::list<TriangleNode*>    &oTriangles,
+        std::list<TreeNode*>        &oTriangles,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        bool                         aUseBilinearFiltering) const
     {
-        std::stack<TriangleNode*> toDoTriangles;
+        // TODO: Asserts:
+        //  - triangles: empty?
+
+        std::stack<TreeNode*> toDoTriangles;
 
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
@@ -173,31 +200,37 @@ protected:
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        // Assert: stack must be empty
+        // Assert: the stack must be empty
 
         return true;
     }
 
     // Generates initial set of triangles and their vertices
     bool GenerateInitialEmTriangulation(
-        std::stack<TriangleNode*>   &oTriangles,
+        std::stack<TreeNode*>       &oTriangles,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        bool                         aUseBilinearFiltering) const
     {
         return false;
     }
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
     // fills the output list of triangles. The refined triangles are released. The triangles 
-    // are removed from the "to do" set and placed into the output list or deleted on error.
+    // are either moved from the "to do" set into the output list or deleted on error.
+    // Although the "to do" triangle set is a TreeNode* container, it must contain 
+    // TriangleNode* data only, otherwise an error will occur.
     bool RefineEmTriangulation(
-        std::list<TriangleNode*>    &oRefinedTriangles,
-        std::stack<TriangleNode*>   &aToDoTriangles,
+        std::list<TreeNode*>        &oRefinedTriangles,
+        std::stack<TreeNode*>       &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering
-        )
+        ) const
     {
+        // TODO: Asserts:
+        //  - to do triangles: non-empty?
+
         // TODO: While TO DO list is not empty
+        // - Check whether it is a triangle (assert?)
         // - If the current triangle is OK, move it to the output list
         // - If the current triangle is NOT OK, generate sub-division triangles into TO DO list and delete it
 
@@ -208,18 +241,41 @@ protected:
         return false;
     }
 
-    // Build a balanced tree from the provided triangles.
-    // The triangles are removed from the list and placed into the tree or deleted on error
-    bool BuildTriangleTree(std::list<TriangleNode*> &aTriangles)
+    // Build a uniformly balanced tree from the provided list of nodes (typically triangles).
+    // The tree is built from bottom to top, accumulating the children data into their parents.
+    // The triangles are either moved from the list into the tree or deleted on error.
+    bool BuildTriangleTree(std::list<TreeNode*> &aNodes)
     {
-        // TODO: Build the tree in bottom-to-top manner accumulating the children data into their parent
+        // TODO: While there is more than one node, do:
+        //  - Replace pairs of nodes with nodes containing the pair as its children.
+        //    Un-paired noded (if any) stays in the list for the next iteration.
 
-        // Assert: triangles list is empty
+        // TODO: Move the resulting node (if any) to the tree root
+
+        // TODO: Assert: triangles list is empty
     }
 
-    // TODO: Pick triangle, const
+    // Randomly pick a triangle with probability proportional to the integral of 
+    // the piece-wise bilinear EM approximation over the triangle surface.
+    TriangleNode* PickTriangle(
+        const TriangleNode          *&oTriangle,
+        float                        &oProbability,
+        const SteeringCoefficients   &aDirectionCoeffs,
+        const Vec2f                  &aSample) const
+    {
+        return nullptr;
+    }
 
-    // TODO: Sample triangle, const
+    // Randomly sample the surface of the triangle with probability density proportional
+    // to the the piece-wise bilinear EM approximation
+    void SampleTriangleSurface(
+        Vec3f                       &oSampleDirection,
+        float                       &oSamplePdf,
+        const TriangleNode          &aTriangle,
+        const SteeringCoefficients  &aDirectionCoeffs,
+        const Vec2f                 &aSample) const
+    {
+    }
 
 protected:
 
