@@ -3,7 +3,6 @@
 #include "environmentmapimage.hxx"
 #include "environmentmapsteeringsampler.hxx"
 #include "spectrum.hxx"
-#include <ImfRgbaFile.h>    // OpenEXR
 #include "debugging.hxx"
 #include "geom.hxx"
 #include "math.hxx"
@@ -28,7 +27,7 @@ public:
         try
         {
             //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
-            mImage = LoadImage(aFilename.c_str(), aRotate, aScale);
+            mImage = EnvironmentMapImage::LoadImage(aFilename.c_str(), aRotate, aScale);
         }
         catch (...)
         {
@@ -127,45 +126,6 @@ public:
     }
 
 private:
-    // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
-    EnvironmentMapImage* LoadImage(const char *aFilename, float aRotate, float aScale) const
-    {
-        aRotate = Math::FmodX(aRotate, 1.0f);
-        PG3_ASSERT_FLOAT_IN_RANGE(aRotate, 0.0f, 1.0f);
-
-        Imf::RgbaInputFile file(aFilename, 1);
-        Imath::Box2i dw = file.dataWindow();
-
-        int32_t width   = dw.max.x - dw.min.x + 1;
-        int32_t height  = dw.max.y - dw.min.y + 1;
-        Imf::Rgba* rgbaData = new Imf::Rgba[height*width];
-
-        file.setFrameBuffer(rgbaData - dw.min.x - dw.min.y * width, 1, width);
-        file.readPixels(dw.min.y, dw.max.y);
-
-        EnvironmentMapImage* image = new EnvironmentMapImage(width, height);
-
-        int32_t c = 0;
-        int32_t iRot = (int32_t)(aRotate * width);
-        for (uint32_t j = 0; j < image->Height(); j++)
-        {
-            for (uint32_t i = 0; i < image->Width(); i++)
-            {
-                int32_t x = i + iRot;
-                if (x >= width) x -= width;
-                image->ElementAt(x, j).SetSRGBLight(
-                    rgbaData[c].r * aScale,
-                    rgbaData[c].g * aScale,
-                    rgbaData[c].b * aScale
-                    );
-                c++;
-            }
-        }
-
-        delete rgbaData;
-
-        return image;
-    }
 
     // Generates a 2D distribution with latitude-longitude mapping 
     // based on the luminance of the provided environment map image
