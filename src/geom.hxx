@@ -128,4 +128,62 @@ namespace Geom
 
         PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
     }
+
+    // Vertices and faces of a unit length regular icosahedron with centre in the origin [0, 0, 0]
+    // Based on: http://geometrictools.com/Documentation/PlatonicSolids.pdf
+    // by David Eberly, Geometric Tools, LLC
+    static void UnitIcosahedron(Vec3f (&vertices)[12], Vec3ui (&faces)[20])
+    {
+        // Preprocessing
+        const float t    = (1.0f + std::sqrt(5.0f)) / 2.0f;
+        const float s    = std::sqrt(1.0f + t * t);
+        const float sInv = 1.0f / s;
+
+        // Vertices
+
+        vertices[0]  = Vec3f( t,  1.f, 0.f) * sInv;
+        vertices[1]  = Vec3f(-t,  1.f, 0.f) * sInv;
+        vertices[2]  = Vec3f( t, -1.f, 0.f) * sInv;
+        vertices[3]  = Vec3f(-t, -1.f, 0.f) * sInv;
+
+        vertices[4]  = Vec3f( 1.f, 0.f,  t) * sInv;
+        vertices[5]  = Vec3f( 1.f, 0.f, -t) * sInv;
+        vertices[6]  = Vec3f(-1.f, 0.f,  t) * sInv;
+        vertices[7]  = Vec3f(-1.f, 0.f, -t) * sInv;
+
+        vertices[8]  = Vec3f(0.f,  t,  1.f) * sInv;
+        vertices[9]  = Vec3f(0.f, -t,  1.f) * sInv;
+        vertices[10] = Vec3f(0.f,  t, -1.f) * sInv;
+        vertices[11] = Vec3f(0.f, -t, -1.f) * sInv;
+
+        // TODO: Assert normalization/unit length
+
+        // Faces
+
+        faces[ 0].Set( 0,  8,  3);
+        faces[ 1].Set( 1, 10,  7);
+        faces[ 2].Set( 2,  9, 11);
+        faces[ 3].Set( 7,  3,  1);
+
+        faces[ 4].Set( 0,  5, 10);
+        faces[ 5].Set( 3,  9,  6);
+        faces[ 6].Set( 3, 11,  9);
+        faces[ 7].Set( 8,  6,  4);
+
+        faces[ 8].Set( 2,  4,  9);
+        faces[ 9].Set( 3,  7, 11);
+        faces[10].Set( 4,  2,  0);
+        faces[11].Set( 9,  4,  6);
+
+        faces[12].Set( 2, 11,  5);
+        faces[13].Set( 0, 10,  8);
+        faces[14].Set( 5,  0,  2);
+        faces[15].Set(10,  5,  7);
+
+        faces[16].Set( 1,  6,  8);
+        faces[17].Set( 1,  8, 10);
+        faces[18].Set( 6,  1,  3);
+        faces[19].Set(11,  7,  5);
+    }
+
 } // namespace Geom
