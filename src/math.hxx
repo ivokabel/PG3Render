@@ -251,16 +251,16 @@ public:
         y(static_cast<double>(a.y)),
         z(static_cast<double>(a.z)) {}
 
-    void        Set(T aX, T aY, T aZ) { x = aX; y = aY; z = aZ; }
+    Vec3Base<T>&    Set(T aX, T aY, T aZ) { x = aX; y = aY; z = aZ; return *this; }
 
-    const T&    Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
-    T&          Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
-    Vec2Base<T> GetXY() const         { return Vec2Base<T>(x, y); }
+    const T&        Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
+    T&              Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
+    Vec2Base<T>     GetXY() const         { return Vec2Base<T>(x, y); }
 
-    T           Max()   const         { return std::max(std::max(x, y), z); }
-    bool        IsZero() const        { return (x == 0) && (y == 0) && (z == 0); }
+    T               Max()   const         { return std::max(std::max(x, y), z); }
+    bool            IsZero() const        { return (x == 0) && (y == 0) && (z == 0); }
 
-    Vec3Base<T>& ClipProportionally(const float aMaxAllowedVal)
+    Vec3Base<T>&    ClipProportionally(const float aMaxAllowedVal)
     {
         const float maxVal = Max();
         if (maxVal > aMaxAllowedVal)
