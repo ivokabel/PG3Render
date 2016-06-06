@@ -337,7 +337,7 @@ public:
             filename.c_str());
 
         printf("    -s     Selects the scene (default 0):\n");
-        for (int32_t i = 0; i < Utils::ArrayLength(g_SceneConfigs); i++)
+        for (uint32_t i = 0; i < Utils::ArrayLength(g_SceneConfigs); i++)
             printf("          %2d    %s\n", i, Scene::GetSceneName(g_SceneConfigs[i]).c_str());
 
         printf("    -em    Selects the environment map type (default 0; ignored if the scene doesn't use an environment map):\n");
@@ -473,7 +473,7 @@ public:
                 std::istringstream iss(argv[i]);
                 iss >> sceneID;
 
-                if (iss.fail() || sceneID < 0 || sceneID >= Utils::ArrayLength(g_SceneConfigs))
+                if (iss.fail() || sceneID < 0 || sceneID >= (int32_t)Utils::ArrayLength(g_SceneConfigs))
                 {
                     printf(
                         "Error: Invalid <scene_id> argument \"%s\", please see help (-h)\n",
