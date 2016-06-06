@@ -22,7 +22,6 @@ protected:
     class SteeringValue
     {
     public:
-
         float operator* (const SteeringValue &aValue) const
         {
             float retval = 0.0f;
@@ -39,10 +38,11 @@ protected:
     class SteeringBasisValue : public SteeringValue
     {
     public:
-
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
         void GenerateForSphericalHarmonic(const Vec3f &aDirection, float aMulFactor)
         {
+            aDirection; aMulFactor;
+
             // TODO: Asserts:
             //  - direction: normalized
             //  - factor: non-negative
@@ -55,10 +55,11 @@ protected:
     class SteeringCoefficients : public SteeringValue
     {
     public:
-
         // Generate clamped cosine spherical harmonic coefficients for the given normal
         void GenerateForClampedCosSh(const Vec3f &aNormal)
         {
+            aNormal;
+
             // TODO: Asserts:
             //  - normal: normalized
 
@@ -70,8 +71,13 @@ protected:
     class Vertex
     {
     public:
-        Vec3f               mDirection; // TODO: Use (2D) spherical coordinates to save memory?
-        SteeringBasisValue  mWeight;
+        Vertex(const Vec3f &aDirection, const SteeringBasisValue &aWeight) : 
+            direction(aDirection),
+            weight(aWeight)
+        {};
+
+        Vec3f               direction; // TODO: Use (2D) spherical coordinates to save memory?
+        SteeringBasisValue  weight;
     };
 
 
@@ -183,11 +189,41 @@ protected:
         mTreeRoot.reset(nullptr);
     }
 
+    static void FreeNode(TreeNode* aNode)
+    {
+        PG3_ERROR_CODE_NOT_TESTED("");
+
+        if (aNode == nullptr)
+            return;
+
+        if (aNode->IsTriangleNode())
+            delete static_cast<TriangleNode*>(aNode);
+        else
+            delete static_cast<InnerNode*>(aNode);
+    }
+
+    static void FreeNodesList(std::list<TreeNode*> &aNodes)
+    {
+        PG3_ERROR_CODE_NOT_TESTED("");
+
+        for (TreeNode* node : aNodes)
+            FreeNode(node);
+    }
+
+    static void FreeNodesStack(std::stack<TreeNode*> &aNodes)
+    {
+        while (!aNodes.empty())
+        {
+            FreeNode(aNodes.top());
+            aNodes.pop();
+        }
+    }
+
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
-    bool TriangulateEm(
+    static bool TriangulateEm(
         std::list<TreeNode*>        &oTriangles,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering) const
+        bool                         aUseBilinearFiltering)
     {
         // TODO: Asserts:
         //  - triangles: empty?
@@ -206,11 +242,34 @@ protected:
     }
 
     // Generates initial set of triangles and their vertices
-    bool GenerateInitialEmTriangulation(
+    static bool GenerateInitialEmTriangulation(
         std::stack<TreeNode*>       &oTriangles,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering) const
+        bool                         aUseBilinearFiltering)
     {
+        oTriangles;  aEmImage;  aUseBilinearFiltering;
+
+        // Generate the geometrical data
+        Vec3f vertices[12];
+        Vec3ui faces[20];
+        Geom::UnitIcosahedron(vertices, faces);
+
+        PG3_ERROR_CODE_NOT_TESTED("");
+
+        // Allocate shared vertices for the triangles
+        std::vector<std::shared_ptr<Vertex>> sharedVertices(Utils::ArrayLength(vertices)); // empty shared pointers
+        for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
+        {
+            const auto &vertexCoords = vertices[i];
+
+            SteeringBasisValue weight;
+            weight.GenerateForSphericalHarmonic(vertexCoords, 1.0f/*TODO: evaluate EM*/);
+
+            sharedVertices[i] = std::make_shared<Vertex>(vertexCoords, weight);
+        }
+
+        // TODO: Build triangle set
+
         return false;
     }
 
@@ -219,13 +278,14 @@ protected:
     // are either moved from the "to do" set into the output list or deleted on error.
     // Although the "to do" triangle set is a TreeNode* container, it must contain 
     // TriangleNode* data only, otherwise an error will occur.
-    bool RefineEmTriangulation(
+    static bool RefineEmTriangulation(
         std::list<TreeNode*>        &oRefinedTriangles,
         std::stack<TreeNode*>       &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering
-        ) const
+        bool                         aUseBilinearFiltering)
     {
+        oRefinedTriangles; aToDoTriangles; aEmImage; aUseBilinearFiltering;
+
         // TODO: Asserts:
         //  - to do triangles: non-empty?
 
@@ -246,6 +306,8 @@ protected:
     // The triangles are either moved from the list into the tree or deleted on error.
     bool BuildTriangleTree(std::list<TreeNode*> &aNodes)
     {
+        aNodes;
+
         // TODO: While there is more than one node, do:
         //  - Replace pairs of nodes with nodes containing the pair as its children.
         //    Un-paired noded (if any) stays in the list for the next iteration.
@@ -263,6 +325,8 @@ protected:
         const SteeringCoefficients   &aDirectionCoeffs,
         const Vec2f                  &aSample) const
     {
+        oTriangle; oProbability; aDirectionCoeffs; aSample;
+
         return nullptr;
     }
 
@@ -275,9 +339,90 @@ protected:
         const SteeringCoefficients  &aDirectionCoeffs,
         const Vec2f                 &aSample) const
     {
+        oSampleDirection; oSamplePdf; aTriangle; aDirectionCoeffs; aSample;
+
+        // ...
     }
 
 protected:
 
     std::unique_ptr<TreeNode>   mTreeRoot;
+
+public:
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    static bool _UnitTest_TriangulateEm(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::TriangulateEm()");
+
+        // TODO: Empty EM
+
+        // Constant EM (Luminance 1, small)
+        {
+            UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
+
+            std::unique_ptr<EnvironmentMapImage> image(
+                EnvironmentMapImage::LoadImage(
+                    ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
+            if (!image)
+            {
+                UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTest,
+                               "Small constant EM", "Unable to load image!");
+                return false;
+            }
+
+            UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
+
+            std::stack<TreeNode*> triangles;
+            GenerateInitialEmTriangulation(triangles, *image, false);
+
+            // Test count: regular icosahedron (20 faces, 30 edges, and 12 vertices)
+            if (triangles.size() != 20)
+            {
+                std::ostringstream errorDescription;
+                errorDescription << "Initial triangle count is ";
+                errorDescription << triangles.size();
+                errorDescription << " instead of 20!";
+                UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation",
+                              errorDescription.str().c_str());
+                return false;
+            }
+
+            // TODO: Check each triangle: vertices are not equal, vertices are normalized
+            // TODO: Test weights: ???
+
+            UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
+
+            UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
+
+            // TODO: Refine triangulation
+
+            // TODO: Test:
+            // - Count: same as initial triangulation
+            // - Weights...
+
+            FreeNodesStack(triangles);
+
+            UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
+
+            UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
+        }
+
+        // TODO: Constant EM (Luminance 1, large?)
+
+        // TODO: Constant EM (Luminance 0)
+
+        // TODO: Synthetic EM (One pixel?)
+
+        // TODO: ...
+
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+                      "EnvironmentMapSteeringSampler::TriangulateEm()");
+        return true;
+    }
+
+#endif
 };

@@ -237,7 +237,7 @@ private:
     }
 
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
-    float SinMidTheta(const EnvironmentMapImage* aImage, const uint32_t aSegmY) const
+    static float SinMidTheta(const EnvironmentMapImage* aImage, const uint32_t aSegmY)
     {
         PG3_ASSERT(aImage != nullptr);
 
@@ -253,7 +253,7 @@ private:
     }
 
     // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
-    float SinMidTheta(const EnvironmentMapImage* aImage, const float aV) const
+    static float SinMidTheta(const EnvironmentMapImage* aImage, const float aV)
     {
         PG3_ASSERT(aImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(aV, 0.0f, 1.0f);
