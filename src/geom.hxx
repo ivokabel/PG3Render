@@ -1,7 +1,11 @@
 #pragma once
 
 #include "debugging.hxx"
+#include "unittesting.hxx"
 #include "math.hxx"
+
+#include <list>
+#include <set>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry routines
@@ -156,11 +160,16 @@ namespace Geom
         vertices[10] = Vec3f(0.f,  t, -1.f) * sInv;
         vertices[11] = Vec3f(0.f, -t, -1.f) * sInv;
 
-        // TODO: Assert normalization/unit length
+#ifdef PG3_ASSERT_ENABLED
+        for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
+        {
+            PG3_ASSERT_VEC3F_NORMALIZED(vertices[i]);
+        }
+#endif
 
         // Faces
 
-        faces[ 0].Set( 0,  8,  3);
+        faces[ 0].Set( 0,  8,  4);
         faces[ 1].Set( 1, 10,  7);
         faces[ 2].Set( 2,  9, 11);
         faces[ 3].Set( 7,  3,  1);
@@ -185,5 +194,177 @@ namespace Geom
         faces[18].Set( 6,  1,  3);
         faces[19].Set(11,  7,  5);
     }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    bool _UnitTest_UnitIcosahedron_Vertices(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel,
+        const Vec3f(&vertices)[12])
+    {
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices");
+
+        for (uint32_t vertexId = 0; vertexId < Utils::ArrayLength(vertices); vertexId++)
+        {
+            auto &vertex = vertices[vertexId];
+
+            for (uint32_t coord = 0; coord < 3; coord++)
+            {
+                // Coordinate numbers validity
+                if (std::isnan(vertex.Get(coord)))
+                {
+                    std::ostringstream errorDescription;
+                    errorDescription << "Coordinate ";
+                    errorDescription << coord;
+                    errorDescription << " of vertex ";
+                    errorDescription << vertexId;
+                    errorDescription << " is NaN!";
+                    UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices",
+                        errorDescription.str().c_str());
+                    return false;
+                }
+                if (!std::isfinite(vertex.Get(coord)))
+                {
+                    std::ostringstream errorDescription;
+                    errorDescription << "Coordinate ";
+                    errorDescription << coord;
+                    errorDescription << " of vertex ";
+                    errorDescription << vertexId;
+                    errorDescription << " is NOT FINITE!";
+                    UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices",
+                        errorDescription.str().c_str());
+                    return false;
+                }
+            }
+
+            // Unit vector lengths
+            if (fabs(vertex.LenSqr() - 1.0f) > 0.001f)
+            {
+                std::ostringstream errorDescription;
+                errorDescription << "The direction of vertex ";
+                errorDescription << vertexId;
+                errorDescription << " is NOT UNIT!";
+                UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices",
+                    errorDescription.str().c_str());
+                return false;
+            }
+        }
+
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices");
+        return true;
+    }
+
+    bool _UnitTest_UnitIcosahedron_Faces(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel,
+        const Vec3f(&vertices)[12],
+        const Vec3ui(&faces)[20])
+    {
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Faces");
+
+        // Valid vertex indices
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Vertex indices validity");
+        for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
+        {
+            auto &face = faces[faceId];
+            for (uint32_t vertexSeqNum = 0; vertexSeqNum < 3; vertexSeqNum++)
+            {
+                auto vertexId = face.Get(vertexSeqNum);
+
+                if (vertexId >= 12)
+                {
+                    std::ostringstream errorDescription;
+                    errorDescription << "The vertex ";
+                    errorDescription << vertexSeqNum;
+                    errorDescription << " of face ";
+                    errorDescription << faceId;
+                    errorDescription << " is out of range (";
+                    errorDescription << vertexId;
+                    errorDescription << " >= 12)!";
+                    UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Vertex indices validity",
+                        errorDescription.str().c_str());
+                    return false;
+                }
+            }
+        }
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Vertex indices validity");
+
+        // Edge lengths
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Edges lengths");
+        for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
+        {
+            auto &face = faces[faceId];
+            const float edgeReferenceLength = 4.f / std::sqrt(10.f + 2.f * std::sqrt(5.f));
+            const float edgeReferenceLengthSqr = edgeReferenceLength * edgeReferenceLength;
+            for (uint32_t vertexSeqNum = 0; vertexSeqNum < 3; vertexSeqNum++)
+            {
+                auto vertex1Id = face.Get(vertexSeqNum);
+                auto vertex2Id = face.Get((vertexSeqNum + 1) % 3);
+
+                auto &vertex1Coords = vertices[vertex1Id];
+                auto &vertex2Coords = vertices[vertex2Id];
+                auto edgeLengthSqr = (vertex1Coords - vertex2Coords).LenSqr();
+                if (fabs(edgeLengthSqr - edgeReferenceLengthSqr) > 0.001f)
+                {
+                    std::ostringstream errorDescription;
+                    errorDescription << "The edge between vertices ";
+                    errorDescription << vertex1Id;
+                    errorDescription << " and ";
+                    errorDescription << vertex2Id;
+                    errorDescription << " has incorrect length (sqrt(";
+                    errorDescription << edgeLengthSqr;
+                    errorDescription << ") instead of sqrt(";
+                    errorDescription << edgeReferenceLengthSqr;
+                    errorDescription << "))!";
+                    UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Edges lengths",
+                        errorDescription.str().c_str());
+                    return false;
+                }
+            }
+        }
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Edges lengths");
+
+        // Face uniqueness
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Face uniqueness");
+        std::list<std::set<uint32_t>> alreadyProcessedFaceVertices;
+        for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
+        {
+            auto &face = faces[faceId];
+            std::set<uint32_t> vertexSet = { face.Get(0), face.Get(1), face.Get(2) };
+            auto it = std::find(alreadyProcessedFaceVertices.begin(),
+                                alreadyProcessedFaceVertices.end(),
+                                vertexSet);
+            if (it != alreadyProcessedFaceVertices.end())
+            {
+                UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Face uniqueness",
+                    "Found duplicate face!");
+                return false;
+            }
+            alreadyProcessedFaceVertices.push_back(vertexSet);
+        }
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Face uniqueness");
+
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Faces");
+        return true;
+    }
+
+    bool _UnitTest_UnitIcosahedron(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::UnitIcosahedron()");
+
+        Vec3f  vertices[12];
+        Vec3ui faces[20];
+        UnitIcosahedron(vertices, faces);
+
+        if (!_UnitTest_UnitIcosahedron_Vertices(aMaxUtBlockPrintLevel, vertices))
+            return false;
+
+        if (!_UnitTest_UnitIcosahedron_Faces(aMaxUtBlockPrintLevel, vertices, faces))
+            return false;
+
+        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::UnitIcosahedron()");
+        return true;
+    }
+
+#endif
 
 } // namespace Geom

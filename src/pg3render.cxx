@@ -174,9 +174,11 @@ float Render(
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
-    Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+    Geom::_UnitTest_UnitIcosahedron(aMaxUtBlockPrintLevel);
 
-    exit(0);
+    //Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+
+    //EnvironmentMapSteeringSampler::_UnitTest_TriangulateEm(aMaxUtBlockPrintLevel);
 }
 #endif
 
@@ -190,7 +192,12 @@ int32_t main(int32_t argc, const char *argv[])
 
     argc; argv; // unused params
 
-    RunUnitTests(eutblSubTest);
+    //for (uint32_t i = 0; i < 1000; i++)
+        //RunUnitTests(eutblWholeTest);
+        //RunUnitTests(eutblSubTest);
+        RunUnitTests(eutblSingleStep);
+
+    exit(0);
 
 #else
 
