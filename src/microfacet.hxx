@@ -138,7 +138,7 @@ namespace Microfacet
         const bool isDirInBelow  = dirIn.z  < 0.0f;
         const bool isDirOutBelow = dirOut.z < 0.0f;
 
-        UT_BEGIN(
+        PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblSingleStep,
             "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
@@ -169,7 +169,7 @@ namespace Microfacet
         {
             if (isHalfwayVectorValid)
             {
-                UT_END_FAILED(
+                PG3_UT_END_FAILED(
                     aMaxUtBlockPrintLevel, eutblSingleStep,
                     "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                     "In and out directions are on the same side of the macro surface, but halfway vector is valid!",
@@ -203,7 +203,7 @@ namespace Microfacet
 
                     if (!outDirsEqual)
                     {
-                        UT_END_FAILED(
+                        PG3_UT_END_FAILED(
                             aMaxUtBlockPrintLevel, eutblSingleStep,
                             "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                             "Both halfway vector and refraction are valid, but out directions are not equal!",
@@ -214,7 +214,7 @@ namespace Microfacet
                 }
                 else if (refractionValidityCoef < -0.0001f)
                 {
-                    UT_END_FAILED(
+                    PG3_UT_END_FAILED(
                         aMaxUtBlockPrintLevel, eutblSingleStep,
                         "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                         "Halfway vector is valid, but refraction is not!",
@@ -226,7 +226,7 @@ namespace Microfacet
         }
         else
         {
-            UT_FATAL_ERROR(
+            PG3_UT_FATAL_ERROR(
                 aMaxUtBlockPrintLevel, eutblSingleStep,
                 "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                 "Unexpected case!",
@@ -235,7 +235,7 @@ namespace Microfacet
             return false;
         }
 
-        UT_END_PASSED(
+        PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblSingleStep,
             "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
@@ -258,7 +258,7 @@ namespace Microfacet
         if (halfVector.z < 0.0f)
             return true;
 
-        UT_BEGIN(
+        PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblSingleStep,
             "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
@@ -289,7 +289,7 @@ namespace Microfacet
 
             if (isDirInBelow == isDirOutBelow)
             {
-                UT_END_FAILED(
+                PG3_UT_END_FAILED(
                     aMaxUtBlockPrintLevel, eutblSingleStep,
                     "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                     "In and out directions are on the same side of the macro surface!",
@@ -322,7 +322,7 @@ namespace Microfacet
             // Sanity test
             if (isHalfwayVectorValid != (halwayVectCompValidityCoef >= 0.0f))
             {
-                UT_FATAL_ERROR(
+                PG3_UT_FATAL_ERROR(
                     aMaxUtBlockPrintLevel, eutblSingleStep,
                     "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                     "Refraction valitidy sanity test failed!",
@@ -340,7 +340,7 @@ namespace Microfacet
 
                 if (!halfVectorsEqual)
                 {
-                    UT_END_FAILED(
+                    PG3_UT_END_FAILED(
                         aMaxUtBlockPrintLevel, eutblSingleStep,
                         "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                         "Both refraction and halfway vector are valid, but halfway vectors are not equal!",
@@ -351,7 +351,7 @@ namespace Microfacet
             }
             else if (halwayVectCompValidityCoef < -0.0001f)
             {
-                UT_END_FAILED(
+                PG3_UT_END_FAILED(
                     aMaxUtBlockPrintLevel, eutblSingleStep,
                     "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                     "Refraction is valid, but halfway vector is not!",
@@ -361,7 +361,7 @@ namespace Microfacet
             }
         }
 
-        UT_END_PASSED(
+        PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblSingleStep,
             "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
@@ -390,7 +390,7 @@ namespace Microfacet
         const float phiOutStart         = 0.0f * Math::kPiF;
         const float phiOutEnd           = 2.0f * Math::kPiF;
 
-        UT_BEGIN(
+        PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblSubTest,
             "Air(%.2f)/glass(%.2f) interface, deterministics directions (%.0fx%.0fx%.0f)",
             aUpperN, aLowerN, thetaInStepCount, thetaOutStepCount, phiOutStepCount);
@@ -425,7 +425,7 @@ namespace Microfacet
             }
         }
 
-        UT_END_PASSED(
+        PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblSubTest,
             "Air(%.2f)/glass(%.2f) interface, deterministics directions (%.0fx%.0fx%.0f)",
             aUpperN, aLowerN, thetaInStepCount, thetaOutStepCount, phiOutStepCount);
@@ -435,7 +435,7 @@ namespace Microfacet
         const uint32_t randomSamplesCount = 32 * 32 * 64;
         Rng rng(1998);
 
-        UT_BEGIN(
+        PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblSubTest,
             "Air(%.2f)/glass(%.2f) interface, random directions (%d)",
             aUpperN, aLowerN, randomSamplesCount);
@@ -465,7 +465,7 @@ namespace Microfacet
                 return false;
         }
 
-        UT_END_PASSED(
+        PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblSubTest,
             "Air(%.2f)/glass(%.2f) interface, random directions (%d)",
             aUpperN, aLowerN, randomSamplesCount);
@@ -476,7 +476,7 @@ namespace Microfacet
     bool _UnitTest_HalfwayVectorRefractionLocal(
         UnitTestBlockLevel   aMaxUtBlockPrintLevel)
     {
-        UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Microfacet::HalfwayVectorRefractionLocal()");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Microfacet::HalfwayVectorRefractionLocal()");
 
         if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.51f))
             return false;
@@ -493,7 +493,7 @@ namespace Microfacet
         if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.55f, 1.51f))
             return false;
 
-        UT_END_PASSED(
+        PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
             "Microfacet::HalfwayVectorRefractionLocal()");
 

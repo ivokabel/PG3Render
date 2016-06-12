@@ -1,9 +1,11 @@
 #pragma once
 
 #include "environmentmapimage.hxx"
+#include "unittesting.hxx"
 #include "debugging.hxx"
 #include "spectrum.hxx"
 #include "types.hxx"
+
 #include <list>
 #include <stack>
 #include <memory>
@@ -355,26 +357,26 @@ public:
     static bool _UnitTest_TriangulateEm(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::TriangulateEm()");
 
         // TODO: Empty EM
 
         // Constant EM (Luminance 1, small)
         {
-            UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
 
             std::unique_ptr<EnvironmentMapImage> image(
                 EnvironmentMapImage::LoadImage(
                     ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
             if (!image)
             {
-                UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTest,
-                               "Small constant EM", "Unable to load image!");
+                PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTest,
+                                   "Small constant EM", "Unable to load image!");
                 return false;
             }
 
-            UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
 
             std::stack<TreeNode*> triangles;
             GenerateInitialEmTriangulation(triangles, *image, false);
@@ -386,17 +388,17 @@ public:
                 errorDescription << "Initial triangle count is ";
                 errorDescription << triangles.size();
                 errorDescription << " instead of 20!";
-                UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation",
-                              errorDescription.str().c_str());
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation",
+                                  errorDescription.str().c_str());
                 return false;
             }
 
             // TODO: Check each triangle: vertices are not equal, vertices are normalized
-            // TODO: Test weights: ???
+            // TODO: Test vertex weights, but not triangle weights: ???
 
-            UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
 
-            UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
 
             // TODO: Refine triangulation
 
@@ -406,9 +408,9 @@ public:
 
             FreeNodesStack(triangles);
 
-            UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
 
-            UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
         }
 
         // TODO: Constant EM (Luminance 1, large?)
@@ -419,8 +421,8 @@ public:
 
         // TODO: ...
 
-        UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
-                      "EnvironmentMapSteeringSampler::TriangulateEm()");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+                          "EnvironmentMapSteeringSampler::TriangulateEm()");
         return true;
     }
 

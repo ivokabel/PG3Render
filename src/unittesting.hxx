@@ -13,7 +13,7 @@ enum UnitTestBlockLevel
 };
 
 
-#define UT_BEGIN( \
+#define PG3_UT_BEGIN( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \
@@ -33,7 +33,7 @@ enum UnitTestBlockLevel
 }
 
 
-#define UT_END_PASSED( \
+#define PG3_UT_END_PASSED( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \
@@ -54,7 +54,7 @@ enum UnitTestBlockLevel
 }
 
 
-#define __UT_ERROR_INTERNAL( \
+#define __PG3_UT_ERROR_INTERNAL( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \
@@ -82,24 +82,24 @@ enum UnitTestBlockLevel
 }
 
 
-#define UT_END_FAILED( \
+#define PG3_UT_END_FAILED( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \
     _failure_descr, \
     ...) \
-__UT_ERROR_INTERNAL( \
+__PG3_UT_ERROR_INTERNAL( \
     _max_print_ut_level, _ut_block_level, _block_name, "FAILED", _failure_descr, \
     __VA_ARGS__)
 
 
-#define UT_FATAL_ERROR( \
+#define PG3_UT_FATAL_ERROR( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \
     _failure_descr, \
     ...) \
-__UT_ERROR_INTERNAL( \
+__PG3_UT_ERROR_INTERNAL( \
     _max_print_ut_level, _ut_block_level, _block_name, "UNIT TEST FATAL ERROR", _failure_descr, \
     __VA_ARGS__)
 
