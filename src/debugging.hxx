@@ -6,7 +6,7 @@
 
 #ifndef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 // Uncomment this to activate all asserts in the code
-//#define PG3_ASSERT_ENABLED
+#define PG3_ASSERT_ENABLED
 #endif
 
 class Debugging
@@ -112,22 +112,30 @@ private:
 // Float asserts
 
 #define PG3_ASSERT_FLOAT_VALID(_val) \
+{ \
     PG3_ASSERT(!std::isnan(_val)); \
-    PG3_ASSERT( std::isfinite(_val))
+    PG3_ASSERT( std::isfinite(_val)); \
+}
 
 #define PG3_ASSERT_FLOAT_NONNEGATIVE(_val) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val); \
-    PG3_ASSERT_MSG(((_val) >= 0.0f), "%.12f >= 0.0f", (_val))
+    PG3_ASSERT_MSG(((_val) >= 0.0f), "%.12f >= 0.0f", (_val)); \
+}
 
 #define PG3_ASSERT_FLOAT_POSITIVE(_val) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val); \
-    PG3_ASSERT_MSG(((_val) > 0.0f), "%.12f > 0.0f", (_val))
+    PG3_ASSERT_MSG(((_val) > 0.0f), "%.12f > 0.0f", (_val)); \
+}
 
 #define PG3_ASSERT_FLOAT_IN_RANGE(_val, _low, _up) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val); \
     PG3_ASSERT_FLOAT_VALID(_low); \
     PG3_ASSERT_FLOAT_VALID(_up); \
-    PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%.12f <= %.12f <= %.12f", (_low), (_val), (_up))
+    PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%.12f <= %.12f <= %.12f", (_low), (_val), (_up)); \
+}
 
 #ifdef PG3_ASSERT_ENABLED
 #define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius) \
@@ -142,31 +150,39 @@ private:
     PG3_ASSERT_MSG( \
         fabs((_val1_const) - (_val2_const)) <= (_radius_const), \
         "fabs((%.12f) - (%.12f)) <= (%.12f)", \
-        (_val1_const), (_val2_const), (_radius_const)) \
+        (_val1_const), (_val2_const), (_radius_const)); \
 }
 #else
 #define PG3_ASSERT_FLOAT_EQUAL(_val1, _val2, _radius)
 #endif
 
 #define PG3_ASSERT_FLOAT_LESS_THAN(_val1, _val2) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val1); \
     PG3_ASSERT_FLOAT_VALID(_val2); \
-    PG3_ASSERT_MSG((_val1) < (_val2), "%.12f < %.12f", (_val1), (_val2))
+    PG3_ASSERT_MSG((_val1) < (_val2), "%.12f < %.12f", (_val1), (_val2)); \
+}
 
 #define PG3_ASSERT_FLOAT_LARGER_THAN(_val1, _val2) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val1); \
     PG3_ASSERT_FLOAT_VALID(_val2); \
-    PG3_ASSERT_MSG((_val1) > (_val2), "%.12f > %.12f", (_val1), (_val2))
+    PG3_ASSERT_MSG((_val1) > (_val2), "%.12f > %.12f", (_val1), (_val2)); \
+}
 
 #define PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(_val1, _val2) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val1); \
     PG3_ASSERT_FLOAT_VALID(_val2); \
-    PG3_ASSERT_MSG((_val1) <= (_val2), "%.12f <= %.12f", (_val1), (_val2))
+    PG3_ASSERT_MSG((_val1) <= (_val2), "%.12f <= %.12f", (_val1), (_val2)); \
+}
 
 #define PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_val1); \
     PG3_ASSERT_FLOAT_VALID(_val2); \
-    PG3_ASSERT_MSG((_val1) >= (_val2), "%.12f >= %.12f", (_val1), (_val2))
+    PG3_ASSERT_MSG((_val1) >= (_val2), "%.12f >= %.12f", (_val1), (_val2)); \
+}
 
 // Integer asserts
 
@@ -194,28 +210,38 @@ private:
 // Vector2 asserts
 
 #define PG3_ASSERT_VEC2F_VALID(_vec2) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_vec2.x); \
-    PG3_ASSERT_FLOAT_VALID(_vec2.y);
+    PG3_ASSERT_FLOAT_VALID(_vec2.y); \
+}
 
 #define PG3_ASSERT_VEC2F_NONNEGATIVE(_vec2) \
+{ \
     PG3_ASSERT_FLOAT_NONNEGATIVE(_vec2.x); \
-    PG3_ASSERT_FLOAT_NONNEGATIVE(_vec2.y);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(_vec2.y); \
+}
 
 // Vector3 asserts
 
 #define PG3_ASSERT_VEC3F_VALID(_vec3) \
+{ \
     PG3_ASSERT_FLOAT_VALID(_vec3.x); \
     PG3_ASSERT_FLOAT_VALID(_vec3.y); \
-    PG3_ASSERT_FLOAT_VALID(_vec3.z);
+    PG3_ASSERT_FLOAT_VALID(_vec3.z); \
+}
 
 #define PG3_ASSERT_VEC3F_NONNEGATIVE(_vec3) \
+{ \
     PG3_ASSERT_FLOAT_NONNEGATIVE(_vec3.x); \
     PG3_ASSERT_FLOAT_NONNEGATIVE(_vec3.y); \
-    PG3_ASSERT_FLOAT_NONNEGATIVE(_vec3.z);
+    PG3_ASSERT_FLOAT_NONNEGATIVE(_vec3.z); \
+}
 
 #define PG3_ASSERT_VEC3F_NORMALIZED(_vec3) \
+{ \
     PG3_ASSERT_VEC3F_VALID(_vec3); \
-    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.001f)
+    PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.001f); \
+}
 
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE
