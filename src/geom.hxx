@@ -201,7 +201,7 @@ namespace Geom
         const UnitTestBlockLevel aMaxUtBlockPrintLevel,
         const Vec3f(&vertices)[12])
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices");
 
         for (uint32_t vertexId = 0; vertexId < Utils::ArrayLength(vertices); vertexId++)
         {
@@ -218,7 +218,7 @@ namespace Geom
                     errorDescription << " of vertex ";
                     errorDescription << vertexId;
                     errorDescription << " is NaN!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices",
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
                         errorDescription.str().c_str());
                     return false;
                 }
@@ -230,7 +230,7 @@ namespace Geom
                     errorDescription << " of vertex ";
                     errorDescription << vertexId;
                     errorDescription << " is NOT FINITE!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices",
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
                         errorDescription.str().c_str());
                     return false;
                 }
@@ -243,13 +243,13 @@ namespace Geom
                 errorDescription << "The direction of vertex ";
                 errorDescription << vertexId;
                 errorDescription << " is NOT UNIT!";
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices",
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
                     errorDescription.str().c_str());
                 return false;
             }
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Vertices");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices");
         return true;
     }
 
@@ -258,10 +258,10 @@ namespace Geom
         const Vec3f(&vertices)[12],
         const Vec3ui(&faces)[20])
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Faces");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Faces");
 
         // Valid vertex indices
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Vertex indices validity");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity");
         for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
         {
             auto &face = faces[faceId];
@@ -279,16 +279,16 @@ namespace Geom
                     errorDescription << " is out of range (";
                     errorDescription << vertexId;
                     errorDescription << " >= 12)!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Vertex indices validity",
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity",
                         errorDescription.str().c_str());
                     return false;
                 }
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Vertex indices validity");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity");
 
         // Edge lengths
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Edges lengths");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges lengths");
         for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
         {
             auto &face = faces[faceId];
@@ -314,16 +314,16 @@ namespace Geom
                     errorDescription << ") instead of sqrt(";
                     errorDescription << edgeReferenceLengthSqr;
                     errorDescription << "))!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Edges lengths",
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges lengths",
                         errorDescription.str().c_str());
                     return false;
                 }
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Edges lengths");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges lengths");
 
         // Face uniqueness
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Face uniqueness");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
         std::list<std::set<uint32_t>> alreadyProcessedFaceVertices;
         for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
         {
@@ -334,15 +334,15 @@ namespace Geom
                                 vertexSet);
             if (it != alreadyProcessedFaceVertices.end())
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Face uniqueness",
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness",
                     "Found duplicate face!");
                 return false;
             }
             alreadyProcessedFaceVertices.push_back(vertexSet);
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Face uniqueness");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Faces");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Faces");
         return true;
     }
 

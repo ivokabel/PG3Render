@@ -2,14 +2,17 @@
 
 #include "hardconfig.hxx"
 
-// Unit testing if switched on by defining PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER in hard-wired settings
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Unit testing
+// Switched on by defining PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER in hard-wired settings
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum UnitTestBlockLevel
 {
     eutblNone           = 0,
     eutblWholeTest      = 1,    // Main testing block
-    eutblSubTest        = 2,    // Test can have sub-blocks
-    eutblSingleStep     = 3,    // Tests can constist of small testing steps
+    eutblSubTestLevel1  = 2,    // Test can have sub-blocks...
+    eutblSubTestLevel2  = 3,
 };
 
 

@@ -364,19 +364,19 @@ public:
 
         // Constant EM (Luminance 1, small)
         {
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Small constant EM");
 
             std::unique_ptr<EnvironmentMapImage> image(
                 EnvironmentMapImage::LoadImage(
                     ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
             if (!image)
             {
-                PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTest,
+                PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
                                    "Small constant EM", "Unable to load image!");
                 return false;
             }
 
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
 
             std::stack<TreeNode*> triangles;
             GenerateInitialEmTriangulation(triangles, *image, false);
@@ -388,7 +388,7 @@ public:
                 errorDescription << "Initial triangle count is ";
                 errorDescription << triangles.size();
                 errorDescription << " instead of 20!";
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation",
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                                   errorDescription.str().c_str());
                 return false;
             }
@@ -396,9 +396,9 @@ public:
             // TODO: Check each triangle: vertices are not equal, vertices are normalized
             // TODO: Test vertex weights, but not triangle weights: ???
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Initial triangulation");
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
 
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
             // TODO: Refine triangulation
 
@@ -408,9 +408,9 @@ public:
 
             FreeNodesStack(triangles);
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSingleStep, "Triangulation refinement");
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTest, "Small constant EM");
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Small constant EM");
         }
 
         // TODO: Constant EM (Luminance 1, large?)

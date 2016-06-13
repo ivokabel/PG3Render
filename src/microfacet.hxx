@@ -139,7 +139,7 @@ namespace Microfacet
         const bool isDirOutBelow = dirOut.z < 0.0f;
 
         PG3_UT_BEGIN(
-            aMaxUtBlockPrintLevel, eutblSingleStep,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel2,
             "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
             dirOut.x, dirOut.y, dirOut.z);
@@ -170,7 +170,7 @@ namespace Microfacet
             if (isHalfwayVectorValid)
             {
                 PG3_UT_END_FAILED(
-                    aMaxUtBlockPrintLevel, eutblSingleStep,
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                     "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                     "In and out directions are on the same side of the macro surface, but halfway vector is valid!",
                     dirIn.x, dirIn.y, dirIn.z,
@@ -204,7 +204,7 @@ namespace Microfacet
                     if (!outDirsEqual)
                     {
                         PG3_UT_END_FAILED(
-                            aMaxUtBlockPrintLevel, eutblSingleStep,
+                            aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                             "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                             "Both halfway vector and refraction are valid, but out directions are not equal!",
                             dirIn.x, dirIn.y, dirIn.z,
@@ -215,7 +215,7 @@ namespace Microfacet
                 else if (refractionValidityCoef < -0.0001f)
                 {
                     PG3_UT_END_FAILED(
-                        aMaxUtBlockPrintLevel, eutblSingleStep,
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                         "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                         "Halfway vector is valid, but refraction is not!",
                         dirIn.x, dirIn.y, dirIn.z,
@@ -227,7 +227,7 @@ namespace Microfacet
         else
         {
             PG3_UT_FATAL_ERROR(
-                aMaxUtBlockPrintLevel, eutblSingleStep,
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                 "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
                 "Unexpected case!",
                 dirIn.x, dirIn.y, dirIn.z,
@@ -236,7 +236,7 @@ namespace Microfacet
         }
 
         PG3_UT_END_PASSED(
-            aMaxUtBlockPrintLevel, eutblSingleStep,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel2,
             "In-Out: In: (% .2f, % .2f, % .2f), Out: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
             dirOut.x, dirOut.y, dirOut.z);
@@ -259,7 +259,7 @@ namespace Microfacet
             return true;
 
         PG3_UT_BEGIN(
-            aMaxUtBlockPrintLevel, eutblSingleStep,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel2,
             "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
             halfVector.x, halfVector.y, halfVector.z);
@@ -290,7 +290,7 @@ namespace Microfacet
             if (isDirInBelow == isDirOutBelow)
             {
                 PG3_UT_END_FAILED(
-                    aMaxUtBlockPrintLevel, eutblSingleStep,
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                     "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                     "In and out directions are on the same side of the macro surface!",
                     dirIn.x, dirIn.y, dirIn.z,
@@ -323,7 +323,7 @@ namespace Microfacet
             if (isHalfwayVectorValid != (halwayVectCompValidityCoef >= 0.0f))
             {
                 PG3_UT_FATAL_ERROR(
-                    aMaxUtBlockPrintLevel, eutblSingleStep,
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                     "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                     "Refraction valitidy sanity test failed!",
                     dirIn.x, dirIn.y, dirIn.z,
@@ -341,7 +341,7 @@ namespace Microfacet
                 if (!halfVectorsEqual)
                 {
                     PG3_UT_END_FAILED(
-                        aMaxUtBlockPrintLevel, eutblSingleStep,
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                         "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                         "Both refraction and halfway vector are valid, but halfway vectors are not equal!",
                         dirIn.x, dirIn.y, dirIn.z,
@@ -352,7 +352,7 @@ namespace Microfacet
             else if (halwayVectCompValidityCoef < -0.0001f)
             {
                 PG3_UT_END_FAILED(
-                    aMaxUtBlockPrintLevel, eutblSingleStep,
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                     "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
                     "Refraction is valid, but halfway vector is not!",
                     dirIn.x, dirIn.y, dirIn.z,
@@ -362,7 +362,7 @@ namespace Microfacet
         }
 
         PG3_UT_END_PASSED(
-            aMaxUtBlockPrintLevel, eutblSingleStep,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel2,
             "In-HalfwayVector: In: (% .2f, % .2f, % .2f), HalfwayVector: (% .2f, % .2f, % .2f)",
             dirIn.x, dirIn.y, dirIn.z,
             halfVector.x, halfVector.y, halfVector.z);
@@ -391,7 +391,7 @@ namespace Microfacet
         const float phiOutEnd           = 2.0f * Math::kPiF;
 
         PG3_UT_BEGIN(
-            aMaxUtBlockPrintLevel, eutblSubTest,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
             "Air(%.2f)/glass(%.2f) interface, deterministics directions (%.0fx%.0fx%.0f)",
             aUpperN, aLowerN, thetaInStepCount, thetaOutStepCount, phiOutStepCount);
 
@@ -426,7 +426,7 @@ namespace Microfacet
         }
 
         PG3_UT_END_PASSED(
-            aMaxUtBlockPrintLevel, eutblSubTest,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
             "Air(%.2f)/glass(%.2f) interface, deterministics directions (%.0fx%.0fx%.0f)",
             aUpperN, aLowerN, thetaInStepCount, thetaOutStepCount, phiOutStepCount);
 
@@ -436,7 +436,7 @@ namespace Microfacet
         Rng rng(1998);
 
         PG3_UT_BEGIN(
-            aMaxUtBlockPrintLevel, eutblSubTest,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
             "Air(%.2f)/glass(%.2f) interface, random directions (%d)",
             aUpperN, aLowerN, randomSamplesCount);
 
@@ -466,7 +466,7 @@ namespace Microfacet
         }
 
         PG3_UT_END_PASSED(
-            aMaxUtBlockPrintLevel, eutblSubTest,
+            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
             "Air(%.2f)/glass(%.2f) interface, random directions (%d)",
             aUpperN, aLowerN, randomSamplesCount);
 

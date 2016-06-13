@@ -194,8 +194,8 @@ int32_t main(int32_t argc, const char *argv[])
 
     //for (uint32_t i = 0; i < 1000; i++)
         //RunUnitTests(eutblWholeTest);
-        //RunUnitTests(eutblSubTest);
-        RunUnitTests(eutblSingleStep);
+        RunUnitTests(eutblSubTestLevel1);
+        //RunUnitTests(eutblSubTestLevel2);
 
     exit(0);
 
