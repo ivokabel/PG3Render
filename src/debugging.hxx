@@ -207,7 +207,7 @@ private:
 #define PG3_ASSERT_INTEGER_LARGER_THAN_OR_EQUAL_TO(_val1, _val2) \
     PG3_ASSERT_MSG((_val1) >= (_val2), "%d >= %d", (_val1), (_val2))
 
-// Vector2 asserts
+// Vector2f asserts
 
 #define PG3_ASSERT_VEC2F_VALID(_vec2) \
 { \
@@ -221,7 +221,7 @@ private:
     PG3_ASSERT_FLOAT_NONNEGATIVE(_vec2.y); \
 }
 
-// Vector3 asserts
+// Vector3f asserts
 
 #define PG3_ASSERT_VEC3F_VALID(_vec3) \
 { \
