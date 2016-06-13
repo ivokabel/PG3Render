@@ -322,21 +322,21 @@ namespace Geom
 
         // Face uniqueness
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
-        std::list<std::set<uint32_t>> alreadyProcessedFaceVertices;
+        std::list<std::set<uint32_t>> alreadyFoundFaceVertices;
         for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
         {
             auto &face = faces[faceId];
             std::set<uint32_t> vertexSet = { face.Get(0), face.Get(1), face.Get(2) };
-            auto it = std::find(alreadyProcessedFaceVertices.begin(),
-                                alreadyProcessedFaceVertices.end(),
+            auto it = std::find(alreadyFoundFaceVertices.begin(),
+                                alreadyFoundFaceVertices.end(),
                                 vertexSet);
-            if (it != alreadyProcessedFaceVertices.end())
+            if (it != alreadyFoundFaceVertices.end())
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness",
                     "Found duplicate face!");
                 return false;
             }
-            alreadyProcessedFaceVertices.push_back(vertexSet);
+            alreadyFoundFaceVertices.push_back(vertexSet);
         }
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
 

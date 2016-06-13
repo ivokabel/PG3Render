@@ -296,6 +296,10 @@ public:
     Vec3Base<T>& operator/=(const Vec3Base& a)
     { x /= a.x; y /= a.y; z /= a.z; return *this; }
 
+    // Comparison
+    bool operator == (const Vec3Base& a) const
+    { return (x == a.x) && (y == a.y) && (z == a.z); }
+
     //PG3_NOINLINE
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
     { return a.x * b.x + a.y * b.y + a.z * b.z; }

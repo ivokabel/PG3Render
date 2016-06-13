@@ -32,6 +32,24 @@ protected:
             return retval;
         }
 
+        bool operator == (const SteeringValue &aBasis) const
+        {
+            return (mBasisValues[0] == aBasis.mBasisValues[0])
+                && (mBasisValues[1] == aBasis.mBasisValues[1])
+                && (mBasisValues[2] == aBasis.mBasisValues[2])
+                && (mBasisValues[3] == aBasis.mBasisValues[3])
+                && (mBasisValues[4] == aBasis.mBasisValues[4])
+                && (mBasisValues[5] == aBasis.mBasisValues[5])
+                && (mBasisValues[6] == aBasis.mBasisValues[6])
+                && (mBasisValues[7] == aBasis.mBasisValues[7])
+                && (mBasisValues[8] == aBasis.mBasisValues[8]);
+        }
+
+        bool operator != (const SteeringValue &aBasis) const
+        {
+            return !(*this == aBasis);
+        }
+
     protected:
         float mBasisValues[9];
     };
@@ -41,7 +59,7 @@ protected:
     {
     public:
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
-        void GenerateForSphericalHarmonic(const Vec3f &aDirection, float aMulFactor)
+        SteeringBasisValue& GenerateForSphericalHarmonic(const Vec3f &aDirection, float aMulFactor)
         {
             aDirection; aMulFactor;
 
@@ -50,6 +68,11 @@ protected:
             //  - factor: non-negative
 
             // TODO: Get from paper...
+
+            // debug
+            std::memset(mBasisValues, 0, sizeof(mBasisValues));
+
+            return *this;
         }
     };
 
@@ -58,7 +81,7 @@ protected:
     {
     public:
         // Generate clamped cosine spherical harmonic coefficients for the given normal
-        void GenerateForClampedCosSh(const Vec3f &aNormal)
+        SteeringCoefficients& GenerateForClampedCosSh(const Vec3f &aNormal)
         {
             aNormal;
 
@@ -66,6 +89,8 @@ protected:
             //  - normal: normalized
 
             // TODO: Get from paper...
+
+            return *this;
         }
     };
 
@@ -77,6 +102,12 @@ protected:
             direction(aDirection),
             weight(aWeight)
         {};
+
+        bool operator == (const Vertex &aVertex) const
+        {
+            return (direction == aVertex.direction)
+                && (weight == aVertex.weight);
+        }
 
         Vec3f               direction; // TODO: Use (2D) spherical coordinates to save memory?
         SteeringBasisValue  weight;
@@ -119,15 +150,32 @@ protected:
     class TriangleNode : public TreeNode
     {
     public:
-        TriangleNode() : TreeNode(true) {}
+        TriangleNode(
+            std::shared_ptr<Vertex> aVertex1,
+            std::shared_ptr<Vertex> aVertex2,
+            std::shared_ptr<Vertex> aVertex3
+            ) :
+            TreeNode(true)
+        {
+            mSharedVertices[0] = aVertex1;
+            mSharedVertices[1] = aVertex2;
+            mSharedVertices[2] = aVertex3;
+        }
 
-    protected:
+        bool operator == (const TriangleNode &aTriangle)
+        {
+            return (mWeight == aTriangle.mWeight)
+                && (mSharedVertices[0] == aTriangle.mSharedVertices[0])
+                && (mSharedVertices[1] == aTriangle.mSharedVertices[1])
+                && (mSharedVertices[2] == aTriangle.mSharedVertices[2]);
+        }
+
+    //protected:
+    public:
         SteeringBasisValue      mWeight;
 
-        //Vertex*               mVertices[3]; // Weak pointers - not owned by the triangle
-
-        // FIXME: This is suboptimal, both in terms of memory consumption and memory non-locality
-        std::shared_ptr<Vertex> mVertices[3];
+        // TODO: This is sub-optimal, both in terms of memory consumption and memory non-locality
+        std::shared_ptr<Vertex> mSharedVertices[3];
     };
 
 public:
@@ -212,12 +260,21 @@ protected:
             FreeNode(node);
     }
 
-    static void FreeNodesStack(std::stack<TreeNode*> &aNodes)
+    static void FreeNodesDeque(std::deque<TreeNode*> &aNodes)
     {
         while (!aNodes.empty())
         {
-            FreeNode(aNodes.top());
-            aNodes.pop();
+            FreeNode(aNodes.back());
+            aNodes.pop_back();
+        }
+    }
+
+    static void FreeTrianglesDeque(std::deque<TriangleNode*> &aTriangles)
+    {
+        while (!aTriangles.empty())
+        {
+            delete aTriangles.back();
+            aTriangles.pop_back();
         }
     }
 
@@ -230,7 +287,7 @@ protected:
         // TODO: Asserts:
         //  - triangles: empty?
 
-        std::stack<TreeNode*> toDoTriangles;
+        std::deque<TriangleNode*> toDoTriangles;
 
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
@@ -245,21 +302,20 @@ protected:
 
     // Generates initial set of triangles and their vertices
     static bool GenerateInitialEmTriangulation(
-        std::stack<TreeNode*>       &oTriangles,
+        std::deque<TriangleNode*>   &oTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
-        oTriangles;  aEmImage;  aUseBilinearFiltering;
+        aEmImage;  aUseBilinearFiltering;
 
         // Generate the geometrical data
         Vec3f vertices[12];
         Vec3ui faces[20];
         Geom::UnitIcosahedron(vertices, faces);
 
-        PG3_ERROR_CODE_NOT_TESTED("");
+        std::vector<std::shared_ptr<Vertex>> sharedVertices(Utils::ArrayLength(vertices));
 
         // Allocate shared vertices for the triangles
-        std::vector<std::shared_ptr<Vertex>> sharedVertices(Utils::ArrayLength(vertices)); // empty shared pointers
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
         {
             const auto &vertexCoords = vertices[i];
@@ -270,9 +326,22 @@ protected:
             sharedVertices[i] = std::make_shared<Vertex>(vertexCoords, weight);
         }
 
-        // TODO: Build triangle set
+        // Build triangle set
+        for (uint32_t i = 0; i < Utils::ArrayLength(faces); i++)
+        {
+            const auto &faceVertices = faces[i];
 
-        return false;
+            PG3_ASSERT_INTEGER_IN_RANGE(faceVertices.Get(0), 0, Utils::ArrayLength(vertices) - 1);
+            PG3_ASSERT_INTEGER_IN_RANGE(faceVertices.Get(1), 0, Utils::ArrayLength(vertices) - 1);
+            PG3_ASSERT_INTEGER_IN_RANGE(faceVertices.Get(2), 0, Utils::ArrayLength(vertices) - 1);
+
+            oTriangles.push_back(new TriangleNode(
+                sharedVertices[faceVertices.Get(0)],
+                sharedVertices[faceVertices.Get(1)],
+                sharedVertices[faceVertices.Get(2)]));
+        }
+
+        return true;
     }
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
@@ -282,7 +351,7 @@ protected:
     // TriangleNode* data only, otherwise an error will occur.
     static bool RefineEmTriangulation(
         std::list<TreeNode*>        &oRefinedTriangles,
-        std::stack<TreeNode*>       &aToDoTriangles,
+        std::deque<TriangleNode*>   &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
@@ -354,6 +423,218 @@ public:
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
+    static bool _UnitTest_TriangulateEm_SingleEm_InitialTriangulation(
+        std::deque<TriangleNode*>   &oTriangles,
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
+
+        if (!GenerateInitialEmTriangulation(oTriangles, aEmImage, aUseBilinearFiltering))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                "GenerateInitialEmTriangulation() failed!");
+            return false;
+        }
+
+        // Triangles count
+        if (oTriangles.size() != 20)
+        {
+            std::ostringstream errorDescription;
+            errorDescription << "Initial triangle count is ";
+            errorDescription << oTriangles.size();
+            errorDescription << " instead of 20!";
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                                errorDescription.str().c_str());
+            return false;
+        }
+
+        // Check each triangle
+        std::list<std::set<Vertex*>> alreadyFoundFaceVertices;
+        for (const auto &triangle : oTriangles)
+        {
+            const auto &sharedVertices = triangle->mSharedVertices;
+
+            // Each triangle is unique
+            {
+                std::set<Vertex*> vertexSet = {sharedVertices[0].get(),
+                                               sharedVertices[1].get(),
+                                               sharedVertices[2].get()};
+                auto it = std::find(alreadyFoundFaceVertices.begin(),
+                                    alreadyFoundFaceVertices.end(),
+                                    vertexSet);
+                if (it != alreadyFoundFaceVertices.end())
+                {
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                        "Found duplicate face!");
+                    return false;
+                }
+                alreadyFoundFaceVertices.push_back(vertexSet);
+            }
+
+            // Vertices are not equal
+            {
+                const auto vertex0 = sharedVertices[0].get();
+                const auto vertex1 = sharedVertices[1].get();
+                const auto vertex2 = sharedVertices[2].get();
+                if (   (vertex0 == vertex1) || (*vertex0 == *vertex1)
+                    || (vertex1 == vertex2) || (*vertex1 == *vertex2)
+                    || (vertex2 == vertex0) || (*vertex2 == *vertex0)
+                    )
+                {
+                    std::ostringstream errorDescription;
+                    errorDescription << "A triangle with two or more identical vertices is present. Triangles: ";
+                    errorDescription << vertex0;
+                    errorDescription << ", ";
+                    errorDescription << vertex1;
+                    errorDescription << ", ";
+                    errorDescription << vertex2;
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                        errorDescription.str().c_str());
+                    return false;
+                }
+            }
+
+            // Vertices and edges
+            {
+                const float edgeReferenceLength = 4.f / std::sqrt(10.f + 2.f * std::sqrt(5.f));
+                const float edgeReferenceLengthSqr = edgeReferenceLength * edgeReferenceLength;
+                for (uint32_t vertexSeqNum = 0; vertexSeqNum < 3; vertexSeqNum++)
+                {
+                    const auto vertex     = sharedVertices[vertexSeqNum].get();
+                    const auto vertexNext = sharedVertices[(vertexSeqNum + 1) % 3].get();
+
+                    if ((vertex == nullptr) || (vertexNext == nullptr))
+                    {
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                                            "A triangle contains a null pointer to vertex");
+                        return false;
+                    }
+
+                    // Edge length
+                    const auto edgeLengthSqr = (vertex->direction - vertexNext->direction).LenSqr();
+                    if (fabs(edgeLengthSqr - edgeReferenceLengthSqr) > 0.001f)
+                    {
+                        std::ostringstream errorDescription;
+                        errorDescription << "The edge between vertices ";
+                        errorDescription << vertexSeqNum;
+                        errorDescription << " and ";
+                        errorDescription << vertexSeqNum + 1;
+                        errorDescription << " has incorrect length (sqrt(";
+                        errorDescription << edgeLengthSqr;
+                        errorDescription << ") instead of sqrt(";
+                        errorDescription << edgeReferenceLengthSqr;
+                        errorDescription << "))!";
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                            errorDescription.str().c_str());
+                        return false;
+                    }
+
+                    // Each vertex must be shared by exactly 5 owning triangles
+                    auto useCount = sharedVertices[vertexSeqNum].use_count();
+                    if (useCount != 5)
+                    {
+                        std::ostringstream errorDescription;
+                        errorDescription << "The vertex ";
+                        errorDescription << vertexSeqNum;
+                        errorDescription << " is shared by ";
+                        errorDescription << useCount;
+                        errorDescription << " owners instead of 5!";
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                            errorDescription.str().c_str());
+                        return false;
+                    }
+
+                    // Vertex weights
+                    auto referenceWeight = 
+                        SteeringBasisValue().GenerateForSphericalHarmonic(vertex->direction,
+                                                                          1.0f/*TODO: evaluate EM*/);
+                    if (vertex->weight != referenceWeight)
+                    {
+                        std::ostringstream errorDescription;
+                        errorDescription << "Incorect weight at vertex ";
+                        errorDescription << vertexSeqNum;
+                        errorDescription << "!";
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                            errorDescription.str().c_str());
+                        return false;
+                    }
+                }
+            }
+        }
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
+
+        return true;
+    }
+
+    static bool _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(
+        std::deque<TriangleNode*>   &oTriangles,
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        oTriangles; aMaxUtBlockPrintLevel; aEmImage; aUseBilinearFiltering;
+
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
+
+        // TODO: Refine triangulation
+        //if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering))
+        //    return false;
+
+        // TODO: Test:
+        // - Count: same as initial triangulation
+        // - Weights...
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
+
+        return true;
+    }
+
+    static bool _UnitTest_TriangulateEm_SingleEm(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        char                        *aTestName,
+        char                        *aImagePath,
+        bool                         aUseBilinearFiltering)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+
+        std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(aImagePath));
+        if (!image)
+        {
+            PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                               "%s", "Unable to load image!", aTestName);
+            return false;
+        }
+
+        std::deque<TriangleNode*> triangles;
+
+        if (!_UnitTest_TriangulateEm_SingleEm_InitialTriangulation(triangles,
+                                                                   aMaxUtBlockPrintLevel,
+                                                                   *image.get(),
+                                                                   aUseBilinearFiltering))
+        {
+            FreeTrianglesDeque(triangles);
+            return false;
+        }
+
+        //if (!_UnitTest_TriangulateEm_SingleEm_RefineTriangulation(triangles,
+        //                                                          aMaxUtBlockPrintLevel,
+        //                                                          *image.get(),
+        //                                                          aUseBilinearFiltering))
+        //{
+        //    FreeTrianglesDeque(triangles);
+        //    return false;
+        //}
+
+        FreeTrianglesDeque(triangles);
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+
+        return true;
+    }
+
     static bool _UnitTest_TriangulateEm(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
@@ -361,65 +642,44 @@ public:
             "EnvironmentMapSteeringSampler::TriangulateEm()");
 
         // TODO: Empty EM
+        // TODO: Black constant EM (Luminance 0)
+        // TODO: ?
 
-        // Constant EM (Luminance 1, small)
-        {
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Small constant EM");
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Small white EM",
+                                              ".\\Light Probes\\Debugging\\Const white 8x4.exr",
+                                              false))
+            return false;
 
-            std::unique_ptr<EnvironmentMapImage> image(
-                EnvironmentMapImage::LoadImage(
-                    ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
-            if (!image)
-            {
-                PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
-                                   "Small constant EM", "Unable to load image!");
-                return false;
-            }
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Large white EM",
+                                              ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                                              false))
+            return false;
 
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Single pixel EM",
+                                              ".\\Light Probes\\Debugging\\Single pixel.exr",
+                                              false))
+            return false;
 
-            std::stack<TreeNode*> triangles;
-            GenerateInitialEmTriangulation(triangles, *image, false);
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Satellite EM",
+                                              ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                                              false))
+            return false;
 
-            // Test count: regular icosahedron (20 faces, 30 edges, and 12 vertices)
-            if (triangles.size() != 20)
-            {
-                std::ostringstream errorDescription;
-                errorDescription << "Initial triangle count is ";
-                errorDescription << triangles.size();
-                errorDescription << " instead of 20!";
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
-                                  errorDescription.str().c_str());
-                return false;
-            }
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Peace Garden EM",
+                                              ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+                                              false))
+            return false;
 
-            // TODO: Check each triangle: vertices are not equal, vertices are normalized
-            // TODO: Test vertex weights, but not triangle weights: ???
-
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
-
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
-
-            // TODO: Refine triangulation
-
-            // TODO: Test:
-            // - Count: same as initial triangulation
-            // - Weights...
-
-            FreeNodesStack(triangles);
-
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
-
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Small constant EM");
-        }
-
-        // TODO: Constant EM (Luminance 1, large?)
-
-        // TODO: Constant EM (Luminance 0)
-
-        // TODO: Synthetic EM (One pixel?)
-
-        // TODO: ...
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Doge2 EM",
+                                              ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+                                              false))
+            return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
                           "EnvironmentMapSteeringSampler::TriangulateEm()");
