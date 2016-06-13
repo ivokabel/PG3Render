@@ -162,9 +162,7 @@ namespace Geom
 
 #ifdef PG3_ASSERT_ENABLED
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
-        {
             PG3_ASSERT_VEC3F_NORMALIZED(vertices[i]);
-        }
 #endif
 
         // Faces
