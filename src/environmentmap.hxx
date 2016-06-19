@@ -101,8 +101,8 @@ public:
         PG3_ASSERT(mDistribution != nullptr);
         PG3_ASSERT(!aDirection.IsZero());
 
-        const Vec2f uv              = Geom::Dir2LatLong(aDirection);
-        const SpectrumF radiance    = EvalRadiance(uv, aDoBilinFiltering);
+        const auto uv       = Geom::Dir2LatLong(aDirection);
+        const auto radiance = EvalRadiance(uv, aDoBilinFiltering);
 
         if (oPdfW)
         {
@@ -172,6 +172,8 @@ private:
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
 
+        // FIXME: This interface shouldn't be used if bilinear of any smoother filtering is active!
+
         return mImage->ElementAt(aSegm.x, aSegm.y);
     }
 
@@ -183,22 +185,7 @@ private:
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.0f, 1.0f);
 
-        const Vec2ui imageSize = mImage->Size();
-
-        // Convert uv coords to mImage coordinates
-        Vec2f xy = aUV * Vec2f((float)imageSize.x, (float)imageSize.y);
-
-        return mImage->ElementAt(
-            Math::Clamp((uint32_t)xy.x, 0u, imageSize.x - 1),
-            Math::Clamp((uint32_t)xy.y, 0u, imageSize.y - 1));
-
-        // TODO: bilinear filtering
-        aDoBilinFiltering;
-
-
-
-        //return (1 - ty) * ((1 - tx) * mImage->ElementAt(xi1, yi1) + tx * mImage->ElementAt(xi2, yi1))
-        //    + ty * ((1 - tx) * mImage->ElementAt(xi1, yi2) + tx * mImage->ElementAt(xi2, yi2));
+        return mImage->Evaluate(aUV, aDoBilinFiltering);
     }
 
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)

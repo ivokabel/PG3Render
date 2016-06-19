@@ -153,7 +153,7 @@ protected:
                     const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
                     if (backgroundLight != nullptr)
                         oRadiance +=
-                              backgroundLight->GetEmmision(currentRay.dir, true)
+                              backgroundLight->GetEmmision(currentRay.dir, false)
                             * pathThroughput;
                 }
 
@@ -411,7 +411,7 @@ protected:
                 if (backgroundLight != nullptr)
                 {
                     oEmmittedRadiance +=
-                        backgroundLight->GetEmmision(aRay.dir, true, oEmmittedLightPdfW, aSurfFrame);
+                        backgroundLight->GetEmmision(aRay.dir, false, oEmmittedLightPdfW, aSurfFrame);
                     if (oLightID != nullptr)
                         *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }

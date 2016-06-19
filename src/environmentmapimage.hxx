@@ -71,6 +71,48 @@ public:
         return image;
     }
 
+    SpectrumF Evaluate(const Vec2f &aUV, bool aDoBilinFiltering) const
+    {
+        PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.0f, 1.0f);
+
+        // UV to image coords
+        const float x = aUV.x * (float)mWidth;
+        const float y = aUV.y * (float)mHeight;
+        const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mWidth  - 1u);
+        const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mHeight - 1u);
+
+        // Eval
+        if (!aDoBilinFiltering)
+            return ElementAt(x0, y0);
+        else
+        {
+            PG3_ERROR_NOT_IMPLEMENTED("");
+
+            return SpectrumF();
+
+            //const uint32_t x1 = x0 + 1u;
+            //const uint32_t y1 = y0 + 1u;
+            //const float xLocal = x - (float)x0;
+            //const float yLocal = y - (float)y0;
+
+            //return Math::BLerp(
+            //    xLocal, yLocal,
+            //    ElementAt(x0, y0),
+            //    ElementAt(x1, y0),
+            //    ElementAt(x0, y1),
+            //    ElementAt(x1, y1));
+            ////return (1 - ty) * ((1 - tx) * mImage->ElementAt(xi1, yi1) + tx * mImage->ElementAt(xi2, yi1))
+            ////    + ty * ((1 - tx) * mImage->ElementAt(xi1, yi2) + tx * mImage->ElementAt(xi2, yi2));
+        }
+    }
+
+    SpectrumF Evaluate(const Vec3f &aDirection, bool aDoBilinFiltering) const
+    {
+        const Vec2f uv = Geom::Dir2LatLong(aDirection);
+        return Evaluate(uv, aDoBilinFiltering);
+    }
+
     SpectrumF& ElementAt(uint32_t aX, uint32_t aY)
     {
         PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);

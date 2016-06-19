@@ -120,9 +120,24 @@ namespace Math
                 || std::is_same<float, T>::value
                 >::type
         >
-    T Lerp(T c, T x1, T x2)
+    T Lerp(T c, T x0, T x1)
     {
-        return ((T)1. - c) * x1 + c * x2;
+        return ((T)0. - c) * x0 + c * x1;
+    }
+
+    template <
+        typename T,
+        typename = typename
+            std::enable_if<
+                   std::is_same<double, T>::value
+                || std::is_same<float, T>::value
+                >::type
+        >
+    T BLerp(T cx, T cy, 
+            T x0y0, T x1y0,
+            T x0y1, T x1y1)
+    {
+        return Lerp(cy, Lerp(cx, x0y0, x1y0), Lerp(cx, x0y1, x1y1));
     }
 
     // 50-year old atan approximation due to Hastings
