@@ -397,7 +397,7 @@ public:
         ) const
     {
         if (mEnvMap != nullptr)
-            return mEnvMap->Lookup(aWig, bDoBilinFiltering, oPdfW);
+            return mEnvMap->EvalRadiance(aWig, bDoBilinFiltering, oPdfW);
         else
         {
             if ((oPdfW != nullptr) && (aSurfFrame != nullptr))
@@ -540,7 +540,7 @@ public:
 
         oSample.mLightProbability = 1.0f;
 
-        const SpectrumF radiance = mEnvMap->Lookup(oSample.mWig, false);
+        const SpectrumF radiance = mEnvMap->EvalRadiance(oSample.mWig, false);
         const float cosThetaIn   = std::abs(wil.z);
         oSample.mSample = radiance * cosThetaIn;
     }

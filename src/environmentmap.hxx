@@ -84,7 +84,7 @@ public:
             *oSinMidTheta = sinMidTheta;
 
         if (oRadiance)
-            *oRadiance = LookupRadiance(segm);
+            *oRadiance = EvalRadiance(segm);
 
         return direction;
     }
@@ -92,7 +92,7 @@ public:
     // Gets radiance stored for the given direction and optionally its PDF. The direction
     // must be non-zero but not necessarily normalized.
     PG3_PROFILING_NOINLINE
-    SpectrumF Lookup(
+    SpectrumF EvalRadiance(
         const Vec3f &aDirection, 
         bool         aDoBilinFiltering,
         float       *oPdfW = nullptr
@@ -102,7 +102,7 @@ public:
         PG3_ASSERT(!aDirection.IsZero());
 
         const Vec2f uv              = Dir2LatLong(aDirection);
-        const SpectrumF radiance    = LookupRadiance(uv, aDoBilinFiltering);
+        const SpectrumF radiance    = EvalRadiance(uv, aDoBilinFiltering);
 
         if (oPdfW)
         {
@@ -201,7 +201,7 @@ private:
     }
 
     // Returns radiance for the given segment of the image
-    SpectrumF LookupRadiance(const Vec2ui &aSegm) const
+    SpectrumF EvalRadiance(const Vec2ui &aSegm) const
     {
         PG3_ASSERT(mImage != nullptr);
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
@@ -212,7 +212,7 @@ private:
 
     // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
     PG3_PROFILING_NOINLINE 
-    SpectrumF LookupRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
+    SpectrumF EvalRadiance(const Vec2f &uv, bool aDoBilinFiltering) const
     {
         PG3_ASSERT(mImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(uv.x, 0.0f, 1.0f);
