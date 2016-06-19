@@ -64,7 +64,7 @@ public:
         mDistribution->SampleContinuous(aSamples, uv, segm, &pdf);
         PG3_ASSERT(pdf > 0.f);
 
-        const Vec3f direction = LatLong2Dir(uv);
+        const Vec3f direction = Geom::LatLong2Dir(uv);
 
         // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
         // the angular PDF on the unit sphere over the appropriate trapezoid
@@ -101,7 +101,7 @@ public:
         PG3_ASSERT(mDistribution != nullptr);
         PG3_ASSERT(!aDirection.IsZero());
 
-        const Vec2f uv              = Dir2LatLong(aDirection);
+        const Vec2f uv              = Geom::Dir2LatLong(aDirection);
         const SpectrumF radiance    = EvalRadiance(uv, aDoBilinFiltering);
 
         if (oPdfW)
@@ -121,7 +121,7 @@ public:
     {
         PG3_ASSERT(mDistribution != nullptr);
 
-        const Vec2f uv = Dir2LatLong(aDirection);
+        const Vec2f uv = Geom::Dir2LatLong(aDirection);
         return mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
     }
 
@@ -163,41 +163,6 @@ private:
         delete srcData;
 
         return distribution;
-    }
-
-    // Returns direction on unit sphere such that its longitude equals 2*PI*u and its latitude equals PI*v.
-    PG3_PROFILING_NOINLINE
-    Vec3f LatLong2Dir(const Vec2f &aUV) const
-    {
-        PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.f, 1.f);
-        PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.f, 1.f);
-
-        const float phi   = -(aUV.x - 0.5f) * 2 * Math::kPiF; // we rotate in the opposite direction
-        const float theta = aUV.y * Math::kPiF;
-
-        return Geom::CreateDirection(theta, phi);
-    }
-
-    // Returns vector [u,v] in [0,1]x[0,1]. The direction must be non-zero and normalized.
-    PG3_PROFILING_NOINLINE
-    Vec2f Dir2LatLong(const Vec3f &aDirection) const
-    {
-        PG3_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
-
-        // minus sign because we rotate in the opposite direction
-        // Math::FastAtan2 is 50 times faster than atan2f at the price of slightly horizontally distorted background
-        const float phi     = -Math::FastAtan2(aDirection.y, aDirection.x);
-        const float theta   = acosf(aDirection.z);
-
-        // Convert from [-Pi,Pi] to [0,1]
-        //const float uTemp = fmodf(phi * 0.5f * Math::kPiInvF, 1.0f);
-        //const float u = Math::Clamp(uTemp, 0.f, 1.f); // TODO: maybe not necessary
-        const float u = Math::Clamp(0.5f + phi * 0.5f * Math::kPiInvF, 0.f, 1.f);
-
-        // Convert from [0,Pi] to [0,1]
-        const float v = Math::Clamp(theta * Math::kPiInvF, 0.f, 1.0f);
-
-        return Vec2f(u, v);
     }
 
     // Returns radiance for the given segment of the image
