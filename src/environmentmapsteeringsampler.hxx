@@ -318,12 +318,15 @@ protected:
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
         {
-            const auto &vertexCoords = vertices[i];
+            const auto &vertexDir = vertices[i];
+
+            const auto radiance  = aEmImage.Evaluate(vertexDir, aUseBilinearFiltering);
+            const auto luminance = radiance.Luminance();
 
             SteeringBasisValue weight;
-            weight.GenerateForSphericalHarmonic(vertexCoords, 1.0f/*TODO: evaluate EM*/);
+            weight.GenerateForSphericalHarmonic(vertexDir, luminance);
 
-            sharedVertices[i] = std::make_shared<Vertex>(vertexCoords, weight);
+            sharedVertices[i] = std::make_shared<Vertex>(vertexDir, weight);
         }
 
         // Build triangle set
@@ -547,9 +550,11 @@ public:
                     }
 
                     // Vertex weights
+                    const auto radiance  = aEmImage.Evaluate(vertex->direction, aUseBilinearFiltering);
+                    const auto luminance = radiance.Luminance();
                     auto referenceWeight = 
                         SteeringBasisValue().GenerateForSphericalHarmonic(vertex->direction,
-                                                                          1.0f/*TODO: evaluate EM*/);
+                                                                          luminance);
                     if (vertex->weight != referenceWeight)
                     {
                         std::ostringstream errorDescription;
