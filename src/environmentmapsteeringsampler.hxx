@@ -8,6 +8,7 @@
 
 #include <list>
 #include <stack>
+#include <array>
 #include <memory>
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
@@ -19,30 +20,31 @@ public:
      EnvironmentMapSteeringSampler() {}
     ~EnvironmentMapSteeringSampler() {}
 
-protected:
+public:
 
     class SteeringValue
     {
     public:
-        float operator* (const SteeringValue &aValue) const
+
+        SteeringValue() {}
+
+        SteeringValue(const std::array<float, 9> &aBasisValues) :
+            mBasisValues(aBasisValues)
+        {}
+
+        float operator* (const SteeringValue &aValue)
         {
+            PG3_ASSERT_INTEGER_EQUAL(mBasisValues.size(), aValue.mBasisValues.size());
+
             float retval = 0.0f;
-            for (size_t i = 0; i < 9; i++)
+            for (size_t i = 0; i < mBasisValues.size(); i++)
                 retval += mBasisValues[i] * aValue.mBasisValues[i];
             return retval;
         }
 
         bool operator == (const SteeringValue &aBasis) const
         {
-            return (mBasisValues[0] == aBasis.mBasisValues[0])
-                && (mBasisValues[1] == aBasis.mBasisValues[1])
-                && (mBasisValues[2] == aBasis.mBasisValues[2])
-                && (mBasisValues[3] == aBasis.mBasisValues[3])
-                && (mBasisValues[4] == aBasis.mBasisValues[4])
-                && (mBasisValues[5] == aBasis.mBasisValues[5])
-                && (mBasisValues[6] == aBasis.mBasisValues[6])
-                && (mBasisValues[7] == aBasis.mBasisValues[7])
-                && (mBasisValues[8] == aBasis.mBasisValues[8]);
+            return mBasisValues == aBasis.mBasisValues;
         }
 
         bool operator != (const SteeringValue &aBasis) const
@@ -50,30 +52,397 @@ protected:
             return !(*this == aBasis);
         }
 
+        bool EqualsDelta(const SteeringValue &aBasis, float aDelta) const
+        {
+            PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
+
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                if (std::abs(mBasisValues[i] - aBasis.mBasisValues[i]) > aDelta)
+                    return false;
+            return true;
+        }
+
     protected:
-        float mBasisValues[9];
+        std::array<float, 9> mBasisValues;
     };
 
 
     class SteeringBasisValue : public SteeringValue
     {
     public:
+
+        SteeringBasisValue() {}
+
+        SteeringBasisValue(const std::array<float, 9> &aBasisValues) :
+            SteeringValue(aBasisValues)
+        {}
+
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
-        SteeringBasisValue& GenerateForSphericalHarmonic(const Vec3f &aDirection, float aMulFactor)
+        SteeringBasisValue& GenerateSphHarm(const Vec3f &aDir, float aMulFactor)
         {
-            aDirection; aMulFactor;
+            PG3_ASSERT_VEC3F_NORMALIZED(aDir);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(aMulFactor);
 
-            // TODO: Asserts:
-            //  - direction: normalized
-            //  - factor: non-negative
+            // Taken from 
+            // 2001 Ramamoorthi & Hanrahan - An Efficient Representation for Irradiance Environment Maps
 
-            // TODO: Get from paper...
+            mBasisValues[0] = aMulFactor * 0.282095f;    // Y_{00}
 
-            // debug
-            std::memset(mBasisValues, 0, sizeof(mBasisValues));
+            mBasisValues[1] = aMulFactor * 0.488603f * aDir.y;   // Y_{1-1}
+            mBasisValues[2] = aMulFactor * 0.488603f * aDir.z;   // Y_{10}
+            mBasisValues[3] = aMulFactor * 0.488603f * aDir.x;   // Y_{11}
+
+            mBasisValues[4] = aMulFactor * 1.092548f * aDir.x * aDir.y;                      // Y_{2-2}
+            mBasisValues[5] = aMulFactor * 1.092548f * aDir.y * aDir.z;                      // Y_{2-1}
+            mBasisValues[6] = aMulFactor * 0.315392f * (3.f * aDir.z * aDir.z - 1.f);        // Y_{20}
+            mBasisValues[7] = aMulFactor * 1.092548f * aDir.x * aDir.z;                      // Y_{21}
+            mBasisValues[8] = aMulFactor * 0.546274f * (aDir.x * aDir.x - aDir.y * aDir.y);  // Y_{22}
 
             return *this;
         }
+
+        SteeringBasisValue operator* (const SteeringBasisValue &aValue) const
+        {
+            SteeringBasisValue retVal;
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                retVal.mBasisValues[i] = mBasisValues[i] * aValue.mBasisValues[i];
+            return retVal;
+        }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    public:
+
+        static bool _UnitTest_GenerateSphHarm_SingleDirection(
+            const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+            const Vec3f                 &aDirection,
+            //const float                  aTheta,
+            //const float                  aPhi,
+            const SteeringBasisValue    &aNormalizedReferenceBasisValue,
+            const char                  *aTestName)
+        {
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+
+            const SteeringBasisValue normalizationValues({
+                0.282095f,          // Y_{0 0}
+                0.488603f,          // Y_{1-1}
+                0.488603f,          // Y_{1 0}
+                0.488603f,          // Y_{1 1}
+                1.092548f * 0.5f,   // Y_{2-2}
+                1.092548f * 0.5f,   // Y_{2-1}
+                0.315392f * 2.f,    // Y_{2 0}
+                1.092548f * 0.5f,   // Y_{2 1}
+                0.546274f           // Y_{2 2}
+            });
+            
+            SteeringBasisValue referenceVal = aNormalizedReferenceBasisValue * normalizationValues;
+
+            //Vec3f direction = Geom::CreateDirection(aTheta, aPhi);
+
+            SteeringBasisValue generatedValue;
+            generatedValue.GenerateSphHarm(aDirection, 1.0f);
+
+            if (!generatedValue.EqualsDelta(referenceVal, 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                                  "The generated value doesn't match the reference value",
+                                  aTestName);
+                return false;
+            }
+
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+            return true;
+        }
+
+        static bool _UnitTest_GenerateSphHarm_CanonicalDirections(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+        {
+            const char *testName = NULL;
+            Vec3f direction;
+            SteeringBasisValue referenceVal;
+
+            // Positive X direction
+            testName = "Positive X";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.f);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 1.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative X direction
+            testName = "Negative X";
+            direction = Geom::CreateDirection(1.5f * Math::kPiF, 0.f);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -1.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Positive Y direction
+            testName = "Positive Y";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.5f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative Y direction
+            testName = "Negative Y";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.5f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                -1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Positive Z direction
+            testName = "Positive Z";
+            direction = Geom::CreateDirection(0.f, 0.f);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, 1.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative Z direction
+            testName = "Negative Z";
+            direction = Geom::CreateDirection(Math::kPiF, 0.f);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, -1.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            return true;
+        }
+
+        static bool _UnitTest_GenerateSphHarm_XYDiagonalDirections(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+        {
+            const char *testName = NULL;
+            Vec3f direction;
+            SteeringBasisValue referenceVal;
+
+            // Positive X+Y direction
+            testName = "Positive X+Y";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.25f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
+                1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative X+Y direction
+            testName = "Negative X+Y";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.25f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                -Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
+                1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Positive X-Y direction
+            testName = "Positive X-Y";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.75f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
+                -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative X-Y direction
+            testName = "Negative X-Y";
+            direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.75f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                -Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
+                -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            return true;
+        }
+
+        static bool _UnitTest_GenerateSphHarm_YZDiagonalDirections(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+        {
+            const char *testName = NULL;
+            Vec3f direction;
+            SteeringBasisValue referenceVal;
+
+            // Positive Y+Z direction
+            testName = "Positive Y+Z";
+            direction = Geom::CreateDirection(0.25f * Math::kPiF, 0.5f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                Math::kCosPiDiv4F /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative Y+Z direction
+            testName = "Negative Y+Z";
+            direction = Geom::CreateDirection(0.75f * Math::kPiF, 1.5f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                -Math::kCosPiDiv4F /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Positive Y-Z direction
+            testName = "Positive Y-Z";
+            direction = Geom::CreateDirection(0.25f * Math::kPiF, 1.5f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                -Math::kCosPiDiv4F /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, -1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative Y-Z direction
+            testName = "Negative Y-Z";
+            direction = Geom::CreateDirection(0.75f * Math::kPiF, 0.5f * Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                Math::kCosPiDiv4F /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, -1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            return true;
+        }
+
+        static bool _UnitTest_GenerateSphHarm_XZDiagonalDirections(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+        {
+            const char *testName = NULL;
+            Vec3f direction;
+            SteeringBasisValue referenceVal;
+
+            // Positive X+Z direction
+            testName = "Positive X+Z";
+            direction = Geom::CreateDirection(0.25f * Math::kPiF, 0.f);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative X+Z direction
+            testName = "Negative X+Z";
+            direction = Geom::CreateDirection(0.75f * Math::kPiF, Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Positive X-Z direction
+            testName = "Positive X-Z";
+            direction = Geom::CreateDirection(0.25f * Math::kPiF, Math::kPiF);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                -1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            // Negative X-Z direction
+            testName = "Negative X-Z";
+            direction = Geom::CreateDirection(0.75f * Math::kPiF, 0.f);
+            referenceVal = SteeringBasisValue({
+                1.f /*Y_{0 0}*/,
+                0.f /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
+                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
+                -1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
+            });
+            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                return false;
+
+            return true;
+        }
+
+        static bool _UnitTest_GenerateSphHarm(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+        {
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+                "SteeringBasisValue::GenerateSphHarm()");
+
+            if (!_UnitTest_GenerateSphHarm_CanonicalDirections(aMaxUtBlockPrintLevel))
+                return false;
+
+            if (!_UnitTest_GenerateSphHarm_XYDiagonalDirections(aMaxUtBlockPrintLevel))
+                return false;
+
+            if (!_UnitTest_GenerateSphHarm_YZDiagonalDirections(aMaxUtBlockPrintLevel))
+                return false;
+
+            if (!_UnitTest_GenerateSphHarm_XZDiagonalDirections(aMaxUtBlockPrintLevel))
+                return false;
+
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+                "SteeringBasisValue::GenerateSphHarm()");
+
+            return true;
+        }
+
+#endif
     };
 
 
@@ -94,6 +463,111 @@ protected:
         }
     };
 
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+public:
+
+    static bool _UnitTest_SteeringValues(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "Steering value structures");
+
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
+
+        // Equality operator
+
+        if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) !=
+            SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't match itself!");
+            return false;
+        }
+
+        if (SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) !=
+            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't match itself!");
+            return false;
+        }
+
+        if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) ==
+            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
+                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) match!");
+            return false;
+        }
+
+        // Delta equality operator
+
+        if (!SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
+             SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }), 0.001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't delta-match itself!");
+            return false;
+        }
+
+        if (!SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
+             SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't delta-match itself!");
+            return false;
+        }
+
+        if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
+            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
+                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) delta-match!");
+            return false;
+        }
+
+        if (!SteeringValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }).EqualsDelta(
+             SteeringValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }), 0.001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }) and "
+                "SteeringValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }) don't delta-match!");
+            return false;
+        }
+
+        if (SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
+            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }), 0.001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }) and "
+                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }) delta-match!");
+            return false;
+        }
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
+
+        // SteeringBasisValue
+        // - initialization and operator==
+        //   - different values
+        //   - same values?
+
+        // SteeringCoefficients
+        // - initialization and operator==
+        //   - different values
+        //   - same values?
+
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "Steering value structures");
+
+        return true;
+    }
+
+#endif
 
     class Vertex
     {
@@ -324,7 +798,7 @@ protected:
             const auto luminance = radiance.Luminance();
 
             SteeringBasisValue weight;
-            weight.GenerateForSphericalHarmonic(vertexDir, luminance);
+            weight.GenerateSphHarm(vertexDir, luminance);
 
             sharedVertices[i] = std::make_shared<Vertex>(vertexDir, weight);
         }
@@ -553,8 +1027,7 @@ public:
                     const auto radiance  = aEmImage.Evaluate(vertex->direction, aUseBilinearFiltering);
                     const auto luminance = radiance.Luminance();
                     auto referenceWeight = 
-                        SteeringBasisValue().GenerateForSphericalHarmonic(vertex->direction,
-                                                                          luminance);
+                        SteeringBasisValue().GenerateSphHarm(vertex->direction, luminance);
                     if (vertex->weight != referenceWeight)
                     {
                         std::ostringstream errorDescription;

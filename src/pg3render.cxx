@@ -178,7 +178,9 @@ void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 
     //Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
 
-    EnvironmentMapSteeringSampler::_UnitTest_TriangulateEm(aMaxUtBlockPrintLevel);
+    //EnvironmentMapSteeringSampler::_UnitTest_TriangulateEm(aMaxUtBlockPrintLevel);
+    //EnvironmentMapSteeringSampler::_UnitTest_SteeringValues(aMaxUtBlockPrintLevel);
+    EnvironmentMapSteeringSampler::SteeringBasisValue::_UnitTest_GenerateSphHarm(aMaxUtBlockPrintLevel);
 }
 #endif
 
