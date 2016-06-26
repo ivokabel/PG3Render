@@ -13,6 +13,8 @@ namespace Math
     const float kPiInvF     = 1.f / Math::kPiF;
     const float kPiDiv2F    = 1.5707963f;
 
+    const float kCosPiDiv4F = 0.70710678118f;
+
     float  InfinityF() { return std::numeric_limits<float>::infinity(); }
     double InfinityD() { return std::numeric_limits<double>::infinity(); }
 
