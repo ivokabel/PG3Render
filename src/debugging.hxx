@@ -6,7 +6,7 @@
 
 #ifndef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 // Uncomment this to activate all asserts in the code
-#define PG3_ASSERT_ENABLED
+//#define PG3_ASSERT_ENABLED
 #endif
 
 class Debugging
@@ -194,6 +194,9 @@ private:
 
 #define PG3_ASSERT_INTEGER_IN_RANGE(_val, _low, _up) \
     PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%d <= %d <= %d", (_low), (_val), (_up))
+
+#define PG3_ASSERT_INTEGER_EQUAL(_val1, _val2) \
+    PG3_ASSERT_MSG((_val1) == (_val2), "%d == %d", (_val1), (_val2))
 
 #define PG3_ASSERT_INTEGER_LESS_THAN(_val1, _val2) \
     PG3_ASSERT_MSG((_val1) < (_val2), "%d < %d", (_val1), (_val2))
