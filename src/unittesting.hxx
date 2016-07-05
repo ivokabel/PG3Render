@@ -11,7 +11,7 @@ enum UnitTestBlockLevel
 {
     eutblNone           = 0,
     eutblWholeTest      = 1,    // Main testing block
-    eutblSubTestLevel1  = 2,    // Test can have sub-blocks...
+    eutblSubTestLevel1  = 2,    // Test can contain a hierarchy of sub-blocks...
     eutblSubTestLevel2  = 3,
 };
 

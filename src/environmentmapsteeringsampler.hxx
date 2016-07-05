@@ -57,7 +57,7 @@ public:
             PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
 
             for (size_t i = 0; i < mBasisValues.size(); i++)
-                if (std::abs(mBasisValues[i] - aBasis.mBasisValues[i]) > aDelta)
+                if (!Math::EqualDelta(mBasisValues[i], aBasis.mBasisValues[i], aDelta))
                     return false;
             return true;
         }
@@ -644,7 +644,39 @@ public:
                 && (mSharedVertices[2] == aTriangle.mSharedVertices[2]);
         }
 
-    //protected:
+        Vec3f ComputeCrossProduct() const
+        {
+            const auto dir1 = (mSharedVertices[1]->direction - mSharedVertices[0]->direction);
+            const auto dir2 = (mSharedVertices[2]->direction - mSharedVertices[1]->direction);
+
+            auto crossProduct = Cross(Normalize(dir1), Normalize(dir2));
+
+            PG3_ASSERT_VEC3F_VALID(crossProduct);
+
+            return crossProduct;
+        }
+
+        Vec3f ComputeNormal() const
+        {
+            auto crossProduct = ComputeCrossProduct();
+
+            auto lenSqr = crossProduct.LenSqr();
+            if (lenSqr > 0.0001f)
+                return crossProduct.Normalize();
+            else
+                return Vec3f(0.f);
+        }
+
+        float ComputeSurfaceArea() const
+        {
+            auto crossProduct = ComputeCrossProduct();
+            auto surfaceArea  = crossProduct.Length();
+
+            PG3_ASSERT_FLOAT_NONNEGATIVE(surfaceArea);
+
+            return surfaceArea;
+        }
+
     public:
         SteeringBasisValue      mWeight;
 
@@ -743,6 +775,12 @@ protected:
         }
     }
 
+    static void FreeTrianglesList(std::list<TriangleNode*> &aTriangles)
+    {
+        for (TriangleNode* triangle : aTriangles)
+            delete triangle;
+    }
+
     static void FreeTrianglesDeque(std::deque<TriangleNode*> &aTriangles)
     {
         while (!aTriangles.empty())
@@ -758,8 +796,7 @@ protected:
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
-        // TODO: Asserts:
-        //  - triangles: empty?
+        PG3_ASSERT(oTriangles.empty());        
 
         std::deque<TriangleNode*> toDoTriangles;
 
@@ -769,7 +806,7 @@ protected:
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        // Assert: the stack must be empty
+        PG3_ASSERT(toDoTriangles.empty());
 
         return true;
     }
@@ -791,17 +828,7 @@ protected:
 
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
-        {
-            const auto &vertexDir = vertices[i];
-
-            const auto radiance  = aEmImage.Evaluate(vertexDir, aUseBilinearFiltering);
-            const auto luminance = radiance.Luminance();
-
-            SteeringBasisValue weight;
-            weight.GenerateSphHarm(vertexDir, luminance);
-
-            sharedVertices[i] = std::make_shared<Vertex>(vertexDir, weight);
-        }
+            GenerateSharedVertex(sharedVertices[i], vertices[i], aEmImage, aUseBilinearFiltering);
 
         // Build triangle set
         for (uint32_t i = 0; i < Utils::ArrayLength(faces); i++)
@@ -821,6 +848,21 @@ protected:
         return true;
     }
 
+    static void GenerateSharedVertex(
+        std::shared_ptr<Vertex>     &oSharedVertex,
+        const Vec3f                 &aVertexDir,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        const auto radiance = aEmImage.Evaluate(aVertexDir, aUseBilinearFiltering);
+        const auto luminance = radiance.Luminance();
+
+        SteeringBasisValue weight;
+        weight.GenerateSphHarm(aVertexDir, luminance);
+
+        oSharedVertex = std::make_shared<Vertex>(aVertexDir, weight);
+    }
+
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
     // fills the output list of triangles. The refined triangles are released. The triangles 
     // are either moved from the "to do" set into the output list or deleted on error.
@@ -832,22 +874,329 @@ protected:
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
-        oRefinedTriangles; aToDoTriangles; aEmImage; aUseBilinearFiltering;
+        PG3_ASSERT(!aToDoTriangles.empty());
+        PG3_ASSERT(oRefinedTriangles.empty());
 
-        // TODO: Asserts:
-        //  - to do triangles: non-empty?
+        while (!aToDoTriangles.empty())
+        {
+            auto currentTriangle = aToDoTriangles.front();
+            aToDoTriangles.pop_front();
 
-        // TODO: While TO DO list is not empty
-        // - Check whether it is a triangle (assert?)
-        // - If the current triangle is OK, move it to the output list
-        // - If the current triangle is NOT OK, generate sub-division triangles into TO DO list and delete it
+            PG3_ASSERT(currentTriangle != nullptr);
+            PG3_ASSERT(currentTriangle->IsTriangleNode);
 
-        // On error, delete the TO DO list
+            if (currentTriangle == nullptr)
+                continue;
 
-        // Assert: TO DO list must be empty
+            if (TriangleHasToBeSubdivided(*currentTriangle, aEmImage, aUseBilinearFiltering))
+            {
+                // Replace the triangle with sub-division triangles
+                std::list<TriangleNode*> subdivisionTriangles;
+                SubdivideTriangle(subdivisionTriangles, *currentTriangle, aEmImage, aUseBilinearFiltering);
+                delete currentTriangle;
+                for (auto triange : subdivisionTriangles)
+                    aToDoTriangles.push_front(triange);
+            }
+            else
+                oRefinedTriangles.push_front(currentTriangle);
+
+            // On error, delete the TO DO list
+        }
+
+        PG3_ASSERT(aToDoTriangles.empty());
+
+        // Unit tests:
+        // - Empty todo list
+        // - Single triangle todo list
+        // - Normal triangulation todo list
+        // - ...
+        // - ...
+        // - ...
 
         return false;
     }
+
+    static bool TriangleHasToBeSubdivided(
+        const TriangleNode          &aTriangle,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        aTriangle; aEmImage; aUseBilinearFiltering;
+
+        // debug
+        return false;
+
+        // debug2 - distances on a unit sphere shorter than
+        //auto &dir0 = aTriangle.mSharedVertices[0]->direction;
+        //auto &dir1 = aTriangle.mSharedVertices[1]->direction;
+        //auto &dir2 = aTriangle.mSharedVertices[2]->direction;
+        //auto lenSqr0 = (dir0 - dir1).LenSqr();
+        //auto lenSqr1 = (dir1 - dir2).LenSqr();
+        //auto lenSqr2 = (dir2 - dir0).LenSqr();
+        //return (lenSqr0 > Math::Sqr(0.1f))
+        //    || (lenSqr1 > Math::Sqr(0.1f))
+        //    || (lenSqr2 > Math::Sqr(0.1f));
+
+        // TODO: Evaluate the estimation error over the triangle...
+
+        // TODO: Build triangle count/size limit into the sub-division criterion
+    }
+
+    static void SubdivideTriangle(
+        std::list<TriangleNode*>    &oSubdivisionTriangles,
+        const TriangleNode          &aTriangle,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        // For now just a full regular subdivision (each edge is subdivided by placing a new edge 
+        // in the middle of the edge) resulting in 4 new triangles
+        //    /\
+        //   /__\
+        //  /\  /\
+        // /__\/__\
+
+        // New vertex coordinates
+        // We don't have to use slerp - normalization does the trick
+        Vec3f newVertexCoords[3];
+        const auto &verts = aTriangle.mSharedVertices;
+        newVertexCoords[0] = ((verts[0]->direction + verts[1]->direction) / 2.f).Normalize();
+        newVertexCoords[1] = ((verts[1]->direction + verts[2]->direction) / 2.f).Normalize();
+        newVertexCoords[2] = ((verts[2]->direction + verts[0]->direction) / 2.f).Normalize();
+
+        // New shared vertices
+        std::vector<std::shared_ptr<Vertex>> newVertices(3);
+        GenerateSharedVertex(newVertices[0], newVertexCoords[0], aEmImage, aUseBilinearFiltering);
+        GenerateSharedVertex(newVertices[1], newVertexCoords[1], aEmImage, aUseBilinearFiltering);
+        GenerateSharedVertex(newVertices[2], newVertexCoords[2], aEmImage, aUseBilinearFiltering);
+
+        // Central triangle
+        oSubdivisionTriangles.push_back(
+            new TriangleNode(newVertices[0], newVertices[1], newVertices[2]));
+
+        // 3 corner triangles
+        const auto &oldVertices = aTriangle.mSharedVertices;
+        oSubdivisionTriangles.push_back(
+            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2]));
+        oSubdivisionTriangles.push_back(
+            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1]));
+        oSubdivisionTriangles.push_back(
+            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2]));
+
+        PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 3);
+
+        // LATER: Adaptive (more memory-efficient) sub-division?
+
+    }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+public:
+
+    static bool _UnitTest_SubdivideTriangle(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::SubdivideTriangle");
+
+        // Dummy EM
+        std::unique_ptr<EnvironmentMapImage>
+            dummyImage(EnvironmentMapImage::LoadImage(
+                ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
+        if (!dummyImage)
+        {
+            PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblWholeTest,
+                "EnvironmentMapSteeringSampler::SubdivideTriangle", "Unable to load image!");
+            return false;
+        }
+
+        const float c45 = Math::kCosPiDiv4F;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant +X+Y+Z",
+                { Vec3f(1.f, 0.f, 0.f), Vec3f(0.f, 1.f, 0.f), Vec3f(0.f, 0.f, 1.f) },
+                { Vec3f(c45, c45, 0.f), Vec3f(0.f, c45, c45), Vec3f(c45, 0.f, c45) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant -X-Y-Z",
+                { Vec3f(-1.f,  0.f, 0.f), Vec3f(0.f, -1.f,  0.f), Vec3f( 0.f, 0.f, -1.f) },
+                { Vec3f(-c45, -c45, 0.f), Vec3f(0.f, -c45, -c45), Vec3f(-c45, 0.f, -c45) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant +X-Y+Z",
+                { Vec3f(0.f, -1.f, 0.f), Vec3f(1.f, 0.f, 0.f), Vec3f(0.f,  0.f, 1.f) },
+                { Vec3f(c45, -c45, 0.f), Vec3f(c45, 0.f, c45), Vec3f(0.f, -c45, c45) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant -X+Y-Z",
+                { Vec3f(0.f,  1.f, 0.f), Vec3f(-1.f, 0.f,  0.f), Vec3f(0.f, 0.f, -1.f) },
+                { Vec3f(-c45, c45, 0.f), Vec3f(-c45, 0.f, -c45), Vec3f(0.f, c45, -c45) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant +X-Y-Z",
+                { Vec3f(0.f, -1.f, 0.f), Vec3f(0.f, 0.f, -1.f), Vec3f(1.f,  0.f, 0.f) },
+                { Vec3f(0.f, -c45, -c45), Vec3f(c45, 0.f, -c45), Vec3f(c45, -c45, 0.f) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant -X+Y+Z",
+                { Vec3f(0.f, 1.f, 0.f), Vec3f(0.f,  0.f, 1.f), Vec3f(-1.f, 0.f, 0.f) },
+                { Vec3f(0.f, c45, c45), Vec3f(-c45, 0.f, c45), Vec3f(-c45, c45, 0.f) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant +X+Y-Z",
+                { Vec3f(1.f, 0.f,  0.f), Vec3f(0.f, 0.f, -1.f), Vec3f(0.f, 1.f, 0.f) },
+                { Vec3f(c45, 0.f, -c45), Vec3f(0.f, c45, -c45), Vec3f(c45, c45, 0.f) },
+                *dummyImage, false))
+            return false;
+
+        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+                aMaxUtBlockPrintLevel, "Octant -X-Y+Z",
+                { Vec3f(-1.f, 0.f, 0.f), Vec3f(0.f,  0.f, 1.f), Vec3f(0.f,  -1.f, 0.f) },
+                { Vec3f(-c45, 0.f, c45), Vec3f(0.f, -c45, c45), Vec3f(-c45, -c45, 0.f) },
+                *dummyImage, false))
+            return false;
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::SubdivideTriangle");
+        return true;
+    }
+
+protected:
+
+    static bool _UnitTest_SubdivideTriangle_SingleConfiguration(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const char                  *aTestName,
+        const std::array<Vec3f, 3>  &aTriangleCoords,
+        const std::array<Vec3f, 3>  &aSubdivisionPoints,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+
+        // Generate triangle with vertices
+        std::vector<std::shared_ptr<Vertex>> vertices(3);
+        GenerateSharedVertex(vertices[0], aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
+        GenerateSharedVertex(vertices[1], aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
+        GenerateSharedVertex(vertices[2], aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
+        TriangleNode triangle(vertices[0], vertices[1], vertices[2]);
+
+        // Subdivide
+        std::list<TriangleNode*> subdivisionTriangles;
+        SubdivideTriangle(subdivisionTriangles, triangle, aEmImage, aUseBilinearFiltering);
+
+        // Check subdivision count
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
+        if (subdivisionTriangles.size() != 4)
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count",
+                "Subdivision triangle count is not 4");
+            return false;
+        }
+        for (auto subdividedTriange : subdivisionTriangles)
+        {
+            if (subdividedTriange == nullptr)
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count",
+                                  "Subdivision triangle is null");
+                return false;
+            }
+        }
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
+
+        // Check orientation
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation");
+        const auto triangleNormal = triangle.ComputeNormal();
+        for (auto subdividedTriange : subdivisionTriangles)
+        {
+            const auto subdivNormal = subdividedTriange->ComputeNormal();
+            const auto dot = Dot(subdivNormal, triangleNormal);
+            if (dot < 0.90f)
+            {
+                PG3_UT_END_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation",
+                    "Subdivision triangle has orientation which differs too much from the original triangle");
+                return false;
+            }
+        }
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation");
+
+        // Check vertex positions
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions");
+
+        auto itSubdivs = subdivisionTriangles.begin();
+
+        // Central triangle
+        const auto &centralSubdivVertices = (**itSubdivs).mSharedVertices;
+        if (   !centralSubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+            || !centralSubdivVertices[1]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
+            || !centralSubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                "Central subdivision triangle has at least one incorrectly positioned vertex");
+            return false;
+        }
+        itSubdivs++;
+
+        // Corner triangle 1
+        const auto &corner1SubdivVertices = (**itSubdivs).mSharedVertices;
+        if (   !corner1SubdivVertices[0]->direction.EqualsDelta(aTriangleCoords[0],    0.0001f)
+            || !corner1SubdivVertices[1]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+            || !corner1SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                "Corner 1 subdivision triangle has at least one incorrectly positioned vertex");
+            return false;
+        }
+        itSubdivs++;
+
+        // Corner triangle 2
+        const auto &corner2SubdivVertices = (**itSubdivs).mSharedVertices;
+        if (   !corner2SubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+            || !corner2SubdivVertices[1]->direction.EqualsDelta(aTriangleCoords[1],    0.0001f)
+            || !corner2SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                "Corner 2 subdivision triangle has at least one incorrectly positioned vertex");
+            return false;
+        }
+        itSubdivs++;
+
+        // Corner triangle 3
+        const auto &corner3SubdivVertices = (**itSubdivs).mSharedVertices;
+        if (   !corner3SubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
+            || !corner3SubdivVertices[1]->direction.EqualsDelta(aTriangleCoords[2],    0.0001f)
+            || !corner3SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                "Corner 3 subdivision triangle has at least one incorrectly positioned vertex");
+            return false;
+        }
+        itSubdivs++;
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions");
+        
+        // TODO: Weights??
+
+        FreeTrianglesList(subdivisionTriangles);
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+        return true;
+    }
+
+#endif
+
+protected:
 
     // Build a uniformly balanced tree from the provided list of nodes (typically triangles).
     // The tree is built from bottom to top, accumulating the children data into their parents.

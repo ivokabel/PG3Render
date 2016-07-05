@@ -13,6 +13,7 @@ namespace Math
     const float kPiInvF     = 1.f / Math::kPiF;
     const float kPiDiv2F    = 1.5707963f;
 
+    // cosine of 45 degrees
     const float kCosPiDiv4F = 0.70710678118f;
 
     float  InfinityF() { return std::numeric_limits<float>::infinity(); }
@@ -53,6 +54,15 @@ namespace Math
 
     //////////////////////////////////////////////////////////////////////////
     // Math section
+
+    bool EqualDelta(float aVal1, float aVal2, float aMaxDelta)
+    {
+        PG3_ASSERT_FLOAT_VALID(aVal1);
+        PG3_ASSERT_FLOAT_VALID(aVal2);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aMaxDelta);
+
+        return std::abs(aVal1 - aVal2) <= aMaxDelta;
+    }
 
     float DegToRad(float deg)
     {
@@ -178,7 +188,7 @@ namespace Math
 
         return atan;
     }
-}
+} // namespace Math
 
 template<typename T>
 class Vec2Base
@@ -315,7 +325,15 @@ public:
 
     // Comparison
     bool operator == (const Vec3Base& a) const
-    { return (x == a.x) && (y == a.y) && (z == a.z); }
+    {
+        return (x == a.x) && (y == a.y) && (z == a.z);
+    }
+    bool EqualsDelta(const Vec3Base &aVal2, float aDelta) const
+    {
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
+        for (uint32_t i = 0; i < 3; i++) if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta)) return false;
+        return true;
+    }
 
     //PG3_NOINLINE
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
