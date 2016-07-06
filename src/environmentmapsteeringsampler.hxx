@@ -1527,7 +1527,7 @@ public:
                 (  sharedVertices[0]->weight
                  + sharedVertices[1]->weight
                  + sharedVertices[2]->weight) / 3.0f;
-            if (!referenceWeight.EqualsDelta(referenceWeight, 0.0001f))
+            if (!referenceWeight.EqualsDelta(triangle->mWeight, 0.0001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Incorect triangle weight");
