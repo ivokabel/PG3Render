@@ -430,6 +430,39 @@ public:
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
             geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
+
+            // Visualize initial triangulation
+            //Vec3f vertices[12];
+            //Vec3ui faces[20];
+            //Geom::UnitIcosahedron(vertices, faces);
+            //for (uint32_t i = 0; i < Utils::ArrayLength(faces); i++)
+            //{
+            //    geometryList->mGeometry.push_back(new Triangle(
+            //        ballCenter + ballRadius * vertices[faces[i].Get(0)],
+            //        ballCenter + ballRadius * vertices[faces[i].Get(1)],
+            //        ballCenter + ballRadius * vertices[faces[i].Get(2)], 8));
+            //}
+
+            // Visualize subdivision
+            //std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
+            //    ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
+            //if (image)
+            //{
+            //    std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
+            //    if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, *image, false))
+            //    {
+            //        for (auto node : triangles)
+            //        {
+            //            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            //            geometryList->mGeometry.push_back(new Triangle(
+            //                ballCenter + ballRadius * triangle->mSharedVertices[0]->direction,
+            //                ballCenter + ballRadius * triangle->mSharedVertices[1]->direction,
+            //                ballCenter + ballRadius * triangle->mSharedVertices[2]->direction,
+            //                8));
+            //        }
+            //        EnvironmentMapSteeringSampler::FreeNodesList(triangles);
+            //    }
+            //}
         }
 
         // Rectangles
