@@ -109,6 +109,22 @@ public:
             return retVal;
         }
 
+        SteeringBasisValue operator+ (const SteeringBasisValue &aValue) const
+        {
+            SteeringBasisValue retVal;
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                retVal.mBasisValues[i] = mBasisValues[i] + aValue.mBasisValues[i];
+            return retVal;
+        }
+
+        SteeringBasisValue operator/ (float aValue) const
+        {
+            SteeringBasisValue retVal;
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                retVal.mBasisValues[i] = mBasisValues[i] / aValue;
+            return retVal;
+        }
+
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
     public:
@@ -445,6 +461,7 @@ public:
 #endif
     };
 
+public:
 
     class SteeringCoefficients : public SteeringValue
     {
@@ -569,6 +586,8 @@ public:
 
 #endif
 
+public:
+
     class Vertex
     {
     public:
@@ -634,6 +653,7 @@ public:
             mSharedVertices[0] = aVertex1;
             mSharedVertices[1] = aVertex2;
             mSharedVertices[2] = aVertex3;
+            mWeight = (aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f;
         }
 
         bool operator == (const TriangleNode &aTriangle)
@@ -675,6 +695,15 @@ public:
             PG3_ASSERT_FLOAT_NONNEGATIVE(surfaceArea);
 
             return surfaceArea;
+        }
+
+        Vec3f ComputeCentroid() const
+        {
+            Vec3f centroid = 
+                (  mSharedVertices[0]->direction
+                 + mSharedVertices[1]->direction
+                 + mSharedVertices[2]->direction) / 3.f;
+            return centroid;
         }
 
     public:
@@ -747,8 +776,6 @@ protected:
 
     static void FreeNode(TreeNode* aNode)
     {
-        PG3_ERROR_CODE_NOT_TESTED("");
-
         if (aNode == nullptr)
             return;
 
@@ -758,10 +785,10 @@ protected:
             delete static_cast<InnerNode*>(aNode);
     }
 
+public:
+
     static void FreeNodesList(std::list<TreeNode*> &aNodes)
     {
-        PG3_ERROR_CODE_NOT_TESTED("");
-
         for (TreeNode* node : aNodes)
             FreeNode(node);
     }
@@ -790,6 +817,8 @@ protected:
         }
     }
 
+public: // debug: for visualisation
+
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     static bool TriangulateEm(
         std::list<TreeNode*>        &oTriangles,
@@ -810,6 +839,8 @@ protected:
 
         return true;
     }
+
+protected:
 
     // Generates initial set of triangles and their vertices
     static bool GenerateInitialEmTriangulation(
@@ -898,22 +929,13 @@ protected:
                     aToDoTriangles.push_front(triange);
             }
             else
+                // Move triangle to the final list
                 oRefinedTriangles.push_front(currentTriangle);
-
-            // On error, delete the TO DO list
         }
 
         PG3_ASSERT(aToDoTriangles.empty());
 
-        // Unit tests:
-        // - Empty todo list
-        // - Single triangle todo list
-        // - Normal triangulation todo list
-        // - ...
-        // - ...
-        // - ...
-
-        return false;
+        return true;
     }
 
     static bool TriangleHasToBeSubdivided(
@@ -924,18 +946,20 @@ protected:
         aTriangle; aEmImage; aUseBilinearFiltering;
 
         // debug
-        return false;
+        //return false;
 
-        // debug2 - distances on a unit sphere shorter than
-        //auto &dir0 = aTriangle.mSharedVertices[0]->direction;
-        //auto &dir1 = aTriangle.mSharedVertices[1]->direction;
-        //auto &dir2 = aTriangle.mSharedVertices[2]->direction;
-        //auto lenSqr0 = (dir0 - dir1).LenSqr();
-        //auto lenSqr1 = (dir1 - dir2).LenSqr();
-        //auto lenSqr2 = (dir2 - dir0).LenSqr();
-        //return (lenSqr0 > Math::Sqr(0.1f))
-        //    || (lenSqr1 > Math::Sqr(0.1f))
-        //    || (lenSqr2 > Math::Sqr(0.1f));
+        // debug2 - maximum allowed edge size
+        const auto maxLen = 1.0f; //0.25f; //0.5f; //
+        const auto &dir0 = aTriangle.mSharedVertices[0]->direction;
+        const auto &dir1 = aTriangle.mSharedVertices[1]->direction;
+        const auto &dir2 = aTriangle.mSharedVertices[2]->direction;
+        const auto lenSqr0 = (dir0 - dir1).LenSqr();
+        const auto lenSqr1 = (dir1 - dir2).LenSqr();
+        const auto lenSqr2 = (dir2 - dir0).LenSqr();
+        const auto maxLenSqr = Math::Sqr(maxLen);
+        return (lenSqr0 > maxLenSqr)
+            || (lenSqr1 > maxLenSqr)
+            || (lenSqr2 > maxLenSqr);
 
         // TODO: Evaluate the estimation error over the triangle...
 
@@ -1397,23 +1421,123 @@ public:
     }
 
     static bool _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(
-        std::deque<TriangleNode*>   &oTriangles,
+        std::deque<TriangleNode*>   &aInitialTriangles,
+        uint32_t                     aExpectedRefinedCount,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
-        oTriangles; aMaxUtBlockPrintLevel; aEmImage; aUseBilinearFiltering;
-
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
-        // TODO: Refine triangulation
-        //if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering))
-        //    return false;
+        std::list<TreeNode*> refinedTriangles;
+        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aEmImage, aUseBilinearFiltering))
+        {
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                "RefineEmTriangulation() failed!");
+            FreeNodesList(refinedTriangles);
+            return false;
+        }
 
-        // TODO: Test:
-        // - Count: same as initial triangulation
-        // - Weights...
+        // Triangles count (optional)
+        if ((aExpectedRefinedCount > 0) && (refinedTriangles.size() != aExpectedRefinedCount))
+        {
+            std::ostringstream errorDescription;
+            errorDescription << "Initial triangle count is ";
+            errorDescription << refinedTriangles.size();
+            errorDescription << " instead of ";
+            errorDescription << aExpectedRefinedCount;
+            errorDescription << "!";
+            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                errorDescription.str().c_str());
+            FreeNodesList(refinedTriangles);
+            return false;
+        }
 
+        // All vertices lie on unit sphere
+        for (auto node : refinedTriangles)
+        {
+            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            auto &vertices = triangle->mSharedVertices;
+            if (   !Math::EqualDelta(vertices[0]->direction.LenSqr(), 1.0f, 0.001f)
+                || !Math::EqualDelta(vertices[1]->direction.LenSqr(), 1.0f, 0.001f)
+                || !Math::EqualDelta(vertices[2]->direction.LenSqr(), 1.0f, 0.001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                    "Triangulation contains a vertex not lying on the unit sphere");
+                FreeNodesList(refinedTriangles);
+                return false;
+            }
+        }
+
+        // Non-zero triangle size
+        for (auto node : refinedTriangles)
+        {
+            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            auto surfaceArea = triangle->ComputeSurfaceArea();
+            if (surfaceArea < 0.0001f)
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                    "Triangulation contains a degenerated triangle");
+                FreeNodesList(refinedTriangles);
+                return false;
+            }
+        }
+
+        // Sanity check for normals
+        for (auto node : refinedTriangles)
+        {
+            const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            const auto centroid = triangle->ComputeCentroid();
+            const auto centroidDirection = Normalize(centroid);
+            const auto normal = triangle->ComputeNormal();
+            const auto dot = Dot(centroidDirection, normal);
+            if (dot < 0.0f)
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                    "A triangle normal is oriented inside the sphere");
+                FreeNodesList(refinedTriangles);
+                return false;
+            }
+        }
+
+        // Weights
+        for (auto node : refinedTriangles)
+        {
+            const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            const auto &sharedVertices = triangle->mSharedVertices;
+
+            // Vertex weights
+            for (const auto &vertex : sharedVertices)
+            {
+                const auto radiance = aEmImage.Evaluate(vertex->direction, aUseBilinearFiltering);
+                const auto luminance = radiance.Luminance();
+                const auto referenceWeight =
+                    SteeringBasisValue().GenerateSphHarm(vertex->direction, luminance);
+                if (vertex->weight != referenceWeight)
+                {
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                        "Incorect triangle vertex weight");
+                    FreeNodesList(refinedTriangles);
+                    return false;
+                }
+            }
+
+            // Triangle weight
+            SteeringBasisValue referenceWeight =
+                (  sharedVertices[0]->weight
+                 + sharedVertices[1]->weight
+                 + sharedVertices[2]->weight) / 3.0f;
+            if (!referenceWeight.EqualsDelta(referenceWeight, 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                    "Incorect triangle weight");
+                FreeNodesList(refinedTriangles);
+                return false;
+            }
+        }
+
+        FreeNodesList(refinedTriangles);
+        
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         return true;
@@ -1422,6 +1546,7 @@ public:
     static bool _UnitTest_TriangulateEm_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
+        uint32_t                     aExpectedRefinedCount,
         char                        *aImagePath,
         bool                         aUseBilinearFiltering)
     {
@@ -1435,27 +1560,28 @@ public:
             return false;
         }
 
-        std::deque<TriangleNode*> triangles;
+        std::deque<TriangleNode*> initialTriangles;
 
-        if (!_UnitTest_TriangulateEm_SingleEm_InitialTriangulation(triangles,
+        if (!_UnitTest_TriangulateEm_SingleEm_InitialTriangulation(initialTriangles,
                                                                    aMaxUtBlockPrintLevel,
                                                                    *image.get(),
                                                                    aUseBilinearFiltering))
         {
-            FreeTrianglesDeque(triangles);
+            FreeTrianglesDeque(initialTriangles);
             return false;
         }
 
-        //if (!_UnitTest_TriangulateEm_SingleEm_RefineTriangulation(triangles,
-        //                                                          aMaxUtBlockPrintLevel,
-        //                                                          *image.get(),
-        //                                                          aUseBilinearFiltering))
-        //{
-        //    FreeTrianglesDeque(triangles);
-        //    return false;
-        //}
+        if (!_UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
+                                                                  aExpectedRefinedCount,
+                                                                  aMaxUtBlockPrintLevel,
+                                                                  *image.get(),
+                                                                  aUseBilinearFiltering))
+        {
+            FreeTrianglesDeque(initialTriangles);
+            return false;
+        }
 
-        FreeTrianglesDeque(triangles);
+        FreeTrianglesDeque(initialTriangles);
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
@@ -1473,40 +1599,40 @@ public:
         // TODO: ?
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Small white EM",
+                                              "Small white EM", 80,
                                               ".\\Light Probes\\Debugging\\Const white 8x4.exr",
                                               false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Large white EM",
-                                              ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                                              false))
-            return false;
+        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+        //                                      "Large white EM",
+        //                                      ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+        //                                      false))
+        //    return false;
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Single pixel EM",
+                                              "Single pixel EM", 0,
                                               ".\\Light Probes\\Debugging\\Single pixel.exr",
                                               false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Satellite EM",
-                                              ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                                              false))
-            return false;
+        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+        //                                      "Satellite EM",
+        //                                      ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+        //                                      false))
+        //    return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Peace Garden EM",
-                                              ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-                                              false))
-            return false;
+        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+        //                                      "Peace Garden EM",
+        //                                      ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+        //                                      false))
+        //    return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Doge2 EM",
-                                              ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                                              false))
-            return false;
+        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+        //                                      "Doge2 EM",
+        //                                      ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+        //                                      false))
+        //    return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
                           "EnvironmentMapSteeringSampler::TriangulateEm()");
