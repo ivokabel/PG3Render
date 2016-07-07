@@ -62,7 +62,7 @@ namespace Sampling
 
     // Sample Triangle
     // returns barycentric coordinates
-    Vec2f SampleUniformTriangle(const Vec2f &aSamples)
+    Vec2f SampleTriangleUniformly(const Vec2f &aSamples)
     {
         const float xSqr = std::sqrt(aSamples.x);
 
