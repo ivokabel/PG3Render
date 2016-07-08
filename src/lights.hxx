@@ -134,7 +134,7 @@ public:
     {
         // Sample the whole triangle surface
         const Vec2f rnd = aRng.GetVec2f();
-        const Vec2f baryCoords = Sampling::SampleTriangleUniformly(rnd);
+        const Vec2f baryCoords = Sampling::SampleUniformTriangle(rnd);
         const Vec3f P1 = mP0 + mE1;
         const Vec3f P2 = mP0 + mE2;
         const Vec3f samplePoint =
