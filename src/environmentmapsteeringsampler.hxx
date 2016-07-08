@@ -650,24 +650,24 @@ public:
             ) :
             TreeNode(true)
         {
-            mSharedVertices[0] = aVertex1;
-            mSharedVertices[1] = aVertex2;
-            mSharedVertices[2] = aVertex3;
-            mWeight = (aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f;
+            sharedVertices[0] = aVertex1;
+            sharedVertices[1] = aVertex2;
+            sharedVertices[2] = aVertex3;
+            weight = (aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f;
         }
 
         bool operator == (const TriangleNode &aTriangle)
         {
-            return (mWeight == aTriangle.mWeight)
-                && (mSharedVertices[0] == aTriangle.mSharedVertices[0])
-                && (mSharedVertices[1] == aTriangle.mSharedVertices[1])
-                && (mSharedVertices[2] == aTriangle.mSharedVertices[2]);
+            return (weight == aTriangle.weight)
+                && (sharedVertices[0] == aTriangle.sharedVertices[0])
+                && (sharedVertices[1] == aTriangle.sharedVertices[1])
+                && (sharedVertices[2] == aTriangle.sharedVertices[2]);
         }
 
         Vec3f ComputeCrossProduct() const
         {
-            const auto dir1 = (mSharedVertices[1]->direction - mSharedVertices[0]->direction);
-            const auto dir2 = (mSharedVertices[2]->direction - mSharedVertices[1]->direction);
+            const auto dir1 = (sharedVertices[1]->direction - sharedVertices[0]->direction);
+            const auto dir2 = (sharedVertices[2]->direction - sharedVertices[1]->direction);
 
             auto crossProduct = Cross(Normalize(dir1), Normalize(dir2));
 
@@ -700,17 +700,17 @@ public:
         Vec3f ComputeCentroid() const
         {
             Vec3f centroid = 
-                (  mSharedVertices[0]->direction
-                 + mSharedVertices[1]->direction
-                 + mSharedVertices[2]->direction) / 3.f;
+                (  sharedVertices[0]->direction
+                 + sharedVertices[1]->direction
+                 + sharedVertices[2]->direction) / 3.f;
             return centroid;
         }
 
     public:
-        SteeringBasisValue      mWeight;
+        SteeringBasisValue      weight;
 
         // TODO: This is sub-optimal, both in terms of memory consumption and memory non-locality
-        std::shared_ptr<Vertex> mSharedVertices[3];
+        std::shared_ptr<Vertex> sharedVertices[3];
     };
 
 public:
@@ -949,10 +949,13 @@ protected:
         //return false;
 
         // debug2 - maximum allowed edge size
-        const auto maxLen = 1.0f; //0.25f; //0.5f; //
-        const auto &dir0 = aTriangle.mSharedVertices[0]->direction;
-        const auto &dir1 = aTriangle.mSharedVertices[1]->direction;
-        const auto &dir2 = aTriangle.mSharedVertices[2]->direction;
+        //const auto maxLen = 0.125f; // 4 subdivs: 5120=4*1280
+        //const auto maxLen = 0.25f; // 3 subdivs: 1280=4*320
+        //const auto maxLen = 0.5f; // 2 subdivs: 320
+        const auto maxLen = 1.0f; // 1 subdiv: 80
+        const auto &dir0 = aTriangle.sharedVertices[0]->direction;
+        const auto &dir1 = aTriangle.sharedVertices[1]->direction;
+        const auto &dir2 = aTriangle.sharedVertices[2]->direction;
         const auto lenSqr0 = (dir0 - dir1).LenSqr();
         const auto lenSqr1 = (dir1 - dir2).LenSqr();
         const auto lenSqr2 = (dir2 - dir0).LenSqr();
@@ -984,7 +987,7 @@ protected:
         // New vertex coordinates
         // We don't have to use slerp - normalization does the trick
         Vec3f newVertexCoords[3];
-        const auto &verts = aTriangle.mSharedVertices;
+        const auto &verts = aTriangle.sharedVertices;
         newVertexCoords[0] = ((verts[0]->direction + verts[1]->direction) / 2.f).Normalize();
         newVertexCoords[1] = ((verts[1]->direction + verts[2]->direction) / 2.f).Normalize();
         newVertexCoords[2] = ((verts[2]->direction + verts[0]->direction) / 2.f).Normalize();
@@ -1000,7 +1003,7 @@ protected:
             new TriangleNode(newVertices[0], newVertices[1], newVertices[2]));
 
         // 3 corner triangles
-        const auto &oldVertices = aTriangle.mSharedVertices;
+        const auto &oldVertices = aTriangle.sharedVertices;
         oSubdivisionTriangles.push_back(
             new TriangleNode(oldVertices[0], newVertices[0], newVertices[2]));
         oSubdivisionTriangles.push_back(
@@ -1163,7 +1166,7 @@ protected:
         auto itSubdivs = subdivisionTriangles.begin();
 
         // Central triangle
-        const auto &centralSubdivVertices = (**itSubdivs).mSharedVertices;
+        const auto &centralSubdivVertices = (**itSubdivs).sharedVertices;
         if (   !centralSubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
             || !centralSubdivVertices[1]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
             || !centralSubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
@@ -1175,7 +1178,7 @@ protected:
         itSubdivs++;
 
         // Corner triangle 1
-        const auto &corner1SubdivVertices = (**itSubdivs).mSharedVertices;
+        const auto &corner1SubdivVertices = (**itSubdivs).sharedVertices;
         if (   !corner1SubdivVertices[0]->direction.EqualsDelta(aTriangleCoords[0],    0.0001f)
             || !corner1SubdivVertices[1]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
             || !corner1SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
@@ -1187,7 +1190,7 @@ protected:
         itSubdivs++;
 
         // Corner triangle 2
-        const auto &corner2SubdivVertices = (**itSubdivs).mSharedVertices;
+        const auto &corner2SubdivVertices = (**itSubdivs).sharedVertices;
         if (   !corner2SubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
             || !corner2SubdivVertices[1]->direction.EqualsDelta(aTriangleCoords[1],    0.0001f)
             || !corner2SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
@@ -1199,7 +1202,7 @@ protected:
         itSubdivs++;
 
         // Corner triangle 3
-        const auto &corner3SubdivVertices = (**itSubdivs).mSharedVertices;
+        const auto &corner3SubdivVertices = (**itSubdivs).sharedVertices;
         if (   !corner3SubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
             || !corner3SubdivVertices[1]->direction.EqualsDelta(aTriangleCoords[2],    0.0001f)
             || !corner3SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
@@ -1306,7 +1309,7 @@ public:
         std::list<std::set<Vertex*>> alreadyFoundFaceVertices;
         for (const auto &triangle : oTriangles)
         {
-            const auto &sharedVertices = triangle->mSharedVertices;
+            const auto &sharedVertices = triangle->sharedVertices;
 
             // Each triangle is unique
             {
@@ -1459,7 +1462,7 @@ public:
         for (auto node : refinedTriangles)
         {
             auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            auto &vertices = triangle->mSharedVertices;
+            auto &vertices = triangle->sharedVertices;
             if (   !Math::EqualDelta(vertices[0]->direction.LenSqr(), 1.0f, 0.001f)
                 || !Math::EqualDelta(vertices[1]->direction.LenSqr(), 1.0f, 0.001f)
                 || !Math::EqualDelta(vertices[2]->direction.LenSqr(), 1.0f, 0.001f))
@@ -1506,7 +1509,7 @@ public:
         for (auto node : refinedTriangles)
         {
             const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            const auto &sharedVertices = triangle->mSharedVertices;
+            const auto &sharedVertices = triangle->sharedVertices;
 
             // Vertex weights
             for (const auto &vertex : sharedVertices)
@@ -1529,7 +1532,7 @@ public:
                 (  sharedVertices[0]->weight
                  + sharedVertices[1]->weight
                  + sharedVertices[2]->weight) / 3.0f;
-            if (!referenceWeight.EqualsDelta(triangle->mWeight, 0.0001f))
+            if (!referenceWeight.EqualsDelta(triangle->weight, 0.0001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Incorect triangle weight");

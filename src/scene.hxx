@@ -423,12 +423,13 @@ public:
             geometryList->mGeometry.push_back(new Sphere(leftBallCenter,  ballRadius, 6));
             geometryList->mGeometry.push_back(new Sphere(rightBallCenter, ballRadius, 7));
         }
-        if ( aBoxMask & k1Sphere )
+        if (aBoxMask & k1Sphere)
         {
             float ballRadius = 1.0f;
             Vec3f floorCenter = (cb[0] + cb[5]) * 0.5f;
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
+            // Original
             geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
 
             // Visualize initial triangulation
@@ -455,9 +456,9 @@ public:
             //        {
             //            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
             //            geometryList->mGeometry.push_back(new Triangle(
-            //                ballCenter + ballRadius * triangle->mSharedVertices[0]->direction,
-            //                ballCenter + ballRadius * triangle->mSharedVertices[1]->direction,
-            //                ballCenter + ballRadius * triangle->mSharedVertices[2]->direction,
+            //                ballCenter + ballRadius * triangle->sharedVertices[0]->direction,
+            //                ballCenter + ballRadius * triangle->sharedVertices[1]->direction,
+            //                ballCenter + ballRadius * triangle->sharedVertices[2]->direction,
             //                8));
             //        }
             //        EnvironmentMapSteeringSampler::FreeNodesList(triangles);
