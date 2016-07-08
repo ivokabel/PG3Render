@@ -69,6 +69,185 @@ namespace Sampling
         return Vec2f(1.f - xSqr, aSamples.y * xSqr);
     }
 
+    Vec3f NormalizedOrthoComp(const Vec3f &aVector, const Vec3f &aBasis)
+    {
+        PG3_ASSERT_VEC3F_NORMALIZED(aBasis);
+
+        const auto projectionOnBasis   = Dot(aVector, aBasis) * aBasis;
+        const auto orthogonalComponent = aVector - projectionOnBasis;
+        return Normalize(orthogonalComponent);
+    }
+
+    // Sample spherical triangle
+    // Implementation of the James Arvo's 1995 paper: Stratified Sampling of Spherical Triangles
+    Vec3f SampleUniformSphericalTriangle(
+        const Vec3f &aVertexA,
+        const Vec3f &aVertexB,
+        const Vec3f &aVertexC,
+        const float  aCosC,
+        const float  aAlpha,
+        const float  aTriangleArea,
+        const Vec2f &aSamples)
+    {
+        PG3_ASSERT_VEC3F_NORMALIZED(aVertexA);
+        PG3_ASSERT_VEC3F_NORMALIZED(aVertexB);
+        PG3_ASSERT_VEC3F_NORMALIZED(aVertexC);
+        PG3_ASSERT_FLOAT_VALID(aCosC);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aAlpha);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aTriangleArea);
+        PG3_ASSERT_VEC2F_NONNEGATIVE(aSamples);
+
+        const float cosAlpha = std::cos(aAlpha);
+        const float sinAlpha = std::sin(aAlpha);
+        //const float cosC     = std::cos(aEdgeCLength);
+
+        // Compute surface area of the sub-triangle
+        const float areaSub = aSamples.x * aTriangleArea;
+
+        // Compute sin & cos of phi
+        const float s = std::sin(areaSub - aAlpha);
+        const float t = std::cos(areaSub - aAlpha);
+
+        // Pair (u, v)
+        const float u = t - cosAlpha;
+        const float v = s + sinAlpha * aCosC;
+
+        // q=cos(beta^)
+        // FIXME: Potential division by zero!
+        const float q = 
+              ((v * t - u * s) * cosAlpha - v)
+            / ((v * s + u * t) * sinAlpha);
+
+        // C^, the new vertex of the sub-triangle
+        const Vec3f vertexCSub =
+              q * aVertexA
+            + Math::SafeSqrt(1.f - q * q) * NormalizedOrthoComp(aVertexC, aVertexA);
+
+        // Compute cos(theta)
+        const float z = 1.f - aSamples.y * (1.f - Dot(vertexCSub, aVertexB));
+
+        // Construct new point on the sphere
+        const Vec3f pointP =
+              z * aVertexB
+            + Math::SafeSqrt(1.f - z * z) * NormalizedOrthoComp(vertexCSub, aVertexB);
+
+        PG3_ASSERT_VEC3F_NORMALIZED(pointP);
+
+        return pointP;
+    }
+
+    Vec3f SampleUniformSphericalTriangle(
+        const Vec3f &aVertexA,
+        const Vec3f &aVertexB,
+        const Vec3f &aVertexC,
+        const Vec2f &aSamples)
+    {
+        const float cosC = Dot(aVertexA, aVertexB);
+
+        const auto normalAB = Cross(aVertexA, aVertexB);
+        const auto normalBC = Cross(aVertexB, aVertexC);
+        const auto normalCA = Cross(aVertexC, aVertexA);
+
+        const float cosAlpha = Dot(normalAB, -normalCA);
+        const float cosBeta  = Dot(normalBC, -normalAB);
+        const float cosGamma = Dot(normalCA, -normalBC);
+
+        const float alpha = std::acos(cosAlpha);
+        const float beta  = std::acos(cosBeta);
+        const float gamma = std::acos(cosGamma);
+
+        const float triangleArea = alpha + beta + gamma - Math::kPiF;
+
+        return SampleUniformSphericalTriangle(
+            aVertexA, aVertexB, aVertexC,
+            cosC, alpha, triangleArea,
+            aSamples);
+    }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    static bool _UnitTest_SampleUniformSphericalTriangle_SingleOctant(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const Vec3f                 &aSigns)
+    {
+        Vec3f signsNormalized;
+        for (uint32_t i = 0; i < 3; i++)
+            signsNormalized.Get(i) = Math::SignNum(aSigns.Get(i));
+
+        // Name
+        std::ostringstream testNameStream;
+        testNameStream << "Octant ";
+        testNameStream << ((signsNormalized.x >= 0) ? "+" : "-");
+        testNameStream << "X";
+        testNameStream << ((signsNormalized.y >= 0) ? "+" : "-");
+        testNameStream << "Y";
+        testNameStream << ((signsNormalized.z >= 0) ? "+" : "-");
+        testNameStream << "Z";
+        auto testNameStr = testNameStream.str();
+        auto testName = testNameStr.c_str();
+
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", testName);
+
+        // Generate triangle coords
+        auto vertexA = Vec3f(1.f, 0.f, 0.f) * signsNormalized.Get(0);
+        auto vertexB = Vec3f(0.f, 1.f, 0.f) * signsNormalized.Get(1);
+        auto vertexC = Vec3f(0.f, 0.f, 1.f) * signsNormalized.Get(2);
+
+        // Tests
+        for (float u = 0; u <= 1.0001f; u += 0.5f)
+            for (float v = 0; v <= 1.0001f; v += 0.5f)
+            {
+                const Vec3f triangleSample =
+                    SampleUniformSphericalTriangle(vertexA, vertexB, vertexC, Vec2f(u, v));
+
+                // Test: In the right octant
+                for (uint32_t i = 0; i < 3; i++)
+                {
+                    if ((signsNormalized.Get(i) * triangleSample.Get(i)) < -0.0001f)
+                    {
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                            "The resulting sample is outside the requested octant", testName);
+                        return false;
+                    }
+                }
+
+                // Test: On the sphere
+                if (!Math::EqualDelta(triangleSample.LenSqr(), 1.0f, 0.001f))
+                {
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                        "The resulting sample doesn't lie on the unit sphere", testName);
+                    return false;
+                }
+            }
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", testName);
+        return true;
+    }
+
+    static bool _UnitTest_SampleUniformSphericalTriangle(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::SampleUniformSphericalTriangle");
+
+        for (float x = -1; x <= 1.0001; x += 2)
+            for (float y = -1; y <= 1.0001; y += 2)
+                for (float z = -1; z <= 1.0001; z += 2)
+                {
+                    if (!_UnitTest_SampleUniformSphericalTriangle_SingleOctant(
+                            aMaxUtBlockPrintLevel, Vec3f(x, y, z)))
+                        return false;
+                }
+
+        // TODO: Small, empty triangle?
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::SampleUniformSphericalTriangle");
+        return true;
+    }
+
+#endif
+
     // Cosine lobe hemisphere sampling
     Vec3f SamplePowerCosHemisphereW(
         const Vec2f  &aSamples,

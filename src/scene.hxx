@@ -463,6 +463,42 @@ public:
             //        EnvironmentMapSteeringSampler::FreeNodesList(triangles);
             //    }
             //}
+
+            // Visualize spherical triangle uniform sampling
+            //const float countPerDimension = 40.f;
+            //const float pointSize         = 0.003f;
+            //{
+            //    auto vertexA = Vec3f(1.f, 0.f, 0.f);
+            //    auto vertexB = Vec3f(0.f, 1.f, 0.f);
+            //    auto vertexC = Vec3f(0.f, 0.f, 1.f);
+
+            //    for (float u = 0.001f; u <= 1.0011f; u += 1.f / countPerDimension)
+            //        for (float v = 0.001f; v <= 1.0011f; v += 1.f / countPerDimension)
+            //        {
+            //            const Vec3f triangleSample =
+            //                Sampling::SampleUniformSphericalTriangle(
+            //                    vertexA, vertexB, vertexC, Vec2f(u, v));
+            //            geometryList->mGeometry.push_back(
+            //                new Sphere(ballCenter + ballRadius * triangleSample,
+            //                           pointSize * ballRadius, 8));
+            //        }
+            //}
+            //{
+            //    auto vertexA = Vec3f( 0.f, -1.f, 0.f);
+            //    auto vertexB = Vec3f( 0.f,  0.f, 1.f);
+            //    auto vertexC = Vec3f(-1.f,  0.f, 0.f);
+
+            //    for (float u = 0.001f; u <= 1.0011f; u += 1.f / countPerDimension)
+            //        for (float v = 0.001f; v <= 1.0011f; v += 1.f / countPerDimension)
+            //        {
+            //            const Vec3f triangleSample =
+            //                Sampling::SampleUniformSphericalTriangle(
+            //                    vertexA, vertexB, vertexC, Vec2f(u, v));
+            //            geometryList->mGeometry.push_back(
+            //                new Sphere(ballCenter + ballRadius * triangleSample,
+            //                           pointSize * ballRadius, 8));
+            //        }
+            //}
         }
 
         // Rectangles

@@ -962,6 +962,8 @@ protected:
             || (lenSqr2 > maxLenSqr);
 
         // TODO: Evaluate the estimation error over the triangle...
+        //const Vec3f triangleSample =
+        //    SampleUniformSphericalTriangle(vertexA, vertexB, vertexC, Vec2f(u, v));
 
         // TODO: Build triangle count/size limit into the sub-division criterion
     }

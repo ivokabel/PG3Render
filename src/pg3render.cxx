@@ -176,6 +176,8 @@ void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
     Geom::_UnitTest_UnitIcosahedron(aMaxUtBlockPrintLevel);
 
+    Sampling::_UnitTest_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel);
+
     Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
 
     EnvironmentMapSteeringSampler::_UnitTest_TriangulateEm(aMaxUtBlockPrintLevel);
