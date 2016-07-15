@@ -466,35 +466,41 @@ public:
             //}
 
             // Visualize spherical triangle uniform sampling
-            //const float countPerDimension = 40.f;
-            //const float pointSize         = 0.003f;
+            //const float countPerDimension = 40.f;   //30.f;   //20.f;   //
+            //const float pointSize         = 0.005f; //0.005f; //0.008f; //
+            //Rng rng;
+            //const float binSize = 1.f / countPerDimension;
+            //for (uint32_t i = 0; i < 2; i++)
             //{
-            //    auto vertexA = Vec3f(1.f, 0.f, 0.f);
-            //    auto vertexB = Vec3f(0.f, 1.f, 0.f);
-            //    auto vertexC = Vec3f(0.f, 0.f, 1.f);
+            //    Vec3f vertexA;
+            //    Vec3f vertexB;
+            //    Vec3f vertexC;
+            //    switch (i)
+            //    {
+            //    case 0:
+            //        vertexA = Vec3f(1.f,  0.f, 0.f);
+            //        vertexB = Vec3f(0.f, -1.f, 0.f);
+            //        vertexC = Vec3f(0.f,  0.f, 1.f);
+            //        break;
+            //    case 1:
+            //        vertexA = Vec3f( 0.f, 1.f,  0.f);
+            //        vertexB = Vec3f( 0.f, 0.f, -1.f);
+            //        vertexC = Vec3f(-1.f, 0.f,  0.f);
+            //        break;
+            //    default:
+            //        break;
+            //    }
 
-            //    for (float u = 0.001f; u <= 1.0011f; u += 1.f / countPerDimension)
-            //        for (float v = 0.001f; v <= 1.0011f; v += 1.f / countPerDimension)
+            //    for (float u = 0.f; u < (1.f - 0.0001f); u += binSize)
+            //        for (float v = 0.f; v < (1.f - 0.0001f); v += binSize)
             //        {
+            //            //Vec2f sample(u, v);
+            //            //Vec2f sample = rng.GetVec2f();
+            //            Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+
             //            const Vec3f triangleSample =
             //                Sampling::SampleUniformSphericalTriangle(
-            //                    vertexA, vertexB, vertexC, Vec2f(u, v));
-            //            geometryList->mGeometry.push_back(
-            //                new Sphere(ballCenter + ballRadius * triangleSample,
-            //                           pointSize * ballRadius, 8));
-            //        }
-            //}
-            //{
-            //    auto vertexA = Vec3f( 0.f, -1.f, 0.f);
-            //    auto vertexB = Vec3f( 0.f,  0.f, 1.f);
-            //    auto vertexC = Vec3f(-1.f,  0.f, 0.f);
-
-            //    for (float u = 0.001f; u <= 1.0011f; u += 1.f / countPerDimension)
-            //        for (float v = 0.001f; v <= 1.0011f; v += 1.f / countPerDimension)
-            //        {
-            //            const Vec3f triangleSample =
-            //                Sampling::SampleUniformSphericalTriangle(
-            //                    vertexA, vertexB, vertexC, Vec2f(u, v));
+            //                    vertexA, vertexB, vertexC, sample);
             //            geometryList->mGeometry.push_back(
             //                new Sphere(ballCenter + ballRadius * triangleSample,
             //                           pointSize * ballRadius, 8));
