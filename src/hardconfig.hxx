@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 //#define PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
+#define PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
 
 #define PG3_USE_DOUBLE_FRAMEBUFFER
 

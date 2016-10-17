@@ -168,6 +168,62 @@ namespace Geom
         PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
     }
 
+    void ComputeSphericalTriangleAngles(
+        float       &oAlpha,
+        float       &oBeta,
+        float       &oGamma,
+        const Vec3f &aVertexA,
+        const Vec3f &aVertexB,
+        const Vec3f &aVertexC)
+    {
+        const auto normalAB = Cross(aVertexA, aVertexB);
+        const auto normalBC = Cross(aVertexB, aVertexC);
+        const auto normalCA = Cross(aVertexC, aVertexA);
+
+        const float cosAlpha = Dot(normalAB, -normalCA);
+        const float cosBeta  = Dot(normalBC, -normalAB);
+        const float cosGamma = Dot(normalCA, -normalBC);
+
+        oAlpha = std::acos(cosAlpha);
+        oBeta  = std::acos(cosBeta);
+        oGamma = std::acos(cosGamma);
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(oAlpha);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(oBeta);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(oGamma);
+    }
+
+    // Area of a spherical triangle on a unit sphere, a.k.a. solid angle
+    float SphericalTriangleArea(
+        const float       &aAlpha,
+        const float       &aBeta,
+        const float       &aGamma)
+    {
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aAlpha);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aBeta);
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aGamma);
+
+        const float area = aAlpha + aBeta + aGamma - Math::kPiF;
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(area);
+
+        return area;
+    }
+
+    // Area of a spherical triangle on a unit sphere, a.k.a. solid angle
+    float SphericalTriangleArea(
+        const Vec3f &aVertexA,
+        const Vec3f &aVertexB,
+        const Vec3f &aVertexC)
+    {
+        float alpha, beta, gamma;
+        ComputeSphericalTriangleAngles(alpha, beta, gamma, aVertexA, aVertexB, aVertexC);
+
+        const float area = SphericalTriangleArea(alpha, beta, gamma);
+
+        return area;
+    }
+
     // Vertices and faces of a unit length regular icosahedron with centre in the origin [0, 0, 0]
     // Based on: http://geometrictools.com/Documentation/PlatonicSolids.pdf
     // by David Eberly, Geometric Tools, LLC
@@ -399,5 +455,87 @@ namespace Geom
     }
 
 #endif
+
+    // Code adapted from:
+    // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
+    bool RayTriangleIntersect(
+        const Vec3f &aRayOrig,
+        const Vec3f &aRayDir,
+        const Vec3f &aTriVertex0,
+        const Vec3f &aTriVertex1,
+        const Vec3f &aTriVertex2,
+              float &oT,
+              float &oU,
+              float &oV,
+        const float  aEdgeNumThreshold = 0.0f)
+    {
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aEdgeNumThreshold);
+
+        // compute plane's normal
+        const Vec3f v0v1 = aTriVertex1 - aTriVertex0;
+        const Vec3f v0v2 = aTriVertex2 - aTriVertex0;
+        // no need to normalize
+        const Vec3f N = Cross(v0v1, v0v2); // N 
+        const float denom = Dot(N, N);
+
+        //////////////////////
+        // Step 1: finding P
+        //////////////////////
+
+        // check if ray and plane are parallel ?
+        const float NdotRayDirection = Dot(N, aRayDir);
+        if (fabs(NdotRayDirection) < 0.0001f) // almost 0 
+            return false; // they are parallel so they don't intersect ! 
+
+        // compute d parameter using equation 2
+        const float d = Dot(N, aTriVertex0);
+
+        // compute t (equation 3)
+        oT = (Dot(N, aRayOrig) + d) / NdotRayDirection;
+        // check if the triangle is in behind the ray
+        if (oT < 0)
+            return false; // the triangle is behind 
+
+        // compute the intersection point using equation 1
+        const Vec3f P = aRayOrig + oT * aRayDir;
+
+        ////////////////////////////////
+        // Step 2: inside-outside test
+        ////////////////////////////////
+
+        Vec3f C; // vector perpendicular to triangle's plane 
+
+        // edge 0
+        const Vec3f edge0 = aTriVertex1 - aTriVertex0;
+        const Vec3f vp0 = P - aTriVertex0;
+        C = Cross(edge0, vp0);
+        const float nc = Dot(N, C);
+        if (nc < -aEdgeNumThreshold)
+            return false; // P is on the right side 
+
+        // edge 1
+        const Vec3f edge1 = aTriVertex2 - aTriVertex1;
+        const Vec3f vp1 = P - aTriVertex1;
+        C = Cross(edge1, vp1);
+        oU = Dot(N, C);
+        if (oU < -aEdgeNumThreshold)
+            return false; // P is on the right side 
+
+        // edge 2
+        const Vec3f edge2 = aTriVertex0 - aTriVertex2;
+        const Vec3f vp2 = P - aTriVertex2;
+        C = Cross(edge2, vp2);
+        oV = Dot(N, C);
+        if (oV < -aEdgeNumThreshold)
+            return false; // P is on the right side; 
+
+        oU /= denom;
+        oV /= denom;
+
+        PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(oU, 1.0f + aEdgeNumThreshold);
+        PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(oV, 1.0f + aEdgeNumThreshold);
+
+        return true; // this ray hits the triangle 
+    }
 
 } // namespace Geom

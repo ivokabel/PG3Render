@@ -12,6 +12,7 @@ namespace Math
     const float kPiF        = 3.14159265358979f;
     const float kPiInvF     = 1.f / Math::kPiF;
     const float kPiDiv2F    = 1.5707963f;
+    const float k2PiF       = 2.f * kPiF;
 
     // cosine of 45 degrees
     const float kCosPiDiv4F = 0.70710678118f;
@@ -201,8 +202,11 @@ public:
     Vec2Base(T a) : x(a),y(a) {}
     Vec2Base(T a, T b) : x(a),y(b) {}
 
-    const T& Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
-    T&       Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
+    const T&    Get(uint32_t a) const { return reinterpret_cast<const T*>(this)[a]; }
+    T&          Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
+
+    T           Max()   const         { return std::max(x, y); }
+    bool        IsZero() const        { return (x == 0) && (y == 0); }
 
     // Unary minus
     Vec2Base<T> operator-() const
@@ -337,7 +341,9 @@ public:
 
     //PG3_NOINLINE
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
-    { return a.x * b.x + a.y * b.y + a.z * b.z; }
+    {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
 
     friend Vec3Base Cross(const Vec3Base &a, const Vec3Base &b)
     {

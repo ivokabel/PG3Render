@@ -643,17 +643,20 @@ public:
     class TriangleNode : public TreeNode
     {
     public:
+
         TriangleNode(
             std::shared_ptr<Vertex> aVertex1,
             std::shared_ptr<Vertex> aVertex2,
-            std::shared_ptr<Vertex> aVertex3
+            std::shared_ptr<Vertex> aVertex3,
+            uint32_t                aSubdivLevel
             ) :
-            TreeNode(true)
+            TreeNode(true),
+            weight((aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f),
+            subdivLevel(aSubdivLevel)
         {
             sharedVertices[0] = aVertex1;
             sharedVertices[1] = aVertex2;
             sharedVertices[2] = aVertex3;
-            weight = (aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f;
         }
 
         bool operator == (const TriangleNode &aTriangle)
@@ -706,8 +709,60 @@ public:
             return centroid;
         }
 
+        // Evaluates the linear approximation of the radiance function 
+        // (without cosine multiplication) in the given direction. The direction is assumed to be 
+        // pointing into the triangle.
+        float EvaluateLuminanceApproxOnSphere(
+            const Vec3f                 &aDirection,
+            const EnvironmentMapImage   &aEmImage,
+            bool                         aUseBilinearFiltering
+            ) const
+        {
+            PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
+
+            float t, u, v;
+            bool isIntersection =
+                Geom::RayTriangleIntersect(
+                    Vec3f(0.f, 0.f, 0.f), aDirection,
+                    sharedVertices[0]->direction,
+                    sharedVertices[1]->direction,
+                    sharedVertices[2]->direction,
+                    t, u, v, 0.20f); //0.09f); //0.05f);
+            u = Math::Clamp(u, 0.0f, 1.0f);
+            v = Math::Clamp(v, 0.0f, 1.0f);
+            const float w = Math::Clamp(1.0f - u - v, 0.0f, 1.0f);
+
+            PG3_ASSERT(isIntersection);
+
+            if (!isIntersection)
+                return 0.0f;
+
+            PG3_ASSERT_FLOAT_IN_RANGE(u, -0.0001f, 1.0001f);
+            PG3_ASSERT_FLOAT_IN_RANGE(v, -0.0001f, 1.0001f);
+            PG3_ASSERT_FLOAT_IN_RANGE(w, -0.0001f, 1.0001f);
+
+            // TODO: Pre-cache the luminances somewhere?
+            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->direction, aUseBilinearFiltering);
+            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->direction, aUseBilinearFiltering);
+            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->direction, aUseBilinearFiltering);
+            const float luminance0 = emVal0.Luminance();
+            const float luminance1 = emVal1.Luminance();
+            const float luminance2 = emVal2.Luminance();
+
+            const float approximation = 
+                  u * luminance0
+                + v * luminance1
+                + w * luminance2;
+
+            PG3_ASSERT_FLOAT_NONNEGATIVE(approximation);
+
+            return approximation;
+        }
+
     public:
         SteeringBasisValue      weight;
+
+        uint32_t                subdivLevel;
 
         // TODO: This is sub-optimal, both in terms of memory consumption and memory non-locality
         std::shared_ptr<Vertex> sharedVertices[3];
@@ -817,7 +872,100 @@ public:
         }
     }
 
-public: // debug: for visualisation
+protected:
+
+    class SingleLevelTriangulationStats
+    {
+    public:
+        SingleLevelTriangulationStats() : mTriangleCount(0u), mSampleCount(0u) {}
+
+        void AddTriangle()
+        {
+            mTriangleCount++;
+        }
+
+        void AddSample()
+        {
+            mSampleCount++;
+        }
+
+        uint32_t GetTriangleCount() const
+        {
+            return mTriangleCount;
+        }
+
+        uint32_t GetSampleCount() const
+        {
+            return mSampleCount;
+        }
+
+    protected:
+
+        uint32_t mTriangleCount;
+        uint32_t mSampleCount;
+    };
+
+    class TriangulationStats
+    {
+    public:
+
+        void AddTriangle(uint32_t aLevel)
+        {
+            if (mLevelStats.size() < (aLevel + 1))
+                mLevelStats.resize(aLevel + 1);
+
+            mLevelStats[aLevel].AddTriangle();
+        }
+
+        void AddSample(uint32_t aLevel)
+        {
+            if (mLevelStats.size() < (aLevel + 1))
+                mLevelStats.resize(aLevel + 1);
+
+            mLevelStats[aLevel].AddSample();
+        }
+
+        void Print() const
+        {
+#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
+
+            printf("\nSteering Sampler - Triangulation Statistics:\n");
+            if (mLevelStats.size() > 0)
+            {
+                uint32_t totalTriangleCount = 0u;
+                uint32_t totalSampleCount = 0u;
+
+                const size_t levels = mLevelStats.size();
+                for (size_t i = 0; i < levels; ++i)
+                {
+                    const auto &level = mLevelStats[i];
+                    printf(
+                        "Level %d: triangles % 3d, samples % 5d (% 4.1f per triangle)\n",
+                        i,
+                        level.GetTriangleCount(),
+                        level.GetSampleCount(),
+                        (double)level.GetSampleCount() / level.GetTriangleCount());
+                    totalTriangleCount += level.GetTriangleCount();
+                    totalSampleCount   += level.GetSampleCount();
+                }
+                //printf("-----------------------------------------------------------\n");
+                printf(
+                    "Total  : triangles % 3d, samples % 5d (% 4.1f per triangle)\n",
+                    totalTriangleCount,
+                    totalSampleCount,
+                    (double)totalSampleCount / totalTriangleCount);
+            }
+            else
+                printf("no data!\n");
+            printf("\n");
+
+#endif
+        }
+
+        std::vector<SingleLevelTriangulationStats> mLevelStats;
+    };
+
+public: // debug: public is for visualisation
 
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     static bool TriangulateEm(
@@ -829,11 +977,15 @@ public: // debug: for visualisation
 
         std::deque<TriangleNode*> toDoTriangles;
 
+        TriangulationStats stats;
+
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering))
+        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering, &stats))
             return false;
+
+        stats.Print();
 
         PG3_ASSERT(toDoTriangles.empty());
 
@@ -873,7 +1025,8 @@ protected:
             oTriangles.push_back(new TriangleNode(
                 sharedVertices[faceVertices.Get(0)],
                 sharedVertices[faceVertices.Get(1)],
-                sharedVertices[faceVertices.Get(2)]));
+                sharedVertices[faceVertices.Get(2)],
+                0));
         }
 
         return true;
@@ -903,7 +1056,8 @@ protected:
         std::list<TreeNode*>        &oRefinedTriangles,
         std::deque<TriangleNode*>   &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        bool                         aUseBilinearFiltering,
+        TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
         PG3_ASSERT(oRefinedTriangles.empty());
@@ -914,19 +1068,19 @@ protected:
             aToDoTriangles.pop_front();
 
             PG3_ASSERT(currentTriangle != nullptr);
-            PG3_ASSERT(currentTriangle->IsTriangleNode);
+            PG3_ASSERT(currentTriangle->IsTriangleNode());
 
             if (currentTriangle == nullptr)
                 continue;
 
-            if (TriangleHasToBeSubdivided(*currentTriangle, aEmImage, aUseBilinearFiltering))
+            if (TriangleHasToBeSubdivided(*currentTriangle, aEmImage, aUseBilinearFiltering, aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
                 SubdivideTriangle(subdivisionTriangles, *currentTriangle, aEmImage, aUseBilinearFiltering);
                 delete currentTriangle;
-                for (auto triange : subdivisionTriangles)
-                    aToDoTriangles.push_front(triange);
+                for (auto triangle : subdivisionTriangles)
+                    aToDoTriangles.push_front(triangle);
             }
             else
                 // Move triangle to the final list
@@ -941,34 +1095,96 @@ protected:
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        bool                         aUseBilinearFiltering,
+        TriangulationStats          *aStats = nullptr)
     {
-        aTriangle; aEmImage; aUseBilinearFiltering;
+        {
+            // debug
+            //aTriangle; aEmImage; aUseBilinearFiltering;
+            //return false;
+        }
 
-        // debug
-        //return false;
+        {
+            // debug2 - maximum allowed edge size
+            //aTriangle; aEmImage; aUseBilinearFiltering;
+            ////const auto maxLen = 0.125f; // 4 subdivs: 5120=4*1280
+            ////const auto maxLen = 0.25f;  // 3 subdivs: 1280=4*320
+            ////const auto maxLen = 0.5f;   // 2 subdivs: 320=4*80
+            //const auto maxLen = 1.0f;     // 1 subdiv: 80
+            //const auto &dir0 = aTriangle.sharedVertices[0]->direction;
+            //const auto &dir1 = aTriangle.sharedVertices[1]->direction;
+            //const auto &dir2 = aTriangle.sharedVertices[2]->direction;
+            //const auto lenSqr0 = (dir0 - dir1).LenSqr();
+            //const auto lenSqr1 = (dir1 - dir2).LenSqr();
+            //const auto lenSqr2 = (dir2 - dir0).LenSqr();
+            //const auto maxLenSqr = Math::Sqr(maxLen);
+            //return (lenSqr0 > maxLenSqr)
+            //    || (lenSqr1 > maxLenSqr)
+            //    || (lenSqr2 > maxLenSqr);
+        }
 
-        // debug2 - maximum allowed edge size
-        //const auto maxLen = 0.125f; // 4 subdivs: 5120=4*1280
-        //const auto maxLen = 0.25f; // 3 subdivs: 1280=4*320
-        //const auto maxLen = 0.5f; // 2 subdivs: 320
-        const auto maxLen = 1.0f; // 1 subdiv: 80
-        const auto &dir0 = aTriangle.sharedVertices[0]->direction;
-        const auto &dir1 = aTriangle.sharedVertices[1]->direction;
-        const auto &dir2 = aTriangle.sharedVertices[2]->direction;
-        const auto lenSqr0 = (dir0 - dir1).LenSqr();
-        const auto lenSqr1 = (dir1 - dir2).LenSqr();
-        const auto lenSqr2 = (dir2 - dir0).LenSqr();
-        const auto maxLenSqr = Math::Sqr(maxLen);
-        return (lenSqr0 > maxLenSqr)
-            || (lenSqr1 > maxLenSqr)
-            || (lenSqr2 > maxLenSqr);
 
-        // TODO: Evaluate the estimation error over the triangle...
-        //const Vec3f triangleSample =
-        //    SampleUniformSphericalTriangle(vertexA, vertexB, vertexC, Vec2f(u, v));
+        // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
 
-        // TODO: Build triangle count/size limit into the sub-division criterion
+        const auto &vertices = aTriangle.sharedVertices;
+
+        // EM pixel density at the equator
+        const Vec2f emPixelAngularDensity{
+            aEmImage.Height() / Math::kPiF,
+            aEmImage.Width()  / Math::k2PiF};
+        const float emMaxPixelAngularDensity = emPixelAngularDensity.Max();
+        const float emMaxPixelSolidAngularDensity = Math::Sqr(emMaxPixelAngularDensity);
+
+        // Solid angle of the triangle
+        const float triangleSolidAngle = Geom::SphericalTriangleArea(
+            vertices[0]->direction,
+            vertices[1]->direction,
+            vertices[2]->direction);
+
+        // TODO: Setup the sampling frequency
+        const float trianglePixelCount = emMaxPixelSolidAngularDensity * triangleSolidAngle;
+        const float minSamplesCount = 5.f * trianglePixelCount; // TODO: 5 = empirical constant
+        const float samplesPerDimension = std::ceil(std::sqrt(minSamplesCount));
+
+        if (aStats != nullptr)
+            aStats->AddTriangle(aTriangle.subdivLevel);
+
+        // Evaluate the error
+        Rng rng;
+        const float binSize = 1.f / samplesPerDimension;
+        for (float u = 0.f; u < (1.f - 0.0001f); u += binSize)
+        {
+            for (float v = 0.f; v < (1.f - 0.0001f); v += binSize)
+            {
+                if (aStats != nullptr)
+                    aStats->AddSample(aTriangle.subdivLevel);
+
+                Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+
+                // TODO: If sampling spherical triangle with subsequent intersection of planar triangle is too slow, we can try to sample the planar triangle directly with an appropriately increased sampling rate (due to spherical distortion)
+
+                const Vec3f sampleDir =
+                    Sampling::SampleUniformSphericalTriangle(
+                        vertices[0]->direction,
+                        vertices[1]->direction,
+                        vertices[2]->direction,
+                        sample);
+                const auto approxVal = 
+                    aTriangle.EvaluateLuminanceApproxOnSphere(sampleDir, aEmImage, aUseBilinearFiltering);
+                const auto emRradiance = aEmImage.Evaluate(sampleDir, aUseBilinearFiltering);
+                const auto emVal = emRradiance.Luminance();
+
+                PG3_ASSERT_FLOAT_NONNEGATIVE(emVal);
+
+                const auto diff      = std::abs(emVal - approxVal);
+                const auto threshold = std::max(0.5f * emVal, 0.001f);
+                if (diff > threshold)
+                    // The approximation is too far from the original function
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     static void SubdivideTriangle(
@@ -998,18 +1214,20 @@ protected:
         GenerateSharedVertex(newVertices[1], newVertexCoords[1], aEmImage, aUseBilinearFiltering);
         GenerateSharedVertex(newVertices[2], newVertexCoords[2], aEmImage, aUseBilinearFiltering);
 
+        const auto newSubdivLevel = aTriangle.subdivLevel + 1;
+
         // Central triangle
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], newVertices[1], newVertices[2]));
+            new TriangleNode(newVertices[0], newVertices[1], newVertices[2], newSubdivLevel));
 
         // 3 corner triangles
         const auto &oldVertices = aTriangle.sharedVertices;
         oSubdivisionTriangles.push_back(
-            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2]));
+            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2], newSubdivLevel));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1]));
+            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1], newSubdivLevel));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2]));
+            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], newSubdivLevel));
 
         PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 3);
 
@@ -1118,7 +1336,7 @@ protected:
         GenerateSharedVertex(vertices[0], aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
         GenerateSharedVertex(vertices[1], aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
         GenerateSharedVertex(vertices[2], aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
-        TriangleNode triangle(vertices[0], vertices[1], vertices[2]);
+        TriangleNode triangle(vertices[0], vertices[1], vertices[2], 0);
 
         // Subdivide
         std::list<TriangleNode*> subdivisionTriangles;
@@ -1604,7 +1822,7 @@ public:
         // TODO: ?
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Small white EM", 80,
+                                              "Small white EM", 20,
                                               ".\\Light Probes\\Debugging\\Const white 8x4.exr",
                                               false))
             return false;

@@ -99,7 +99,6 @@ namespace Sampling
 
         const float cosAlpha = std::cos(aAlpha);
         const float sinAlpha = std::sin(aAlpha);
-        //const float cosC     = std::cos(aEdgeCLength);
 
         // Compute surface area of the sub-triangle
         const float areaSub = aSamples.x * aTriangleArea;
@@ -142,21 +141,12 @@ namespace Sampling
         const Vec3f &aVertexC,
         const Vec2f &aSamples)
     {
+        float alpha, beta, gamma;
+        Geom::ComputeSphericalTriangleAngles(alpha, beta, gamma, aVertexA, aVertexB, aVertexC);
+
+        const float triangleArea = Geom::SphericalTriangleArea(alpha, beta, gamma);
+
         const float cosC = Dot(aVertexA, aVertexB);
-
-        const auto normalAB = Cross(aVertexA, aVertexB);
-        const auto normalBC = Cross(aVertexB, aVertexC);
-        const auto normalCA = Cross(aVertexC, aVertexA);
-
-        const float cosAlpha = Dot(normalAB, -normalCA);
-        const float cosBeta  = Dot(normalBC, -normalAB);
-        const float cosGamma = Dot(normalCA, -normalBC);
-
-        const float alpha = std::acos(cosAlpha);
-        const float beta  = std::acos(cosBeta);
-        const float gamma = std::acos(cosGamma);
-
-        const float triangleArea = alpha + beta + gamma - Math::kPiF;
 
         return SampleUniformSphericalTriangle(
             aVertexA, aVertexB, aVertexC,
