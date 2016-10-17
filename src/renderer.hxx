@@ -27,12 +27,12 @@ enum PathTerminationReason
     kTerminatedBySafetyLimit
 };
 
-class RendererIntrospectionDataBase
+class RendererIntrospectionBase
 {
 #ifdef PG3_COMPUTE_AND_PRINT_RENDERER_INTROSPECTION
 
 public:
-    RendererIntrospectionDataBase()
+    RendererIntrospectionBase()
         :
         mCorePathsCount(0),
         mCorePathsMinLength(UINT32_MAX),
@@ -74,7 +74,7 @@ protected:
 #endif
 };
 
-class RendererIntrospectionData : public RendererIntrospectionDataBase
+class RendererIntrospectionData : public RendererIntrospectionBase
 {
 public:
     void AddCorePathLength(uint32_t aLength, const PathTerminationReason &aTerminationReason)
@@ -119,7 +119,7 @@ public:
     friend class RendererIntrospectionDataAggregator;
 };
 
-class RendererIntrospectionDataAggregator : public RendererIntrospectionDataBase
+class RendererIntrospectionDataAggregator : public RendererIntrospectionBase
 {
 public:
 
