@@ -538,4 +538,19 @@ namespace Geom
         return true; // this ray hits the triangle 
     }
 
+    Vec3f GetTrianglePoint(
+        const Vec3f &aP0,
+        const Vec3f &aP1,
+        const Vec3f &aP2,
+        const Vec2f &aBarycentricCoords)
+    {
+        const auto barycentricCoordZ = (1.0f - aBarycentricCoords.x - aBarycentricCoords.y);
+        const Vec3f point =
+              aBarycentricCoords.x * aP1
+            + aBarycentricCoords.y * aP2
+            + barycentricCoordZ    * aP0;
+        
+        return point;
+    }
+
 } // namespace Geom

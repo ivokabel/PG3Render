@@ -132,15 +132,12 @@ public:
         LightSample             &oSample
         ) const override
     {
-        // Sample the whole triangle surface
+        // Sample the whole triangle surface uniformly
         const Vec2f rnd = aRng.GetVec2f();
         const Vec2f baryCoords = Sampling::SampleUniformTriangle(rnd);
         const Vec3f P1 = mP0 + mE1;
         const Vec3f P2 = mP0 + mE2;
-        const Vec3f samplePoint =
-              baryCoords.x * P1
-            + baryCoords.y * P2
-            + (1.0f - baryCoords.x - baryCoords.y) * mP0;
+        const Vec3f samplePoint = Geom::GetTrianglePoint(mP0, P1, P2, baryCoords);
 
         ComputeSample(aSurfPt, samplePoint, aSurfFrame, aSurfMaterial, oSample);
     }
