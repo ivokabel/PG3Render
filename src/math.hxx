@@ -17,8 +17,8 @@ namespace Math
     // cosine of 45 degrees
     const float kCosPiDiv4F = 0.70710678118f;
 
-    float  InfinityF() { return std::numeric_limits<float>::infinity(); }
-    double InfinityD() { return std::numeric_limits<double>::infinity(); }
+    inline float  InfinityF() { return std::numeric_limits<float>::infinity(); }
+    inline double InfinityD() { return std::numeric_limits<double>::infinity(); }
 
     // Tools be used instead of floating point values comparison against zero.
     // For IEEE floats and doubles this constant was set to 2^-20 and 2^-49 respectively, resulting in
@@ -243,6 +243,9 @@ public:
     //    res.y = std::max(lower.y, std::min(val.y, upper.y));
     //    return res;
     //}
+
+    float           LenSqr() const  { return Dot(*this, *this);   }
+    float           Length() const  { return std::sqrt(LenSqr()); }
 
 public:
 
