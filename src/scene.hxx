@@ -430,7 +430,7 @@ public:
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
             // Original
-            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
+            //geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
 
             // Visualize initial triangulation
             //Vec3f vertices[12];
@@ -445,25 +445,27 @@ public:
             //}
 
             // Visualize subdivision
-            //std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
-            //    ".\\Light Probes\\Debugging\\Const white 8x4.exr"));
-            //if (image)
-            //{
-            //    std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
-            //    if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, *image, false))
-            //    {
-            //        for (auto node : triangles)
-            //        {
-            //            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            //            geometryList->mGeometry.push_back(new Triangle(
-            //                ballCenter + ballRadius * triangle->sharedVertices[0]->direction,
-            //                ballCenter + ballRadius * triangle->sharedVertices[1]->direction,
-            //                ballCenter + ballRadius * triangle->sharedVertices[2]->direction,
-            //                8));
-            //        }
-            //        EnvironmentMapSteeringSampler::FreeNodesList(triangles);
-            //    }
-            //}
+            std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
+                //".\\Light Probes\\Debugging\\Const white 8x4.exr"));
+                //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f)); // 16x8
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr"));
+            if (image)
+            {
+                std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
+                if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, 1, *image, false))
+                {
+                    for (const auto &node : triangles)
+                    {
+                        const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+                        geometryList->mGeometry.push_back(new Triangle(
+                            ballCenter + ballRadius * triangle->sharedVertices[0]->direction,
+                            ballCenter + ballRadius * triangle->sharedVertices[1]->direction,
+                            ballCenter + ballRadius * triangle->sharedVertices[2]->direction,
+                            8));
+                    }
+                    EnvironmentMapSteeringSampler::FreeNodesList(triangles);
+                }
+            }
 
             // Visualize spherical triangle uniform sampling
             //const float countPerDimension = 40.f;   //30.f;   //20.f;   //

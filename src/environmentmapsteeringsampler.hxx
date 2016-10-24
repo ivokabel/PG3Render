@@ -712,7 +712,8 @@ public:
         // Evaluates the linear approximation of the radiance function 
         // (without cosine multiplication) in the given direction. The direction is assumed to be 
         // pointing into the triangle.
-        float EvaluateLuminanceApproxOnSphere(
+        // TODO: Delete this?
+        float EvaluateLuminanceApproxForDirection(
             const Vec3f                 &aDirection,
             const EnvironmentMapImage   &aEmImage,
             bool                         aUseBilinearFiltering
@@ -741,7 +742,7 @@ public:
             PG3_ASSERT_FLOAT_IN_RANGE(v, -0.0001f, 1.0001f);
             PG3_ASSERT_FLOAT_IN_RANGE(w, -0.0001f, 1.0001f);
 
-            // TODO: Pre-cache the luminances somewhere?
+            // TODO: Cache the luminances in the triangle
             const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->direction, aUseBilinearFiltering);
             const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->direction, aUseBilinearFiltering);
             const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->direction, aUseBilinearFiltering);
@@ -753,6 +754,39 @@ public:
                   u * luminance0
                 + v * luminance1
                 + w * luminance2;
+
+            PG3_ASSERT_FLOAT_NONNEGATIVE(approximation);
+
+            return approximation;
+        }
+
+        // Evaluates the linear approximation of the radiance function 
+        // (without cosine multiplication) in the given barycentric coordinates.
+        float EvaluateLuminanceApprox(
+            const Vec2f                 &aBaryCoords,
+            const EnvironmentMapImage   &aEmImage,
+            bool                         aUseBilinearFiltering
+            ) const
+        {
+            PG3_ASSERT_FLOAT_IN_RANGE(aBaryCoords.x, -0.0001f, 1.0001f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aBaryCoords.y, -0.0001f, 1.0001f);
+
+            const float w = Math::Clamp(
+                1.0f - aBaryCoords.x - aBaryCoords.y,
+                0.0f, 1.0f);
+
+            // TODO: Cache the luminances in the triangle
+            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->direction, aUseBilinearFiltering);
+            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->direction, aUseBilinearFiltering);
+            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->direction, aUseBilinearFiltering);
+            const float luminance0 = emVal0.Luminance();
+            const float luminance1 = emVal1.Luminance();
+            const float luminance2 = emVal2.Luminance();
+
+            const float approximation =
+                  aBaryCoords.x * luminance0
+                + aBaryCoords.y * luminance1
+                + w             * luminance2;
 
             PG3_ASSERT_FLOAT_NONNEGATIVE(approximation);
 
@@ -772,6 +806,7 @@ public:
 
     // Builds the internal structures needed for sampling
     bool Build(
+        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
@@ -779,7 +814,7 @@ public:
 
         std::list<TreeNode*> tmpTriangles;
 
-        if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering))
+        if (!TriangulateEm(tmpTriangles, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering))
             return false;
 
         if (!BuildTriangleTree(tmpTriangles))
@@ -909,6 +944,13 @@ protected:
     {
     public:
 
+        TriangulationStats(
+            const EnvironmentMapImage   &aEmImage)
+            :
+            mEmWidth(aEmImage.Width()),
+            mEmHeight(aEmImage.Height()),
+            mEmSampleCounts(aEmImage.Width(), std::vector<uint32_t>(aEmImage.Height(), 0)) {}
+
         void AddTriangle(uint32_t aLevel)
         {
             if (mLevelStats.size() < (aLevel + 1))
@@ -923,6 +965,19 @@ protected:
                 mLevelStats.resize(aLevel + 1);
 
             mLevelStats[aLevel].AddSample();
+        }
+
+        void AddEMSample(const Vec3f &aSampleDir)
+        {
+            const Vec2f uv = Geom::Dir2LatLong(aSampleDir);
+
+            // UV to image coords
+            const float x = uv.x * (float)mEmWidth;
+            const float y = uv.y * (float)mEmHeight;
+            const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mEmWidth - 1u);
+            const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mEmHeight - 1u);
+
+            mEmSampleCounts[x0][y0]++;
         }
 
         void Print() const
@@ -940,7 +995,7 @@ protected:
                 {
                     const auto &level = mLevelStats[i];
                     printf(
-                        "Level %d: triangles % 3d, samples % 5d (% 4.1f per triangle)\n",
+                        "Level %d: triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
                         i,
                         level.GetTriangleCount(),
                         level.GetSampleCount(),
@@ -948,21 +1003,48 @@ protected:
                     totalTriangleCount += level.GetTriangleCount();
                     totalSampleCount   += level.GetSampleCount();
                 }
-                //printf("-----------------------------------------------------------\n");
+                printf("-----------------------------------------------------------\n");
                 printf(
-                    "Total  : triangles % 3d, samples % 5d (% 4.1f per triangle)\n",
+                    "Total  : triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
                     totalTriangleCount,
                     totalSampleCount,
                     (double)totalSampleCount / totalTriangleCount);
             }
             else
                 printf("no data!\n");
+
+            printf("\nSteering Sampler - EM Sampling Statistics:\n");
+            if ((mEmWidth > 0) && (mEmHeight > 0))
+            {
+                // Compute histogram
+                std::vector<uint32_t> histogram;
+                for (auto &rowCounts : mEmSampleCounts)
+                    for (auto &pixelCount : rowCounts)
+                    {
+                        if (pixelCount >= histogram.size())
+                            histogram.resize(pixelCount + 1, 0u);
+                        histogram[pixelCount]++;
+                    }
+
+                // Print histogram
+                for (size_t i = 0; i < histogram.size(); ++i)
+                {
+                    const auto &count = histogram[i];
+                    printf("% 3d samples: % 7d pixels\n", i, count);
+                }
+            }
+            else
+                printf("no data!\n");
+
             printf("\n");
 
 #endif
         }
 
-        std::vector<SingleLevelTriangulationStats> mLevelStats;
+        std::vector<SingleLevelTriangulationStats>  mLevelStats;
+        uint32_t                                    mEmWidth;
+        uint32_t                                    mEmHeight;
+        std::vector<std::vector<uint32_t>>          mEmSampleCounts;
     };
 
 public: // debug: public is for visualisation
@@ -970,6 +1052,7 @@ public: // debug: public is for visualisation
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     static bool TriangulateEm(
         std::list<TreeNode*>        &oTriangles,
+        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
@@ -977,12 +1060,12 @@ public: // debug: public is for visualisation
 
         std::deque<TriangleNode*> toDoTriangles;
 
-        TriangulationStats stats;
+        TriangulationStats stats(aEmImage);
 
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aEmImage, aUseBilinearFiltering, &stats))
+        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering, &stats))
             return false;
 
         stats.Print();
@@ -1055,6 +1138,7 @@ protected:
     static bool RefineEmTriangulation(
         std::list<TreeNode*>        &oRefinedTriangles,
         std::deque<TriangleNode*>   &aToDoTriangles,
+        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         TriangulationStats          *aStats = nullptr)
@@ -1073,7 +1157,8 @@ protected:
             if (currentTriangle == nullptr)
                 continue;
 
-            if (TriangleHasToBeSubdivided(*currentTriangle, aEmImage, aUseBilinearFiltering, aStats))
+            if (TriangleHasToBeSubdivided(*currentTriangle, aMaxSubdivLevel,
+                                          aEmImage, aUseBilinearFiltering, aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -1094,6 +1179,7 @@ protected:
 
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
+        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         TriangulationStats          *aStats = nullptr)
@@ -1125,59 +1211,121 @@ protected:
 
 
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
+        if (aTriangle.subdivLevel >= aMaxSubdivLevel)
+            return false;
 
         const auto &vertices = aTriangle.sharedVertices;
+        
+        float samplesPerDimension;
 
-        // EM pixel density at the equator
-        const Vec2f emPixelAngularDensity{
-            aEmImage.Height() / Math::kPiF,
-            aEmImage.Width()  / Math::k2PiF};
-        const float emMaxPixelAngularDensity = emPixelAngularDensity.Max();
-        const float emMaxPixelSolidAngularDensity = Math::Sqr(emMaxPixelAngularDensity);
+        // Variant A: Sampling frequency
+        {
+            //// EM pixel density at the equator
+            //const Vec2f emPixelAngularDensity{
+            //    aEmImage.Height() / Math::kPiF,
+            //    aEmImage.Width()  / Math::k2PiF};
+            //const float emMaxPixelAngularDensity = emPixelAngularDensity.Max();
+            //const float emMaxPixelSolidAngularDensity = Math::Sqr(emMaxPixelAngularDensity);
 
-        // Solid angle of the triangle
-        const float triangleSolidAngle = Geom::SphericalTriangleArea(
-            vertices[0]->direction,
-            vertices[1]->direction,
-            vertices[2]->direction);
+            //// Solid angle of the triangle
+            //const float triangleSolidAngle = Geom::SphericalTriangleArea(
+            //    vertices[0]->direction,
+            //    vertices[1]->direction,
+            //    vertices[2]->direction);
 
-        // TODO: Setup the sampling frequency
-        const float trianglePixelCount = emMaxPixelSolidAngularDensity * triangleSolidAngle;
-        const float minSamplesCount = 5.f * trianglePixelCount; // TODO: 5 = empirical constant
-        const float samplesPerDimension = std::ceil(std::sqrt(minSamplesCount));
+            //// TODO: Setup the sampling frequency
+            //const float trianglePixelCount = emMaxPixelSolidAngularDensity * triangleSolidAngle;
+            //const float minSamplesCount = 5.f * trianglePixelCount; // TODO: 5 = empirical constant
+            //samplesPerDimension = std::ceil(std::sqrt(minSamplesCount));
+        }
+
+        // Variant B: Sampling frequency
+        {
+            // Angular sample sizes based on the size of EM pixels on the equator
+            // We are ignoring the fact that there is higher angular pixel density as we go closer 
+            // to poles
+            const Vec2f emPixelAngularSize{
+                Math::kPiF  / aEmImage.Height(),
+                Math::k2PiF / aEmImage.Width()};
+            const float diagonalAngularSize = emPixelAngularSize.Length();
+            const float maxAngularSampleSize =
+                std::min(diagonalAngularSize / 2.0f/*Nyquist frequency*/, Math::kPiDiv2F - 0.1f);
+
+            // The distance of the planar triangle centroid from the origin - a cheap estimate 
+            // of the distance of the triangle from the origin; works well for regular triangles
+            const auto planarTriangleCentroid = aTriangle.ComputeCentroid();
+            const float triangleDistEst = planarTriangleCentroid.Length();
+
+            // Planar sample size
+            const float tanAngSample = std::tan(maxAngularSampleSize);
+            const float maxPlanarSampleSize = tanAngSample * triangleDistEst;
+
+            // Estimate triangle sampling density.
+            // Based on the sampling frequency of a rectangular grid but using average triangle 
+            // edge length instead of rectangle size. A squared form is used to avoid unnecessary 
+            // square roots.
+            const auto edge0LenSqr = (vertices[0]->direction - vertices[1]->direction).LenSqr();
+            const auto edge1LenSqr = (vertices[1]->direction - vertices[2]->direction).LenSqr();
+            const auto edge2LenSqr = (vertices[2]->direction - vertices[0]->direction).LenSqr();
+            const float avgTriangleEdgeLengthSqr =
+                (edge0LenSqr + edge1LenSqr + edge2LenSqr) / 3.0f;
+            const float maxPlanarGridSizeSqr = Math::Sqr(maxPlanarSampleSize) / 2.0f;
+            const float samplesPerDimensionSqr =
+                  (avgTriangleEdgeLengthSqr / 1.41f/*sqrt(2) - triangle covers roughly half the rectangle*/)
+                / maxPlanarGridSizeSqr;
+            samplesPerDimension = std::sqrt(samplesPerDimensionSqr);
+
+            const float compensationFactor = 1.1f;
+            samplesPerDimension *= compensationFactor;
+        }
 
         if (aStats != nullptr)
             aStats->AddTriangle(aTriangle.subdivLevel);
 
         // Evaluate the error
         Rng rng;
-        const float binSize = 1.f / samplesPerDimension;
-        for (float u = 0.f; u < (1.f - 0.0001f); u += binSize)
+        const float binSize = 1.f / std::ceil(samplesPerDimension);
+        for (float u = 0.f; u < (1.f - 0.01f); u += binSize)
         {
-            for (float v = 0.f; v < (1.f - 0.0001f); v += binSize)
+            for (float v = 0.f; v < (1.f - 0.01f); v += binSize)
             {
                 if (aStats != nullptr)
                     aStats->AddSample(aTriangle.subdivLevel);
 
-                Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+                const Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
 
-                // TODO: If sampling spherical triangle with subsequent intersection of planar triangle is too slow, we can try to sample the planar triangle directly with an appropriately increased sampling rate (due to spherical distortion)
+                // Variant A: Sample spherical triangle
+                //const Vec3f sampleDir =
+                //    Sampling::SampleUniformSphericalTriangle(
+                //        vertices[0]->direction,
+                //        vertices[1]->direction,
+                //        vertices[2]->direction,
+                //        sample);
+                //const auto approxVal = 
+                //    aTriangle.EvaluateLuminanceApproxForDirection(sampleDir, aEmImage, aUseBilinearFiltering);
 
-                const Vec3f sampleDir =
-                    Sampling::SampleUniformSphericalTriangle(
-                        vertices[0]->direction,
-                        vertices[1]->direction,
-                        vertices[2]->direction,
-                        sample);
-                const auto approxVal = 
-                    aTriangle.EvaluateLuminanceApproxOnSphere(sampleDir, aEmImage, aUseBilinearFiltering);
-                const auto emRradiance = aEmImage.Evaluate(sampleDir, aUseBilinearFiltering);
-                const auto emVal = emRradiance.Luminance();
+                // TODO: Variant B: Sample planar triangle
+                const auto triangleSampleBarycentric = Sampling::SampleUniformTriangle(sample);
+                const auto approxVal = aTriangle.EvaluateLuminanceApprox(
+                    triangleSampleBarycentric,
+                    aEmImage, aUseBilinearFiltering);
+                const auto trianglePoint = Geom::GetTrianglePoint(
+                    vertices[0]->direction,
+                    vertices[1]->direction,
+                    vertices[2]->direction,
+                    triangleSampleBarycentric);
+                const auto sampleDir = Normalize(trianglePoint);
+
+                const auto emRadiance = aEmImage.Evaluate(sampleDir, aUseBilinearFiltering);
+                const auto emVal = emRadiance.Luminance();
 
                 PG3_ASSERT_FLOAT_NONNEGATIVE(emVal);
 
+                if (aStats != nullptr)
+                    aStats->AddEMSample(sampleDir);
+
                 const auto diff      = std::abs(emVal - approxVal);
-                const auto threshold = std::max(0.5f * emVal, 0.001f);
+                const auto threshold = std::max(0.5f * emVal, 0.001f); // TODO: Parametrizable threshold
                 if (diff > threshold)
                     // The approximation is too far from the original function
                     return true;
@@ -1229,7 +1377,7 @@ protected:
         oSubdivisionTriangles.push_back(
             new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], newSubdivLevel));
 
-        PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 3);
+        PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 4);
 
         // LATER: Adaptive (more memory-efficient) sub-division?
 
@@ -1645,6 +1793,7 @@ public:
 
     static bool _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(
         std::deque<TriangleNode*>   &aInitialTriangles,
+        uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const EnvironmentMapImage   &aEmImage,
@@ -1653,7 +1802,7 @@ public:
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         std::list<TreeNode*> refinedTriangles;
-        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aEmImage, aUseBilinearFiltering))
+        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
@@ -1769,6 +1918,7 @@ public:
     static bool _UnitTest_TriangulateEm_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
+        uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
         char                        *aImagePath,
         bool                         aUseBilinearFiltering)
@@ -1795,6 +1945,7 @@ public:
         }
 
         if (!_UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
+                                                                  aMaxSubdivLevel,
                                                                   aExpectedRefinedCount,
                                                                   aMaxUtBlockPrintLevel,
                                                                   *image.get(),
@@ -1822,7 +1973,7 @@ public:
         // TODO: ?
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Small white EM", 20,
+                                              "Small white EM", 5, 20,
                                               ".\\Light Probes\\Debugging\\Const white 8x4.exr",
                                               false))
             return false;
@@ -1834,7 +1985,7 @@ public:
         //    return false;
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Single pixel EM", 0,
+                                              "Single pixel EM", 5, 0,
                                               ".\\Light Probes\\Debugging\\Single pixel.exr",
                                               false))
             return false;
