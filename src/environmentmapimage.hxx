@@ -109,6 +109,8 @@ public:
 
     SpectrumF Evaluate(const Vec3f &aDirection, bool aDoBilinFiltering) const
     {
+        PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
+
         const Vec2f uv = Geom::Dir2LatLong(aDirection);
         return Evaluate(uv, aDoBilinFiltering);
     }
