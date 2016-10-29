@@ -32,10 +32,13 @@ public:
     }
 
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
-    static EnvironmentMapImage* LoadImage(const char *aFilename, float aRotate = 0.0f, float aScale = 1.0f)
+    static EnvironmentMapImage* LoadImage(
+        const char *aFilename,
+        float aAzimuthRotation = 0.0f,
+        float aScale = 1.0f)
     {
-        aRotate = Math::FmodX(aRotate, 1.0f);
-        PG3_ASSERT_FLOAT_IN_RANGE(aRotate, 0.0f, 1.0f);
+        aAzimuthRotation = Math::FmodX(aAzimuthRotation, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aAzimuthRotation, 0.0f, 1.0f);
 
         Imf::RgbaInputFile file(aFilename, 1);
         Imath::Box2i dw = file.dataWindow();
@@ -50,7 +53,7 @@ public:
         EnvironmentMapImage* image = new EnvironmentMapImage(width, height);
 
         int32_t c = 0;
-        int32_t iRot = (int32_t)(aRotate * width);
+        int32_t iRot = (int32_t)(aAzimuthRotation * width);
         for (uint32_t j = 0; j < image->Height(); j++)
         {
             for (uint32_t i = 0; i < image->Width(); i++)
