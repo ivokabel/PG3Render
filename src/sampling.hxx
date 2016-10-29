@@ -60,13 +60,33 @@ namespace Sampling
         return Math::kPiInvF;
     }
 
-    // Sample triangle
+    // Sample triangle uniformly
     // Returns barycentric coordinates
     Vec2f SampleUniformTriangle(const Vec2f &aSamples)
     {
-        const float xSqr = std::sqrt(aSamples.x);
+        PG3_ASSERT_FLOAT_IN_RANGE(aSamples.x, 0.f, 1.f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aSamples.y, 0.f, 1.f);
 
-        return Vec2f(1.f - xSqr, aSamples.y * xSqr);
+        const float xSqr = std::sqrt(aSamples.x);
+        auto result = Vec2f(1.f - xSqr, aSamples.y * xSqr);
+
+        PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
+        PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);
+
+        return result;
+    }
+
+    // Sample triangle uniformly
+    // Returns point in space
+    Vec3f SampleUniformTriangle(
+        const Vec3f &aFace0,
+        const Vec3f &aFace1,
+        const Vec3f &aFace2,
+        const Vec2f &aSamples)
+    {
+        const Vec2f baryCoords = SampleUniformTriangle(aSamples);
+        const Vec3f samplePoint = Geom::GetTrianglePoint(aFace0, aFace1, aFace2, baryCoords);
+        return samplePoint;
     }
 
     Vec3f NormalizedOrthoComp(const Vec3f &aVector, const Vec3f &aBasis)
