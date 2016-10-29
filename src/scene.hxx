@@ -448,6 +448,12 @@ public:
             std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
                 //".\\Light Probes\\Debugging\\Const white 8x4.exr"));
                 //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f)); // 16x8
+                //".\\Light Probes\\Debugging\\Const white 16x8.exr"));
+                //".\\Light Probes\\Debugging\\Const white 32x16.exr"));
+                //".\\Light Probes\\Debugging\\Const white 64x32.exr"));
+                //".\\Light Probes\\Debugging\\Const white 128x64.exr"));
+                //".\\Light Probes\\Debugging\\Const white 256x128.exr"));
+                //".\\Light Probes\\Debugging\\Const white 512x256.exr"));
                 ".\\Light Probes\\Debugging\\Const white 1024x512.exr"));
             if (image)
             {
@@ -503,6 +509,33 @@ public:
             //            const Vec3f triangleSample =
             //                Sampling::SampleUniformSphericalTriangle(
             //                    vertexA, vertexB, vertexC, sample);
+            //            geometryList->mGeometry.push_back(
+            //                new Sphere(ballCenter + ballRadius * triangleSample,
+            //                           pointSize * ballRadius, 8));
+            //        }
+            //}
+
+            // Visualize planar triangle uniform sampling
+            //{
+            //    Vec3f vertices[12];
+            //    Vec3ui faces[20];
+            //    Geom::UnitIcosahedron(vertices, faces);
+            //    auto face0 = vertices[faces[13].Get(0)];
+            //    auto face1 = vertices[faces[13].Get(1)];
+            //    auto face2 = vertices[faces[13].Get(2)];
+            //    const float countPerDimension = 20.f;
+            //    const float pointSize = 0.005f; //0.008f; //
+            //    Rng rng;
+            //    const float binSize = 1.f / countPerDimension;
+            //    for (float u = 0.f; u < (1.f - 0.0001f); u += binSize)
+            //        for (float v = 0.f; v < (1.f - 0.0001f); v += binSize)
+            //        {
+            //            //Vec2f sample(u, v);
+            //            //Vec2f sample = rng.GetVec2f();
+            //            Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+
+            //            const Vec3f triangleSample =
+            //                Sampling::SampleUniformTriangle(face0, face1, face2, sample);
             //            geometryList->mGeometry.push_back(
             //                new Sphere(ballCenter + ballRadius * triangleSample,
             //                           pointSize * ballRadius, 8));

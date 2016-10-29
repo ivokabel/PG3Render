@@ -644,16 +644,37 @@ public:
     {
     public:
 
+#ifdef _DEBUG
+        // This class is not copyable because of a const member.
+        // If we don't delete the assignment operator and copy constructor 
+        // explicitly, the compiler may complain about not being able 
+        // to create their default implementations.
+        TriangleNode & operator=(const TriangleNode&) = delete;
+        TriangleNode(const TriangleNode&) = delete;
+#endif
+
         TriangleNode(
-            std::shared_ptr<Vertex> aVertex1,
-            std::shared_ptr<Vertex> aVertex2,
-            std::shared_ptr<Vertex> aVertex3,
-            uint32_t                aSubdivLevel
+            std::shared_ptr<Vertex>  aVertex1,
+            std::shared_ptr<Vertex>  aVertex2,
+            std::shared_ptr<Vertex>  aVertex3,
+            uint32_t                 aIndex,
+            const TriangleNode      *aParentTriangle = nullptr
             ) :
             TreeNode(true),
             weight((aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f),
-            subdivLevel(aSubdivLevel)
+            subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
+#ifdef _DEBUG
+            ,index([aParentTriangle, aIndex](){
+                std::ostringstream outStream;
+                if (aParentTriangle != nullptr)
+                    outStream << aParentTriangle->index << "-";
+                outStream << aIndex;
+                return outStream.str();
+            }())
+#endif
         {
+            aIndex; // unused param (in debug)
+
             sharedVertices[0] = aVertex1;
             sharedVertices[1] = aVertex2;
             sharedVertices[2] = aVertex3;
@@ -797,6 +818,10 @@ public:
         SteeringBasisValue      weight;
 
         uint32_t                subdivLevel;
+
+#ifdef _DEBUG
+        const std::string       index;
+#endif
 
         // TODO: This is sub-optimal, both in terms of memory consumption and memory non-locality
         std::shared_ptr<Vertex> sharedVertices[3];
@@ -944,40 +969,50 @@ protected:
     {
     public:
 
-        TriangulationStats(
-            const EnvironmentMapImage   &aEmImage)
-            :
+        TriangulationStats(const EnvironmentMapImage &aEmImage) :
             mEmWidth(aEmImage.Width()),
             mEmHeight(aEmImage.Height()),
-            mEmSampleCounts(aEmImage.Width(), std::vector<uint32_t>(aEmImage.Height(), 0)) {}
+            mEmSampleCounts(  aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0)),
+            mEmHasSampleFlags(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
+            {}
 
-        void AddTriangle(uint32_t aLevel)
+        void AddTriangle(const TriangleNode &aTriangle)
         {
-            if (mLevelStats.size() < (aLevel + 1))
-                mLevelStats.resize(aLevel + 1);
+            if (mLevelStats.size() < (aTriangle.subdivLevel + 1))
+                mLevelStats.resize(aTriangle.subdivLevel + 1);
 
-            mLevelStats[aLevel].AddTriangle();
+            mLevelStats[aTriangle.subdivLevel].AddTriangle();
         }
 
-        void AddSample(uint32_t aLevel)
+        void AddSample(const TriangleNode &aTriangle)
         {
-            if (mLevelStats.size() < (aLevel + 1))
-                mLevelStats.resize(aLevel + 1);
+            if (mLevelStats.size() < (aTriangle.subdivLevel + 1))
+                mLevelStats.resize(aTriangle.subdivLevel + 1);
 
-            mLevelStats[aLevel].AddSample();
+            mLevelStats[aTriangle.subdivLevel].AddSample();
         }
 
-        void AddEMSample(const Vec3f &aSampleDir)
+        void AddEMSample(
+            const TriangleNode  &aTriangle,
+            const Vec3f         &aSampleDir)
         {
+            aTriangle; // unused param
+#ifdef _DEBUG
+            // debug
+            //if (aTriangle.index != "8")
+            //    return;
+#endif
+
             const Vec2f uv = Geom::Dir2LatLong(aSampleDir);
 
             // UV to image coords
             const float x = uv.x * (float)mEmWidth;
             const float y = uv.y * (float)mEmHeight;
-            const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mEmWidth - 1u);
+            const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mEmWidth  - 1u);
             const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mEmHeight - 1u);
 
-            mEmSampleCounts[x0][y0]++;
+            mEmSampleCounts[y0][x0]++;
+            mEmHasSampleFlags[y0][x0] = 1;
         }
 
         void Print() const
@@ -1014,7 +1049,7 @@ protected:
                 printf("no data!\n");
 
             printf("\nSteering Sampler - EM Sampling Statistics:\n");
-            if ((mEmWidth > 0) && (mEmHeight > 0))
+            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 // Compute histogram
                 std::vector<uint32_t> histogram;
@@ -1027,10 +1062,31 @@ protected:
                     }
 
                 // Print histogram
-                for (size_t i = 0; i < histogram.size(); ++i)
+                const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
+                const uint32_t maxTickCount = 30;
+                for (size_t samples = 0; samples < histogram.size(); ++samples)
                 {
-                    const auto &count = histogram[i];
-                    printf("% 3d samples: % 7d pixels\n", i, count);
+                    const auto &count = histogram[samples];
+                    printf("% 4d samples: % 7d pixels: ", samples, count);
+
+                    const uint32_t tickCount = (maxCount <= maxTickCount) ?
+                        count : (uint32_t)std::round(((count / (float)maxCount) * maxTickCount));
+                    for (uint32_t tick = 0; tick <= maxTickCount; ++tick)
+                    {
+                        if (tick < tickCount)
+                        {
+                            if (samples == 0)
+                                printf("*");
+                            else
+                                printf(".");
+                        }
+                        else if (tick == maxTickCount)
+                            printf("|");
+                        else
+                            printf(" ");
+                    }
+
+                    printf("\n");
                 }
             }
             else
@@ -1045,6 +1101,7 @@ protected:
         uint32_t                                    mEmWidth;
         uint32_t                                    mEmHeight;
         std::vector<std::vector<uint32_t>>          mEmSampleCounts;
+        std::vector<std::vector<uint32_t>>          mEmHasSampleFlags; // to be inspected within debugger
     };
 
 public: // debug: public is for visualisation
@@ -1109,7 +1166,7 @@ protected:
                 sharedVertices[faceVertices.Get(0)],
                 sharedVertices[faceVertices.Get(1)],
                 sharedVertices[faceVertices.Get(2)],
-                0));
+                i));
         }
 
         return true;
@@ -1241,15 +1298,27 @@ protected:
 
         // Variant B: Sampling frequency
         {
-            // Angular sample sizes based on the size of EM pixels on the equator
+            // Estimate the point on the spherical triangle which is maximal absolute inclination
+            // by vertices positions (can be non-precise, but is better than the equator estimate)
+            const float polePixelMidTheta = 0.5f * Math::kPiDiv2F / aEmImage.Height();
+            const float vertex0Sin   = std::sqrt(1.f - Math::Sqr(vertices[0]->direction.z));
+            const float vertex1Sin   = std::sqrt(1.f - Math::Sqr(vertices[1]->direction.z));
+            const float vertex2Sin   = std::sqrt(1.f - Math::Sqr(vertices[2]->direction.z));
+            const float polePixelSin = std::sin(polePixelMidTheta);
+            const float minSin = Math::Min3(
+                std::max(vertex0Sin, polePixelSin),
+                std::max(vertex1Sin, polePixelSin),
+                std::max(vertex2Sin, polePixelSin));
+
+            // Angular sample sizes based on the size of EM pixels on the equator.
             // We are ignoring the fact that there is higher angular pixel density as we go closer 
-            // to poles
+            // to poles.
             const Vec2f emPixelAngularSize{
-                Math::kPiF  / aEmImage.Height(),
-                Math::k2PiF / aEmImage.Width()};
-            const float diagonalAngularSize = emPixelAngularSize.Length();
+                         Math::kPiF  / aEmImage.Height(),
+                minSin * Math::k2PiF / aEmImage.Width() };
+            const float minAngularSize = emPixelAngularSize.Min();
             const float maxAngularSampleSize =
-                std::min(diagonalAngularSize / 2.0f/*Nyquist frequency*/, Math::kPiDiv2F - 0.1f);
+                std::min(minAngularSize / 2.0f/*Nyquist frequency*/, Math::kPiDiv2F - 0.1f);
 
             // The distance of the planar triangle centroid from the origin - a cheap estimate 
             // of the distance of the triangle from the origin; works well for regular triangles
@@ -1261,7 +1330,7 @@ protected:
             const float maxPlanarSampleSize = tanAngSample * triangleDistEst;
 
             // Estimate triangle sampling density.
-            // Based on the sampling frequency of a rectangular grid but using average triangle 
+            // Based on the sampling frequency of a rectangular grid, but using average triangle 
             // edge length instead of rectangle size. A squared form is used to avoid unnecessary 
             // square roots.
             const auto edge0LenSqr = (vertices[0]->direction - vertices[1]->direction).LenSqr();
@@ -1269,30 +1338,38 @@ protected:
             const auto edge2LenSqr = (vertices[2]->direction - vertices[0]->direction).LenSqr();
             const float avgTriangleEdgeLengthSqr =
                 (edge0LenSqr + edge1LenSqr + edge2LenSqr) / 3.0f;
-            const float maxPlanarGridSizeSqr = Math::Sqr(maxPlanarSampleSize) / 2.0f;
+            const float maxPlanarGridBinSizeSqr = Math::Sqr(maxPlanarSampleSize) / 2.0f;
+            const float rectSamplesPerDimensionSqr = avgTriangleEdgeLengthSqr / maxPlanarGridBinSizeSqr;
             const float samplesPerDimensionSqr =
-                  (avgTriangleEdgeLengthSqr / 1.41f/*sqrt(2) - triangle covers roughly half the rectangle*/)
-                / maxPlanarGridSizeSqr;
+                rectSamplesPerDimensionSqr / 2.f/*triangle covers roughly half the rectangle*/;
             samplesPerDimension = std::sqrt(samplesPerDimensionSqr);
 
-            const float compensationFactor = 1.1f;
+            const float compensationFactor = 1.0f;
+            //const float compensationFactor = 1.1f;
+            //const float compensationFactor = 1.2f;
+            //const float compensationFactor = 1.3f;
+            //const float compensationFactor = 1.4f;
+            //const float compensationFactor = 1.5f;
             samplesPerDimension *= compensationFactor;
         }
 
         if (aStats != nullptr)
-            aStats->AddTriangle(aTriangle.subdivLevel);
+            aStats->AddTriangle(aTriangle);
 
         // Evaluate the error
         Rng rng;
         const float binSize = 1.f / std::ceil(samplesPerDimension);
         for (float u = 0.f; u < (1.f - 0.01f); u += binSize)
-        {
             for (float v = 0.f; v < (1.f - 0.01f); v += binSize)
+        //for (float u = 0.f; u <= (1.f + 0.01f); u += binSize)
+        //    for (float v = 0.f; v <= (1.f + 0.01f); v += binSize)
+            // TODO: Don't sample the "tip" of the triangle multiple times?
             {
                 if (aStats != nullptr)
-                    aStats->AddSample(aTriangle.subdivLevel);
+                    aStats->AddSample(aTriangle);
 
                 const Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+                //const Vec2f sample = Vec2f(std::min(u, 1.0f), std::min(v, 1.0f));
 
                 // Variant A: Sample spherical triangle
                 //const Vec3f sampleDir =
@@ -1322,7 +1399,7 @@ protected:
                 PG3_ASSERT_FLOAT_NONNEGATIVE(emVal);
 
                 if (aStats != nullptr)
-                    aStats->AddEMSample(sampleDir);
+                    aStats->AddEMSample(aTriangle, sampleDir);
 
                 const auto diff      = std::abs(emVal - approxVal);
                 const auto threshold = std::max(0.5f * emVal, 0.001f); // TODO: Parametrizable threshold
@@ -1330,7 +1407,6 @@ protected:
                     // The approximation is too far from the original function
                     return true;
             }
-        }
 
         return false;
     }
@@ -1362,20 +1438,18 @@ protected:
         GenerateSharedVertex(newVertices[1], newVertexCoords[1], aEmImage, aUseBilinearFiltering);
         GenerateSharedVertex(newVertices[2], newVertexCoords[2], aEmImage, aUseBilinearFiltering);
 
-        const auto newSubdivLevel = aTriangle.subdivLevel + 1;
-
         // Central triangle
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], newVertices[1], newVertices[2], newSubdivLevel));
+            new TriangleNode(newVertices[0], newVertices[1], newVertices[2], 0, &aTriangle));
 
         // 3 corner triangles
         const auto &oldVertices = aTriangle.sharedVertices;
         oSubdivisionTriangles.push_back(
-            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2], newSubdivLevel));
+            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2], 1, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1], newSubdivLevel));
+            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1], 2, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], newSubdivLevel));
+            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], 3, &aTriangle));
 
         PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 4);
 

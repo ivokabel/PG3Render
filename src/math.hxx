@@ -206,6 +206,7 @@ public:
     T&          Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
 
     T           Max()   const         { return std::max(x, y); }
+    T           Min()   const         { return std::min(x, y); }
     bool        IsZero() const        { return (x == 0) && (y == 0); }
 
     // Unary minus
