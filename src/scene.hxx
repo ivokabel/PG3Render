@@ -448,13 +448,13 @@ public:
             std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
                 //".\\Light Probes\\Debugging\\Const white 8x4.exr"));
                 //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f)); // 16x8
-                //".\\Light Probes\\Debugging\\Const white 16x8.exr"));
+                ".\\Light Probes\\Debugging\\Const white 16x8.exr"));
                 //".\\Light Probes\\Debugging\\Const white 32x16.exr"));
                 //".\\Light Probes\\Debugging\\Const white 64x32.exr"));
                 //".\\Light Probes\\Debugging\\Const white 128x64.exr"));
                 //".\\Light Probes\\Debugging\\Const white 256x128.exr"));
                 //".\\Light Probes\\Debugging\\Const white 512x256.exr"));
-                ".\\Light Probes\\Debugging\\Const white 1024x512.exr"));
+                //".\\Light Probes\\Debugging\\Const white 1024x512.exr"));
             if (image)
             {
                 std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;

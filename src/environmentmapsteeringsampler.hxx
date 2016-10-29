@@ -997,11 +997,6 @@ protected:
             const Vec3f         &aSampleDir)
         {
             aTriangle; // unused param
-#ifdef _DEBUG
-            // debug
-            //if (aTriangle.index != "8")
-            //    return;
-#endif
 
             const Vec2f uv = Geom::Dir2LatLong(aSampleDir);
 
@@ -1038,7 +1033,7 @@ protected:
                     totalTriangleCount += level.GetTriangleCount();
                     totalSampleCount   += level.GetSampleCount();
                 }
-                printf("-----------------------------------------------------------\n");
+                //printf("-----------------------------------------------------------\n");
                 printf(
                     "Total  : triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
                     totalTriangleCount,
@@ -1048,49 +1043,79 @@ protected:
             else
                 printf("no data!\n");
 
-            printf("\nSteering Sampler - EM Sampling Statistics:\n");
+            printf("\nSteering Sampler - EM Sampling Empty Pixels:\n");
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
-                // Compute histogram
-                std::vector<uint32_t> histogram;
-                for (auto &rowCounts : mEmSampleCounts)
-                    for (auto &pixelCount : rowCounts)
-                    {
-                        if (pixelCount >= histogram.size())
-                            histogram.resize(pixelCount + 1, 0u);
-                        histogram[pixelCount]++;
-                    }
-
-                // Print histogram
-                const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
-                const uint32_t maxTickCount = 30;
-                for (size_t samples = 0; samples < histogram.size(); ++samples)
+                // Compute zero-sample pixels
+                const auto binCount = 10;
+                std::vector<uint32_t> zeroSampleCount(binCount);
+                const auto rowCount = mEmSampleCounts.size();
+                const int32_t halfRowCount = (int32_t)(rowCount / 2);
+                for (size_t row = 0; row < rowCount; ++row)
                 {
-                    const auto &count = histogram[samples];
-                    printf("% 4d samples: % 7d pixels: ", samples, count);
-
-                    const uint32_t tickCount = (maxCount <= maxTickCount) ?
-                        count : (uint32_t)std::round(((count / (float)maxCount) * maxTickCount));
-                    for (uint32_t tick = 0; tick <= maxTickCount; ++tick)
+                    auto binId = halfRowCount - std::abs((int32_t)row - halfRowCount);
+                    binId = Math::Clamp(binId, 0, binCount);
+                    auto &bin = zeroSampleCount[binId];
+                    for (auto &pixelSampleCount : mEmSampleCounts[row])
                     {
-                        if (tick < tickCount)
-                        {
-                            if (samples == 0)
-                                printf("*");
-                            else
-                                printf(".");
-                        }
-                        else if (tick == maxTickCount)
-                            printf("|");
-                        else
-                            printf(" ");
+                        const auto count = (pixelSampleCount == 0) ? 1 : 0;
+                        bin += count;
                     }
+                }
 
-                    printf("\n");
+                // Print
+                for (size_t row = 0; row < zeroSampleCount.size(); ++row)
+                {
+                    const auto &count = zeroSampleCount[row];
+                    printf("% 4d row: % 7d pixels\n", row, count);
                 }
             }
             else
                 printf("no data!\n");
+
+            //printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
+            //if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            //{
+            //    // Compute histogram
+            //    std::vector<uint32_t> histogram;
+            //    for (auto &rowCounts : mEmSampleCounts)
+            //        for (auto &pixelSampleCount : rowCounts)
+            //        {
+            //            if (pixelSampleCount >= histogram.size())
+            //                histogram.resize(pixelSampleCount + 1, 0u);
+            //            histogram[pixelSampleCount]++;
+            //        }
+
+            //    // Print histogram
+            //    const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
+            //    const uint32_t maxTickCount = 30;
+            //    for (size_t samples = 0; samples < histogram.size(); ++samples)
+            //    {
+            //        const auto &count = histogram[samples];
+            //        printf("% 4d samples: % 7d pixels: ", samples, count);
+
+            //        const uint32_t tickCount = (maxCount <= maxTickCount) ?
+            //            count : (uint32_t)std::round(((count / (float)maxCount) * maxTickCount));
+            //        for (uint32_t tick = 0; tick <= maxTickCount; ++tick)
+            //        {
+            //            if (tick < tickCount)
+            //            {
+            //                if (samples == 0)
+            //                    printf("*");
+            //                else
+            //                    printf(".");
+            //            }
+            //            else if (tick == maxTickCount)
+            //                printf("|");
+            //            else
+            //                printf(" ");
+            //        }
+
+            //        printf("\n");
+            //    }
+            //}
+            //else
+            //    printf("no data!\n");
 
             printf("\n");
 
@@ -1242,12 +1267,6 @@ protected:
         TriangulationStats          *aStats = nullptr)
     {
         {
-            // debug
-            //aTriangle; aEmImage; aUseBilinearFiltering;
-            //return false;
-        }
-
-        {
             // debug2 - maximum allowed edge size
             //aTriangle; aEmImage; aUseBilinearFiltering;
             ////const auto maxLen = 0.125f; // 4 subdivs: 5120=4*1280
@@ -1266,37 +1285,14 @@ protected:
             //    || (lenSqr2 > maxLenSqr);
         }
 
-
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
         if (aTriangle.subdivLevel >= aMaxSubdivLevel)
             return false;
 
         const auto &vertices = aTriangle.sharedVertices;
-        
+
+        // Sampling frequency
         float samplesPerDimension;
-
-        // Variant A: Sampling frequency
-        {
-            //// EM pixel density at the equator
-            //const Vec2f emPixelAngularDensity{
-            //    aEmImage.Height() / Math::kPiF,
-            //    aEmImage.Width()  / Math::k2PiF};
-            //const float emMaxPixelAngularDensity = emPixelAngularDensity.Max();
-            //const float emMaxPixelSolidAngularDensity = Math::Sqr(emMaxPixelAngularDensity);
-
-            //// Solid angle of the triangle
-            //const float triangleSolidAngle = Geom::SphericalTriangleArea(
-            //    vertices[0]->direction,
-            //    vertices[1]->direction,
-            //    vertices[2]->direction);
-
-            //// TODO: Setup the sampling frequency
-            //const float trianglePixelCount = emMaxPixelSolidAngularDensity * triangleSolidAngle;
-            //const float minSamplesCount = 5.f * trianglePixelCount; // TODO: 5 = empirical constant
-            //samplesPerDimension = std::ceil(std::sqrt(minSamplesCount));
-        }
-
-        // Variant B: Sampling frequency
         {
             // Estimate the point on the spherical triangle which is maximal absolute inclination
             // by vertices positions (can be non-precise, but is better than the equator estimate)
@@ -1345,11 +1341,6 @@ protected:
             samplesPerDimension = std::sqrt(samplesPerDimensionSqr);
 
             const float compensationFactor = 1.0f;
-            //const float compensationFactor = 1.1f;
-            //const float compensationFactor = 1.2f;
-            //const float compensationFactor = 1.3f;
-            //const float compensationFactor = 1.4f;
-            //const float compensationFactor = 1.5f;
             samplesPerDimension *= compensationFactor;
         }
 
@@ -1361,27 +1352,13 @@ protected:
         const float binSize = 1.f / std::ceil(samplesPerDimension);
         for (float u = 0.f; u < (1.f - 0.01f); u += binSize)
             for (float v = 0.f; v < (1.f - 0.01f); v += binSize)
-        //for (float u = 0.f; u <= (1.f + 0.01f); u += binSize)
-        //    for (float v = 0.f; v <= (1.f + 0.01f); v += binSize)
-            // TODO: Don't sample the "tip" of the triangle multiple times?
             {
                 if (aStats != nullptr)
                     aStats->AddSample(aTriangle);
 
                 const Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
-                //const Vec2f sample = Vec2f(std::min(u, 1.0f), std::min(v, 1.0f));
 
-                // Variant A: Sample spherical triangle
-                //const Vec3f sampleDir =
-                //    Sampling::SampleUniformSphericalTriangle(
-                //        vertices[0]->direction,
-                //        vertices[1]->direction,
-                //        vertices[2]->direction,
-                //        sample);
-                //const auto approxVal = 
-                //    aTriangle.EvaluateLuminanceApproxForDirection(sampleDir, aEmImage, aUseBilinearFiltering);
-
-                // TODO: Variant B: Sample planar triangle
+                // Sample planar triangle
                 const auto triangleSampleBarycentric = Sampling::SampleUniformTriangle(sample);
                 const auto approxVal = aTriangle.EvaluateLuminanceApprox(
                     triangleSampleBarycentric,
