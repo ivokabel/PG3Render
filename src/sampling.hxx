@@ -67,8 +67,8 @@ namespace Sampling
         PG3_ASSERT_FLOAT_IN_RANGE(aSamples.x, 0.f, 1.f);
         PG3_ASSERT_FLOAT_IN_RANGE(aSamples.y, 0.f, 1.f);
 
-        const float xSqr = std::sqrt(aSamples.x);
-        auto result = Vec2f(1.f - xSqr, aSamples.y * xSqr);
+        const float xSqrt = std::sqrt(aSamples.x);
+        auto result = Vec2f(1.f - xSqrt, aSamples.y * xSqrt);
 
         PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
         PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);

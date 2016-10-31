@@ -49,6 +49,30 @@ namespace Utils
         oResult = outStream.str();
     }
 
+    void PrintHistogramTicks(
+        const uint32_t  aCount,
+        const uint32_t  aMaxCount,
+        const uint32_t  aMaxTickCount,
+        const char      aTickCharacter  = '.',
+        const char      aEmptyCharacter = ' ',
+        const char      aLimitCharacter = '|'
+        )
+    {
+        const uint32_t tickCount =
+            (aMaxCount <= aMaxTickCount) ?
+            aCount : Math::RemapInterval(aCount, aMaxCount, aMaxTickCount);
+
+        for (uint32_t tick = 0; tick <= aMaxTickCount; ++tick)
+        {
+            if (tick < tickCount)
+                printf("%c", aTickCharacter);
+            else if (tick == aMaxTickCount)
+                printf("%c", aLimitCharacter);
+            else
+                printf("%c", aEmptyCharacter);
+        }
+    }
+
     bool GetFileName(const char *aPath, std::string &oResult)
     {
         //char path_buffer[_MAX_PATH];

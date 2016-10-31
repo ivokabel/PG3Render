@@ -1047,27 +1047,31 @@ protected:
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 // Compute zero-sample pixels
-                const auto binCount = 10;
-                std::vector<uint32_t> zeroSampleCount(binCount);
-                const auto rowCount = mEmSampleCounts.size();
-                const int32_t halfRowCount = (int32_t)(rowCount / 2);
+                const auto maxBinCount  = 32u;
+                const auto rowCount     = mEmSampleCounts.size();
+                const auto binCount     = std::min((uint32_t)rowCount, maxBinCount);
+                std::vector<std::pair<uint32_t, uint32_t>> zeroSampleVertHist(binCount, { 0, 0 });
                 for (size_t row = 0; row < rowCount; ++row)
                 {
-                    auto binId = halfRowCount - std::abs((int32_t)row - halfRowCount);
-                    binId = Math::Clamp(binId, 0, binCount);
-                    auto &bin = zeroSampleCount[binId];
+                    const size_t binId =
+                        (rowCount <= maxBinCount) ?
+                        row : Math::RemapInterval<size_t>(row, rowCount - 1, binCount - 1);
+                    auto &bin = zeroSampleVertHist[binId];
                     for (auto &pixelSampleCount : mEmSampleCounts[row])
-                    {
-                        const auto count = (pixelSampleCount == 0) ? 1 : 0;
-                        bin += count;
-                    }
+                        bin.first += (pixelSampleCount == 0) ? 1 : 0; // zero count
+                    bin.second += mEmHeight; // total count
                 }
 
                 // Print
-                for (size_t row = 0; row < zeroSampleCount.size(); ++row)
+                for (size_t row = 0; row < zeroSampleVertHist.size(); ++row)
                 {
-                    const auto &count = zeroSampleCount[row];
-                    printf("% 4d row: % 7d pixels\n", row, count);
+                    const auto &bin = zeroSampleVertHist[row];
+                    const auto count = bin.first;
+                    const auto total = bin.second;
+                    const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
+                    printf("bin % 4d: % 7d pixels (%4.1f%%): ", row, count, percent);
+                    Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+                    printf("\n");
                 }
             }
             else
@@ -1088,29 +1092,11 @@ protected:
 
             //    // Print histogram
             //    const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
-            //    const uint32_t maxTickCount = 30;
             //    for (size_t samples = 0; samples < histogram.size(); ++samples)
             //    {
             //        const auto &count = histogram[samples];
             //        printf("% 4d samples: % 7d pixels: ", samples, count);
-
-            //        const uint32_t tickCount = (maxCount <= maxTickCount) ?
-            //            count : (uint32_t)std::round(((count / (float)maxCount) * maxTickCount));
-            //        for (uint32_t tick = 0; tick <= maxTickCount; ++tick)
-            //        {
-            //            if (tick < tickCount)
-            //            {
-            //                if (samples == 0)
-            //                    printf("*");
-            //                else
-            //                    printf(".");
-            //            }
-            //            else if (tick == maxTickCount)
-            //                printf("|");
-            //            else
-            //                printf(" ");
-            //        }
-
+            //        Utils::PrintHistogramTicks(count, maxCount, 30, (samples == 0) ? '*' : '.');
             //        printf("\n");
             //    }
             //}
@@ -1136,7 +1122,8 @@ public: // debug: public is for visualisation
         std::list<TreeNode*>        &oTriangles,
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        bool                         aUseBilinearFiltering,
+        float                        oversamplingFactor = 1.0f)
     {
         PG3_ASSERT(oTriangles.empty());        
 
@@ -1147,7 +1134,9 @@ public: // debug: public is for visualisation
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering, &stats))
+        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel,
+                                   aEmImage, aUseBilinearFiltering,
+                                   oversamplingFactor, &stats))
             return false;
 
         stats.Print();
@@ -1223,6 +1212,7 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
+        float                        oversamplingFactor = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
@@ -1240,7 +1230,8 @@ protected:
                 continue;
 
             if (TriangleHasToBeSubdivided(*currentTriangle, aMaxSubdivLevel,
-                                          aEmImage, aUseBilinearFiltering, aStats))
+                                          aEmImage, aUseBilinearFiltering, oversamplingFactor,
+                                          aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -1264,6 +1255,7 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
+        float                        oversamplingFactor = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         {
@@ -1292,7 +1284,7 @@ protected:
         const auto &vertices = aTriangle.sharedVertices;
 
         // Sampling frequency
-        float samplesPerDimension;
+        float samplesPerDimensionF;
         {
             // Estimate the point on the spherical triangle which is maximal absolute inclination
             // by vertices positions (can be non-precise, but is better than the equator estimate)
@@ -1338,10 +1330,8 @@ protected:
             const float rectSamplesPerDimensionSqr = avgTriangleEdgeLengthSqr / maxPlanarGridBinSizeSqr;
             const float samplesPerDimensionSqr =
                 rectSamplesPerDimensionSqr / 2.f/*triangle covers roughly half the rectangle*/;
-            samplesPerDimension = std::sqrt(samplesPerDimensionSqr);
-
-            const float compensationFactor = 1.0f;
-            samplesPerDimension *= compensationFactor;
+            samplesPerDimensionF = std::sqrt(samplesPerDimensionSqr);
+            samplesPerDimensionF *= oversamplingFactor;
         }
 
         if (aStats != nullptr)
@@ -1349,14 +1339,22 @@ protected:
 
         // Evaluate the error
         Rng rng;
-        const float binSize = 1.f / std::ceil(samplesPerDimension);
-        for (float u = 0.f; u < (1.f - 0.01f); u += binSize)
-            for (float v = 0.f; v < (1.f - 0.01f); v += binSize)
+        const uint32_t samplesPerDimension = (uint32_t)std::ceil(samplesPerDimensionF);
+        const float binSize = 1.f / samplesPerDimension;
+        //for (float u = 0.f; u < (1.f - 0.01f); u += binSize)
+        //    for (float v = 0.f; v < (1.f - 0.01f); v += binSize)
+        //for (float u = 0.f; u <= (1.f + 0.01f); u += binSize)
+        //    for (float v = 0.f; v <= (1.f + 0.01f); v += binSize)
+        //    {
+        for (uint32_t i = 0; i <= samplesPerDimension; ++i)
+            for (uint32_t j = 0; j <= samplesPerDimension; ++j)
             {
+                //const Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+                //const Vec2f sample = Vec2f(std::min(u, 1.0f), std::min(v, 1.0f));
+                Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
+
                 if (aStats != nullptr)
                     aStats->AddSample(aTriangle);
-
-                const Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
 
                 // Sample planar triangle
                 const auto triangleSampleBarycentric = Sampling::SampleUniformTriangle(sample);

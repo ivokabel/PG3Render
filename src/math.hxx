@@ -153,6 +153,20 @@ namespace Math
         return Lerp(cy, Lerp(cx, x0y0, x1y0), Lerp(cx, x0y1, x1y1));
     }
 
+    template <
+        typename T,
+        typename = typename std::enable_if<std::is_integral<T>::value>::type>
+    T RemapInterval(T aVal, T aMaxValSrc, T aMaxValDst)
+    {
+        PG3_ASSERT_INTEGER_POSITIVE(aMaxValSrc);
+        PG3_ASSERT_INTEGER_POSITIVE(aMaxValDst);
+
+        float remappedFloatVal = (static_cast<float>(aVal) / aMaxValSrc) * aMaxValDst;
+        T remappedVal = static_cast<T>(std::round(remappedFloatVal));
+        
+        return remappedVal;
+    }
+
     // 50-year old atan approximation due to Hastings
     // Taken from http://lists.apple.com/archives/PerfOptimization-dev/2005/Jan/msg00051.html
     // |error| < 0.005

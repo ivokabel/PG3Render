@@ -445,20 +445,32 @@ public:
             //}
 
             // Visualize subdivision
-            std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
-                //".\\Light Probes\\Debugging\\Const white 8x4.exr"));
-                //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f)); // 16x8
-                ".\\Light Probes\\Debugging\\Const white 16x8.exr"));
-                //".\\Light Probes\\Debugging\\Const white 32x16.exr"));
-                //".\\Light Probes\\Debugging\\Const white 64x32.exr"));
-                //".\\Light Probes\\Debugging\\Const white 128x64.exr"));
-                //".\\Light Probes\\Debugging\\Const white 256x128.exr"));
-                //".\\Light Probes\\Debugging\\Const white 512x256.exr"));
-                //".\\Light Probes\\Debugging\\Const white 1024x512.exr"));
+            const uint32_t dbgEm = (uint32_t)aDbgAux1;
+            const char *emPath = [dbgEm](){
+                switch (dbgEm)
+                {
+                case 0:  return ".\\Light Probes\\Debugging\\Const white 8x4.exr";
+                case 1:  return ".\\Light Probes\\Debugging\\Const white 16x8.exr";
+                case 2:  return ".\\Light Probes\\Debugging\\Const white 32x16.exr";
+                case 3:  return ".\\Light Probes\\Debugging\\Const white 64x32.exr";
+                case 4:  return ".\\Light Probes\\Debugging\\Const white 128x64.exr";
+                case 5:  return ".\\Light Probes\\Debugging\\Const white 256x128.exr";
+                case 6:  return ".\\Light Probes\\Debugging\\Const white 512x256.exr";
+                case 7:  return ".\\Light Probes\\Debugging\\Const white 1024x512.exr";
+                case 8:  return ".\\Light Probes\\Debugging\\Const white 2048x1024.exr";
+                case 9:  return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
+                //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f // 16x8
+                default: return "";
+                }
+            }();
+            const float oversamplingFactor = (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : 1.0f;
+            printf("Testing EM \"%s\", oversampling %.2f:\n", emPath, oversamplingFactor);
+            std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(emPath));
             if (image)
             {
                 std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
-                if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, 1, *image, false))
+                if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, 1, *image, false,
+                                                                 oversamplingFactor))
                 {
                     for (const auto &node : triangles)
                     {
@@ -472,6 +484,7 @@ public:
                     EnvironmentMapSteeringSampler::FreeNodesList(triangles);
                 }
             }
+            Debugging::Exit(); // debug
 
             // Visualize spherical triangle uniform sampling
             //const float countPerDimension = 40.f;   //30.f;   //20.f;   //
@@ -515,7 +528,7 @@ public:
             //        }
             //}
 
-            // Visualize planar triangle uniform sampling
+            //// Visualize planar triangle sampling
             //{
             //    Vec3f vertices[12];
             //    Vec3ui faces[20];
@@ -523,16 +536,20 @@ public:
             //    auto face0 = vertices[faces[13].Get(0)];
             //    auto face1 = vertices[faces[13].Get(1)];
             //    auto face2 = vertices[faces[13].Get(2)];
-            //    const float countPerDimension = 20.f;
+            //    const uint32_t countPerDimension = 20;
             //    const float pointSize = 0.005f; //0.008f; //
-            //    Rng rng;
+            //    //Rng rng;
             //    const float binSize = 1.f / countPerDimension;
-            //    for (float u = 0.f; u < (1.f - 0.0001f); u += binSize)
-            //        for (float v = 0.f; v < (1.f - 0.0001f); v += binSize)
+            //    //for (float u = 0.f; u < (1.f - 0.0001f); u += binSize)
+            //    //{
+            //    //    for (float v = 0.f; v < (1.f - 0.0001f); v += binSize)
+            //    //        Vec2f sample(u, v);
+            //    //        Vec2f sample = rng.GetVec2f();
+            //    //        Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+            //    for (uint32_t i = 0; i <= countPerDimension; ++i)
+            //        for (uint32_t j = 0; j <= countPerDimension; ++j)
             //        {
-            //            //Vec2f sample(u, v);
-            //            //Vec2f sample = rng.GetVec2f();
-            //            Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
+            //            Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
 
             //            const Vec3f triangleSample =
             //                Sampling::SampleUniformTriangle(face0, face1, face2, sample);
