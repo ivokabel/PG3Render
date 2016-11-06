@@ -972,9 +972,11 @@ protected:
         TriangulationStats(const EnvironmentMapImage &aEmImage) :
             mEmWidth(aEmImage.Width()),
             mEmHeight(aEmImage.Height()),
-            mEmSampleCounts(  aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0)),
-            mEmHasSampleFlags(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
-            {}
+            mEmSampleCounts(  aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
+#ifdef _DEBUG
+            ,mEmHasSampleFlags(aEmImage.Height(), std::vector<std::string>(aEmImage.Width(), "*"))
+#endif
+        {}
 
         void AddTriangle(const TriangleNode &aTriangle)
         {
@@ -1007,7 +1009,9 @@ protected:
             const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mEmHeight - 1u);
 
             mEmSampleCounts[y0][x0]++;
-            mEmHasSampleFlags[y0][x0] = 1;
+#ifdef _DEBUG
+            mEmHasSampleFlags[y0][x0] = aTriangle.index;
+#endif
         }
 
         void Print() const
@@ -1069,7 +1073,7 @@ protected:
                     const auto count = bin.first;
                     const auto total = bin.second;
                     const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
-                    printf("bin % 4d: % 7d pixels (%4.1f%%): ", row, count, percent);
+                    printf("bin % 4d: % 7d pixels (%5.1f%%): ", row, count, percent);
                     Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
                     printf("\n");
                 }
@@ -1112,7 +1116,10 @@ protected:
         uint32_t                                    mEmWidth;
         uint32_t                                    mEmHeight;
         std::vector<std::vector<uint32_t>>          mEmSampleCounts;
-        std::vector<std::vector<uint32_t>>          mEmHasSampleFlags; // to be inspected within debugger
+
+#ifdef _DEBUG
+        std::vector<std::vector<std::string>>       mEmHasSampleFlags; // to be inspected within debugger
+#endif
     };
 
 public: // debug: public is for visualisation
