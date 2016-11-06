@@ -476,9 +476,9 @@ public:
                     {
                         const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
                         geometryList->mGeometry.push_back(new Triangle(
-                            ballCenter + ballRadius * triangle->sharedVertices[0]->direction,
-                            ballCenter + ballRadius * triangle->sharedVertices[1]->direction,
-                            ballCenter + ballRadius * triangle->sharedVertices[2]->direction,
+                            ballCenter + ballRadius * triangle->sharedVertices[0]->dir,
+                            ballCenter + ballRadius * triangle->sharedVertices[1]->dir,
+                            ballCenter + ballRadius * triangle->sharedVertices[2]->dir,
                             8));
                     }
                     EnvironmentMapSteeringSampler::FreeNodesList(triangles);

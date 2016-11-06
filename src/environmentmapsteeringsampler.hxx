@@ -591,17 +591,17 @@ public:
     {
     public:
         Vertex(const Vec3f &aDirection, const SteeringBasisValue &aWeight) : 
-            direction(aDirection),
+            dir(aDirection),
             weight(aWeight)
         {};
 
         bool operator == (const Vertex &aVertex) const
         {
-            return (direction == aVertex.direction)
+            return (dir == aVertex.dir)
                 && (weight == aVertex.weight);
         }
 
-        Vec3f               direction; // TODO: Use (2D) spherical coordinates to save memory?
+        Vec3f               dir; // TODO: Use (2D) spherical coordinates to save memory?
         SteeringBasisValue  weight;
     };
 
@@ -689,8 +689,8 @@ public:
 
         Vec3f ComputeCrossProduct() const
         {
-            const auto dir1 = (sharedVertices[1]->direction - sharedVertices[0]->direction);
-            const auto dir2 = (sharedVertices[2]->direction - sharedVertices[1]->direction);
+            const auto dir1 = (sharedVertices[1]->dir - sharedVertices[0]->dir);
+            const auto dir2 = (sharedVertices[2]->dir - sharedVertices[1]->dir);
 
             auto crossProduct = Cross(Normalize(dir1), Normalize(dir2));
 
@@ -723,9 +723,9 @@ public:
         Vec3f ComputeCentroid() const
         {
             Vec3f centroid = 
-                (  sharedVertices[0]->direction
-                 + sharedVertices[1]->direction
-                 + sharedVertices[2]->direction) / 3.f;
+                (  sharedVertices[0]->dir
+                 + sharedVertices[1]->dir
+                 + sharedVertices[2]->dir) / 3.f;
             return centroid;
         }
 
@@ -745,9 +745,9 @@ public:
             bool isIntersection =
                 Geom::RayTriangleIntersect(
                     Vec3f(0.f, 0.f, 0.f), aDirection,
-                    sharedVertices[0]->direction,
-                    sharedVertices[1]->direction,
-                    sharedVertices[2]->direction,
+                    sharedVertices[0]->dir,
+                    sharedVertices[1]->dir,
+                    sharedVertices[2]->dir,
                     t, u, v, 0.20f); //0.09f); //0.05f);
             u = Math::Clamp(u, 0.0f, 1.0f);
             v = Math::Clamp(v, 0.0f, 1.0f);
@@ -763,9 +763,9 @@ public:
             PG3_ASSERT_FLOAT_IN_RANGE(w, -0.0001f, 1.0001f);
 
             // TODO: Cache the luminances in the triangle
-            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->direction, aUseBilinearFiltering);
-            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->direction, aUseBilinearFiltering);
-            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->direction, aUseBilinearFiltering);
+            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->dir, aUseBilinearFiltering);
+            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->dir, aUseBilinearFiltering);
+            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->dir, aUseBilinearFiltering);
             const float luminance0 = emVal0.Luminance();
             const float luminance1 = emVal1.Luminance();
             const float luminance2 = emVal2.Luminance();
@@ -796,9 +796,9 @@ public:
                 0.0f, 1.0f);
 
             // TODO: Cache the luminances in the triangle
-            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->direction, aUseBilinearFiltering);
-            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->direction, aUseBilinearFiltering);
-            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->direction, aUseBilinearFiltering);
+            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->dir, aUseBilinearFiltering);
+            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->dir, aUseBilinearFiltering);
+            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->dir, aUseBilinearFiltering);
             const float luminance0 = emVal0.Luminance();
             const float luminance1 = emVal1.Luminance();
             const float luminance2 = emVal2.Luminance();
@@ -1256,21 +1256,21 @@ protected:
         return true;
     }
 
-    static bool TriangleHasToBeSubdivided(
-        const TriangleNode          &aTriangle,
-        const Vec3f                 &aVert0,
-        const float                  aVertex0Sin,
-        const Vec3f                 &aVert1,
-        const float                  aVertex1Sin,
-        const Vec3f                 &aVert2,
-        const float                  aVertex2Sin,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        float                        oversamplingFactor = 1.0f,
-        TriangulationStats          *aStats = nullptr)
-    {
-        return false; // debug
-    }
+    //static bool TriangleHasToBeSubdivided(
+    //    const TriangleNode          &aTriangle,
+    //    const Vec3f                 &aVert0,
+    //    const float                  aVertex0Sin,
+    //    const Vec3f                 &aVert1,
+    //    const float                  aVertex1Sin,
+    //    const Vec3f                 &aVert2,
+    //    const float                  aVertex2Sin,
+    //    const EnvironmentMapImage   &aEmImage,
+    //    bool                         aUseBilinearFiltering,
+    //    float                        oversamplingFactor = 1.0f,
+    //    TriangulationStats          *aStats = nullptr)
+    //{
+    //    return false; // debug
+    //}
 
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
@@ -1286,17 +1286,17 @@ protected:
 
         const auto &vertices = aTriangle.sharedVertices;
 
-        const auto edgeCentre01 = ((vertices[0]->direction + vertices[1]->direction) / 2.f).Normalize();
-        const auto edgeCentre12 = ((vertices[1]->direction + vertices[2]->direction) / 2.f).Normalize();
-        const auto edgeCentre20 = ((vertices[2]->direction + vertices[0]->direction) / 2.f).Normalize();
+        const auto edgeCentre01 = ((vertices[0]->dir + vertices[1]->dir) / 2.f).Normalize();
+        const auto edgeCentre12 = ((vertices[1]->dir + vertices[2]->dir) / 2.f).Normalize();
+        const auto edgeCentre20 = ((vertices[2]->dir + vertices[0]->dir) / 2.f).Normalize();
 
         //TODO: Compute sines in the control points - will directly affect the sampling density
         const float edgeCentre01Sin = std::sqrt(1.f - Math::Sqr(edgeCentre01.z));
         const float edgeCentre12Sin = std::sqrt(1.f - Math::Sqr(edgeCentre12.z));
         const float edgeCentre20Sin = std::sqrt(1.f - Math::Sqr(edgeCentre20.z));
-        const float vertex0Sin = std::sqrt(1.f - Math::Sqr(vertices[0]->direction.z));
-        const float vertex1Sin = std::sqrt(1.f - Math::Sqr(vertices[1]->direction.z));
-        const float vertex2Sin = std::sqrt(1.f - Math::Sqr(vertices[2]->direction.z));
+        const float vertex0Sin = std::sqrt(1.f - Math::Sqr(vertices[0]->dir.z));
+        const float vertex1Sin = std::sqrt(1.f - Math::Sqr(vertices[1]->dir.z));
+        const float vertex2Sin = std::sqrt(1.f - Math::Sqr(vertices[2]->dir.z));
 
         //TODO: Check sub-triangles if sines differ too much
         //      Else check the whole triangle
@@ -1340,9 +1340,9 @@ protected:
             // Based on the sampling frequency of a rectangular grid, but using average triangle 
             // edge length instead of rectangle size. A squared form is used to avoid unnecessary 
             // square roots.
-            const auto edge0LenSqr = (vertices[0]->direction - vertices[1]->direction).LenSqr();
-            const auto edge1LenSqr = (vertices[1]->direction - vertices[2]->direction).LenSqr();
-            const auto edge2LenSqr = (vertices[2]->direction - vertices[0]->direction).LenSqr();
+            const auto edge0LenSqr = (vertices[0]->dir - vertices[1]->dir).LenSqr();
+            const auto edge1LenSqr = (vertices[1]->dir - vertices[2]->dir).LenSqr();
+            const auto edge2LenSqr = (vertices[2]->dir - vertices[0]->dir).LenSqr();
             const float avgTriangleEdgeLengthSqr =
                 (edge0LenSqr + edge1LenSqr + edge2LenSqr) / 3.0f;
             const float maxPlanarGridBinSizeSqr = Math::Sqr(maxPlanarSampleSize) / 2.0f;
@@ -1374,9 +1374,9 @@ protected:
                     triangleSampleBarycentric,
                     aEmImage, aUseBilinearFiltering);
                 const auto trianglePoint = Geom::GetTrianglePoint(
-                    vertices[0]->direction,
-                    vertices[1]->direction,
-                    vertices[2]->direction,
+                    vertices[0]->dir,
+                    vertices[1]->dir,
+                    vertices[2]->dir,
                     triangleSampleBarycentric);
                 const auto sampleDir = Normalize(trianglePoint);
 
@@ -1415,9 +1415,9 @@ protected:
         // We don't have to use slerp - normalization does the trick
         Vec3f newVertexCoords[3];
         const auto &verts = aTriangle.sharedVertices;
-        newVertexCoords[0] = ((verts[0]->direction + verts[1]->direction) / 2.f).Normalize();
-        newVertexCoords[1] = ((verts[1]->direction + verts[2]->direction) / 2.f).Normalize();
-        newVertexCoords[2] = ((verts[2]->direction + verts[0]->direction) / 2.f).Normalize();
+        newVertexCoords[0] = ((verts[0]->dir + verts[1]->dir) / 2.f).Normalize();
+        newVertexCoords[1] = ((verts[1]->dir + verts[2]->dir) / 2.f).Normalize();
+        newVertexCoords[2] = ((verts[2]->dir + verts[0]->dir) / 2.f).Normalize();
 
         // New shared vertices
         std::vector<std::shared_ptr<Vertex>> newVertices(3);
@@ -1594,9 +1594,9 @@ protected:
 
         // Central triangle
         const auto &centralSubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !centralSubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
-            || !centralSubdivVertices[1]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
-            || !centralSubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+        if (   !centralSubdivVertices[0]->dir.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+            || !centralSubdivVertices[1]->dir.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
+            || !centralSubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                 "Central subdivision triangle has at least one incorrectly positioned vertex");
@@ -1606,9 +1606,9 @@ protected:
 
         // Corner triangle 1
         const auto &corner1SubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !corner1SubdivVertices[0]->direction.EqualsDelta(aTriangleCoords[0],    0.0001f)
-            || !corner1SubdivVertices[1]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
-            || !corner1SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+        if (   !corner1SubdivVertices[0]->dir.EqualsDelta(aTriangleCoords[0],    0.0001f)
+            || !corner1SubdivVertices[1]->dir.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+            || !corner1SubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                 "Corner 1 subdivision triangle has at least one incorrectly positioned vertex");
@@ -1618,9 +1618,9 @@ protected:
 
         // Corner triangle 2
         const auto &corner2SubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !corner2SubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
-            || !corner2SubdivVertices[1]->direction.EqualsDelta(aTriangleCoords[1],    0.0001f)
-            || !corner2SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
+        if (   !corner2SubdivVertices[0]->dir.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+            || !corner2SubdivVertices[1]->dir.EqualsDelta(aTriangleCoords[1],    0.0001f)
+            || !corner2SubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                 "Corner 2 subdivision triangle has at least one incorrectly positioned vertex");
@@ -1630,9 +1630,9 @@ protected:
 
         // Corner triangle 3
         const auto &corner3SubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !corner3SubdivVertices[0]->direction.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
-            || !corner3SubdivVertices[1]->direction.EqualsDelta(aTriangleCoords[2],    0.0001f)
-            || !corner3SubdivVertices[2]->direction.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+        if (   !corner3SubdivVertices[0]->dir.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
+            || !corner3SubdivVertices[1]->dir.EqualsDelta(aTriangleCoords[2],    0.0001f)
+            || !corner3SubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                 "Corner 3 subdivision triangle has at least one incorrectly positioned vertex");
@@ -1795,7 +1795,7 @@ public:
                     }
 
                     // Edge length
-                    const auto edgeLengthSqr = (vertex->direction - vertexNext->direction).LenSqr();
+                    const auto edgeLengthSqr = (vertex->dir - vertexNext->dir).LenSqr();
                     if (fabs(edgeLengthSqr - edgeReferenceLengthSqr) > 0.001f)
                     {
                         std::ostringstream errorDescription;
@@ -1829,10 +1829,10 @@ public:
                     }
 
                     // Vertex weights
-                    const auto radiance  = aEmImage.Evaluate(vertex->direction, aUseBilinearFiltering);
+                    const auto radiance  = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
                     const auto luminance = radiance.Luminance();
                     auto referenceWeight = 
-                        SteeringBasisValue().GenerateSphHarm(vertex->direction, luminance);
+                        SteeringBasisValue().GenerateSphHarm(vertex->dir, luminance);
                     if (vertex->weight != referenceWeight)
                     {
                         std::ostringstream errorDescription;
@@ -1891,9 +1891,9 @@ public:
         {
             auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
             auto &vertices = triangle->sharedVertices;
-            if (   !Math::EqualDelta(vertices[0]->direction.LenSqr(), 1.0f, 0.001f)
-                || !Math::EqualDelta(vertices[1]->direction.LenSqr(), 1.0f, 0.001f)
-                || !Math::EqualDelta(vertices[2]->direction.LenSqr(), 1.0f, 0.001f))
+            if (   !Math::EqualDelta(vertices[0]->dir.LenSqr(), 1.0f, 0.001f)
+                || !Math::EqualDelta(vertices[1]->dir.LenSqr(), 1.0f, 0.001f)
+                || !Math::EqualDelta(vertices[2]->dir.LenSqr(), 1.0f, 0.001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Triangulation contains a vertex not lying on the unit sphere");
@@ -1942,10 +1942,10 @@ public:
             // Vertex weights
             for (const auto &vertex : sharedVertices)
             {
-                const auto radiance = aEmImage.Evaluate(vertex->direction, aUseBilinearFiltering);
+                const auto radiance = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
                 const auto luminance = radiance.Luminance();
                 const auto referenceWeight =
-                    SteeringBasisValue().GenerateSphHarm(vertex->direction, luminance);
+                    SteeringBasisValue().GenerateSphHarm(vertex->dir, luminance);
                 if (vertex->weight != referenceWeight)
                 {
                     PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
