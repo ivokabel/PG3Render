@@ -1265,45 +1265,40 @@ protected:
         float                        oversamplingFactor = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
-        {
-            // debug2 - maximum allowed edge size
-            //aTriangle; aEmImage; aUseBilinearFiltering;
-            ////const auto maxLen = 0.125f; // 4 subdivs: 5120=4*1280
-            ////const auto maxLen = 0.25f;  // 3 subdivs: 1280=4*320
-            ////const auto maxLen = 0.5f;   // 2 subdivs: 320=4*80
-            //const auto maxLen = 1.0f;     // 1 subdiv: 80
-            //const auto &dir0 = aTriangle.sharedVertices[0]->direction;
-            //const auto &dir1 = aTriangle.sharedVertices[1]->direction;
-            //const auto &dir2 = aTriangle.sharedVertices[2]->direction;
-            //const auto lenSqr0 = (dir0 - dir1).LenSqr();
-            //const auto lenSqr1 = (dir1 - dir2).LenSqr();
-            //const auto lenSqr2 = (dir2 - dir0).LenSqr();
-            //const auto maxLenSqr = Math::Sqr(maxLen);
-            //return (lenSqr0 > maxLenSqr)
-            //    || (lenSqr1 > maxLenSqr)
-            //    || (lenSqr2 > maxLenSqr);
-        }
-
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
         if (aTriangle.subdivLevel >= aMaxSubdivLevel)
             return false;
 
         const auto &vertices = aTriangle.sharedVertices;
 
+        //TODO: Compute sines in the control points - will directly affect the sampling density
+        
+        //TODO: Check sub-triangles if sines differ too much
+
         // Sampling frequency
         float samplesPerDimensionF;
         {
-            // Estimate the point on the spherical triangle which is maximal absolute inclination
+            // Estimate which point on the spherical triangle has the minimal absolute inclination
             // by vertices positions (can be non-precise, but is better than the equator estimate)
-            const float polePixelMidTheta = 0.5f * Math::kPiDiv2F / aEmImage.Height();
-            const float vertex0Sin   = std::sqrt(1.f - Math::Sqr(vertices[0]->direction.z));
-            const float vertex1Sin   = std::sqrt(1.f - Math::Sqr(vertices[1]->direction.z));
-            const float vertex2Sin   = std::sqrt(1.f - Math::Sqr(vertices[2]->direction.z));
+            const auto edgeCentre01 = ((vertices[0]->direction + vertices[1]->direction) / 2.f).Normalize();
+            const auto edgeCentre12 = ((vertices[1]->direction + vertices[2]->direction) / 2.f).Normalize();
+            const auto edgeCentre20 = ((vertices[2]->direction + vertices[0]->direction) / 2.f).Normalize();
+            const float edgeCentre01Sin = std::sqrt(1.f - Math::Sqr(edgeCentre01.z));
+            const float edgeCentre12Sin = std::sqrt(1.f - Math::Sqr(edgeCentre12.z));
+            const float edgeCentre20Sin = std::sqrt(1.f - Math::Sqr(edgeCentre20.z));
+            const float vertex0Sin      = std::sqrt(1.f - Math::Sqr(vertices[0]->direction.z));
+            const float vertex1Sin      = std::sqrt(1.f - Math::Sqr(vertices[1]->direction.z));
+            const float vertex2Sin      = std::sqrt(1.f - Math::Sqr(vertices[2]->direction.z));
+            const float minSinVertices =
+                Math::Min3(vertex0Sin, vertex1Sin, vertex2Sin);
+            const float minSinEdgeCentres =
+                Math::Min3(edgeCentre01Sin, edgeCentre12Sin, edgeCentre20Sin);
+            const float polePixelMidTheta =
+                  //0.5f * // roughly the center of the pixel
+                Math::kPiDiv2F / aEmImage.Height();
             const float polePixelSin = std::sin(polePixelMidTheta);
-            const float minSin = Math::Min3(
-                std::max(vertex0Sin, polePixelSin),
-                std::max(vertex1Sin, polePixelSin),
-                std::max(vertex2Sin, polePixelSin));
+            const float minSin =
+                std::max(std::min(minSinVertices, minSinEdgeCentres), polePixelSin);
 
             // Angular sample sizes based on the size of EM pixels on the equator.
             // We are ignoring the fact that there is higher angular pixel density as we go closer 
@@ -1348,16 +1343,9 @@ protected:
         Rng rng;
         const uint32_t samplesPerDimension = (uint32_t)std::ceil(samplesPerDimensionF);
         const float binSize = 1.f / samplesPerDimension;
-        //for (float u = 0.f; u < (1.f - 0.01f); u += binSize)
-        //    for (float v = 0.f; v < (1.f - 0.01f); v += binSize)
-        //for (float u = 0.f; u <= (1.f + 0.01f); u += binSize)
-        //    for (float v = 0.f; v <= (1.f + 0.01f); v += binSize)
-        //    {
         for (uint32_t i = 0; i <= samplesPerDimension; ++i)
             for (uint32_t j = 0; j <= samplesPerDimension; ++j)
             {
-                //const Vec2f sample = Vec2f(u, v) + rng.GetVec2f() * binSize;
-                //const Vec2f sample = Vec2f(std::min(u, 1.0f), std::min(v, 1.0f));
                 Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
 
                 if (aStats != nullptr)
