@@ -125,6 +125,30 @@ namespace Math
         return std::max(n1, std::max(n2, n3));
     }
 
+    template <typename T>
+    inline T MinN(const T& n1)
+    {
+        return n1;
+    }
+
+    template <typename T, typename... Args>
+    inline T MinN(const T& n1, Args... args)
+    {
+        return std::min(n1, MinN<T>(args...));
+    }
+
+    template <typename T>
+    inline T MaxN(const T& n1)
+    {
+        return n1;
+    }
+
+    template <typename T, typename... Args>
+    inline T MaxN(const T& n1, Args... args)
+    {
+        return std::max(n1, MaxN<T>(args...));
+    }
+
     template <
         typename T,
         typename = typename
