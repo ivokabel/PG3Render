@@ -1258,6 +1258,22 @@ protected:
 
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
+        const Vec3f                 &aVert0,
+        const float                  aVertex0Sin,
+        const Vec3f                 &aVert1,
+        const float                  aVertex1Sin,
+        const Vec3f                 &aVert2,
+        const float                  aVertex2Sin,
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        float                        oversamplingFactor = 1.0f,
+        TriangulationStats          *aStats = nullptr)
+    {
+        return false; // debug
+    }
+
+    static bool TriangleHasToBeSubdivided(
+        const TriangleNode          &aTriangle,
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
@@ -1270,24 +1286,26 @@ protected:
 
         const auto &vertices = aTriangle.sharedVertices;
 
+        const auto edgeCentre01 = ((vertices[0]->direction + vertices[1]->direction) / 2.f).Normalize();
+        const auto edgeCentre12 = ((vertices[1]->direction + vertices[2]->direction) / 2.f).Normalize();
+        const auto edgeCentre20 = ((vertices[2]->direction + vertices[0]->direction) / 2.f).Normalize();
+
         //TODO: Compute sines in the control points - will directly affect the sampling density
-        
+        const float edgeCentre01Sin = std::sqrt(1.f - Math::Sqr(edgeCentre01.z));
+        const float edgeCentre12Sin = std::sqrt(1.f - Math::Sqr(edgeCentre12.z));
+        const float edgeCentre20Sin = std::sqrt(1.f - Math::Sqr(edgeCentre20.z));
+        const float vertex0Sin = std::sqrt(1.f - Math::Sqr(vertices[0]->direction.z));
+        const float vertex1Sin = std::sqrt(1.f - Math::Sqr(vertices[1]->direction.z));
+        const float vertex2Sin = std::sqrt(1.f - Math::Sqr(vertices[2]->direction.z));
+
         //TODO: Check sub-triangles if sines differ too much
+        //      Else check the whole triangle
 
         // Sampling frequency
         float samplesPerDimensionF;
         {
             // Estimate which point on the spherical triangle has the minimal absolute inclination
             // by vertices positions (can be non-precise, but is better than the equator estimate)
-            const auto edgeCentre01 = ((vertices[0]->direction + vertices[1]->direction) / 2.f).Normalize();
-            const auto edgeCentre12 = ((vertices[1]->direction + vertices[2]->direction) / 2.f).Normalize();
-            const auto edgeCentre20 = ((vertices[2]->direction + vertices[0]->direction) / 2.f).Normalize();
-            const float edgeCentre01Sin = std::sqrt(1.f - Math::Sqr(edgeCentre01.z));
-            const float edgeCentre12Sin = std::sqrt(1.f - Math::Sqr(edgeCentre12.z));
-            const float edgeCentre20Sin = std::sqrt(1.f - Math::Sqr(edgeCentre20.z));
-            const float vertex0Sin      = std::sqrt(1.f - Math::Sqr(vertices[0]->direction.z));
-            const float vertex1Sin      = std::sqrt(1.f - Math::Sqr(vertices[1]->direction.z));
-            const float vertex2Sin      = std::sqrt(1.f - Math::Sqr(vertices[2]->direction.z));
             const float minSinVertices =
                 Math::Min3(vertex0Sin, vertex1Sin, vertex2Sin);
             const float minSinEdgeCentres =
