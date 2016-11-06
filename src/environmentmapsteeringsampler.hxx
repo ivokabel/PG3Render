@@ -461,7 +461,6 @@ public:
 #endif
     };
 
-public:
 
     class SteeringCoefficients : public SteeringValue
     {
