@@ -538,6 +538,50 @@ namespace Geom
         return true; // this ray hits the triangle 
     }
 
+    // Find barycentric cordinates of a point lying within a triangle.
+    // It is assumed that the triangle and the point are coplanar
+    // Code adapted from RayTriangleIntersect from
+    // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
+    Vec2f TriangleBarycentricCoords(
+        const Vec3f &aPoint,
+        const Vec3f &aVertex0,
+        const Vec3f &aVertex1,
+        const Vec3f &aVertex2)
+    {
+        // TODO: Assert: point lies in the triangle's plane (coplanarity)
+
+        // compute plane's normal
+        const Vec3f v0v1 = aVertex1 - aVertex0;
+        const Vec3f v0v2 = aVertex2 - aVertex0;
+        const Vec3f N = Cross(v0v1, v0v2); // no need to normalize
+        const float denom = Dot(N, N);
+
+        PG3_ASSERT_FLOAT_LARGER_THAN(denom, 0.0001f); // triangle is not empty
+
+        Vec2f baryCoords;
+
+        Vec3f C; // vector perpendicular to triangle's plane 
+
+        // edge 1
+        const Vec3f edge12 = aVertex2 - aVertex1;
+        const Vec3f v1p = aPoint - aVertex1;
+        C = Cross(edge12, v1p);
+        baryCoords.x = Dot(N, C);
+
+        // edge 2
+        const Vec3f edge20 = aVertex0 - aVertex2;
+        const Vec3f v2p = aPoint - aVertex2;
+        C = Cross(edge20, v2p);
+        baryCoords.y = Dot(N, C);
+
+        baryCoords /= denom;
+
+        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x, -0.0001f, 1.0001f);
+        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.y, -0.0001f, 1.0001f);
+
+        return baryCoords;
+    }
+
     Vec3f GetTrianglePoint(
         const Vec3f &aP0,
         const Vec3f &aP1,
@@ -552,5 +596,104 @@ namespace Geom
         
         return point;
     }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    bool _UnitTest_TriangleBarycentricCoords_SingleTriangle(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel,
+        const Vec3f &aVertex0,
+        const Vec3f &aVertex1,
+        const Vec3f &aVertex2)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+            "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
+            aVertex0.x, aVertex0.y, aVertex0.z,
+            aVertex1.x, aVertex1.y, aVertex1.z,
+            aVertex2.x, aVertex2.y, aVertex2.z);
+
+        const uint32_t binsPerDimension = 20;
+        const float binSize = 1.0f / binsPerDimension;
+        for (float u = 0.f; u <= 1.0001f; u += binSize)
+            for (float v = 0.f; v <= 1.0001f; v += binSize)
+            {
+                const Vec2f baryCoordsOld = {
+                    std::min(u, 1.0f),
+                    std::min(v, 1.0f) };
+
+                const auto point =
+                    GetTrianglePoint(aVertex0, aVertex1, aVertex2, baryCoordsOld);
+
+                const Vec2f baryCoordsNew =
+                    TriangleBarycentricCoords(point, aVertex0, aVertex1, aVertex2);
+
+                if (!(baryCoordsOld.EqualsDelta(baryCoordsNew, 0.0001f)))
+                {
+                    std::ostringstream errorDescription;
+                    errorDescription << "Old and new barycentric coordinates do not match: old [";
+                    errorDescription << baryCoordsOld.x;
+                    errorDescription << ",";
+                    errorDescription << baryCoordsOld.y;
+                    errorDescription << "], new [";
+                    errorDescription << baryCoordsNew.x;
+                    errorDescription << ",";
+                    errorDescription << baryCoordsNew.y;
+                    errorDescription << "]";
+
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                        "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
+                        errorDescription.str().c_str(),
+                        aVertex0.x, aVertex0.y, aVertex0.z,
+                        aVertex1.x, aVertex1.y, aVertex1.z,
+                        aVertex2.x, aVertex2.y, aVertex2.z);
+                    return false;
+                }
+            }
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+            "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
+            aVertex0.x, aVertex0.y, aVertex0.z,
+            aVertex1.x, aVertex1.y, aVertex1.z,
+            aVertex2.x, aVertex2.y, aVertex2.z);
+        return true;
+    }
+
+    bool _UnitTest_TriangleBarycentricCoords(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
+
+        const Vec3f vertices[8] = {
+            Vec3f(0.f, 0.f, 0.f),
+            Vec3f(0.f, 0.f, 1.f),
+            Vec3f(0.f, 1.f, 0.f),
+            Vec3f(0.f, 1.f, 1.f),
+            Vec3f(1.f, 0.f, 0.f),
+            Vec3f(1.f, 0.f, 1.f),
+            Vec3f(1.f, 1.f, 0.f),
+            Vec3f(1.f, 1.f, 1.f),
+        };
+
+        for (uint32_t index0 = 0; index0 < 8; ++index0)
+            for (uint32_t index1 = 0; index1 < 8; ++index1)
+                for (uint32_t index2 = 0; index2 < 8; ++index2)
+                {
+                    // Skip empty triangles
+                    if (   (vertices[index0] == vertices[index1])
+                        || (vertices[index1] == vertices[index2])
+                        || (vertices[index2] == vertices[index0]))
+                        continue;
+
+                    // Test
+                    if (!_UnitTest_TriangleBarycentricCoords_SingleTriangle(
+                            aMaxUtBlockPrintLevel,
+                            vertices[index0], vertices[index1], vertices[index2]))
+                        return false;
+                }
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
+        return true;
+    }
+
+#endif
 
 } // namespace Geom

@@ -175,6 +175,7 @@ float Render(
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
     Geom::_UnitTest_UnitIcosahedron(aMaxUtBlockPrintLevel);
+    Geom::_UnitTest_TriangleBarycentricCoords(aMaxUtBlockPrintLevel);
 
     Sampling::_UnitTest_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel);
 
