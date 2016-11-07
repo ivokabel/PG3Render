@@ -175,10 +175,11 @@ public:
         BoxMask              aBoxMask = kDefault,
         EnvironmentMapType   aEnvironmentMapType = kEMDefault,
         float                aDbgAux1 = Math::InfinityF(),
-        float                aDbgAux2 = Math::InfinityF()
+        float                aDbgAux2 = Math::InfinityF(),
+        float                aDbgAux3 = Math::InfinityF()
         )
     {
-        aDbgAux1, aDbgAux2; // possibly unused parameters
+        aDbgAux1, aDbgAux2, aDbgAux3; // possibly unused parameters
 
         mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
 

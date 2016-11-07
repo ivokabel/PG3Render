@@ -304,10 +304,12 @@ public:
             );
 
         // Debugging options
-        if ((mDbgAuxiliaryFloat1 != Math::InfinityF()) || (mDbgAuxiliaryFloat2 != Math::InfinityF()))
+        if (   (mDbgAuxiliaryFloat1 != Math::InfinityF())
+            || (mDbgAuxiliaryFloat2 != Math::InfinityF())
+            || (mDbgAuxiliaryFloat3 != Math::InfinityF()))
             printf(
-                "Debugging: Aux float param1 %f, aux float param2 %f\n",
-                mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2);
+                "Debugging: Aux float param1 %f, aux float param2 %f, aux float param3 %f\n",
+                mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2, mDbgAuxiliaryFloat3);
 
         // Output
         printf("Out file:  ");
@@ -333,7 +335,7 @@ public:
             "[-slbr|--splitting-light-to-bsdf-ratio <splitting_light_to_bsdf_ratio>] "
             "[-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] "
             "[-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] "
-            "[-auxf1|--dbg_aux_float1 <value>] [-auxf2|--dbg_aux_float2 <value>] \n\n",
+            "[-auxf1|--dbg_aux_float1 <value>] [-auxf2|--dbg_aux_float2 <value>] [-auxf3|--dbg_aux_float3 <value>] \n\n",
             filename.c_str());
 
         printf("    -s     Selects the scene (default 0):\n");
@@ -377,6 +379,8 @@ public:
         printf("           Auxiliary float debugging ad hoc parameter no. 1 (default: infinity=not set).\n");
         printf("    -auxf2 | --dbg_aux_float2 \n");
         printf("           Auxiliary float debugging ad hoc parameter no. 2 (default: infinity=not set).\n");
+        printf("    -auxf3 | --dbg_aux_float3 \n");
+        printf("           Auxiliary float debugging ad hoc parameter no. 3 (default: infinity=not set).\n");
 
         printf("    -opop | --only-print-output-pathname \n");
         printf("           Do not render anything; just print the full path of the current output file.\n");
@@ -412,8 +416,9 @@ public:
         mDbgSplittingLevel = 1.f;                                   // [cmd]
         mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
 
-        mDbgAuxiliaryFloat1              = Math::InfinityF();              // [cmd]
-        mDbgAuxiliaryFloat2              = Math::InfinityF();              // [cmd]
+        mDbgAuxiliaryFloat1              = Math::InfinityF();       // [cmd]
+        mDbgAuxiliaryFloat2              = Math::InfinityF();       // [cmd]
+        mDbgAuxiliaryFloat3              = Math::InfinityF();       // [cmd]
 
         int32_t sceneID     = 0; // default 0
         uint32_t envMapID   = Scene::kEMDefault;
@@ -875,6 +880,28 @@ public:
 
                 mDbgAuxiliaryFloat2 = tmp;
             }
+            else if ((arg == "-auxf3"))
+            {
+                if (++i == argc)
+                {
+                    printf("Error: Missing <dbg_aux_float3> argument, please see help (-h)\n");
+                    return false;
+                }
+
+                float tmp;
+                std::istringstream iss(argv[i]);
+                iss >> tmp;
+
+                if (iss.fail())
+                {
+                    printf(
+                        "Error: Invalid <dbg_aux_float3> argument \"%s\", please see help (-h)\n",
+                        argv[i]);
+                    return false;
+                }
+
+                mDbgAuxiliaryFloat3 = tmp;
+            }
         }
 
         // Check algorithm was selected
@@ -901,7 +928,7 @@ public:
         Scene *scene = new Scene;
         scene->LoadCornellBox(
             mResolution, g_SceneConfigs[sceneID], Scene::EnvironmentMapType(envMapID),
-            mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2);
+            mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2, mDbgAuxiliaryFloat3);
         mScene = scene;
 
         // If no output name is chosen, create a default one
@@ -950,5 +977,5 @@ public:
     // Auxiliary debugging ad hoc parameters
     float        mDbgAuxiliaryFloat1;
     float        mDbgAuxiliaryFloat2;
-
+    float        mDbgAuxiliaryFloat3;
 };
