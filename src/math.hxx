@@ -270,6 +270,20 @@ public:
     Vec2Base<T>& operator/=(const Vec2Base& a)
     { x /= a.x; y /= a.y; return *this; }
 
+    // Comparison
+    bool operator == (const Vec2Base& a) const
+    {
+        return (x == a.x) && (y == a.y);
+    }
+    bool EqualsDelta(const Vec2Base &aVal2, float aDelta) const
+    {
+        PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
+        for (uint32_t i = 0; i < 2; i++)
+            if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta))
+                return false;
+        return true;
+    }
+
     friend T Dot(const Vec2Base& a, const Vec2Base& b)
     { return a.x * b.x + a.y * b.y; }
 
@@ -377,7 +391,9 @@ public:
     bool EqualsDelta(const Vec3Base &aVal2, float aDelta) const
     {
         PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
-        for (uint32_t i = 0; i < 3; i++) if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta)) return false;
+        for (uint32_t i = 0; i < 3; i++)
+            if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta))
+                return false;
         return true;
     }
 
