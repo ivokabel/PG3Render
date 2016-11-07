@@ -275,6 +275,10 @@ public:
     {
         return (x == a.x) && (y == a.y);
     }
+    bool operator != (const Vec2Base& a) const
+    {
+        return !(*this == a);
+    }
     bool EqualsDelta(const Vec2Base &aVal2, float aDelta) const
     {
         PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
@@ -387,6 +391,10 @@ public:
     bool operator == (const Vec3Base& a) const
     {
         return (x == a.x) && (y == a.y) && (z == a.z);
+    }
+    bool operator != (const Vec3Base& a) const
+    {
+        return !(*this == a);
     }
     bool EqualsDelta(const Vec3Base &aVal2, float aDelta) const
     {
