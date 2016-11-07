@@ -546,9 +546,9 @@ namespace Geom
     {
         const auto barycentricCoordZ = (1.0f - aBarycentricCoords.x - aBarycentricCoords.y);
         const Vec3f point =
-              aBarycentricCoords.x * aP1
-            + aBarycentricCoords.y * aP2
-            + barycentricCoordZ    * aP0;
+              aBarycentricCoords.x * aP0
+            + aBarycentricCoords.y * aP1
+            + barycentricCoordZ    * aP2;
         
         return point;
     }
