@@ -461,9 +461,9 @@ namespace Geom
     bool RayTriangleIntersect(
         const Vec3f &aRayOrig,
         const Vec3f &aRayDir,
-        const Vec3f &aTriVertex0,
-        const Vec3f &aTriVertex1,
-        const Vec3f &aTriVertex2,
+        const Vec3f &aVertex0,
+        const Vec3f &aVertex1,
+        const Vec3f &aVertex2,
               float &oT,
               float &oU,
               float &oV,
@@ -472,10 +472,9 @@ namespace Geom
         PG3_ASSERT_FLOAT_NONNEGATIVE(aEdgeNumThreshold);
 
         // compute plane's normal
-        const Vec3f v0v1 = aTriVertex1 - aTriVertex0;
-        const Vec3f v0v2 = aTriVertex2 - aTriVertex0;
-        // no need to normalize
-        const Vec3f N = Cross(v0v1, v0v2); // N 
+        const Vec3f v0v1 = aVertex1 - aVertex0;
+        const Vec3f v0v2 = aVertex2 - aVertex0;
+        const Vec3f N = Cross(v0v1, v0v2); // no need to normalize
         const float denom = Dot(N, N);
 
         //////////////////////
@@ -488,7 +487,7 @@ namespace Geom
             return false; // they are parallel so they don't intersect ! 
 
         // compute d parameter using equation 2
-        const float d = Dot(N, aTriVertex0);
+        const float d = Dot(N, aVertex0);
 
         // compute t (equation 3)
         oT = (Dot(N, aRayOrig) + d) / NdotRayDirection;
@@ -506,25 +505,25 @@ namespace Geom
         Vec3f C; // vector perpendicular to triangle's plane 
 
         // edge 0
-        const Vec3f edge0 = aTriVertex1 - aTriVertex0;
-        const Vec3f vp0 = P - aTriVertex0;
-        C = Cross(edge0, vp0);
+        const Vec3f edge01 = aVertex1 - aVertex0;
+        const Vec3f v0p = P - aVertex0;
+        C = Cross(edge01, v0p);
         const float nc = Dot(N, C);
         if (nc < -aEdgeNumThreshold)
             return false; // P is on the right side 
 
         // edge 1
-        const Vec3f edge1 = aTriVertex2 - aTriVertex1;
-        const Vec3f vp1 = P - aTriVertex1;
-        C = Cross(edge1, vp1);
+        const Vec3f edge12 = aVertex2 - aVertex1;
+        const Vec3f v1p = P - aVertex1;
+        C = Cross(edge12, v1p);
         oU = Dot(N, C);
         if (oU < -aEdgeNumThreshold)
             return false; // P is on the right side 
 
         // edge 2
-        const Vec3f edge2 = aTriVertex0 - aTriVertex2;
-        const Vec3f vp2 = P - aTriVertex2;
-        C = Cross(edge2, vp2);
+        const Vec3f edge20 = aVertex0 - aVertex2;
+        const Vec3f v2p = P - aVertex2;
+        C = Cross(edge20, v2p);
         oV = Dot(N, C);
         if (oV < -aEdgeNumThreshold)
             return false; // P is on the right side; 
@@ -539,14 +538,15 @@ namespace Geom
     }
 
     // Find barycentric cordinates of a point lying within a triangle.
-    // It is assumed that the triangle and the point are coplanar
+    // The triangle and the point are assumed to be coplanar.
     // Code adapted from RayTriangleIntersect from
     // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
     Vec2f TriangleBarycentricCoords(
         const Vec3f &aPoint,
         const Vec3f &aVertex0,
         const Vec3f &aVertex1,
-        const Vec3f &aVertex2)
+        const Vec3f &aVertex2,
+        const float  aEdgeNumThreshold = 0.0f)
     {
         // TODO: Assert: point lies in the triangle's plane (coplanarity)
 
@@ -576,8 +576,8 @@ namespace Geom
 
         baryCoords /= denom;
 
-        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x, -0.0001f, 1.0001f);
-        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.y, -0.0001f, 1.0001f);
+        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
+        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.y, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
 
         return baryCoords;
     }
@@ -695,5 +695,14 @@ namespace Geom
     }
 
 #endif
+
+    Vec3f TriangleCentroid(
+        const Vec3f &aVertex0,
+        const Vec3f &aVertex1,
+        const Vec3f &aVertex2)
+    {
+        const Vec3f centroid = (aVertex0 + aVertex1 + aVertex2) / 3.f;
+        return centroid;
+    }
 
 } // namespace Geom

@@ -722,10 +722,10 @@ public:
 
         Vec3f ComputeCentroid() const
         {
-            const Vec3f centroid = 
-                (  sharedVertices[0]->dir
-                 + sharedVertices[1]->dir
-                 + sharedVertices[2]->dir) / 3.f;
+            const Vec3f centroid = Geom::TriangleCentroid(
+                sharedVertices[0]->dir,
+                sharedVertices[1]->dir,
+                sharedVertices[2]->dir);
             return centroid;
         }
 
@@ -1045,7 +1045,7 @@ protected:
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 // Compute zero-sample pixels
-                const auto maxBinCount  = 32u;
+                const auto maxBinCount  = 16u;
                 const auto rowCount     = mEmSampleCounts.size();
                 const auto binCount     = std::min((uint32_t)rowCount, maxBinCount);
                 std::vector<std::pair<uint32_t, uint32_t>> zeroSampleVertHist(binCount, { 0, 0 });
@@ -1124,7 +1124,8 @@ public: // debug: public is for visualisation
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactor = 1.0f)
+        float                        aOversamplingFactorDbg = 1.0f,
+        float                        aMaxSinSpanDbg = 1.0f)
     {
         PG3_ASSERT(oTriangles.empty());        
 
@@ -1137,7 +1138,8 @@ public: // debug: public is for visualisation
 
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel,
                                    aEmImage, aUseBilinearFiltering,
-                                   aOversamplingFactor, &stats))
+                                   aOversamplingFactorDbg, aMaxSinSpanDbg,
+                                   &stats))
             return false;
 
         stats.Print();
@@ -1213,7 +1215,8 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactor = 1.0f,
+        float                        aOversamplingFactorDbg = 1.0f,
+        float                        aMaxSinSpanDbg = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
@@ -1230,9 +1233,10 @@ protected:
             if (currentTriangle == nullptr)
                 continue;
 
-            if (TriangleHasToBeSubdivided(*currentTriangle, aMaxSubdivLevel,
-                                          aEmImage, aUseBilinearFiltering, aOversamplingFactor,
-                                          aStats))
+            if (TriangleHasToBeSubdivided(
+                    *currentTriangle, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering,
+                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -1258,7 +1262,7 @@ protected:
         const Vec2ui        &aEmSize,
         const Vec3f         &aPlanarTriangleCentroid,
         float                aMinSinClamped,
-        float                aOversamplingFactor)
+        float                aOversamplingFactorDbg)
     {
         // Angular sample sizes based on the size of EM pixels on the equator.
         // We are ignoring the fact that there is higher angular pixel density as we go closer 
@@ -1292,16 +1296,16 @@ protected:
         const float samplesPerDimensionSqr =
             rectSamplesPerDimensionSqr / 2.f/*triangle covers roughly half the rectangle*/;
         float samplesPerDimension = std::sqrt(samplesPerDimensionSqr);
-        samplesPerDimension *= aOversamplingFactor;
+        samplesPerDimension *= aOversamplingFactorDbg;
 
         return samplesPerDimension;
     }
 
     static bool IsEstimationErrorTooLarge(
-        const TriangleNode          &aTriangle,
-        const Vec3f                 &aVertex0,
-        const Vec3f                 &aVertex1,
-        const Vec3f                 &aVertex2,
+        const TriangleNode          &aWholeTriangle,
+        const Vec3f                 &aSubVertex0,
+        const Vec3f                 &aSubVertex1,
+        const Vec3f                 &aSubVertex2,
         uint32_t                     samplesPerDimension,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
@@ -1315,29 +1319,39 @@ protected:
             {
                 Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
 
-                // Sample planar triangle
-                const auto triangleSampleBarycentric = Sampling::SampleUniformTriangle(sample);
-                const auto approxVal = aTriangle.EvaluateLuminanceApprox(
-                    triangleSampleBarycentric,
-                    aEmImage, aUseBilinearFiltering);
-                const auto trianglePoint = Geom::GetTrianglePoint(
-                    aVertex0, aVertex1, aVertex2,
-                    triangleSampleBarycentric);
-                const auto sampleDir = Normalize(trianglePoint);
+                // Sample planar sub-triangle
+                const auto subTriangleSampleBary = Sampling::SampleUniformTriangle(sample);
+                const auto point = Geom::GetTrianglePoint(
+                    aSubVertex0, aSubVertex1, aSubVertex2,
+                    subTriangleSampleBary);
+                const Vec2f wholeTriangleSampleBary = Geom::TriangleBarycentricCoords(
+                    point,
+                    aWholeTriangle.sharedVertices[0]->dir,
+                    aWholeTriangle.sharedVertices[1]->dir,
+                    aWholeTriangle.sharedVertices[2]->dir,
+                    0.1f);
 
+                // Evaluate
+                const Vec2f wholeTriangleSampleBaryCrop = {
+                    Math::Clamp(wholeTriangleSampleBary.x, 0.f, 1.f),
+                    Math::Clamp(wholeTriangleSampleBary.y, 0.f, 1.f),
+                };
+                const auto approxVal = aWholeTriangle.EvaluateLuminanceApprox(
+                    wholeTriangleSampleBaryCrop, aEmImage, aUseBilinearFiltering);
+                const auto sampleDir = Normalize(point);
                 const auto emRadiance = aEmImage.Evaluate(sampleDir, aUseBilinearFiltering);
                 const auto emVal = emRadiance.Luminance();
 
                 PG3_ASSERT_FLOAT_NONNEGATIVE(emVal);
 
                 if (aStats != nullptr)
-                    aStats->AddSample(aTriangle, sampleDir);
+                    aStats->AddSample(aWholeTriangle, sampleDir);
 
+                // Analyze error
                 const auto diff = std::abs(emVal - approxVal);
                 const auto threshold = std::max(0.5f * emVal, 0.001f); // TODO: Parametrizable threshold
                 if (diff > threshold)
-                    // The approximation is too far from the original function
-                    return true;
+                    return true; // The approximation is too far from the original function
             }
         }
 
@@ -1345,16 +1359,17 @@ protected:
     }
 
     static bool TriangleHasToBeSubdividedImpl(
-        const TriangleNode          &aTriangle,
         const Vec3f                 &aVertex0,
         const float                  aVertex0Sin,
         const Vec3f                 &aVertex1,
         const float                  aVertex1Sin,
         const Vec3f                 &aVertex2,
         const float                  aVertex2Sin,
+        const TriangleNode          &aWholeTriangle,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactor = 1.0f,
+        float                        aOversamplingFactorDbg = 1.0f,
+        float                        aMaxSinSpanDbg = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex0);
@@ -1364,10 +1379,12 @@ protected:
         // Estimate the maximum and minimum sine(theta) value over the triangle.
         // Sine value directly affect the necessary sampling density in each EM pixel.
 
+        const auto triangleCentroid = Geom::TriangleCentroid(aVertex0, aVertex1, aVertex2);
+
         const auto edgeCentre01Dir = ((aVertex0 + aVertex1) / 2.f).Normalize();
         const auto edgeCentre12Dir = ((aVertex1 + aVertex2) / 2.f).Normalize();
         const auto edgeCentre20Dir = ((aVertex2 + aVertex0) / 2.f).Normalize();
-        const auto centroidDir     = aTriangle.ComputeCentroid().Normalize();
+        const auto centroidDir     = Normalize(triangleCentroid);
 
         const float edgeCentre01Sin = std::sqrt(1.f - Math::Sqr(edgeCentre01Dir.z));
         const float edgeCentre12Sin = std::sqrt(1.f - Math::Sqr(edgeCentre12Dir.z));
@@ -1388,20 +1405,65 @@ protected:
         const float minSinClamped = std::max(minSin, polePixelSin);
         const float maxSinClamped = std::max(maxSin, polePixelSin);
 
-        //TODO: Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
-        //      Else check the whole triangle
-        maxSinClamped; // unused so far
+        // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
+        const float sinSpan = maxSinClamped - minSinClamped;
+        if (sinSpan >= aMaxSinSpanDbg) // TODO: Setup good/optimal threshold
+        {
+            // Check sub-triangle near vertex 0
+            if (TriangleHasToBeSubdividedImpl(
+                    aVertex0, aVertex0Sin,
+                    edgeCentre01Dir, edgeCentre01Sin,
+                    edgeCentre20Dir, edgeCentre20Sin,
+                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aStats))
+                return true;
+
+            // Check sub-triangle near vertex 1
+            if (TriangleHasToBeSubdividedImpl(
+                    aVertex1, aVertex1Sin,
+                    edgeCentre12Dir, edgeCentre12Sin,
+                    edgeCentre01Dir, edgeCentre01Sin,
+                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aStats))
+                return true;
+
+            // Check sub-triangle near vertex 2
+            if (TriangleHasToBeSubdividedImpl(
+                    aVertex2, aVertex2Sin,
+                    edgeCentre20Dir, edgeCentre20Sin,
+                    edgeCentre12Dir, edgeCentre12Sin,
+                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aStats))
+                return true;
+
+            // Check center sub-triangle
+            if (TriangleHasToBeSubdividedImpl(
+                    edgeCentre01Dir, edgeCentre01Sin,
+                    edgeCentre12Dir, edgeCentre12Sin,
+                    edgeCentre20Dir, edgeCentre20Sin,
+                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aStats))
+                return true;
+
+            return false;
+        }
 
         // Determine sampling frequency
         const float samplesPerDimensionF = SubdivTestSamplesPerDimension(
             aVertex0, aVertex1, aVertex2,
-            aEmImage.Size(), aTriangle.ComputeCentroid(),
-            minSinClamped, aOversamplingFactor);
+            aEmImage.Size(), triangleCentroid,
+            minSinClamped, aOversamplingFactorDbg);
 
         // Sample
-        return IsEstimationErrorTooLarge(
-            aTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(samplesPerDimensionF),
+        const bool result = IsEstimationErrorTooLarge(
+            aWholeTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(samplesPerDimensionF),
             aEmImage, aUseBilinearFiltering, aStats);
+
+        return result;
     }
 
     static bool TriangleHasToBeSubdivided(
@@ -1409,7 +1471,8 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactor = 1.0f,
+        float                        aOversamplingFactorDbg = 1.0f,
+        float                        aMaxSinSpanDbg = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
@@ -1426,12 +1489,11 @@ protected:
         const float vertex2Sin = std::sqrt(1.f - Math::Sqr(vertices[2]->dir.z));
 
         bool result = TriangleHasToBeSubdividedImpl(
-            aTriangle,
             vertices[0]->dir, vertex0Sin,
             vertices[1]->dir, vertex1Sin,
             vertices[2]->dir, vertex2Sin,
-            aEmImage, aUseBilinearFiltering,
-            aOversamplingFactor,
+            aTriangle, aEmImage, aUseBilinearFiltering,
+            aOversamplingFactorDbg, aMaxSinSpanDbg,
             aStats);
 
         return result;
