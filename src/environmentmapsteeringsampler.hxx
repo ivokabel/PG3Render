@@ -1029,8 +1029,8 @@ protected:
                     printf(
                         "Level %d: triangles % 4s, samples % 4s (% 4.1f per triangle)\n",
                         i,
-                        triangleCountStr, //level.GetTriangleCount(),
-                        sampleCountStr, //level.GetSampleCount(),
+                        triangleCountStr.c_str(), //level.GetTriangleCount(),
+                        sampleCountStr.c_str(), //level.GetSampleCount(),
                         samplesPerTriangle);
                     totalTriangleCount += level.GetTriangleCount();
                     totalSampleCount   += level.GetSampleCount();
