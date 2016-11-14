@@ -174,6 +174,8 @@ float Render(
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
+    Utils::_UnitTest_IntegerToHumanReadable(aMaxUtBlockPrintLevel);
+
     Geom::_UnitTest_UnitIcosahedron(aMaxUtBlockPrintLevel);
     Geom::_UnitTest_TriangleBarycentricCoords(aMaxUtBlockPrintLevel);
 

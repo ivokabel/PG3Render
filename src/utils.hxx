@@ -1,6 +1,7 @@
 #pragma once
 
 //#include "math.hxx"
+#include "unittesting.hxx"
 
 #include <sstream>
 #include <iomanip>
@@ -48,6 +49,159 @@ namespace Utils
 
         oResult = outStream.str();
     }
+
+    void IntegerToHumanReadable(const uint64_t aInt, std::string &oResult)
+    {
+        std::ostringstream outStream;
+
+        if (aInt < (uint64_t)1E3)
+            outStream << aInt;
+        else if (aInt < 1E6)
+        {
+            const auto tmp = aInt / (uint64_t)1E3;
+            outStream << tmp << "K";
+        }
+        else if (aInt < (uint64_t)1E9)
+        {
+            const auto tmp = aInt / (uint64_t)1E6;
+            outStream << tmp << "M";
+        }
+        else //if (aInt < (uint64_t)1E12)
+        {
+            const auto tmp = aInt / (uint64_t)1E9;
+            outStream << tmp << "T";
+        }
+
+        oResult = outStream.str();
+    }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    bool _UnitTest_IntegerToHumanReadable_SingleNumber(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const uint64_t               aValue,
+        const char                  *aHumanReference)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1,"%d", aValue);
+
+        std::string result;
+        IntegerToHumanReadable(aValue, result);
+        if (result != aHumanReference)
+        {
+            std::ostringstream errorDescription;
+            errorDescription << "Output is \"";
+            errorDescription << result;
+            errorDescription << "\" instead of \"";
+            errorDescription << aHumanReference;
+            errorDescription << "\"";
+
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%d",
+                errorDescription.str().c_str(), aValue);
+        }
+
+        // debug
+        //printf("%s\n", result.c_str());
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%d", aValue);
+        return true;
+    }
+
+    bool _UnitTest_IntegerToHumanReadable(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Utils::IntegerToHumanReadable()");
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)0, "0"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E0, "1"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1 - 1, "9"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1,     "10"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1 + 1, "11"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2 - 1, "99"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2,     "100"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2 + 1, "101"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3 - 1, "999"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3,     "1K"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3 + 1, "1K"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E4, "10K"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5 - 1, "99K"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5,     "100K"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5 + 1, "100K"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6 - 1, "999K"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6,     "1M"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6 + 1, "1M"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7 - 1, "9M"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7,     "10M"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7 + 1, "10M"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8 - 1, "99M"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8,     "100M"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8 + 1, "100M"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9 - 1, "999M"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9,     "1T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9 + 1, "1T"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10 - 1, "9T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10,     "10T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10 + 1, "10T"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11 - 1, "99T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11,     "100T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11 + 1, "100T"))
+            return false;
+
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 - 1, "999T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12,     "1000T"))
+            return false;
+        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 + 1, "1000T"))
+            return false;
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Utils::IntegerToHumanReadable()");
+        return true;
+    }
+
+#endif
 
     void PrintHistogramTicks(
         const uint32_t  aCount,
