@@ -261,6 +261,7 @@ public:
     friend Vec2Base<T> operator/(const Vec2Base& a, const Vec2Base& b)
     { Vec2Base<T> res; res.x = a.x / b.x; res.y = a.y / b.y; return res; }
 
+    // Compound assignment operations
     Vec2Base<T>& operator+=(const Vec2Base& a)
     { x += a.x; y += a.y; return *this; }
     Vec2Base<T>& operator-=(const Vec2Base& a)
@@ -286,6 +287,39 @@ public:
             if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta))
                 return false;
         return true;
+    }
+
+    friend Vec2Base Min(const Vec2Base& a, const Vec2Base& b)
+    {
+        Vec2Base result;
+        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::min(a.Get(i), b.Get(i));
+        return result;
+    }
+
+    friend Vec2Base Max(const Vec2Base& a, const Vec2Base& b)
+    {
+        Vec2Base result;
+        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::max(a.Get(i), b.Get(i));
+        return result;
+    }
+
+    Vec2Base Sqr() const
+    {
+        return (*this) * (*this);
+    }
+
+    Vec2Base Sqrt() const
+    {
+        Vec2Base result;
+        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::sqrt(Get(i));
+        return result;
+    }
+
+    Vec2Base Tan() const
+    {
+        Vec2Base result;
+        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::tan(Get(i));
+        return result;
     }
 
     friend T Dot(const Vec2Base& a, const Vec2Base& b)
@@ -348,6 +382,7 @@ public:
     T&              Get(uint32_t a)       { return reinterpret_cast<T*>(this)[a]; }
     Vec2Base<T>     GetXY() const         { return Vec2Base<T>(x, y); }
 
+    T               Min()   const         { return std::min(std::min(x, y), z); }
     T               Max()   const         { return std::max(std::max(x, y), z); }
     bool            IsZero() const        { return (x == 0) && (y == 0) && (z == 0); }
 
@@ -378,6 +413,7 @@ public:
     friend Vec3Base<T> operator/(const Vec3Base& a, const Vec3Base& b)
     { Vec3Base<T> res; res.x = a.x / b.x; res.y = a.y / b.y; res.z = a.z / b.z; return res; }
 
+    // Compound assignment operations
     Vec3Base<T>& operator+=(const Vec3Base& a)
     { x += a.x; y += a.y; z += a.z; return *this; }
     Vec3Base<T>& operator-=(const Vec3Base& a)
@@ -405,7 +441,39 @@ public:
         return true;
     }
 
-    //PG3_NOINLINE
+    friend Vec3Base Min(const Vec3Base& a, const Vec3Base& b)
+    {
+        Vec3Base result;
+        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::min(a.Get(i), b.Get(i));
+        return result;
+    }
+
+    friend Vec3Base Max(const Vec3Base& a, const Vec3Base& b)
+    {
+        Vec3Base result;
+        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::max(a.Get(i), b.Get(i));
+        return result;
+    }
+
+    Vec3Base Sqr() const
+    {
+        return (*this) * (*this);
+    }
+
+    Vec3Base Sqrt() const
+    {
+        Vec3Base result;
+        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::sqrt(Get(i));
+        return result;
+    }
+
+    Vec3Base Tan() const
+    {
+        Vec3Base result;
+        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::tan(Get(i));
+        return result;
+    }
+
     friend T Dot(const Vec3Base& a, const Vec3Base& b)
     {
         return a.x * b.x + a.y * b.y + a.z * b.z;
