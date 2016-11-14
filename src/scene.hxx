@@ -464,8 +464,8 @@ public:
                 default: return "";
                 }
             }();
-            const float oversamplingFactor  = (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : 1.0f;
-            const float maxTiangleSpan      = (aDbgAux3 != Math::InfinityF()) ? aDbgAux3 : 1.0f;
+            const float oversamplingFactor  = 0.7f; // (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : 1.0f;
+            const float maxTiangleSpan      = 1.1f; // (aDbgAux3 != Math::InfinityF()) ? aDbgAux3 : 1.0f;
             printf(
                 "Testing EM \"%s\", oversampling %.2f, max triangle span %.4f:\n",
                 emPath, oversamplingFactor, maxTiangleSpan);
