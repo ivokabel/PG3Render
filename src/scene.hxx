@@ -464,15 +464,17 @@ public:
                 default: return "";
                 }
             }();
-            const float oversamplingFactor = (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : 1.0f;
-            const float maxSinSpan         = (aDbgAux3 != Math::InfinityF()) ? aDbgAux3 : 1.0f;
-            printf("Testing EM \"%s\", oversampling %.2f, max sin span %.2f:\n", emPath, oversamplingFactor, maxSinSpan);
+            const float oversamplingFactor  = (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : 1.0f;
+            const float maxTiangleSpan      = (aDbgAux3 != Math::InfinityF()) ? aDbgAux3 : 1.0f;
+            printf(
+                "Testing EM \"%s\", oversampling %.2f, max triangle span %.4f:\n",
+                emPath, oversamplingFactor, maxTiangleSpan);
             std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(emPath));
             if (image)
             {
                 std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
                 if (EnvironmentMapSteeringSampler::TriangulateEm(
-                        triangles, 1, *image, false, oversamplingFactor, maxSinSpan))
+                        triangles, 1, *image, false, oversamplingFactor, maxTiangleSpan))
                 {
                     for (const auto &node : triangles)
                     {

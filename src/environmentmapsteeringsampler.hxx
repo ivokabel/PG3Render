@@ -1022,21 +1022,25 @@ protected:
                 for (size_t i = 0; i < levels; ++i)
                 {
                     const auto &level = mLevelStats[i];
+                    const auto samplesPerTriangle = (double)level.GetSampleCount() / level.GetTriangleCount();
+                    std::string triangleCountStr, sampleCountStr;
+                    Utils::IntegerToHumanReadable(level.GetTriangleCount(), triangleCountStr);
+                    Utils::IntegerToHumanReadable(level.GetSampleCount(), sampleCountStr);
                     printf(
-                        "Level %d: triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
+                        "Level %d: triangles % 4s, samples % 4s (% 4.1f per triangle)\n",
                         i,
-                        level.GetTriangleCount(),
-                        level.GetSampleCount(),
-                        (double)level.GetSampleCount() / level.GetTriangleCount());
+                        triangleCountStr, //level.GetTriangleCount(),
+                        sampleCountStr, //level.GetSampleCount(),
+                        samplesPerTriangle);
                     totalTriangleCount += level.GetTriangleCount();
                     totalSampleCount   += level.GetSampleCount();
                 }
                 //printf("-----------------------------------------------------------\n");
-                printf(
-                    "Total  : triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
-                    totalTriangleCount,
-                    totalSampleCount,
-                    (double)totalSampleCount / totalTriangleCount);
+                //printf(
+                //    "Total  : triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
+                //    totalTriangleCount,
+                //    totalSampleCount,
+                //    (double)totalSampleCount / totalTriangleCount);
             }
             else
                 printf("no data!\n");
@@ -1045,7 +1049,7 @@ protected:
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 // Compute zero-sample pixels
-                const auto maxBinCount  = 16u;
+                const auto maxBinCount= 32u; //16u;
                 const auto rowCount     = mEmSampleCounts.size();
                 const auto binCount     = std::min((uint32_t)rowCount, maxBinCount);
                 std::vector<std::pair<uint32_t, uint32_t>> zeroSampleVertHist(binCount, { 0, 0 });
@@ -1075,31 +1079,33 @@ protected:
             else
                 printf("no data!\n");
 
-            //printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
-            //if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
-            //{
-            //    // Compute histogram
-            //    std::vector<uint32_t> histogram;
-            //    for (auto &rowCounts : mEmSampleCounts)
-            //        for (auto &pixelSampleCount : rowCounts)
-            //        {
-            //            if (pixelSampleCount >= histogram.size())
-            //                histogram.resize(pixelSampleCount + 1, 0u);
-            //            histogram[pixelSampleCount]++;
-            //        }
+            printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
+            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            {
+                // Compute histogram
+                std::vector<uint32_t> histogram;
+                const size_t maxKeyVal = 40u;
+                for (auto &rowCounts : mEmSampleCounts)
+                    for (const auto &pixelSampleCount : rowCounts)
+                    {
+                        const auto keyVal = std::min((size_t)pixelSampleCount, maxKeyVal);
+                        if (keyVal >= histogram.size())
+                            histogram.resize(keyVal + 1, 0u);
+                        histogram[keyVal]++;
+                    }
 
-            //    // Print histogram
-            //    const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
-            //    for (size_t samples = 0; samples < histogram.size(); ++samples)
-            //    {
-            //        const auto &count = histogram[samples];
-            //        printf("% 4d samples: % 7d pixels: ", samples, count);
-            //        Utils::PrintHistogramTicks(count, maxCount, 30, (samples == 0) ? '*' : '.');
-            //        printf("\n");
-            //    }
-            //}
-            //else
-            //    printf("no data!\n");
+                // Print histogram
+                const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
+                for (size_t samples = 0; samples < histogram.size(); ++samples)
+                {
+                    const auto &count = histogram[samples];
+                    printf("% 4d samples: % 8d pixels: ", samples, count);
+                    Utils::PrintHistogramTicks(count, maxCount, 150, (samples == 0) ? '!' : '.');
+                    printf("\n");
+                }
+            }
+            else
+                printf("no data!\n");
 
             printf("\n");
 
@@ -1125,7 +1131,7 @@ public: // debug: public is for visualisation
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxSinSpanDbg = 1.0f)
+        float                        aMaxTriangleSpanDbg = 1.0f)
     {
         PG3_ASSERT(oTriangles.empty());        
 
@@ -1138,7 +1144,7 @@ public: // debug: public is for visualisation
 
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel,
                                    aEmImage, aUseBilinearFiltering,
-                                   aOversamplingFactorDbg, aMaxSinSpanDbg,
+                                   aOversamplingFactorDbg, aMaxTriangleSpanDbg,
                                    &stats))
             return false;
 
@@ -1216,7 +1222,7 @@ protected:
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxSinSpanDbg = 1.0f,
+        float                        aMaxTriangleSpanDbg = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
@@ -1235,7 +1241,7 @@ protected:
 
             if (TriangleHasToBeSubdivided(
                     *currentTriangle, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
                     aStats))
             {
                 // Replace the triangle with sub-division triangles
@@ -1255,32 +1261,39 @@ protected:
         return true;
     }
 
-    static float SubdivTestSamplesPerDimension(
+    static void SubdivTestSamplesPerDim(
         const Vec3f         &aVertex0,
         const Vec3f         &aVertex1,
         const Vec3f         &aVertex2,
         const Vec2ui        &aEmSize,
         const Vec3f         &aPlanarTriangleCentroid,
-        float                aMinSinClamped,
+        const float          aMinSinClamped,
+        const float          aMaxSinClamped,
+        float               &aMinSamplesPerDimF,
+        float               &aMaxSamplesPerDimF,
         float                aOversamplingFactorDbg)
     {
-        // Angular sample sizes based on the size of EM pixels on the equator.
-        // We are ignoring the fact that there is higher angular pixel density as we go closer 
-        // to poles.
-        const Vec2f emPixelAngularSize{
-            Math::kPiF / aEmSize.y,
+        // Angular sample size based on the size of an EM pixel
+        const Vec2f minEmPixelAngularSize{
+                             Math::kPiF  / aEmSize.y,
             aMinSinClamped * Math::k2PiF / aEmSize.x };
-        const float minPixelAngularSize = emPixelAngularSize.Min();
-        const float maxAngularSampleSize =
-            std::min(minPixelAngularSize / 2.0f/*Nyquist frequency*/, Math::kPiDiv2F - 0.1f);
+        const Vec2f maxEmPixelAngularSize{
+                             Math::kPiF  / aEmSize.y,
+            aMaxSinClamped * Math::k2PiF / aEmSize.x };
+        const Vec2f pixelAngularSizeLowBound = { // switching to vector arithmetics
+            minEmPixelAngularSize.Min(),
+            maxEmPixelAngularSize.Min()
+        };
+        const auto angularSampleSizeUpBound =
+            Min(pixelAngularSizeLowBound / 2.0f/*Nyquist frequency*/, Math::kPiDiv2F - 0.1f);
 
         // The distance of the planar triangle centroid from the origin - a cheap estimate 
         // of the distance of the triangle from the origin; works well for regular triangles
         const float triangleDistEst = aPlanarTriangleCentroid.Length();
 
         // Planar sample size
-        const float tanAngSample = std::tan(maxAngularSampleSize);
-        const float maxPlanarSampleSize = tanAngSample * triangleDistEst;
+        const auto tanAngSample = angularSampleSizeUpBound.Tan();
+        const auto planarSampleSizeUpBound = tanAngSample * triangleDistEst;
 
         // Estimate triangle sampling density.
         // Based on the sampling frequency of a rectangular grid, but using average triangle 
@@ -1289,16 +1302,16 @@ protected:
         const auto edge0LenSqr = (aVertex0 - aVertex1).LenSqr();
         const auto edge1LenSqr = (aVertex1 - aVertex2).LenSqr();
         const auto edge2LenSqr = (aVertex2 - aVertex0).LenSqr();
-        const float avgTriangleEdgeLengthSqr =
-            (edge0LenSqr + edge1LenSqr + edge2LenSqr) / 3.0f;
-        const float maxPlanarGridBinSizeSqr = Math::Sqr(maxPlanarSampleSize) / 2.0f;
-        const float rectSamplesPerDimensionSqr = avgTriangleEdgeLengthSqr / maxPlanarGridBinSizeSqr;
-        const float samplesPerDimensionSqr =
-            rectSamplesPerDimensionSqr / 2.f/*triangle covers roughly half the rectangle*/;
-        float samplesPerDimension = std::sqrt(samplesPerDimensionSqr);
-        samplesPerDimension *= aOversamplingFactorDbg;
+        const float avgTriangleEdgeLengthSqr = (edge0LenSqr + edge1LenSqr + edge2LenSqr) / 3.0f;
+        const auto planarGridBinSizeSqr = planarSampleSizeUpBound.Sqr() / 2.0f; //considering diagonal worst case
+        const auto rectSamplesPerDimSqr = Vec2f(avgTriangleEdgeLengthSqr) / planarGridBinSizeSqr;
+        const auto samplesPerDimSqr =
+            rectSamplesPerDimSqr / 2.f/*triangle covers roughly half the rectangle*/;
+        auto samplesPerDim = samplesPerDimSqr.Sqrt();
+        samplesPerDim *= aOversamplingFactorDbg;
 
-        return samplesPerDimension;
+        aMaxSamplesPerDimF = samplesPerDim.x; // based on the minimal sine
+        aMinSamplesPerDimF = samplesPerDim.y; // based on the maximal sine
     }
 
     static bool IsEstimationErrorTooLarge(
@@ -1306,16 +1319,16 @@ protected:
         const Vec3f                 &aSubVertex0,
         const Vec3f                 &aSubVertex1,
         const Vec3f                 &aSubVertex2,
-        uint32_t                     samplesPerDimension,
+        uint32_t                     samplesPerDim,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         TriangulationStats          *aStats
         )
     {
-        const float binSize = 1.f / samplesPerDimension;
-        for (uint32_t i = 0; i <= samplesPerDimension; ++i)
+        const float binSize = 1.f / samplesPerDim;
+        for (uint32_t i = 0; i <= samplesPerDim; ++i)
         {
-            for (uint32_t j = 0; j <= samplesPerDimension; ++j)
+            for (uint32_t j = 0; j <= samplesPerDim; ++j)
             {
                 Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
 
@@ -1369,12 +1382,15 @@ protected:
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxSinSpanDbg = 1.0f,
+        float                        aMaxTriangleSpanDbg = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex0);
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex1);
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex2);
+
+        if ((aEmImage.Height() == 0) || (aEmImage.Width() == 0))
+            return false;
 
         // Estimate the maximum and minimum sine(theta) value over the triangle.
         // Sine value directly affect the necessary sampling density in each EM pixel.
@@ -1405,9 +1421,20 @@ protected:
         const float minSinClamped = std::max(minSin, polePixelSin);
         const float maxSinClamped = std::max(maxSin, polePixelSin);
 
+        // Determine minimal and maximal sampling frequency
+        float minSamplesPerDimF, maxSamplesPerDimF;
+        SubdivTestSamplesPerDim(
+            aVertex0, aVertex1, aVertex2,
+            aEmImage.Size(), triangleCentroid,
+            minSinClamped, maxSinClamped,
+            minSamplesPerDimF, maxSamplesPerDimF,
+            aOversamplingFactorDbg);
+
         // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
-        const float sinSpan = maxSinClamped - minSinClamped;
-        if (sinSpan >= aMaxSinSpanDbg) // TODO: Setup good/optimal threshold
+        // TODO: Setup good/optimal threshold
+        //const float triangleSpan = maxSinClamped - minSinClamped;
+        const auto triangleSpan = maxSamplesPerDimF / minSamplesPerDimF;
+        if ((triangleSpan >= aMaxTriangleSpanDbg) && (maxSamplesPerDimF > 32.0f))
         {
             // Check sub-triangle near vertex 0
             if (TriangleHasToBeSubdividedImpl(
@@ -1415,7 +1442,7 @@ protected:
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
                     aStats))
                 return true;
 
@@ -1425,7 +1452,7 @@ protected:
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
                     aStats))
                 return true;
 
@@ -1435,7 +1462,7 @@ protected:
                     edgeCentre20Dir, edgeCentre20Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
                     aStats))
                 return true;
 
@@ -1445,22 +1472,16 @@ protected:
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxSinSpanDbg,
+                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
                     aStats))
                 return true;
 
             return false;
         }
 
-        // Determine sampling frequency
-        const float samplesPerDimensionF = SubdivTestSamplesPerDimension(
-            aVertex0, aVertex1, aVertex2,
-            aEmImage.Size(), triangleCentroid,
-            minSinClamped, aOversamplingFactorDbg);
-
         // Sample
         const bool result = IsEstimationErrorTooLarge(
-            aWholeTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(samplesPerDimensionF),
+            aWholeTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(maxSamplesPerDimF),
             aEmImage, aUseBilinearFiltering, aStats);
 
         return result;
@@ -1472,7 +1493,7 @@ protected:
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxSinSpanDbg = 1.0f,
+        float                        aMaxTriangleSpanDbg = 1.0f,
         TriangulationStats          *aStats = nullptr)
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
@@ -1493,7 +1514,7 @@ protected:
             vertices[1]->dir, vertex1Sin,
             vertices[2]->dir, vertex2Sin,
             aTriangle, aEmImage, aUseBilinearFiltering,
-            aOversamplingFactorDbg, aMaxSinSpanDbg,
+            aOversamplingFactorDbg, aMaxTriangleSpanDbg,
             aStats);
 
         return result;

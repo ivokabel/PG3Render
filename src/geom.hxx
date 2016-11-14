@@ -576,6 +576,7 @@ namespace Geom
 
         baryCoords /= denom;
 
+        aEdgeNumThreshold; // possibly unused param
         PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
         PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.y, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
 
