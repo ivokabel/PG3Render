@@ -663,16 +663,17 @@ public:
             weight((aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f),
             subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
 #ifdef _DEBUG
-            ,index([aParentTriangle, aIndex](){
-                std::ostringstream outStream;
-                if (aParentTriangle != nullptr)
-                    outStream << aParentTriangle->index << "-";
-                outStream << aIndex;
-                return outStream.str();
-            }())
+            //, index([aParentTriangle, aIndex](){
+            //    std::ostringstream outStream;
+            //    if (aParentTriangle != nullptr)
+            //        outStream << aParentTriangle->index << "-";
+            //    outStream << aIndex;
+            //    return outStream.str();
+            //}())
+            , index(aIndex)
 #endif
         {
-            aIndex; // unused param (in debug)
+            aIndex; // unused param (in release)
 
             sharedVertices[0] = aVertex1;
             sharedVertices[1] = aVertex2;
@@ -819,7 +820,8 @@ public:
         uint32_t                subdivLevel;
 
 #ifdef _DEBUG
-        const std::string       index;
+        //const std::string       index;
+        const uint32_t          index;
 #endif
 
         // TODO: This is sub-optimal, both in terms of memory consumption and memory non-locality
@@ -973,7 +975,8 @@ protected:
             mEmHeight(aEmImage.Height()),
             mEmSampleCounts(  aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
 #ifdef _DEBUG
-            ,mEmHasSampleFlags(aEmImage.Height(), std::vector<std::string>(aEmImage.Width(), "*"))
+            //,mEmHasSampleFlags(aEmImage.Height(), std::vector<std::string>(aEmImage.Width(), "*"))
+            , mEmHasSampleFrom(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
 #endif
         {}
 
@@ -1004,7 +1007,8 @@ protected:
 
             mEmSampleCounts[y0][x0]++;
 #ifdef _DEBUG
-            mEmHasSampleFlags[y0][x0] = aTriangle.index;
+            //mEmHasSampleFlags[y0][x0] = aTriangle.index;
+            mEmHasSampleFrom[y0][x0] = aTriangle.index;
 #endif
         }
 
@@ -1045,46 +1049,82 @@ protected:
             else
                 printf("no data!\n");
 
-            printf("\nSteering Sampler - EM Sampling Empty Pixels:\n");
-            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
-            {
-                // Compute zero-sample pixels
-                const auto maxBinCount= 32u; //16u;
-                const auto rowCount     = mEmSampleCounts.size();
-                const auto binCount     = std::min((uint32_t)rowCount, maxBinCount);
-                std::vector<std::pair<uint32_t, uint32_t>> zeroSampleVertHist(binCount, { 0, 0 });
-                for (size_t row = 0; row < rowCount; ++row)
-                {
-                    const size_t binId =
-                        (rowCount <= maxBinCount) ?
-                        row : Math::RemapInterval<size_t>(row, rowCount - 1, binCount - 1);
-                    auto &bin = zeroSampleVertHist[binId];
-                    for (auto &pixelSampleCount : mEmSampleCounts[row])
-                        bin.first += (pixelSampleCount == 0) ? 1 : 0; // zero count
-                    bin.second += mEmWidth; // total count per row
-                }
+            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
+            //std::vector<std::pair<uint32_t, uint32_t>> zeroSampleVertHist;
+            //if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            //{
+            //    // Compute histogram
+            //    const auto maxBinCount= 32u;
+            //    const auto rowCount = mEmSampleCounts.size();
+            //    const auto binCount = std::min((uint32_t)rowCount, maxBinCount);
+            //    zeroSampleVertHist.resize(binCount, { 0, 0 });
+            //    for (size_t row = 0; row < rowCount; ++row)
+            //    {
+            //        const size_t binId =
+            //            (rowCount <= maxBinCount) ?
+            //            row : Math::RemapInterval<size_t>(row, rowCount - 1, binCount - 1);
+            //        auto &bin = zeroSampleVertHist[binId];
+            //        for (auto &pixelSampleCount : mEmSampleCounts[row])
+            //            bin.first += (pixelSampleCount == 0) ? 1 : 0; // zero count
+            //        bin.second += mEmWidth; // total count per row
+            //    }
 
-                // Print
-                for (size_t row = 0; row < zeroSampleVertHist.size(); ++row)
-                {
-                    const auto &bin = zeroSampleVertHist[row];
-                    const auto count = bin.first;
-                    const auto total = bin.second;
-                    const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
-                    printf("bin % 4d: % 7d pixels (%5.1f%%): ", row, count, percent);
-                    Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
-                    printf("\n");
-                }
-            }
-            else
-                printf("no data!\n");
+            //    // Print
+            //    for (size_t row = 0; row < zeroSampleVertHist.size(); ++row)
+            //    {
+            //        const auto &bin = zeroSampleVertHist[row];
+            //        const auto count = bin.first;
+            //        const auto total = bin.second;
+            //        const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
+            //        printf("row % 5d: % 7d of % 10d pixels (%7.3f%%): ", row, count, total, percent);
+            //        Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+            //        printf("\n");
+            //    }
+            //}
+            //else
+            //    printf("no data!\n");
+
+            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
+            //std::vector<std::pair<uint32_t, uint32_t>> zeroSampleHorzHist;
+            //if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            //{
+            //    // Compute histogram
+            //    const auto maxBinCount = 64u;
+            //    const auto colCount = mEmWidth;
+            //    const auto binCount = colCount; // std::min((uint32_t)colCount, maxBinCount);
+            //    zeroSampleHorzHist.resize(binCount, { 0, 0 });
+            //    for (size_t col = 0; col < colCount; ++col)
+            //    {
+            //        const size_t binId =
+            //            (colCount <= maxBinCount) ?
+            //            col : Math::RemapInterval<size_t>(col, colCount - 1, binCount - 1);
+            //        auto &bin = zeroSampleHorzHist[binId];
+            //        for (const auto &countsRow : mEmSampleCounts)
+            //            bin.first += (countsRow[col] == 0) ? 1 : 0; // zero count
+            //        bin.second += mEmHeight; // total count per col
+            //    }
+
+            //    // Print
+            //    for (size_t col = 0; col < zeroSampleHorzHist.size(); ++col)
+            //    {
+            //        const auto &bin = zeroSampleHorzHist[col];
+            //        const auto count = bin.first;
+            //        const auto total = bin.second;
+            //        const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
+            //        printf("col % 5d: % 7d of % 10d pixels (%7.3f%%): ", col, count, total, percent);
+            //        Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+            //        printf("\n");
+            //    }
+            //}
+            //else
+            //    printf("no data!\n");
 
             printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 // Compute histogram
                 std::vector<uint32_t> histogram;
-                const size_t maxKeyVal = 40u;
+                const size_t maxKeyVal = 46u;
                 for (auto &rowCounts : mEmSampleCounts)
                     for (const auto &pixelSampleCount : rowCounts)
                     {
@@ -1118,7 +1158,8 @@ protected:
         std::vector<std::vector<uint32_t>>          mEmSampleCounts;
 
 #ifdef _DEBUG
-        std::vector<std::vector<std::string>>       mEmHasSampleFlags; // to be inspected within debugger
+        //std::vector<std::vector<std::string>>       mEmHasSampleFlags; // to be inspected within debugger
+        std::vector<std::vector<uint32_t>>          mEmHasSampleFrom; // to be inspected within debugger
 #endif
     };
 
@@ -1130,8 +1171,8 @@ public: // debug: public is for visualisation
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxTriangleSpanDbg = 1.0f)
+        float                        aOversamplingFactorDbg = Math::InfinityF(),
+        float                        aMaxTriangleSpanDbg = Math::InfinityF())
     {
         PG3_ASSERT(oTriangles.empty());        
 
@@ -1189,7 +1230,7 @@ protected:
                 sharedVertices[faceVertices.Get(0)],
                 sharedVertices[faceVertices.Get(1)],
                 sharedVertices[faceVertices.Get(2)],
-                i));
+                i+1));
         }
 
         return true;
@@ -1221,8 +1262,8 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxTriangleSpanDbg = 1.0f,
+        float                        aOversamplingFactorDbg = Math::InfinityF(),
+        float                        aMaxTriangleSpanDbg = Math::InfinityF(),
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
@@ -1381,8 +1422,8 @@ protected:
         const TriangleNode          &aWholeTriangle,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxTriangleSpanDbg = 1.0f,
+        float                        aOversamplingFactorDbg = Math::InfinityF(),
+        float                        aMaxTriangleSpanDbg = Math::InfinityF(),
         TriangulationStats          *aStats = nullptr)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex0);
@@ -1423,6 +1464,7 @@ protected:
 
         // Determine minimal and maximal sampling frequency
         float minSamplesPerDimF, maxSamplesPerDimF;
+        aOversamplingFactorDbg = (aOversamplingFactorDbg == Math::InfinityF()) ? 0.7f : aOversamplingFactorDbg;
         SubdivTestSamplesPerDim(
             aVertex0, aVertex1, aVertex2,
             aEmImage.Size(), triangleCentroid,
@@ -1434,6 +1476,7 @@ protected:
         // TODO: Setup good/optimal threshold
         //const float triangleSpan = maxSinClamped - minSinClamped;
         const auto triangleSpan = maxSamplesPerDimF / minSamplesPerDimF;
+        aMaxTriangleSpanDbg = (aMaxTriangleSpanDbg == Math::InfinityF()) ? 1.1f : aMaxTriangleSpanDbg;
         if ((triangleSpan >= aMaxTriangleSpanDbg) && (maxSamplesPerDimF > 32.0f))
         {
             // Check sub-triangle near vertex 0
@@ -1492,8 +1535,8 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactorDbg = 1.0f,
-        float                        aMaxTriangleSpanDbg = 1.0f,
+        float                        aOversamplingFactorDbg = Math::InfinityF(),
+        float                        aMaxTriangleSpanDbg = Math::InfinityF(),
         TriangulationStats          *aStats = nullptr)
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
@@ -1549,16 +1592,16 @@ protected:
 
         // Central triangle
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], newVertices[1], newVertices[2], 0, &aTriangle));
+            new TriangleNode(newVertices[0], newVertices[1], newVertices[2], 1, &aTriangle));
 
         // 3 corner triangles
         const auto &oldVertices = aTriangle.sharedVertices;
         oSubdivisionTriangles.push_back(
-            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2], 1, &aTriangle));
+            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2], 2, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1], 2, &aTriangle));
+            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1], 3, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], 3, &aTriangle));
+            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], 4, &aTriangle));
 
         PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 4);
 
