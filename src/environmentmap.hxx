@@ -101,7 +101,7 @@ public:
         PG3_ASSERT(mDistribution != nullptr);
         PG3_ASSERT(!aDirection.IsZero());
 
-        const auto uv       = Geom::Dir2LatLong(aDirection);
+        const auto uv       = Geom::Dir2LatLongFast(aDirection);
         const auto radiance = EvalRadiance(uv, aDoBilinFiltering);
 
         if (oPdfW)
@@ -121,7 +121,7 @@ public:
     {
         PG3_ASSERT(mDistribution != nullptr);
 
-        const Vec2f uv = Geom::Dir2LatLong(aDirection);
+        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
         return mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
     }
 

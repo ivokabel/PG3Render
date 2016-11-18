@@ -111,6 +111,7 @@ public:
         const float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
         PG3_ASSERT_FLOAT_VALID(offset);
         PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
+
         // since the float random generator generates 1.0 from time to time, we need to ignore this one
         //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 

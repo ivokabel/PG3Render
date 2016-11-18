@@ -114,7 +114,7 @@ public:
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
 
-        const Vec2f uv = Geom::Dir2LatLong(aDirection);
+        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
         return Evaluate(uv, aDoBilinFiltering);
     }
 

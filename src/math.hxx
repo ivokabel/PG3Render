@@ -194,6 +194,7 @@ namespace Math
     // 50-year old atan approximation due to Hastings
     // Taken from http://lists.apple.com/archives/PerfOptimization-dev/2005/Jan/msg00051.html
     // |error| < 0.005
+    // Drawback: slightly horizontally distorted mapping with 4 thin "dead" vertical stripes
     PG3_PROFILING_NOINLINE
     float FastAtan2(float y, float x)
     {

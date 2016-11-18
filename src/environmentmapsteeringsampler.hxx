@@ -994,7 +994,7 @@ protected:
 
             mLevelStats[aTriangle.subdivLevel].AddSample();
 
-            const Vec2f uv = Geom::Dir2LatLong(aSampleDir);
+            const Vec2f uv = Geom::Dir2LatLongFast(aSampleDir);
 
             // UV to image coords
             const float x = uv.x * (float)mEmWidth;
