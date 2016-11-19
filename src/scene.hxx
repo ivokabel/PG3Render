@@ -446,7 +446,7 @@ public:
             //}
 
             // Visualize subdivision
-            const uint32_t dbgEm = (uint32_t)aDbgAux1;
+            const uint32_t dbgEm = static_cast<uint32_t>(aDbgAux1);
             const char *emPath = [dbgEm](){
                 switch (dbgEm)
                 {
