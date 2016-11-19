@@ -980,6 +980,11 @@ protected:
 #endif
         {}
 
+        bool IsActive()
+        {
+            return true;
+        }
+
         void AddTriangle(const TriangleNode &aTriangle)
         {
             if (mLevelStats.size() < (aTriangle.subdivLevel + 1))
@@ -1018,8 +1023,6 @@ protected:
 
         void Print()
         {
-#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
-
             printf("\nSteering Sampler - Triangulation Statistics:\n");
             if (mLevelStats.size() > 0)
             {
@@ -1071,7 +1074,7 @@ protected:
             else
                 printf("no data!\n");
 
-            ComputeZeroSampleCountsHorz(64);
+            ComputeZeroSampleCountsHorz(32);
             printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
             if (!mZeroSampleCountsHorz.empty())
             {
@@ -1107,14 +1110,10 @@ protected:
                 printf("no data!\n");
 
             printf("\n");
-
-#endif
         }
 
         void ComputeZeroSampleCountsVert(const uint32_t maxBinCount = 0u)
         {
-#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
-
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 const uint32_t rowCount = static_cast<uint32_t>(mEmSampleCounts.size());
@@ -1132,8 +1131,6 @@ protected:
                     bin.second += mEmWidth; // total count per row
                 }
             }
-
-#endif
         }
 
         const std::vector<std::pair<uint32_t, uint32_t>> &GetZeroSampleCountsVert()
@@ -1143,8 +1140,6 @@ protected:
 
         void ComputeZeroSampleCountsHorz(const uint32_t maxBinCount = 0u)
         {
-#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
-
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 const uint32_t colCount = mEmWidth;
@@ -1162,14 +1157,10 @@ protected:
                     bin.second += mEmHeight; // total count per col
                 }
             }
-
-#endif
         }
 
         void ComputeSamplesHist(const uint32_t maxKeyVal = 46u)
         {
-#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
-
             if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
             {
                 for (auto &rowCounts : mEmSampleCounts)
@@ -1183,8 +1174,6 @@ protected:
                     }
                 }
             }
-
-#endif
         }
     protected:
 
@@ -1206,6 +1195,66 @@ protected:
 #endif
     };
 
+    // Empty shell for efficient switching off
+    class TriangulationStatsDummy
+    {
+    public:
+
+        TriangulationStatsDummy(const EnvironmentMapImage &aEmImage)
+        {
+            aEmImage; // unused param
+        }
+
+        bool IsActive()
+        {
+            return false;
+        }
+
+        void AddTriangle(const TriangleNode &aTriangle)
+        {
+            aTriangle; // unused param
+        }
+
+        void AddSample(
+            const TriangleNode  &aTriangle,
+            const Vec3f         &aSampleDir)
+        {
+            aTriangle, aSampleDir; // unused param
+        }
+
+        void Print() {}
+
+        void ComputeZeroSampleCountsVert(const uint32_t maxBinCount = 0u)
+        {
+            maxBinCount; // unused param
+        }
+
+        const std::vector<std::pair<uint32_t, uint32_t>> &GetZeroSampleCountsVert()
+        {
+            return mDummyCounts;
+        }
+
+        void ComputeZeroSampleCountsHorz(const uint32_t maxBinCount = 0u)
+        {
+            maxBinCount; // unused param
+        }
+
+        void ComputeSamplesHist(const uint32_t maxKeyVal = 0u)
+        {
+            maxKeyVal; // unused param
+        }
+
+    protected:
+
+        std::vector<std::pair<uint32_t, uint32_t>>  mDummyCounts;
+    };
+
+#if defined PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS && !defined PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+    typedef TriangulationStats      TriangulationStatsSwitchable;
+#else
+    typedef TriangulationStatsDummy TriangulationStatsSwitchable;
+#endif
+
 public: // debug: public is for visualisation
 
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
@@ -1221,13 +1270,13 @@ public: // debug: public is for visualisation
 
         std::deque<TriangleNode*> toDoTriangles;
 
-        TriangulationStats stats(aEmImage);
+        TriangulationStatsSwitchable stats(aEmImage);
 
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel,
-                                   aEmImage, aUseBilinearFiltering, &stats,
+                                   aEmImage, aUseBilinearFiltering, stats,
                                    aOversamplingFactorDbg, aMaxTriangleSpanDbg))
             return false;
 
@@ -1298,13 +1347,14 @@ protected:
     // are either moved from the "to do" set into the output list or deleted on error.
     // Although the "to do" triangle set is a TreeNode* container, it must contain 
     // TriangleNode* data only, otherwise an error will occur.
+    template <class TTriangulationStats>
     static bool RefineEmTriangulation(
         std::list<TreeNode*>        &oRefinedTriangles,
         std::deque<TriangleNode*>   &aToDoTriangles,
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        TriangulationStats          *aStats = nullptr,
+        TTriangulationStats         &aStats,
         float                        aOversamplingFactorDbg = Math::InfinityF(),
         float                        aMaxTriangleSpanDbg = Math::InfinityF())
     {
@@ -1396,6 +1446,7 @@ protected:
         aMinSamplesPerDimF = samplesPerDim.y; // based on the maximal sine
     }
 
+    template <class TTriangulationStats>
     static bool IsEstimationErrorTooLarge(
         const TriangleNode          &aWholeTriangle,
         const Vec3f                 &aSubVertex0,
@@ -1404,8 +1455,7 @@ protected:
         uint32_t                     samplesPerDim,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        TriangulationStats          *aStats
-        )
+        TTriangulationStats         &aStats)
     {
         const float binSize = 1.f / samplesPerDim;
         for (uint32_t i = 0; i <= samplesPerDim; ++i)
@@ -1439,8 +1489,7 @@ protected:
 
                 PG3_ASSERT_FLOAT_NONNEGATIVE(emVal);
 
-                if (aStats != nullptr)
-                    aStats->AddSample(aWholeTriangle, sampleDir);
+                aStats.AddSample(aWholeTriangle, sampleDir);
 
                 // Analyze error
                 const auto diff = std::abs(emVal - approxVal);
@@ -1453,6 +1502,7 @@ protected:
         return false;
     }
 
+    template <class TTriangulationStats>
     static bool TriangleHasToBeSubdividedImpl(
         const Vec3f                 &aVertex0,
         const float                  aVertex0Sin,
@@ -1463,9 +1513,9 @@ protected:
         const TriangleNode          &aWholeTriangle,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
+        TTriangulationStats         &aStats,
         float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF(),
-        TriangulationStats          *aStats = nullptr)
+        float                        aMaxTriangleSpanDbg = Math::InfinityF())
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex0);
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex1);
@@ -1514,8 +1564,6 @@ protected:
                                 aOversamplingFactorDbg);
 
         // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
-        // TODO: Setup good/optimal threshold
-        //const float triangleSpan = maxSinClamped - minSinClamped;
         const auto triangleSpan = maxSamplesPerDimF / minSamplesPerDimF;
         aMaxTriangleSpanDbg = (aMaxTriangleSpanDbg == Math::InfinityF()) ? 1.1f : aMaxTriangleSpanDbg;
         if ((triangleSpan >= aMaxTriangleSpanDbg) && (maxSamplesPerDimF > 32.0f))
@@ -1526,8 +1574,7 @@ protected:
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-                    aStats))
+                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
                 return true;
 
             // Check sub-triangle near vertex 1
@@ -1536,8 +1583,7 @@ protected:
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-                    aStats))
+                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
                 return true;
 
             // Check sub-triangle near vertex 2
@@ -1546,8 +1592,7 @@ protected:
                     edgeCentre20Dir, edgeCentre20Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-                    aStats))
+                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
                 return true;
 
             // Check center sub-triangle
@@ -1556,14 +1601,13 @@ protected:
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-                    aStats))
+                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
                 return true;
 
             return false;
         }
 
-        // Sample
+        // Sample and check error
         const bool result = IsEstimationErrorTooLarge(
             aWholeTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(maxSamplesPerDimF),
             aEmImage, aUseBilinearFiltering, aStats);
@@ -1571,12 +1615,13 @@ protected:
         return result;
     }
 
+    template <class TTriangulationStats>
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        TriangulationStats          *aStats = nullptr,
+        TTriangulationStats         &aStats,
         float                        aOversamplingFactorDbg = Math::InfinityF(),
         float                        aMaxTriangleSpanDbg = Math::InfinityF())
     {
@@ -1584,8 +1629,7 @@ protected:
         if (aTriangle.subdivLevel >= aMaxSubdivLevel)
             return false;
 
-        if (aStats != nullptr)
-            aStats->AddTriangle(aTriangle);
+        aStats.AddTriangle(aTriangle);
 
         const auto &vertices = aTriangle.sharedVertices;
 
@@ -1598,8 +1642,7 @@ protected:
             vertices[1]->dir, vertex1Sin,
             vertices[2]->dir, vertex2Sin,
             aTriangle, aEmImage, aUseBilinearFiltering,
-            aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-            aStats);
+            aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg);
 
         return result;
     }
@@ -2058,24 +2101,21 @@ public:
         return true;
     }
 
+    template <class TTriangulationStats>
     static bool _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(
         std::deque<TriangleNode*>   &aInitialTriangles,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
-        bool                         aCheckSamplingCoverage,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        TTriangulationStats         &aStats,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
-        std::unique_ptr<TriangulationStats> triangulationStats;
-        if (aCheckSamplingCoverage)
-            triangulationStats.reset(new TriangulationStats(aEmImage));
-
         std::list<TreeNode*> refinedTriangles;
         if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aMaxSubdivLevel,
-                                   aEmImage, aUseBilinearFiltering, triangulationStats.get()))
+                                   aEmImage, aUseBilinearFiltering, aStats))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
@@ -2182,10 +2222,10 @@ public:
         }
 
         // Check pixels without error samples
-        if (triangulationStats.get())
+        if (aStats.IsActive())
         {
-            triangulationStats->ComputeZeroSampleCountsVert();
-            const auto &zeroSampleCountsVert = triangulationStats->GetZeroSampleCountsVert();
+            aStats.ComputeZeroSampleCountsVert();
+            const auto &zeroSampleCountsVert = aStats.GetZeroSampleCountsVert();
             if (zeroSampleCountsVert.empty())
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -2249,13 +2289,32 @@ public:
             return false;
         }
 
-        if (!_UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
-                                                                  aMaxSubdivLevel,
-                                                                  aExpectedRefinedCount,
-                                                                  aCheckSamplingCoverage,
-                                                                  aMaxUtBlockPrintLevel,
-                                                                  *image.get(),
-                                                                  aUseBilinearFiltering))
+        bool refinePassed;
+        if (aCheckSamplingCoverage)
+        {
+            TriangulationStats stats(*image.get());
+            refinePassed =
+                _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
+                                                                     aMaxSubdivLevel,
+                                                                     aExpectedRefinedCount,
+                                                                     aMaxUtBlockPrintLevel,
+                                                                     stats,
+                                                                     *image.get(),
+                                                                     aUseBilinearFiltering);
+        }
+        else
+        {
+            TriangulationStatsDummy stats(*image.get());
+            refinePassed =
+                _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
+                                                                     aMaxSubdivLevel,
+                                                                     aExpectedRefinedCount,
+                                                                     aMaxUtBlockPrintLevel,
+                                                                     stats,
+                                                                     *image.get(),
+                                                                     aUseBilinearFiltering);
+        }
+        if (!refinePassed)
         {
             FreeTrianglesDeque(initialTriangles);
             return false;
