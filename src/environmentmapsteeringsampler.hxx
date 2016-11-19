@@ -997,22 +997,26 @@ protected:
 
             mLevelStats[aTriangle.subdivLevel].AddSample();
 
-            const Vec2f uv = Geom::Dir2LatLongFast(aSampleDir);
+            // Sample counts per EM pixel (just for the first level of triangles)
+            if (aTriangle.subdivLevel == 0)
+            {
+                const Vec2f uv = Geom::Dir2LatLongFast(aSampleDir);
 
-            // UV to image coords
-            const float x = uv.x * (float)mEmWidth;
-            const float y = uv.y * (float)mEmHeight;
-            const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mEmWidth  - 1u);
-            const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mEmHeight - 1u);
+                // UV to image coords
+                const float x = uv.x * (float)mEmWidth;
+                const float y = uv.y * (float)mEmHeight;
+                const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mEmWidth - 1u);
+                const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mEmHeight - 1u);
 
-            mEmSampleCounts[y0][x0]++;
+                mEmSampleCounts[y0][x0]++;
 #ifdef _DEBUG
-            //mEmHasSampleFlags[y0][x0] = aTriangle.index;
-            mEmHasSampleFrom[y0][x0] = aTriangle.index;
+                //mEmHasSampleFlags[y0][x0] = aTriangle.index;
+                mEmHasSampleFrom[y0][x0] = aTriangle.index;
 #endif
+            }
         }
 
-        void Print() const
+        void Print()
         {
 #ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
 
@@ -1049,96 +1053,51 @@ protected:
             else
                 printf("no data!\n");
 
-            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
-            //std::vector<std::pair<uint32_t, uint32_t>> zeroSampleVertHist;
-            //if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
-            //{
-            //    // Compute histogram
-            //    const auto maxBinCount= 32u;
-            //    const auto rowCount = mEmSampleCounts.size();
-            //    const auto binCount = std::min((uint32_t)rowCount, maxBinCount);
-            //    zeroSampleVertHist.resize(binCount, { 0, 0 });
-            //    for (size_t row = 0; row < rowCount; ++row)
-            //    {
-            //        const size_t binId =
-            //            (rowCount <= maxBinCount) ?
-            //            row : Math::RemapInterval<size_t>(row, rowCount - 1, binCount - 1);
-            //        auto &bin = zeroSampleVertHist[binId];
-            //        for (auto &pixelSampleCount : mEmSampleCounts[row])
-            //            bin.first += (pixelSampleCount == 0) ? 1 : 0; // zero count
-            //        bin.second += mEmWidth; // total count per row
-            //    }
-
-            //    // Print
-            //    for (size_t row = 0; row < zeroSampleVertHist.size(); ++row)
-            //    {
-            //        const auto &bin = zeroSampleVertHist[row];
-            //        const auto count = bin.first;
-            //        const auto total = bin.second;
-            //        const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
-            //        printf("row % 5d: % 7d of % 10d pixels (%7.3f%%): ", row, count, total, percent);
-            //        Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
-            //        printf("\n");
-            //    }
-            //}
-            //else
-            //    printf("no data!\n");
-
-            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
-            //std::vector<std::pair<uint32_t, uint32_t>> zeroSampleHorzHist;
-            //if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
-            //{
-            //    // Compute histogram
-            //    const auto maxBinCount = 64u;
-            //    const auto colCount = mEmWidth;
-            //    const auto binCount = colCount; // std::min((uint32_t)colCount, maxBinCount);
-            //    zeroSampleHorzHist.resize(binCount, { 0, 0 });
-            //    for (size_t col = 0; col < colCount; ++col)
-            //    {
-            //        const size_t binId =
-            //            (colCount <= maxBinCount) ?
-            //            col : Math::RemapInterval<size_t>(col, colCount - 1, binCount - 1);
-            //        auto &bin = zeroSampleHorzHist[binId];
-            //        for (const auto &countsRow : mEmSampleCounts)
-            //            bin.first += (countsRow[col] == 0) ? 1 : 0; // zero count
-            //        bin.second += mEmHeight; // total count per col
-            //    }
-
-            //    // Print
-            //    for (size_t col = 0; col < zeroSampleHorzHist.size(); ++col)
-            //    {
-            //        const auto &bin = zeroSampleHorzHist[col];
-            //        const auto count = bin.first;
-            //        const auto total = bin.second;
-            //        const auto percent = ((count != 0) && (total != 0)) ? ((100.f * count) / total) : 0;
-            //        printf("col % 5d: % 7d of % 10d pixels (%7.3f%%): ", col, count, total, percent);
-            //        Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
-            //        printf("\n");
-            //    }
-            //}
-            //else
-            //    printf("no data!\n");
-
-            printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
-            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            ComputeZeroSampleCountsVert(32);
+            printf("\nSteering Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
+            if (!mZeroSampleCountsVert.empty())
             {
-                // Compute histogram
-                std::vector<uint32_t> histogram;
-                const size_t maxKeyVal = 46u;
-                for (auto &rowCounts : mEmSampleCounts)
-                    for (const auto &pixelSampleCount : rowCounts)
-                    {
-                        const auto keyVal = std::min((size_t)pixelSampleCount, maxKeyVal);
-                        if (keyVal >= histogram.size())
-                            histogram.resize(keyVal + 1, 0u);
-                        histogram[keyVal]++;
-                    }
-
-                // Print histogram
-                const uint32_t maxCount = *std::max_element(histogram.begin(), histogram.end());
-                for (size_t samples = 0; samples < histogram.size(); ++samples)
+                for (size_t row = 0; row < mZeroSampleCountsVert.size(); ++row)
                 {
-                    const auto &count = histogram[samples];
+                    const auto &bin = mZeroSampleCountsVert[row];
+                    const auto zeroCount = bin.first;
+                    const auto total = bin.second;
+                    const auto percent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
+                    printf("row % 5d: % 7d of % 10d pixels (%7.3f%%): ", row, zeroCount, total, percent);
+                    Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+                    printf("\n");
+                }
+            }
+            else
+                printf("no data!\n");
+
+            ComputeZeroSampleCountsHorz(64);
+            printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
+            if (!mZeroSampleCountsHorz.empty())
+            {
+                for (size_t col = 0; col < mZeroSampleCountsHorz.size(); ++col)
+                {
+                    const auto &bin = mZeroSampleCountsHorz[col];
+                    const auto zeroCount = bin.first;
+                    const auto total = bin.second;
+                    const auto percent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
+                    printf("col % 5d: % 7d of % 10d pixels (%7.3f%%): ", col, zeroCount, total, percent);
+                    Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+                    printf("\n");
+                }
+            }
+            else
+                printf("no data!\n");
+
+            ComputeSamplesHist();
+            printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
+            if (!mSamplesHist.empty())
+            {
+                // Print histogram
+                const uint32_t maxCount = *std::max_element(mSamplesHist.begin(), mSamplesHist.end());
+                for (size_t samples = 0; samples < mSamplesHist.size(); ++samples)
+                {
+                    const auto &count = mSamplesHist[samples];
                     printf("% 4d samples: % 8d pixels: ", samples, count);
                     Utils::PrintHistogramTicks(count, maxCount, 150, (samples == 0) ? '!' : '.');
                     printf("\n");
@@ -1152,10 +1111,94 @@ protected:
 #endif
         }
 
+        void ComputeZeroSampleCountsVert(const uint32_t maxBinCount = 0u)
+        {
+#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
+
+            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            {
+                const uint32_t rowCount = static_cast<uint32_t>(mEmSampleCounts.size());
+                const uint32_t binCount =
+                    (maxBinCount > 0) ? std::min(rowCount, maxBinCount) : rowCount;
+                mZeroSampleCountsVert.resize(binCount, { 0, 0 });
+                for (size_t row = 0; row < rowCount; ++row)
+                {
+                    const size_t binId =
+                        (rowCount <= maxBinCount) ?
+                    row : Math::RemapInterval<size_t>(row, rowCount - 1, binCount - 1);
+                    auto &bin = mZeroSampleCountsVert[binId];
+                    for (auto &pixelSampleCount : mEmSampleCounts[row])
+                        bin.first += (pixelSampleCount == 0) ? 1 : 0; // zero count
+                    bin.second += mEmWidth; // total count per row
+                }
+            }
+
+#endif
+        }
+
+        const std::vector<std::pair<uint32_t, uint32_t>> &GetZeroSampleCountsVert()
+        {
+            return mZeroSampleCountsVert;
+        }
+
+        void ComputeZeroSampleCountsHorz(const uint32_t maxBinCount = 0u)
+        {
+#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
+
+            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            {
+                const uint32_t colCount = mEmWidth;
+                const uint32_t binCount =
+                    (maxBinCount > 0) ? std::min(colCount, maxBinCount) : colCount;
+                mZeroSampleCountsHorz.resize(binCount, { 0, 0 });
+                for (size_t col = 0; col < colCount; ++col)
+                {
+                    const size_t binId =
+                        (colCount <= maxBinCount) ?
+                    col : Math::RemapInterval<size_t>(col, colCount - 1, binCount - 1);
+                    auto &bin = mZeroSampleCountsHorz[binId];
+                    for (const auto &countsRow : mEmSampleCounts)
+                        bin.first += (countsRow[col] == 0) ? 1 : 0; // zero count
+                    bin.second += mEmHeight; // total count per col
+                }
+            }
+
+#endif
+        }
+
+        void ComputeSamplesHist(const uint32_t maxKeyVal = 46u)
+        {
+#ifdef PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS
+
+            if ((mEmWidth > 0) && (mEmHeight > 0) && !mEmSampleCounts.empty())
+            {
+                for (auto &rowCounts : mEmSampleCounts)
+                {
+                    for (const auto &pixelSampleCount : rowCounts)
+                    {
+                        const auto keyVal = std::min((uint32_t)pixelSampleCount, maxKeyVal);
+                        if (keyVal >= mSamplesHist.size())
+                            mSamplesHist.resize(keyVal + 1, 0u);
+                        mSamplesHist[keyVal]++;
+                    }
+                }
+            }
+
+#endif
+        }
+    protected:
+
         std::vector<SingleLevelTriangulationStats>  mLevelStats;
         uint32_t                                    mEmWidth;
         uint32_t                                    mEmHeight;
+
+        // Just for the first level of triangles (which covers the sphere completely)
         std::vector<std::vector<uint32_t>>          mEmSampleCounts;
+
+        // Computed in the post-processing step
+        std::vector<std::pair<uint32_t, uint32_t>>  mZeroSampleCountsVert;
+        std::vector<std::pair<uint32_t, uint32_t>>  mZeroSampleCountsHorz;
+        std::vector<uint32_t>                       mSamplesHist; // samples per pixel
 
 #ifdef _DEBUG
         //std::vector<std::vector<std::string>>       mEmHasSampleFlags; // to be inspected within debugger
@@ -1184,9 +1227,8 @@ public: // debug: public is for visualisation
             return false;
 
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel,
-                                   aEmImage, aUseBilinearFiltering,
-                                   aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-                                   &stats))
+                                   aEmImage, aUseBilinearFiltering, &stats,
+                                   aOversamplingFactorDbg, aMaxTriangleSpanDbg))
             return false;
 
         stats.Print();
@@ -1262,9 +1304,9 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
+        TriangulationStats          *aStats = nullptr,
         float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF(),
-        TriangulationStats          *aStats = nullptr)
+        float                        aMaxTriangleSpanDbg = Math::InfinityF())
     {
         PG3_ASSERT(!aToDoTriangles.empty());
         PG3_ASSERT(oRefinedTriangles.empty());
@@ -1281,9 +1323,8 @@ protected:
                 continue;
 
             if (TriangleHasToBeSubdivided(
-                    *currentTriangle, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering,
-                    aOversamplingFactorDbg, aMaxTriangleSpanDbg,
-                    aStats))
+                    *currentTriangle, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering, aStats,
+                    aOversamplingFactorDbg, aMaxTriangleSpanDbg))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -1464,13 +1505,13 @@ protected:
 
         // Determine minimal and maximal sampling frequency
         float minSamplesPerDimF, maxSamplesPerDimF;
-        aOversamplingFactorDbg = (aOversamplingFactorDbg == Math::InfinityF()) ? 0.7f : aOversamplingFactorDbg;
-        SubdivTestSamplesPerDim(
-            aVertex0, aVertex1, aVertex2,
-            aEmImage.Size(), triangleCentroid,
-            minSinClamped, maxSinClamped,
-            minSamplesPerDimF, maxSamplesPerDimF,
-            aOversamplingFactorDbg);
+        aOversamplingFactorDbg =
+            (aOversamplingFactorDbg == Math::InfinityF()) ? 0.7f : aOversamplingFactorDbg;
+        SubdivTestSamplesPerDim(aVertex0, aVertex1, aVertex2,
+                                aEmImage.Size(), triangleCentroid,
+                                minSinClamped, maxSinClamped,
+                                minSamplesPerDimF, maxSamplesPerDimF,
+                                aOversamplingFactorDbg);
 
         // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
         // TODO: Setup good/optimal threshold
@@ -1535,9 +1576,9 @@ protected:
         uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
+        TriangulationStats          *aStats = nullptr,
         float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF(),
-        TriangulationStats          *aStats = nullptr)
+        float                        aMaxTriangleSpanDbg = Math::InfinityF())
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
         if (aTriangle.subdivLevel >= aMaxSubdivLevel)
@@ -2021,14 +2062,20 @@ public:
         std::deque<TriangleNode*>   &aInitialTriangles,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
+        bool                         aCheckSamplingCoverage,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
+        std::unique_ptr<TriangulationStats> triangulationStats;
+        if (aCheckSamplingCoverage)
+            triangulationStats.reset(new TriangulationStats(aEmImage));
+
         std::list<TreeNode*> refinedTriangles;
-        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering))
+        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aMaxSubdivLevel,
+                                   aEmImage, aUseBilinearFiltering, triangulationStats.get()))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
@@ -2134,6 +2181,37 @@ public:
             }
         }
 
+        // Check pixels without error samples
+        if (triangulationStats.get())
+        {
+            triangulationStats->ComputeZeroSampleCountsVert();
+            const auto &zeroSampleCountsVert = triangulationStats->GetZeroSampleCountsVert();
+            if (zeroSampleCountsVert.empty())
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                    "Failed to generate ZeroSampleCountsVert");
+                FreeNodesList(refinedTriangles);
+                return false;
+            }
+            for (size_t row = 0; row < zeroSampleCountsVert.size(); ++row)
+            {
+                const auto &bin = zeroSampleCountsVert[row];
+                const auto zeroCount = bin.first;
+                const auto total = bin.second;
+                const auto zeroCountPercent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
+                // We should test against 0.0, but since there is a horizontal mapping problem caused by 
+                // Math::FastAtan2, we need to be a little bit tolerant. When the problem is solved,
+                // this should be switched to 0.0.
+                if (zeroCountPercent >= 0.4)
+                {
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                        "There is an EM row which containt more than 0.4% non-sampled pixels!");
+                    FreeNodesList(refinedTriangles);
+                    return false;
+                }
+            }
+        }
+
         FreeNodesList(refinedTriangles);
         
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
@@ -2146,6 +2224,7 @@ public:
         char                        *aTestName,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
+        bool                         aCheckSamplingCoverage,
         char                        *aImagePath,
         bool                         aUseBilinearFiltering)
     {
@@ -2173,6 +2252,7 @@ public:
         if (!_UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
                                                                   aMaxSubdivLevel,
                                                                   aExpectedRefinedCount,
+                                                                  aCheckSamplingCoverage,
                                                                   aMaxUtBlockPrintLevel,
                                                                   *image.get(),
                                                                   aUseBilinearFiltering))
@@ -2199,38 +2279,50 @@ public:
         // TODO: ?
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Small white EM", 5, 20,
+                                              "Const white 8x4", 5, 20, true,
                                               ".\\Light Probes\\Debugging\\Const white 8x4.exr",
                                               false))
             return false;
 
-        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-        //                                      "Large white EM",
-        //                                      ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-        //                                      false))
-        //    return false;
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Const white 512x256", 5, 20, true,
+                                              ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+                                              false))
+            return false;
 
         if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Single pixel EM", 5, 0,
+                                              "Const white 1024x512", 5, 20, true,
+                                              ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                                              false))
+            return false;
+
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Single pixel", 5, 0, false,
                                               ".\\Light Probes\\Debugging\\Single pixel.exr",
                                               false))
             return false;
 
-        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-        //                                      "Satellite EM",
-        //                                      ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-        //                                      false))
-        //    return false;
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Three point lighting 1024x512", 5, 0, false,
+                                              ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                                              false))
+            return false;
+
+        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+                                              "Satellite", 5, 0, false,
+                                              ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                                              false))
+            return false;
 
         //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-        //                                      "Peace Garden EM",
-        //                                      ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-        //                                      false))
-        //    return false;
-
-        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-        //                                      "Doge2 EM",
+        //                                      "Doge2", 5, 0, false,
         //                                      ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+        //                                      false))
+        //    return false;
+
+        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
+        //                                      "Peace Garden", 5, 0, false,
+        //                                      ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
         //                                      false))
         //    return false;
 
