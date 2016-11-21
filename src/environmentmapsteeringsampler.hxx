@@ -1083,7 +1083,7 @@ protected:
                     Utils::IntegerToHumanReadable(level.GetTriangleCount(), triangleCountStr);
                     Utils::IntegerToHumanReadable(level.GetSampleCount(), sampleCountStr);
                     printf(
-                        "Level %d: triangles % 4s, samples % 4s (% 4.1f per triangle)\n",
+                        "Level %d: % 4s triangles, % 4s samples (% 4.1f per triangle)\n",
                         i,
                         triangleCountStr.c_str(), //level.GetTriangleCount(),
                         sampleCountStr.c_str(), //level.GetSampleCount(),
@@ -1101,58 +1101,58 @@ protected:
             else
                 printf("no data!\n");
 
-            ComputeZeroSampleCountsVert(32);
-            printf("\nSteering Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
-            if (!mZeroSampleCountsVert.empty())
-            {
-                for (size_t row = 0; row < mZeroSampleCountsVert.size(); ++row)
-                {
-                    const auto &bin = mZeroSampleCountsVert[row];
-                    const auto zeroCount = bin.first;
-                    const auto total = bin.second;
-                    const auto percent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
-                    printf("row % 5d: % 7d of % 10d pixels (%7.3f%%): ", row, zeroCount, total, percent);
-                    Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
-                    printf("\n");
-                }
-            }
-            else
-                printf("no data!\n");
+            //ComputeZeroSampleCountsVert(32);
+            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
+            //if (!mZeroSampleCountsVert.empty())
+            //{
+            //    for (size_t row = 0; row < mZeroSampleCountsVert.size(); ++row)
+            //    {
+            //        const auto &bin = mZeroSampleCountsVert[row];
+            //        const auto zeroCount = bin.first;
+            //        const auto total = bin.second;
+            //        const auto percent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
+            //        printf("row % 5d: % 7d of % 10d pixels (%7.3f%%): ", row, zeroCount, total, percent);
+            //        Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+            //        printf("\n");
+            //    }
+            //}
+            //else
+            //    printf("no data!\n");
 
-            ComputeZeroSampleCountsHorz(32);
-            printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
-            if (!mZeroSampleCountsHorz.empty())
-            {
-                for (size_t col = 0; col < mZeroSampleCountsHorz.size(); ++col)
-                {
-                    const auto &bin = mZeroSampleCountsHorz[col];
-                    const auto zeroCount = bin.first;
-                    const auto total = bin.second;
-                    const auto percent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
-                    printf("col % 5d: % 7d of % 10d pixels (%7.3f%%): ", col, zeroCount, total, percent);
-                    Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
-                    printf("\n");
-                }
-            }
-            else
-                printf("no data!\n");
+            //ComputeZeroSampleCountsHorz(32);
+            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
+            //if (!mZeroSampleCountsHorz.empty())
+            //{
+            //    for (size_t col = 0; col < mZeroSampleCountsHorz.size(); ++col)
+            //    {
+            //        const auto &bin = mZeroSampleCountsHorz[col];
+            //        const auto zeroCount = bin.first;
+            //        const auto total = bin.second;
+            //        const auto percent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
+            //        printf("col % 5d: % 7d of % 10d pixels (%7.3f%%): ", col, zeroCount, total, percent);
+            //        Utils::PrintHistogramTicks((uint32_t)std::round(percent), 100, 100);
+            //        printf("\n");
+            //    }
+            //}
+            //else
+            //    printf("no data!\n");
 
-            ComputeSamplesHist();
-            printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
-            if (!mSamplesHist.empty())
-            {
-                // Print histogram
-                const uint32_t maxCount = *std::max_element(mSamplesHist.begin(), mSamplesHist.end());
-                for (size_t samples = 0; samples < mSamplesHist.size(); ++samples)
-                {
-                    const auto &count = mSamplesHist[samples];
-                    printf("% 4d samples: % 8d pixels: ", samples, count);
-                    Utils::PrintHistogramTicks(count, maxCount, 150, (samples == 0) ? '!' : '.');
-                    printf("\n");
-                }
-            }
-            else
-                printf("no data!\n");
+            //ComputeSamplesHist();
+            //printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
+            //if (!mSamplesHist.empty())
+            //{
+            //    // Print histogram
+            //    const uint32_t maxCount = *std::max_element(mSamplesHist.begin(), mSamplesHist.end());
+            //    for (size_t samples = 0; samples < mSamplesHist.size(); ++samples)
+            //    {
+            //        const auto &count = mSamplesHist[samples];
+            //        printf("% 4d samples: % 8d pixels: ", samples, count);
+            //        Utils::PrintHistogramTicks(count, maxCount, 150, (samples == 0) ? '!' : '.');
+            //        printf("\n");
+            //    }
+            //}
+            //else
+            //    printf("no data!\n");
 
             printf("\n");
         }

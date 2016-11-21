@@ -486,7 +486,7 @@ public:
                 case 8:   return ".\\Light Probes\\Debugging\\Const white 2048x1024.exr";
                 case 9:   return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
                 case 10:  return ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr";
-                    //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f // 16x8
+                case 11:  return ".\\Light Probes\\Debugging\\Single pixel.exr"; // 16x8
                 default: return "";
                 }
             }();
