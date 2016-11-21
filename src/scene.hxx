@@ -487,6 +487,7 @@ public:
                 case 9:   return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
                 case 10:  return ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr";
                 case 11:  return ".\\Light Probes\\Debugging\\Single pixel.exr"; // 16x8
+                case 12:  return ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr"; // 4000x2000
                 default: return "";
                 }
             }();

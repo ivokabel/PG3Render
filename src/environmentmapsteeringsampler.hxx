@@ -983,11 +983,18 @@ protected:
     class SingleLevelTriangulationStats
     {
     public:
-        SingleLevelTriangulationStats() : mTriangleCount(0u), mSampleCount(0u) {}
+        SingleLevelTriangulationStats() :
+            mAllTriangleCount(0u), mRemovedTriangleCount(0u), mSampleCount(0u)
+        {}
 
         void AddTriangle()
         {
-            mTriangleCount++;
+            mAllTriangleCount++;
+        }
+
+        void RemoveTriangle()
+        {
+            mRemovedTriangleCount++;
         }
 
         void AddSample()
@@ -995,9 +1002,14 @@ protected:
             mSampleCount++;
         }
 
-        uint32_t GetTriangleCount() const
+        int32_t GetFinalTriangleCount() const
         {
-            return mTriangleCount;
+            return (int32_t)mAllTriangleCount - mRemovedTriangleCount;
+        }
+
+        uint32_t GetAllTriangleCount() const
+        {
+            return mAllTriangleCount;
         }
 
         uint32_t GetSampleCount() const
@@ -1007,7 +1019,8 @@ protected:
 
     protected:
 
-        uint32_t mTriangleCount;
+        uint32_t mAllTriangleCount;
+        uint32_t mRemovedTriangleCount;
         uint32_t mSampleCount;
     };
 
@@ -1036,6 +1049,14 @@ protected:
                 mLevelStats.resize(aTriangle.subdivLevel + 1);
 
             mLevelStats[aTriangle.subdivLevel].AddTriangle();
+        }
+
+        void RemoveTriangle(const TriangleNode &aTriangle)
+        {
+            if (mLevelStats.size() < (aTriangle.subdivLevel + 1))
+                mLevelStats.resize(aTriangle.subdivLevel + 1);
+
+            mLevelStats[aTriangle.subdivLevel].RemoveTriangle();
         }
 
         void AddSample(
@@ -1071,32 +1092,44 @@ protected:
             printf("\nSteering Sampler - Triangulation Statistics:\n");
             if (mLevelStats.size() > 0)
             {
-                uint32_t totalTriangleCount = 0u;
+                uint32_t totalAllTriangleCount = 0u;
+                uint32_t totalFinalTriangleCount = 0u;
                 uint32_t totalSampleCount = 0u;
 
                 const size_t levels = mLevelStats.size();
                 for (size_t i = 0; i < levels; ++i)
                 {
                     const auto &level = mLevelStats[i];
-                    const auto samplesPerTriangle = (double)level.GetSampleCount() / level.GetTriangleCount();
-                    std::string triangleCountStr, sampleCountStr;
-                    Utils::IntegerToHumanReadable(level.GetTriangleCount(), triangleCountStr);
+                    const auto samplesPerTriangle = (double)level.GetSampleCount() / level.GetAllTriangleCount();
+                    std::string finalTriangleCountStr, allTriangleCountStr, sampleCountStr;
+                    Utils::IntegerToHumanReadable(level.GetFinalTriangleCount(), finalTriangleCountStr);
+                    Utils::IntegerToHumanReadable(level.GetAllTriangleCount(), allTriangleCountStr);
                     Utils::IntegerToHumanReadable(level.GetSampleCount(), sampleCountStr);
                     printf(
-                        "Level %d: % 4s triangles, % 4s samples (% 4.1f per triangle)\n",
+                        "Level %2d: % 4s/% 4s triangles, % 4s samples (% 10.1f per triangle)\n",
                         i,
-                        triangleCountStr.c_str(), //level.GetTriangleCount(),
-                        sampleCountStr.c_str(), //level.GetSampleCount(),
+                        finalTriangleCountStr.c_str(),
+                        allTriangleCountStr.c_str(),
+                        sampleCountStr.c_str(),
                         samplesPerTriangle);
-                    totalTriangleCount += level.GetTriangleCount();
-                    totalSampleCount   += level.GetSampleCount();
+                    totalAllTriangleCount   += level.GetAllTriangleCount();
+                    totalFinalTriangleCount += level.GetFinalTriangleCount();
+                    totalSampleCount        += level.GetSampleCount();
                 }
-                //printf("-----------------------------------------------------------\n");
-                //printf(
-                //    "Total  : triangles % 4d, samples % 6d (% 4.1f per triangle)\n",
-                //    totalTriangleCount,
-                //    totalSampleCount,
-                //    (double)totalSampleCount / totalTriangleCount);
+
+                printf("-----------------------------------------------------------\n");
+                
+                const auto samplesPerTriangle = (double)totalSampleCount / totalAllTriangleCount;
+                std::string finalTriangleCountStr, allTriangleCountStr, sampleCountStr;
+                Utils::IntegerToHumanReadable(totalFinalTriangleCount, finalTriangleCountStr);
+                Utils::IntegerToHumanReadable(totalAllTriangleCount, allTriangleCountStr);
+                Utils::IntegerToHumanReadable(totalSampleCount, sampleCountStr);
+                printf(
+                    "Total   : % 4s/% 4s triangles, % 4s samples (% 10.1f per triangle)\n",
+                    finalTriangleCountStr.c_str(),
+                    allTriangleCountStr.c_str(),
+                    sampleCountStr.c_str(),
+                    samplesPerTriangle);
             }
             else
                 printf("no data!\n");
@@ -1406,6 +1439,7 @@ protected:
         {
             auto currentTriangle = aToDoTriangles.front();
             aToDoTriangles.pop_front();
+            aStats.AddTriangle(*currentTriangle);
 
             PG3_ASSERT(currentTriangle != nullptr);
             PG3_ASSERT(currentTriangle->IsTriangleNode());
@@ -1419,6 +1453,7 @@ protected:
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
                 SubdivideTriangle(subdivisionTriangles, *currentTriangle, aEmImage, aUseBilinearFiltering);
+                aStats.RemoveTriangle(*currentTriangle);
                 delete currentTriangle;
                 for (auto triangle : subdivisionTriangles)
                     aToDoTriangles.push_front(triangle);
@@ -1665,8 +1700,6 @@ protected:
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
         if (aTriangle.subdivLevel >= aParams.GetMaxSubdivLevel())
             return false;
-
-        aStats.AddTriangle(aTriangle);
 
         const auto &vertices = aTriangle.sharedVertices;
 
