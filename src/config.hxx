@@ -304,12 +304,21 @@ public:
             );
 
         // Debugging options
-        if (   (mDbgAuxiliaryFloat1 != Math::InfinityF())
-            || (mDbgAuxiliaryFloat2 != Math::InfinityF())
-            || (mDbgAuxiliaryFloat3 != Math::InfinityF()))
+        if (!mAuxDbgParams.IsEmpty())
             printf(
-                "Debugging: Aux float param1 %f, aux float param2 %f, aux float param3 %f\n",
-                mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2, mDbgAuxiliaryFloat3);
+                "Debugging: "
+                "Aux float param1 %f, "
+                "aux float param2 %f, "
+                "aux float param3 %f, "
+                "aux float param4 %f, "
+                "aux float param5 %f"
+                "\n",
+                mAuxDbgParams.float1,
+                mAuxDbgParams.float2,
+                mAuxDbgParams.float3,
+                mAuxDbgParams.float4,
+                mAuxDbgParams.float5
+                );
 
         // Output
         printf("Out file:  ");
@@ -335,7 +344,12 @@ public:
             "[-slbr|--splitting-light-to-bsdf-ratio <splitting_light_to_bsdf_ratio>] "
             "[-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] "
             "[-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] "
-            "[-auxf1|--dbg_aux_float1 <value>] [-auxf2|--dbg_aux_float2 <value>] [-auxf3|--dbg_aux_float3 <value>] \n\n",
+            "[-auxf1|--dbg_aux_float1 <value>] "
+            "[-auxf2|--dbg_aux_float2 <value>] "
+            "[-auxf3|--dbg_aux_float3 <value>] "
+            "[-auxf4|--dbg_aux_float4 <value>] "
+            "[-auxf4|--dbg_aux_float5 <value>] "
+            "\n\n",
             filename.c_str());
 
         printf("    -s     Selects the scene (default 0):\n");
@@ -381,6 +395,10 @@ public:
         printf("           Auxiliary float debugging ad hoc parameter no. 2 (default: infinity=not set).\n");
         printf("    -auxf3 | --dbg_aux_float3 \n");
         printf("           Auxiliary float debugging ad hoc parameter no. 3 (default: infinity=not set).\n");
+        printf("    -auxf4 | --dbg_aux_float4 \n");
+        printf("           Auxiliary float debugging ad hoc parameter no. 4 (default: infinity=not set).\n");
+        printf("    -auxf5 | --dbg_aux_float5 \n");
+        printf("           Auxiliary float debugging ad hoc parameter no. 5 (default: infinity=not set).\n");
 
         printf("    -opop | --only-print-output-pathname \n");
         printf("           Do not render anything; just print the full path of the current output file.\n");
@@ -388,8 +406,41 @@ public:
         printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
     }
 
+
+    bool ProcessCommandlineParamFloat(
+        const int32_t    aArgc,
+        const char      *aArgv[],
+        int32_t         &aParamIdx,
+        float           &aValue,
+        const char      *aParamName)
+    {
+        if (++aParamIdx == aArgc)
+        {
+            printf(
+                "Error: Missing <%s> argument, please see help (-h)\n",
+                aParamName);
+            return false;
+        }
+
+        float tmp;
+        std::istringstream iss(aArgv[aParamIdx]);
+        iss >> tmp;
+
+        if (iss.fail())
+        {
+            printf(
+                "Error: Invalid <%s> argument \"%s\" (should be a floating point value). Please see help (-h).\n",
+                aParamName,aArgv[aParamIdx]);
+            return false;
+        }
+
+        aValue = tmp;
+        return true;
+    }
+
+
     // Parses command line, setting up config
-    bool ParseCommandline(int32_t argc, const char *argv[])
+    bool ProcessCommandline(int32_t argc, const char *argv[])
     {
         // Parameters marked with [cmd] can be changed from command line
         mScene                          = nullptr;                  // [cmd] When nullptr, renderer will not run
@@ -415,10 +466,6 @@ public:
         // debug, temporary
         mDbgSplittingLevel = 1.f;                                   // [cmd]
         mDbgSplittingLightToBrdfSmplRatio = 1.f;                    // [cmd]
-
-        mDbgAuxiliaryFloat1              = Math::InfinityF();       // [cmd]
-        mDbgAuxiliaryFloat2              = Math::InfinityF();       // [cmd]
-        mDbgAuxiliaryFloat3              = Math::InfinityF();       // [cmd]
 
         int32_t sceneID     = 0; // default 0
         uint32_t envMapID   = Scene::kEMDefault;
@@ -838,69 +885,28 @@ public:
             }
             else if ((arg == "-auxf1"))
             {
-                if (++i == argc)
-                {
-                    printf("Error: Missing <dbg_aux_float1> argument, please see help (-h)\n");
+                if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float1, "dbg_aux_float1"))
                     return false;
-                }
-
-                float tmp;
-                std::istringstream iss(argv[i]);
-                iss >> tmp;
-
-                if (iss.fail())
-                {
-                    printf(
-                        "Error: Invalid <dbg_aux_float1> argument \"%s\", please see help (-h)\n",
-                        argv[i]);
-                    return false;
-                }
-
-                mDbgAuxiliaryFloat1 = tmp;
             }
             else if ((arg == "-auxf2"))
             {
-                if (++i == argc)
-                {
-                    printf("Error: Missing <dbg_aux_float2> argument, please see help (-h)\n");
+                if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float2, "dbg_aux_float2"))
                     return false;
-                }
-
-                float tmp;
-                std::istringstream iss(argv[i]);
-                iss >> tmp;
-
-                if (iss.fail())
-                {
-                    printf(
-                        "Error: Invalid <dbg_aux_float2> argument \"%s\", please see help (-h)\n",
-                        argv[i]);
-                    return false;
-                }
-
-                mDbgAuxiliaryFloat2 = tmp;
             }
             else if ((arg == "-auxf3"))
             {
-                if (++i == argc)
-                {
-                    printf("Error: Missing <dbg_aux_float3> argument, please see help (-h)\n");
+                if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float3, "dbg_aux_float3"))
                     return false;
-                }
-
-                float tmp;
-                std::istringstream iss(argv[i]);
-                iss >> tmp;
-
-                if (iss.fail())
-                {
-                    printf(
-                        "Error: Invalid <dbg_aux_float3> argument \"%s\", please see help (-h)\n",
-                        argv[i]);
+            }
+            else if ((arg == "-auxf4"))
+            {
+                if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float4, "dbg_aux_float4"))
                     return false;
-                }
-
-                mDbgAuxiliaryFloat3 = tmp;
+            }
+            else if ((arg == "-auxf5"))
+            {
+                if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float5, "dbg_aux_float5"))
+                    return false;
             }
         }
 
@@ -927,8 +933,7 @@ public:
         // Load scene
         Scene *scene = new Scene;
         scene->LoadCornellBox(
-            mResolution, g_SceneConfigs[sceneID], Scene::EnvironmentMapType(envMapID),
-            mDbgAuxiliaryFloat1, mDbgAuxiliaryFloat2, mDbgAuxiliaryFloat3);
+            mResolution, mAuxDbgParams, g_SceneConfigs[sceneID], Scene::EnvironmentMapType(envMapID));
         mScene = scene;
 
         // If no output name is chosen, create a default one
@@ -945,37 +950,35 @@ public:
         return true;
     }
 
-    const Scene *mScene;
+    const Scene             *mScene;
 
-    bool         mOnlyPrintOutputPath;
+    bool                     mOnlyPrintOutputPath;
 
-    int32_t      mIterations;
-    float        mMaxTime;
-    Framebuffer *mFramebuffer;
-    uint32_t     mNumThreads;
-    bool         mQuietMode;
-    int32_t      mBaseSeed;
-    std::string  mDefOutputExtension;
-    std::string  mOutputName;
-    std::string  mOutputDirectory;
-    Vec2i        mResolution;
+    int32_t                  mIterations;
+    float                    mMaxTime;
+    Framebuffer             *mFramebuffer;
+    uint32_t                 mNumThreads;
+    bool                     mQuietMode;
+    int32_t                  mBaseSeed;
+    std::string              mDefOutputExtension;
+    std::string              mOutputName;
+    std::string              mOutputDirectory;
+    Vec2i                    mResolution;
 
-    Algorithm    mAlgorithm;
+    Algorithm                mAlgorithm;
 
     // Only used for path-based algorithms
-    uint32_t     mMaxPathLength;
-    uint32_t     mMinPathLength;
+    uint32_t                 mMaxPathLength;
+    uint32_t                 mMinPathLength;
 
     // Only used in the NEE MIS path tracer
-    float        mIndirectIllumClipping;
-    uint32_t     mSplittingBudget;
+    float                    mIndirectIllumClipping;
+    uint32_t                 mSplittingBudget;
 
     // debug, temporary
-    float        mDbgSplittingLevel;
-    float        mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one BSDF sample.
+    float                    mDbgSplittingLevel;
+    float                    mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one BSDF sample.
 
     // Auxiliary debugging ad hoc parameters
-    float        mDbgAuxiliaryFloat1;
-    float        mDbgAuxiliaryFloat2;
-    float        mDbgAuxiliaryFloat3;
+    Scene::AuxDbgParams      mAuxDbgParams;
 };

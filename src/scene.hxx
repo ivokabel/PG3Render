@@ -170,16 +170,41 @@ public:
         kEMDefault                      = kEMConstBluish,
     };
 
+    class AuxDbgParams
+    {
+    public:
+        float   float1;
+        float   float2;
+        float   float3;
+        float   float4;
+        float   float5;
+
+        AuxDbgParams() :
+            float1(Math::InfinityF()),
+            float2(Math::InfinityF()),
+            float3(Math::InfinityF()),
+            float4(Math::InfinityF()),
+            float5(Math::InfinityF()) {}
+
+        bool IsEmpty() const
+        {
+            return
+                (  (float1 == Math::InfinityF())
+                && (float2 == Math::InfinityF())
+                && (float3 == Math::InfinityF())
+                && (float4 == Math::InfinityF())
+                && (float5 == Math::InfinityF()));
+        }
+    };
+
     void LoadCornellBox(
         const Vec2i         &aResolution,
+        AuxDbgParams        &aAuxDbgParams,
         BoxMask              aBoxMask = kDefault,
-        EnvironmentMapType   aEnvironmentMapType = kEMDefault,
-        float                aDbgAux1 = Math::InfinityF(),
-        float                aDbgAux2 = Math::InfinityF(),
-        float                aDbgAux3 = Math::InfinityF()
+        EnvironmentMapType   aEnvironmentMapType = kEMDefault
         )
     {
-        aDbgAux1, aDbgAux2, aDbgAux3; // possibly unused parameters
+        aAuxDbgParams; // possibly unused parameter
 
         mSceneName = GetSceneName(aBoxMask, aEnvironmentMapType, &mSceneAcronym);
 
@@ -300,14 +325,14 @@ public:
                 //new SmoothConductorMaterial(SpectralData::kGoldIor, SpectralData::kAirIor, SpectralData::kGoldAbsorb));
         else if (Utils::IsMasked(aBoxMask, kSpheresFresnelDielectric))
         {
-            const float innerIor = (aDbgAux1 != 1.0f) ? SpectralData::kGlassCorningIor  : SpectralData::kAirIor;
-            const float outerIor = (aDbgAux1 != 1.0f) ? SpectralData::kAirIor           : SpectralData::kGlassCorningIor;
+            const float innerIor = (aAuxDbgParams.float1 != 1.0f) ? SpectralData::kGlassCorningIor  : SpectralData::kAirIor;
+            const float outerIor = (aAuxDbgParams.float1 != 1.0f) ? SpectralData::kAirIor           : SpectralData::kGlassCorningIor;
             mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
         }
         else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXConductor))
         {
             const float roughness =
-                (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
+                (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(
                 new MicrofacetGGXConductorMaterial(
                     roughness,
@@ -315,10 +340,10 @@ public:
         }
         else if (Utils::IsMasked(aBoxMask, kSpheresMicrofacetGGXDielectric))
         {
-            const float innerIor = (aDbgAux1 != 1.0f) ? SpectralData::kGlassCorningIor   : SpectralData::kAirIor;
-            const float outerIor = (aDbgAux1 != 1.0f) ? SpectralData::kAirIor            : SpectralData::kGlassCorningIor;
+            const float innerIor = (aAuxDbgParams.float1 != 1.0f) ? SpectralData::kGlassCorningIor   : SpectralData::kAirIor;
+            const float outerIor = (aAuxDbgParams.float1 != 1.0f) ? SpectralData::kAirIor            : SpectralData::kGlassCorningIor;
             const float roughness =
-                (aDbgAux2 != Math::InfinityF()) ? aDbgAux2 : /*0.001f*/ 0.010f /*0.100f*/;
+                (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
         }
         else
@@ -446,7 +471,7 @@ public:
             //}
 
             // Visualize subdivision
-            const uint32_t dbgEm = static_cast<uint32_t>(aDbgAux1);
+            const uint32_t dbgEm = static_cast<uint32_t>(aAuxDbgParams.float1);
             const char *emPath = [dbgEm](){
                 switch (dbgEm)
                 {
@@ -612,7 +637,7 @@ public:
                 floorCenter + Vec3f( rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
                 floorCenter + Vec3f(-rectHalfWidth, rectYOffset, rectZOffset + rectHeight),
             };
-            if (aDbgAux1 != 1.0f)
+            if (aAuxDbgParams.float1 != 1.0f)
             {
                 geometryList->mGeometry.push_back(new Triangle(rect[3], rect[0], rect[1], 9));
                 geometryList->mGeometry.push_back(new Triangle(rect[1], rect[2], rect[3], 9));

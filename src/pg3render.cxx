@@ -213,7 +213,7 @@ int32_t main(int32_t argc, const char *argv[])
 
     // Setup config based on command line
     Config config;
-    if (!config.ParseCommandline(argc, argv))
+    if (!config.ProcessCommandline(argc, argv))
     {
         // When some error has been encountered, exit
         //getchar(); // debug
