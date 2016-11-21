@@ -44,10 +44,7 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-render -s 20 -a el -i 1 -auxf1 7 -auxf2 0.7
-render -s 20 -a el -i 1 -auxf1 7 -auxf2 0.8
-render -s 20 -a el -i 1 -auxf1 7 -auxf2 0.9
-render -s 20 -a el -i 1 -auxf1 7 -auxf2 1.0
+render -s 20 -a el -i 1 -auxf1 7 -auxf2 0.4 -auxf3 3
 
 
 ENVIRONMENT_MAPS="1 10 12"

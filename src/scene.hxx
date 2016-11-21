@@ -475,31 +475,38 @@ public:
             const char *emPath = [dbgEm](){
                 switch (dbgEm)
                 {
-                case 0:  return ".\\Light Probes\\Debugging\\Const white 8x4.exr";
-                case 1:  return ".\\Light Probes\\Debugging\\Const white 16x8.exr";
-                case 2:  return ".\\Light Probes\\Debugging\\Const white 32x16.exr";
-                case 3:  return ".\\Light Probes\\Debugging\\Const white 64x32.exr";
-                case 4:  return ".\\Light Probes\\Debugging\\Const white 128x64.exr";
-                case 5:  return ".\\Light Probes\\Debugging\\Const white 256x128.exr";
-                case 6:  return ".\\Light Probes\\Debugging\\Const white 512x256.exr";
-                case 7:  return ".\\Light Probes\\Debugging\\Const white 1024x512.exr";
-                case 8:  return ".\\Light Probes\\Debugging\\Const white 2048x1024.exr";
-                case 9:  return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
-                //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f // 16x8
+                case 0:   return ".\\Light Probes\\Debugging\\Const white 8x4.exr";
+                case 1:   return ".\\Light Probes\\Debugging\\Const white 16x8.exr";
+                case 2:   return ".\\Light Probes\\Debugging\\Const white 32x16.exr";
+                case 3:   return ".\\Light Probes\\Debugging\\Const white 64x32.exr";
+                case 4:   return ".\\Light Probes\\Debugging\\Const white 128x64.exr";
+                case 5:   return ".\\Light Probes\\Debugging\\Const white 256x128.exr";
+                case 6:   return ".\\Light Probes\\Debugging\\Const white 512x256.exr";
+                case 7:   return ".\\Light Probes\\Debugging\\Const white 1024x512.exr";
+                case 8:   return ".\\Light Probes\\Debugging\\Const white 2048x1024.exr";
+                case 9:   return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
+                case 10:  return ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr";
+                    //".\\Light Probes\\Debugging\\Single pixel.exr", 0.42f // 16x8
                 default: return "";
                 }
             }();
-            const float oversamplingFactor = aDbgAux2;
-            const float maxTriangleSpan    = aDbgAux3;
+            EnvironmentMapSteeringSampler::Parameters params(
+                aAuxDbgParams.float2,
+                aAuxDbgParams.float3,
+                aAuxDbgParams.float4,
+                aAuxDbgParams.float5);
             printf(
-                "Testing EM \"%s\", oversampling %.4f, max triangle span %.4f:\n",
-                emPath, oversamplingFactor, maxTriangleSpan);
+                "Testing EM \"%s\", error threshold %.3f, max subdiv %d, oversampling %.2f, max triangle span %.3f:\n",
+                emPath,
+                params.GetApproxErrorThreshold(),
+                params.GetMaxSubdivLevel(),
+                params.GetOversamplingFactorDbg(),
+                params.GetMaxTriangleSpanDbg());
             std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(emPath));
             if (image)
             {
                 std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
-                if (EnvironmentMapSteeringSampler::TriangulateEm(
-                        triangles, 1, *image, false, oversamplingFactor, maxTriangleSpan))
+                if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, *image, false, params))
                 {
                     for (const auto &node : triangles)
                     {

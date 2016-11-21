@@ -830,17 +830,62 @@ public:
 
 public:
 
+    class Parameters
+    {
+    public:
+
+        Parameters(
+            float   aApproxErrorThreshold   = Math::InfinityF(),
+            float   aMaxSubdivLevel         = Math::InfinityF(),
+            float   aOversamplingFactorDbg  = Math::InfinityF(),
+            float   aMaxTriangleSpanDbg     = Math::InfinityF())
+            :
+            approxErrorThreshold(aApproxErrorThreshold),
+            maxSubdivLevel(aMaxSubdivLevel),
+            oversamplingFactorDbg(aOversamplingFactorDbg),
+            maxTriangleSpanDbg(aMaxTriangleSpanDbg)
+        {}
+
+        float GetApproxErrorThreshold() const
+        {
+            return (approxErrorThreshold != Math::InfinityF()) ? approxErrorThreshold : 0.1f;
+        }
+
+        uint32_t GetMaxSubdivLevel() const
+        {
+            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
+        }
+
+        float GetOversamplingFactorDbg() const
+        {
+            return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
+        }
+
+        float GetMaxTriangleSpanDbg() const
+        {
+            return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
+        }
+
+    protected:
+
+        float       approxErrorThreshold;
+        float       maxSubdivLevel; // uint32_t, float used for signaling unset value
+
+        float       oversamplingFactorDbg;
+        float       maxTriangleSpanDbg;
+    };
+
     // Builds the internal structures needed for sampling
     bool Build(
-        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        bool                         aUseBilinearFiltering,
+        const Parameters            &aParams)
     {
         Cleanup();
 
         std::list<TreeNode*> tmpTriangles;
 
-        if (!TriangulateEm(tmpTriangles, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering))
+        if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering, aParams))
             return false;
 
         if (!BuildTriangleTree(tmpTriangles))
@@ -1255,16 +1300,14 @@ protected:
     typedef TriangulationStatsDummy TriangulationStatsSwitchable;
 #endif
 
-public: // debug: public is for visualisation
+public: // debug: public is for visualisation/testing purposes
 
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     static bool TriangulateEm(
         std::list<TreeNode*>        &oTriangles,
-        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF())
+        const Parameters            &aParams)
     {
         PG3_ASSERT(oTriangles.empty());        
 
@@ -1275,9 +1318,9 @@ public: // debug: public is for visualisation
         if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
             return false;
 
-        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aMaxSubdivLevel,
-                                   aEmImage, aUseBilinearFiltering, stats,
-                                   aOversamplingFactorDbg, aMaxTriangleSpanDbg))
+        if (!RefineEmTriangulation(oTriangles, toDoTriangles,
+                                   aEmImage, aUseBilinearFiltering,
+                                   aParams, stats))
             return false;
 
         stats.Print();
@@ -1351,12 +1394,10 @@ protected:
     static bool RefineEmTriangulation(
         std::list<TreeNode*>        &oRefinedTriangles,
         std::deque<TriangleNode*>   &aToDoTriangles,
-        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        TTriangulationStats         &aStats,
-        float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF())
+        const Parameters            &aParams,
+        TTriangulationStats         &aStats)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
         PG3_ASSERT(oRefinedTriangles.empty());
@@ -1373,8 +1414,7 @@ protected:
                 continue;
 
             if (TriangleHasToBeSubdivided(
-                    *currentTriangle, aMaxSubdivLevel, aEmImage, aUseBilinearFiltering, aStats,
-                    aOversamplingFactorDbg, aMaxTriangleSpanDbg))
+                    *currentTriangle, aEmImage, aUseBilinearFiltering, aParams, aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -1403,7 +1443,7 @@ protected:
         const float          aMaxSinClamped,
         float               &aMinSamplesPerDimF,
         float               &aMaxSamplesPerDimF,
-        float                aOversamplingFactorDbg)
+        const Parameters    &aParams)
     {
         // Angular sample size based on the size of an EM pixel
         const Vec2f minEmPixelAngularSize{
@@ -1440,7 +1480,8 @@ protected:
         const auto samplesPerDimSqr =
             rectSamplesPerDimSqr / 2.f/*triangle covers roughly half the rectangle*/;
         auto samplesPerDim = samplesPerDimSqr.Sqrt();
-        samplesPerDim *= aOversamplingFactorDbg;
+        const float oversamplingFactorDbg = aParams.GetOversamplingFactorDbg();
+        samplesPerDim *= oversamplingFactorDbg;
 
         aMaxSamplesPerDimF = samplesPerDim.x; // based on the minimal sine
         aMinSamplesPerDimF = samplesPerDim.y; // based on the maximal sine
@@ -1455,6 +1496,7 @@ protected:
         uint32_t                     samplesPerDim,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
+        const Parameters            &aParams,
         TTriangulationStats         &aStats)
     {
         const float binSize = 1.f / samplesPerDim;
@@ -1492,9 +1534,9 @@ protected:
                 aStats.AddSample(aWholeTriangle, sampleDir);
 
                 // Analyze error
-                const auto diff = std::abs(emVal - approxVal);
-                const auto threshold = std::max(0.5f * emVal, 0.001f); // TODO: Parametrizable threshold
-                if (diff > threshold)
+                const auto diffAbs = std::abs(emVal - approxVal);
+                const auto threshold = std::max(aParams.GetApproxErrorThreshold() * emVal, 0.001f);
+                if (diffAbs > threshold)
                     return true; // The approximation is too far from the original function
             }
         }
@@ -1513,9 +1555,8 @@ protected:
         const TriangleNode          &aWholeTriangle,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        TTriangulationStats         &aStats,
-        float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF())
+        const Parameters            &aParams,
+        TTriangulationStats         &aStats)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex0);
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex1);
@@ -1555,18 +1596,16 @@ protected:
 
         // Determine minimal and maximal sampling frequency
         float minSamplesPerDimF, maxSamplesPerDimF;
-        aOversamplingFactorDbg =
-            (aOversamplingFactorDbg == Math::InfinityF()) ? 0.7f : aOversamplingFactorDbg;
         SubdivTestSamplesPerDim(aVertex0, aVertex1, aVertex2,
                                 aEmImage.Size(), triangleCentroid,
                                 minSinClamped, maxSinClamped,
                                 minSamplesPerDimF, maxSamplesPerDimF,
-                                aOversamplingFactorDbg);
+                                aParams);
 
         // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
         const auto triangleSpan = maxSamplesPerDimF / minSamplesPerDimF;
-        aMaxTriangleSpanDbg = (aMaxTriangleSpanDbg == Math::InfinityF()) ? 1.1f : aMaxTriangleSpanDbg;
-        if ((triangleSpan >= aMaxTriangleSpanDbg) && (maxSamplesPerDimF > 32.0f))
+        const float maxTriangleSpanDbg = aParams.GetMaxTriangleSpanDbg();
+        if ((triangleSpan >= maxTriangleSpanDbg) && (maxSamplesPerDimF > 32.0f))
         {
             // Check sub-triangle near vertex 0
             if (TriangleHasToBeSubdividedImpl(
@@ -1574,7 +1613,7 @@ protected:
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
+                    aParams, aStats))
                 return true;
 
             // Check sub-triangle near vertex 1
@@ -1583,7 +1622,7 @@ protected:
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
+                    aParams, aStats))
                 return true;
 
             // Check sub-triangle near vertex 2
@@ -1592,7 +1631,7 @@ protected:
                     edgeCentre20Dir, edgeCentre20Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
+                    aParams, aStats))
                 return true;
 
             // Check center sub-triangle
@@ -1601,7 +1640,7 @@ protected:
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     aWholeTriangle, aEmImage, aUseBilinearFiltering,
-                    aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg))
+                    aParams, aStats))
                 return true;
 
             return false;
@@ -1610,7 +1649,7 @@ protected:
         // Sample and check error
         const bool result = IsEstimationErrorTooLarge(
             aWholeTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(maxSamplesPerDimF),
-            aEmImage, aUseBilinearFiltering, aStats);
+            aEmImage, aUseBilinearFiltering, aParams, aStats);
 
         return result;
     }
@@ -1618,15 +1657,13 @@ protected:
     template <class TTriangulationStats>
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
-        uint32_t                     aMaxSubdivLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        TTriangulationStats         &aStats,
-        float                        aOversamplingFactorDbg = Math::InfinityF(),
-        float                        aMaxTriangleSpanDbg = Math::InfinityF())
+        const Parameters            &aParams,
+        TTriangulationStats         &aStats)
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
-        if (aTriangle.subdivLevel >= aMaxSubdivLevel)
+        if (aTriangle.subdivLevel >= aParams.GetMaxSubdivLevel())
             return false;
 
         aStats.AddTriangle(aTriangle);
@@ -1642,7 +1679,7 @@ protected:
             vertices[1]->dir, vertex1Sin,
             vertices[2]->dir, vertex2Sin,
             aTriangle, aEmImage, aUseBilinearFiltering,
-            aStats, aOversamplingFactorDbg, aMaxTriangleSpanDbg);
+            aParams, aStats);
 
         return result;
     }
@@ -2114,8 +2151,9 @@ public:
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         std::list<TreeNode*> refinedTriangles;
-        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles, aMaxSubdivLevel,
-                                   aEmImage, aUseBilinearFiltering, aStats))
+        Parameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
+        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles,
+                                   aEmImage, aUseBilinearFiltering, params, aStats))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
