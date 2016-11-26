@@ -1293,6 +1293,11 @@ protected:
             aTriangle; // unused param
         }
 
+        void RemoveTriangle(const TriangleNode &aTriangle)
+        {
+            aTriangle; // unused param
+        }
+
         void AddSample(
             const TriangleNode  &aTriangle,
             const Vec3f         &aSampleDir)
