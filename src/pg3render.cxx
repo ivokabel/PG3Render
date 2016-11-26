@@ -174,14 +174,14 @@ float Render(
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
-    //Utils::_UnitTest_IntegerToHumanReadable(aMaxUtBlockPrintLevel);
+    //Utils::_UT_IntegerToHumanReadable(aMaxUtBlockPrintLevel);
 
-    //Geom::_UnitTest_UnitIcosahedron(aMaxUtBlockPrintLevel);
-    //Geom::_UnitTest_TriangleBarycentricCoords(aMaxUtBlockPrintLevel);
+    //Geom::_UT_UnitIcosahedron(aMaxUtBlockPrintLevel);
+    //Geom::_UT_TriangleBarycentricCoords(aMaxUtBlockPrintLevel);
 
-    //Sampling::_UnitTest_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel);
+    //Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel);
 
-    //Microfacet::_UnitTest_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+    //Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
 
     EnvironmentMapSteeringSampler::_UnitTests(aMaxUtBlockPrintLevel);
 }

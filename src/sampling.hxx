@@ -176,7 +176,7 @@ namespace Sampling
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    static bool _UnitTest_SampleUniformSphericalTriangle_SingleOctant(
+    static bool _UT_SampleUniformSphericalTriangle_SingleOctant(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const Vec3f                 &aSigns)
     {
@@ -234,7 +234,7 @@ namespace Sampling
         return true;
     }
 
-    static bool _UnitTest_SampleUniformSphericalTriangle(
+    static bool _UT_SampleUniformSphericalTriangle(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -244,7 +244,7 @@ namespace Sampling
             for (float y = -1; y <= 1.0001; y += 2)
                 for (float z = -1; z <= 1.0001; z += 2)
                 {
-                    if (!_UnitTest_SampleUniformSphericalTriangle_SingleOctant(
+                    if (!_UT_SampleUniformSphericalTriangle_SingleOctant(
                             aMaxUtBlockPrintLevel, Vec3f(x, y, z)))
                         return false;
                 }

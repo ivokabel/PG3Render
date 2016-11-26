@@ -124,7 +124,7 @@ namespace Microfacet
 
     #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    bool _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
+    bool _UT_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel,
         const float  thetaIn,
         const float  thetaOut,
@@ -244,7 +244,7 @@ namespace Microfacet
         return true;
     }
 
-    bool _UnitTest_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
+    bool _UT_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel,
         const float  thetaIn,
         const float  thetaHalfwayVector,
@@ -370,7 +370,7 @@ namespace Microfacet
         return true;
     }
 
-    bool _UnitTest_HalfwayVectorRefractionLocal_TestInterface(
+    bool _UT_HalfwayVectorRefractionLocal_TestInterface(
         UnitTestBlockLevel  aMaxUtBlockPrintLevel,
         const float         aUpperN, // above macro surface
         const float         aLowerN  // below macro surface
@@ -407,7 +407,7 @@ namespace Microfacet
                     bool success;
 
                     success =
-                        _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
+                        _UT_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
                             aMaxUtBlockPrintLevel,
                             thetaIn, thetaOut, phiOut,
                             aUpperN, aLowerN);
@@ -415,7 +415,7 @@ namespace Microfacet
                         return false;
 
                     success =
-                        _UnitTest_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
+                        _UT_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
                             aMaxUtBlockPrintLevel,
                             thetaIn, thetaOut, phiOut,
                             aUpperN, aLowerN);
@@ -450,14 +450,14 @@ namespace Microfacet
 
             bool success;
 
-            success = _UnitTest_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
+            success = _UT_HalfwayVectorRefractionLocal_TestSingleInOutConfiguration(
                 aMaxUtBlockPrintLevel,
                 thetaIn, thetaOut, phiOut,
                 aUpperN, aLowerN);
             if (!success)
                 return false;
 
-            success = _UnitTest_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
+            success = _UT_HalfwayVectorRefractionLocal_TestSingleInHalfvectorConfiguration(
                 aMaxUtBlockPrintLevel,
                 thetaIn, thetaOut, phiOut,
                 aUpperN, aLowerN);
@@ -473,24 +473,24 @@ namespace Microfacet
         return true;
     }
 
-    bool _UnitTest_HalfwayVectorRefractionLocal(
+    bool _UT_HalfwayVectorRefractionLocal(
         UnitTestBlockLevel   aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Microfacet::HalfwayVectorRefractionLocal()");
 
-        if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.51f))
+        if (!_UT_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.51f))
             return false;
-        if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.51f, 1.00f))
-            return false;
-
-        if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.10f, 1.00f))
-            return false;
-        if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.10f))
+        if (!_UT_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.51f, 1.00f))
             return false;
 
-        if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.51f, 1.55f))
+        if (!_UT_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.10f, 1.00f))
             return false;
-        if (!_UnitTest_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.55f, 1.51f))
+        if (!_UT_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.00f, 1.10f))
+            return false;
+
+        if (!_UT_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.51f, 1.55f))
+            return false;
+        if (!_UT_HalfwayVectorRefractionLocal_TestInterface(aMaxUtBlockPrintLevel, 1.55f, 1.51f))
             return false;
 
         PG3_UT_END_PASSED(

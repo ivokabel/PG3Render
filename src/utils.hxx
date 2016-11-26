@@ -77,7 +77,7 @@ namespace Utils
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    bool _UnitTest_IntegerToHumanReadable_SingleNumber(
+    bool _UT_IntegerToHumanReadable_SingleNumber(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const uint64_t               aValue,
         const char                  *aHumanReference)
@@ -107,94 +107,94 @@ namespace Utils
         return true;
     }
 
-    bool _UnitTest_IntegerToHumanReadable(
+    bool _UT_IntegerToHumanReadable(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Utils::IntegerToHumanReadable()");
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)0, "0"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)0, "0"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E0, "1"))
-            return false;
-
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1 - 1, "9"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1,     "10"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1 + 1, "11"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E0, "1"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2 - 1, "99"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1 - 1, "9"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2,     "100"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1,     "10"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2 + 1, "101"))
-            return false;
-
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3 - 1, "999"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3,     "1K"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3 + 1, "1K"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E1 + 1, "11"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E4, "10K"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2 - 1, "99"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2,     "100"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E2 + 1, "101"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5 - 1, "99K"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3 - 1, "999"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5,     "100K"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3,     "1K"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5 + 1, "100K"))
-            return false;
-
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6 - 1, "999K"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6,     "1M"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6 + 1, "1M"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E3 + 1, "1K"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7 - 1, "9M"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7,     "10M"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7 + 1, "10M"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E4, "10K"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8 - 1, "99M"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5 - 1, "99K"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8,     "100M"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5,     "100K"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8 + 1, "100M"))
-            return false;
-
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9 - 1, "999M"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9,     "1T"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9 + 1, "1T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E5 + 1, "100K"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10 - 1, "9T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6 - 1, "999K"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10,     "10T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6,     "1M"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10 + 1, "10T"))
-            return false;
-
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11 - 1, "99T"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11,     "100T"))
-            return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11 + 1, "100T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E6 + 1, "1M"))
             return false;
 
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 - 1, "999T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7 - 1, "9M"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12,     "1000T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7,     "10M"))
             return false;
-        if (!_UnitTest_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 + 1, "1000T"))
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E7 + 1, "10M"))
+            return false;
+
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8 - 1, "99M"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8,     "100M"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E8 + 1, "100M"))
+            return false;
+
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9 - 1, "999M"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9,     "1T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E9 + 1, "1T"))
+            return false;
+
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10 - 1, "9T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10,     "10T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E10 + 1, "10T"))
+            return false;
+
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11 - 1, "99T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11,     "100T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E11 + 1, "100T"))
+            return false;
+
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 - 1, "999T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12,     "1000T"))
+            return false;
+        if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 + 1, "1000T"))
             return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Utils::IntegerToHumanReadable()");

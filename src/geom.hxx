@@ -287,7 +287,7 @@ namespace Geom
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    bool _UnitTest_UnitIcosahedron_Vertices(
+    bool _UT_UnitIcosahedron_Vertices(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel,
         const Vec3f(&vertices)[12])
     {
@@ -343,7 +343,7 @@ namespace Geom
         return true;
     }
 
-    bool _UnitTest_UnitIcosahedron_Faces(
+    bool _UT_UnitIcosahedron_Faces(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel,
         const Vec3f(&vertices)[12],
         const Vec3ui(&faces)[20])
@@ -436,7 +436,7 @@ namespace Geom
         return true;
     }
 
-    bool _UnitTest_UnitIcosahedron(
+    bool _UT_UnitIcosahedron(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::UnitIcosahedron()");
@@ -445,10 +445,10 @@ namespace Geom
         Vec3ui faces[20];
         UnitIcosahedron(vertices, faces);
 
-        if (!_UnitTest_UnitIcosahedron_Vertices(aMaxUtBlockPrintLevel, vertices))
+        if (!_UT_UnitIcosahedron_Vertices(aMaxUtBlockPrintLevel, vertices))
             return false;
 
-        if (!_UnitTest_UnitIcosahedron_Faces(aMaxUtBlockPrintLevel, vertices, faces))
+        if (!_UT_UnitIcosahedron_Faces(aMaxUtBlockPrintLevel, vertices, faces))
             return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::UnitIcosahedron()");
@@ -601,7 +601,7 @@ namespace Geom
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    bool _UnitTest_TriangleBarycentricCoords_SingleTriangle(
+    bool _UT_TriangleBarycentricCoords_SingleTriangle(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel,
         const Vec3f &aVertex0,
         const Vec3f &aVertex1,
@@ -659,7 +659,7 @@ namespace Geom
         return true;
     }
 
-    bool _UnitTest_TriangleBarycentricCoords(
+    bool _UT_TriangleBarycentricCoords(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
@@ -686,7 +686,7 @@ namespace Geom
                         continue;
 
                     // Test
-                    if (!_UnitTest_TriangleBarycentricCoords_SingleTriangle(
+                    if (!_UT_TriangleBarycentricCoords_SingleTriangle(
                             aMaxUtBlockPrintLevel,
                             vertices[index0], vertices[index1], vertices[index2]))
                         return false;

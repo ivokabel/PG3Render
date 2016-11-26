@@ -129,7 +129,7 @@ public:
 
     public:
 
-        static bool _UnitTest_GenerateSphHarm_SingleDirection(
+        static bool _UT_GenerateSphHarm_SingleDirection(
             const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
             const Vec3f                 &aDirection,
             //const float                  aTheta,
@@ -170,7 +170,7 @@ public:
             return true;
         }
 
-        static bool _UnitTest_GenerateSphHarm_CanonicalDirections(
+        static bool _UT_GenerateSphHarm_CanonicalDirections(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel)
         {
             const char *testName = NULL;
@@ -185,7 +185,7 @@ public:
                 0.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 1.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -197,7 +197,7 @@ public:
                 0.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -1.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -209,7 +209,7 @@ public:
                 1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -221,7 +221,7 @@ public:
                 -1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -233,7 +233,7 @@ public:
                 0.f /*Y_{1-1}*/, 1.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -245,14 +245,14 @@ public:
                 0.f /*Y_{1-1}*/, -1.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
-        static bool _UnitTest_GenerateSphHarm_XYDiagonalDirections(
+        static bool _UT_GenerateSphHarm_XYDiagonalDirections(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel)
         {
             const char *testName = NULL;
@@ -267,7 +267,7 @@ public:
                 Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
                 1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -279,7 +279,7 @@ public:
                 -Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
                 1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -291,7 +291,7 @@ public:
                 Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
                 -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -303,14 +303,14 @@ public:
                 -Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
                 -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
-        static bool _UnitTest_GenerateSphHarm_YZDiagonalDirections(
+        static bool _UT_GenerateSphHarm_YZDiagonalDirections(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel)
         {
             const char *testName = NULL;
@@ -326,7 +326,7 @@ public:
                 0.f /*Y_{2-2}*/, 1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -339,7 +339,7 @@ public:
                 0.f /*Y_{2-2}*/, 1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -352,7 +352,7 @@ public:
                 0.f /*Y_{2-2}*/, -1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -365,14 +365,14 @@ public:
                 0.f /*Y_{2-2}*/, -1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
-        static bool _UnitTest_GenerateSphHarm_XZDiagonalDirections(
+        static bool _UT_GenerateSphHarm_XZDiagonalDirections(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel)
         {
             const char *testName = NULL;
@@ -388,7 +388,7 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -401,7 +401,7 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -414,7 +414,7 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 -1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
@@ -427,29 +427,29 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
                 -1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
-            if (!_UnitTest_GenerateSphHarm_SingleDirection(
+            if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel, direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
-        static bool _UnitTest_GenerateSphHarm(
+        static bool _UT_GenerateSphHarm(
             const UnitTestBlockLevel aMaxUtBlockPrintLevel)
         {
             PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
                 "SteeringBasisValue::GenerateSphHarm()");
 
-            if (!_UnitTest_GenerateSphHarm_CanonicalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_CanonicalDirections(aMaxUtBlockPrintLevel))
                 return false;
 
-            if (!_UnitTest_GenerateSphHarm_XYDiagonalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_XYDiagonalDirections(aMaxUtBlockPrintLevel))
                 return false;
 
-            if (!_UnitTest_GenerateSphHarm_YZDiagonalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_YZDiagonalDirections(aMaxUtBlockPrintLevel))
                 return false;
 
-            if (!_UnitTest_GenerateSphHarm_XZDiagonalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_XZDiagonalDirections(aMaxUtBlockPrintLevel))
                 return false;
 
             PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -484,7 +484,7 @@ public:
 
 public:
 
-    static bool _UnitTest_SteeringValues(
+    static bool _UT_SteeringValues(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -1772,7 +1772,7 @@ protected:
 
 public:
 
-    static bool _UnitTest_SubdivideTriangle(
+    static bool _UT_SubdivideTriangle(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -1791,56 +1791,56 @@ public:
 
         const float c45 = Math::kCosPiDiv4F;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X+Y+Z",
                 { Vec3f(1.f, 0.f, 0.f), Vec3f(0.f, 1.f, 0.f), Vec3f(0.f, 0.f, 1.f) },
                 { Vec3f(c45, c45, 0.f), Vec3f(0.f, c45, c45), Vec3f(c45, 0.f, c45) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X-Y-Z",
                 { Vec3f(-1.f,  0.f, 0.f), Vec3f(0.f, -1.f,  0.f), Vec3f( 0.f, 0.f, -1.f) },
                 { Vec3f(-c45, -c45, 0.f), Vec3f(0.f, -c45, -c45), Vec3f(-c45, 0.f, -c45) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X-Y+Z",
                 { Vec3f(0.f, -1.f, 0.f), Vec3f(1.f, 0.f, 0.f), Vec3f(0.f,  0.f, 1.f) },
                 { Vec3f(c45, -c45, 0.f), Vec3f(c45, 0.f, c45), Vec3f(0.f, -c45, c45) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X+Y-Z",
                 { Vec3f(0.f,  1.f, 0.f), Vec3f(-1.f, 0.f,  0.f), Vec3f(0.f, 0.f, -1.f) },
                 { Vec3f(-c45, c45, 0.f), Vec3f(-c45, 0.f, -c45), Vec3f(0.f, c45, -c45) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X-Y-Z",
                 { Vec3f(0.f, -1.f, 0.f), Vec3f(0.f, 0.f, -1.f), Vec3f(1.f,  0.f, 0.f) },
                 { Vec3f(0.f, -c45, -c45), Vec3f(c45, 0.f, -c45), Vec3f(c45, -c45, 0.f) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X+Y+Z",
                 { Vec3f(0.f, 1.f, 0.f), Vec3f(0.f,  0.f, 1.f), Vec3f(-1.f, 0.f, 0.f) },
                 { Vec3f(0.f, c45, c45), Vec3f(-c45, 0.f, c45), Vec3f(-c45, c45, 0.f) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X+Y-Z",
                 { Vec3f(1.f, 0.f,  0.f), Vec3f(0.f, 0.f, -1.f), Vec3f(0.f, 1.f, 0.f) },
                 { Vec3f(c45, 0.f, -c45), Vec3f(0.f, c45, -c45), Vec3f(c45, c45, 0.f) },
                 *dummyImage, false))
             return false;
 
-        if (!_UnitTest_SubdivideTriangle_SingleConfiguration(
+        if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X-Y+Z",
                 { Vec3f(-1.f, 0.f, 0.f), Vec3f(0.f,  0.f, 1.f), Vec3f(0.f,  -1.f, 0.f) },
                 { Vec3f(-c45, 0.f, c45), Vec3f(0.f, -c45, c45), Vec3f(-c45, -c45, 0.f) },
@@ -1854,7 +1854,7 @@ public:
 
 protected:
 
-    static bool _UnitTest_SubdivideTriangle_SingleConfiguration(
+    static bool _UT_SubdivideTriangle_SingleConfiguration(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const char                  *aTestName,
         const std::array<Vec3f, 3>  &aTriangleCoords,
@@ -2033,7 +2033,7 @@ public:
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    static bool _UnitTest_InitialTriangulation(
+    static bool _UT_InitialTriangulation(
         std::deque<TriangleNode*>   &oTriangles,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const EnvironmentMapImage   &aEmImage,
@@ -2181,7 +2181,7 @@ public:
     }
 
     template <class TTriangulationStats>
-    static bool _UnitTest_RefineTriangulation(
+    static bool _UT_RefineTriangulation(
         std::deque<TriangleNode*>   &aInitialTriangles,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
@@ -2339,7 +2339,7 @@ public:
         return true;
     }
 
-    static bool _UnitTest_Build_SingleEm(
+    static bool _UT_Build_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
         uint32_t                     aMaxSubdivLevel,
@@ -2360,10 +2360,11 @@ public:
 
         std::deque<TriangleNode*> initialTriangles;
 
-        if (!_UnitTest_InitialTriangulation(initialTriangles,
-                                            aMaxUtBlockPrintLevel,
-                                            *image.get(),
-                                            aUseBilinearFiltering))
+        if (!_UT_InitialTriangulation(
+                initialTriangles,
+                aMaxUtBlockPrintLevel,
+                *image.get(),
+                aUseBilinearFiltering))
         {
             FreeTrianglesDeque(initialTriangles);
             return false;
@@ -2373,24 +2374,26 @@ public:
         if (aCheckSamplingCoverage)
         {
             TriangulationStats stats(*image.get());
-            refinePassed =  _UnitTest_RefineTriangulation(initialTriangles,
-                                                         aMaxSubdivLevel,
-                                                         aExpectedRefinedCount,
-                                                         aMaxUtBlockPrintLevel,
-                                                         stats,
-                                                         *image.get(),
-                                                         aUseBilinearFiltering);
+            refinePassed = _UT_RefineTriangulation(
+                initialTriangles,
+                aMaxSubdivLevel,
+                aExpectedRefinedCount,
+                aMaxUtBlockPrintLevel,
+                stats,
+                *image.get(),
+                aUseBilinearFiltering);
         }
         else
         {
             TriangulationStatsDummy stats(*image.get());
-            refinePassed =  _UnitTest_RefineTriangulation(initialTriangles,
-                                                          aMaxSubdivLevel,
-                                                          aExpectedRefinedCount,
-                                                          aMaxUtBlockPrintLevel,
-                                                          stats,
-                                                          *image.get(),
-                                                          aUseBilinearFiltering);
+            refinePassed = _UT_RefineTriangulation(
+                initialTriangles,
+                aMaxSubdivLevel,
+                aExpectedRefinedCount,
+                aMaxUtBlockPrintLevel,
+                stats,
+                *image.get(),
+                aUseBilinearFiltering);
         }
         if (!refinePassed)
         {
@@ -2402,7 +2405,7 @@ public:
 
         // TODO: Test build
         //std::list<TreeNode*> refinedTriangles; from Refine()
-        //if (!_UnitTest_BuildTriangleTree_SingleList(aMaxUtBlockPrintLevel, refinedTriangles))
+        //if (!_UT_BuildTriangleTree_SingleList(aMaxUtBlockPrintLevel, refinedTriangles))
         //    return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -2410,7 +2413,7 @@ public:
         return true;
     }
 
-    static bool _UnitTest_BuildTriangleTree_SingleList(
+    static bool _UT_BuildTriangleTree_SingleList(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         std::list<TreeNode*>        &aTriangles)
@@ -2438,7 +2441,7 @@ public:
         return true;
     }
 
-    static bool _UnitTest_BuildTriangleTreeSynthetic(
+    static bool _UT_BuildTriangleTreeSynthetic(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(
@@ -2447,7 +2450,7 @@ public:
 
         // TODO: List 1
         std::list<TreeNode*> triangles;
-        if (!_UnitTest_BuildTriangleTree_SingleList(
+        if (!_UT_BuildTriangleTree_SingleList(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel1, triangles))
             return false;
 
@@ -2463,77 +2466,90 @@ public:
     }
 
 
-    static bool _UnitTest_Build(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    static bool _UT_Build(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+        PG3_UT_BEGIN(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::Build()");
 
         // TODO: Empty EM
         // TODO: Black constant EM (Luminance 0)
         // TODO: ?
 
-        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-                                      "Const white 8x4", 5, 20, true,
-                                      ".\\Light Probes\\Debugging\\Const white 8x4.exr",
-                                      false))
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 8x4", 5, 20, true,
+                ".\\Light Probes\\Debugging\\Const white 8x4.exr",
+                false))
             return false;
 
-        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-                                      "Const white 512x256", 5, 20, true,
-                                      ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-                                      false))
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 512x256", 5, 20, true,
+                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+                false))
             return false;
 
-        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-                                      "Const white 1024x512", 5, 20, true,
-                                      ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                                      false))
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 1024x512", 5, 20, true,
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                false))
             return false;
 
-        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-                                      "Single pixel", 5, 0, false,
-                                      ".\\Light Probes\\Debugging\\Single pixel.exr",
-                                      false))
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Single pixel", 5, 0, false,
+                ".\\Light Probes\\Debugging\\Single pixel.exr",
+                false))
             return false;
 
-        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-                                      "Three point lighting 1024x512", 5, 0, false,
-                                      ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                                      false))
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Three point lighting 1024x512", 5, 0, false,
+                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                false))
             return false;
 
-        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-                                      "Satellite", 5, 0, false,
-                                      ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                                      false))
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Satellite", 5, 0, false,
+                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                false))
             return false;
 
-        //if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-        //                              "Doge2", 5, 0, false,
-        //                              ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-        //                              false))
-        //    return false;
 
-        //if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
-        //                              "Peace Garden", 5, 0, false,
-        //                              ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-        //                              false))
-        //    return false;
+        ///////////////
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
-                          "EnvironmentMapSteeringSampler::Build()");
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Doge2", 5, 0, false,
+                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+                false))
+            return false;
+
+        if (!_UT_Build_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Peace Garden", 5, 0, false,
+                ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+                false))
+            return false;
+
+        PG3_UT_END_PASSED(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::Build()");
         return true;
     }
 
 
     static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //SteeringBasisValue::_UnitTest_GenerateSphHarm(aMaxUtBlockPrintLevel);
+        //SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
 
-        //_UnitTest_SteeringValues(aMaxUtBlockPrintLevel);
-        //_UnitTest_SubdivideTriangle(aMaxUtBlockPrintLevel);
-        _UnitTest_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
-        //_UnitTest_Build(aMaxUtBlockPrintLevel);
+        //_UT_SteeringValues(aMaxUtBlockPrintLevel);
+        //_UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
+        _UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
+        //_UT_Build(aMaxUtBlockPrintLevel);
     }
 #endif
 };
