@@ -835,20 +835,20 @@ public:
     public:
 
         Parameters(
-            float   aApproxErrorThreshold   = Math::InfinityF(),
+            float   aMaxApproxError         = Math::InfinityF(),
             float   aMaxSubdivLevel         = Math::InfinityF(),
             float   aOversamplingFactorDbg  = Math::InfinityF(),
             float   aMaxTriangleSpanDbg     = Math::InfinityF())
             :
-            approxErrorThreshold(aApproxErrorThreshold),
+            maxApproxError(aMaxApproxError),
             maxSubdivLevel(aMaxSubdivLevel),
             oversamplingFactorDbg(aOversamplingFactorDbg),
             maxTriangleSpanDbg(aMaxTriangleSpanDbg)
         {}
 
-        float GetApproxErrorThreshold() const
+        float GetMaxApproxError() const
         {
-            return (approxErrorThreshold != Math::InfinityF()) ? approxErrorThreshold : 0.1f;
+            return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
         }
 
         uint32_t GetMaxSubdivLevel() const
@@ -868,7 +868,7 @@ public:
 
     protected:
 
-        float       approxErrorThreshold;
+        float       maxApproxError;
         float       maxSubdivLevel; // uint32_t, float used for signaling unset value
 
         float       oversamplingFactorDbg;
@@ -1570,7 +1570,7 @@ protected:
 
                 // Analyze error
                 const auto diffAbs = std::abs(emVal - approxVal);
-                const auto threshold = std::max(aParams.GetApproxErrorThreshold() * emVal, 0.001f);
+                const auto threshold = std::max(aParams.GetMaxApproxError() * emVal, 0.001f);
                 if (diffAbs > threshold)
                     return true; // The approximation is too far from the original function
             }

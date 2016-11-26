@@ -500,7 +500,7 @@ public:
                 "Testing EM \"%s\", error threshold %.3f, max subdiv %d"
                 //", oversampling %.2f, max triangle span %.3f"
                 ":\n",
-                emPath, params.GetApproxErrorThreshold(), params.GetMaxSubdivLevel()
+                emPath, params.GetMaxApproxError(), params.GetMaxSubdivLevel()
                 //params.GetOversamplingFactorDbg(), params.GetMaxTriangleSpanDbg()
                 );
             std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
