@@ -888,7 +888,7 @@ public:
         if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering, aParams))
             return false;
 
-        if (!BuildTriangleTree(tmpTriangles))
+        if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
             return false;
 
         return true;
@@ -1978,12 +1978,14 @@ protected:
 
 protected:
 
-    // Build a uniformly balanced tree from the provided list of nodes (typically triangles).
+    // Build a balanced tree from the provided list of nodes (typically triangles).
     // The tree is built from bottom to top, accumulating the children data into their parents.
     // The triangles are either moved from the list into the tree or deleted on error.
-    bool BuildTriangleTree(std::list<TreeNode*> &aNodes)
+    static bool BuildTriangleTree(
+        std::list<TreeNode*>        &aNodes,
+        std::unique_ptr<TreeNode>   &oTreeRoot)
     {
-        aNodes;
+        aNodes, oTreeRoot;
 
         // TODO: While there is more than one node, do:
         //  - Replace pairs of nodes with nodes containing the pair as its children.
@@ -1992,6 +1994,8 @@ protected:
         // TODO: Move the resulting node (if any) to the tree root
 
         // TODO: Assert: triangles list is empty
+
+        return false; // debug
     }
 
     // Randomly pick a triangle with probability proportional to the integral of 
@@ -2029,7 +2033,7 @@ public:
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    static bool _UnitTest_TriangulateEm_SingleEm_InitialTriangulation(
+    static bool _UnitTest_InitialTriangulation(
         std::deque<TriangleNode*>   &oTriangles,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const EnvironmentMapImage   &aEmImage,
@@ -2177,7 +2181,7 @@ public:
     }
 
     template <class TTriangulationStats>
-    static bool _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(
+    static bool _UnitTest_RefineTriangulation(
         std::deque<TriangleNode*>   &aInitialTriangles,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
@@ -2297,7 +2301,7 @@ public:
             }
         }
 
-        // Check pixels without error samples
+        // Are there pixels without error samples?
         if (aStats.IsActive())
         {
             aStats.ComputeZeroSampleCountsVert();
@@ -2335,7 +2339,7 @@ public:
         return true;
     }
 
-    static bool _UnitTest_TriangulateEm_SingleEm(
+    static bool _UnitTest_Build_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
         uint32_t                     aMaxSubdivLevel,
@@ -2356,10 +2360,10 @@ public:
 
         std::deque<TriangleNode*> initialTriangles;
 
-        if (!_UnitTest_TriangulateEm_SingleEm_InitialTriangulation(initialTriangles,
-                                                                   aMaxUtBlockPrintLevel,
-                                                                   *image.get(),
-                                                                   aUseBilinearFiltering))
+        if (!_UnitTest_InitialTriangulation(initialTriangles,
+                                            aMaxUtBlockPrintLevel,
+                                            *image.get(),
+                                            aUseBilinearFiltering))
         {
             FreeTrianglesDeque(initialTriangles);
             return false;
@@ -2369,26 +2373,24 @@ public:
         if (aCheckSamplingCoverage)
         {
             TriangulationStats stats(*image.get());
-            refinePassed =
-                _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
-                                                                     aMaxSubdivLevel,
-                                                                     aExpectedRefinedCount,
-                                                                     aMaxUtBlockPrintLevel,
-                                                                     stats,
-                                                                     *image.get(),
-                                                                     aUseBilinearFiltering);
+            refinePassed =  _UnitTest_RefineTriangulation(initialTriangles,
+                                                         aMaxSubdivLevel,
+                                                         aExpectedRefinedCount,
+                                                         aMaxUtBlockPrintLevel,
+                                                         stats,
+                                                         *image.get(),
+                                                         aUseBilinearFiltering);
         }
         else
         {
             TriangulationStatsDummy stats(*image.get());
-            refinePassed =
-                _UnitTest_TriangulateEm_SingleEm_RefineTriangulation(initialTriangles,
-                                                                     aMaxSubdivLevel,
-                                                                     aExpectedRefinedCount,
-                                                                     aMaxUtBlockPrintLevel,
-                                                                     stats,
-                                                                     *image.get(),
-                                                                     aUseBilinearFiltering);
+            refinePassed =  _UnitTest_RefineTriangulation(initialTriangles,
+                                                          aMaxSubdivLevel,
+                                                          aExpectedRefinedCount,
+                                                          aMaxUtBlockPrintLevel,
+                                                          stats,
+                                                          *image.get(),
+                                                          aUseBilinearFiltering);
         }
         if (!refinePassed)
         {
@@ -2398,73 +2400,140 @@ public:
 
         FreeTrianglesDeque(initialTriangles);
 
+        // TODO: Test build
+        //std::list<TreeNode*> refinedTriangles; from Refine()
+        //if (!_UnitTest_BuildTriangleTree_SingleList(aMaxUtBlockPrintLevel, refinedTriangles))
+        //    return false;
+
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
         return true;
     }
 
-    static bool _UnitTest_TriangulateEm(
+    static bool _UnitTest_BuildTriangleTree_SingleList(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel     aUtBlockPrintLevel,
+        std::list<TreeNode*>        &aTriangles)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()");
+
+        std::unique_ptr<TreeNode> treeRoot;
+
+        if (!BuildTriangleTree(aTriangles, treeRoot))
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()",
+                "BuildTriangleTree() failed!");
+            return false;
+        }
+
+        // TODO: ...
+        // - Leaves count (same as initial size)
+        // - Height: ceil(log2(count))
+        // - Both children are valid or it is a leaf
+        // - Inner nodes weights: valid coef, consistent with children
+        // - ...
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()");
+        return true;
+    }
+
+    static bool _UnitTest_BuildTriangleTreeSynthetic(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
+        PG3_UT_BEGIN(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
+
+        // TODO: List 1
+        std::list<TreeNode*> triangles;
+        if (!_UnitTest_BuildTriangleTree_SingleList(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, triangles))
+            return false;
+
+        // TODO: List 2
+        // TODO: List 3
+        // TODO: List 4
+        // TODO: List 5
+
+        PG3_UT_END_PASSED(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
+        return true;
+    }
+
+
+    static bool _UnitTest_Build(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::TriangulateEm()");
+            "EnvironmentMapSteeringSampler::Build()");
 
         // TODO: Empty EM
         // TODO: Black constant EM (Luminance 0)
         // TODO: ?
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Const white 8x4", 5, 20, true,
-                                              ".\\Light Probes\\Debugging\\Const white 8x4.exr",
-                                              false))
+        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+                                      "Const white 8x4", 5, 20, true,
+                                      ".\\Light Probes\\Debugging\\Const white 8x4.exr",
+                                      false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Const white 512x256", 5, 20, true,
-                                              ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-                                              false))
+        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+                                      "Const white 512x256", 5, 20, true,
+                                      ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+                                      false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Const white 1024x512", 5, 20, true,
-                                              ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                                              false))
+        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+                                      "Const white 1024x512", 5, 20, true,
+                                      ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                                      false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Single pixel", 5, 0, false,
-                                              ".\\Light Probes\\Debugging\\Single pixel.exr",
-                                              false))
+        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+                                      "Single pixel", 5, 0, false,
+                                      ".\\Light Probes\\Debugging\\Single pixel.exr",
+                                      false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Three point lighting 1024x512", 5, 0, false,
-                                              ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                                              false))
+        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+                                      "Three point lighting 1024x512", 5, 0, false,
+                                      ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                                      false))
             return false;
 
-        if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-                                              "Satellite", 5, 0, false,
-                                              ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                                              false))
+        if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+                                      "Satellite", 5, 0, false,
+                                      ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                                      false))
             return false;
 
-        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-        //                                      "Doge2", 5, 0, false,
-        //                                      ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-        //                                      false))
+        //if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+        //                              "Doge2", 5, 0, false,
+        //                              ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+        //                              false))
         //    return false;
 
-        //if (!_UnitTest_TriangulateEm_SingleEm(aMaxUtBlockPrintLevel,
-        //                                      "Peace Garden", 5, 0, false,
-        //                                      ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-        //                                      false))
+        //if (!_UnitTest_Build_SingleEm(aMaxUtBlockPrintLevel,
+        //                              "Peace Garden", 5, 0, false,
+        //                              ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+        //                              false))
         //    return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
-                          "EnvironmentMapSteeringSampler::TriangulateEm()");
+                          "EnvironmentMapSteeringSampler::Build()");
         return true;
     }
 
+
+    static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        //SteeringBasisValue::_UnitTest_GenerateSphHarm(aMaxUtBlockPrintLevel);
+
+        //_UnitTest_SteeringValues(aMaxUtBlockPrintLevel);
+        //_UnitTest_SubdivideTriangle(aMaxUtBlockPrintLevel);
+        _UnitTest_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
+        //_UnitTest_Build(aMaxUtBlockPrintLevel);
+    }
 #endif
 };

@@ -523,7 +523,7 @@ public:
                     EnvironmentMapSteeringSampler::FreeNodesList(triangles);
                 }
             }
-            Debugging::Exit(); // debug
+            //Debugging::Exit(); // debug
 
             // Visualize spherical triangle uniform sampling
             //const float countPerDimension = 40.f;   //30.f;   //20.f;   //
