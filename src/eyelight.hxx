@@ -58,5 +58,5 @@ public:
         mIterations++;
     }
 
-    Rng              mRng;
+    Rng mRng;
 };

@@ -493,17 +493,19 @@ public:
             }();
             EnvironmentMapSteeringSampler::Parameters params(
                 aAuxDbgParams.float2,
-                aAuxDbgParams.float3,
+                aAuxDbgParams.float3/*,
                 aAuxDbgParams.float4,
-                aAuxDbgParams.float5);
+                aAuxDbgParams.float5*/);
             printf(
-                "Testing EM \"%s\", error threshold %.3f, max subdiv %d, oversampling %.2f, max triangle span %.3f:\n",
+                "Testing EM \"%s\", error threshold %.3f, max subdiv %d"
+                //", oversampling %.2f, max triangle span %.3f"
+                ":\n",
+                emPath, params.GetApproxErrorThreshold(), params.GetMaxSubdivLevel()
+                //params.GetOversamplingFactorDbg(), params.GetMaxTriangleSpanDbg()
+                );
+            std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
                 emPath,
-                params.GetApproxErrorThreshold(),
-                params.GetMaxSubdivLevel(),
-                params.GetOversamplingFactorDbg(),
-                params.GetMaxTriangleSpanDbg());
-            std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(emPath));
+                (aAuxDbgParams.float5 != Math::InfinityF()) ? aAuxDbgParams.float5 : 0.0f));
             if (image)
             {
                 std::list<EnvironmentMapSteeringSampler::TreeNode*> triangles;
