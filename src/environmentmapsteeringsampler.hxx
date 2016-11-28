@@ -101,6 +101,15 @@ public:
             return *this;
         }
 
+        bool IsValid() const
+        {
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                if (!Math::IsValid(mBasisValues[i]))
+                    return false;
+            // TODO: What else?
+            return true;
+        }
+
         SteeringBasisValue operator* (const SteeringBasisValue &aValue) const
         {
             SteeringBasisValue retVal;
@@ -609,25 +618,48 @@ public:
     class TreeNode
     {
     public:
-        TreeNode(bool aIsTriangleNode) : mIsTriangleNode(aIsTriangleNode) {}
+        TreeNode(bool aIsTriangleNode, const SteeringBasisValue &aWeight) :
+            mIsTriangleNode(aIsTriangleNode),
+            mWeight(aWeight)
+        {}
 
-        bool IsTriangleNode() { return mIsTriangleNode; }
+        bool IsTriangleNode() const
+        {
+            return mIsTriangleNode;
+        }
+
+        SteeringBasisValue GetWeight() const
+        {
+            return mWeight;
+        }
 
     protected:
-        bool mIsTriangleNode; // node can be either triangle (leaf) or inner node
+        bool                mIsTriangleNode; // node can be either triangle (leaf) or inner node
+        SteeringBasisValue  mWeight;
     };
 
 
     class InnerNode : public TreeNode
     {
     public:
-        InnerNode() : TreeNode(false) {}
+        // The node becomes the owner of the children and is responsible for releasing them
+        InnerNode(
+            TreeNode* aLeftChild,
+            TreeNode* aRightChild)
+            :
+            TreeNode(
+                false,
+                [aLeftChild, aRightChild](){
+                    if ((aLeftChild != nullptr) && (aRightChild != nullptr))
+                        return aLeftChild->GetWeight() + aRightChild->GetWeight();
+                    else
+                        return SteeringBasisValue();
+                }()),
+            mLeftChild(aLeftChild),
+            mRightChild(aRightChild)
+        {}
 
         ~InnerNode() {}
-
-        // The node becomes the owner of the children and is responsible for releasing them
-        void SetLeftChild( TreeNode* aLeftChild)  { mLeftChild.reset(aLeftChild); }
-        void SetRightChild(TreeNode* aRightChild) { mLeftChild.reset(aRightChild); }
 
         const TreeNode* GetLeftChild()  const { return mLeftChild.get(); }
         const TreeNode* GetRightChild() const { return mRightChild.get(); }
@@ -659,8 +691,10 @@ public:
             uint32_t                 aIndex,
             const TriangleNode      *aParentTriangle = nullptr
             ) :
-            TreeNode(true),
-            weight((aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f),
+            TreeNode(
+                true,
+                // TODO: Times triangle area
+                SteeringBasisValue((aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f)),
             subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
 #ifdef _DEBUG
             //, index([aParentTriangle, aIndex](){
@@ -682,7 +716,7 @@ public:
 
         bool operator == (const TriangleNode &aTriangle)
         {
-            return (weight == aTriangle.weight)
+            return (mWeight == aTriangle.mWeight)
                 && (sharedVertices[0] == aTriangle.sharedVertices[0])
                 && (sharedVertices[1] == aTriangle.sharedVertices[1])
                 && (sharedVertices[2] == aTriangle.sharedVertices[2]);
@@ -815,8 +849,6 @@ public:
         }
 
     public:
-        SteeringBasisValue      weight;
-
         uint32_t                subdivLevel;
 
 #ifdef _DEBUG
@@ -1416,7 +1448,7 @@ protected:
         float edge1LenSqr = 0.f;
         float edge2LenSqr = 0.f;
 
-        {
+        do {
             oCoords[0] = Sampling::SampleUniformSphereW(aRng.GetVec2f());
             oCoords[1] = Sampling::SampleUniformSphereW(aRng.GetVec2f());
             oCoords[2] = Sampling::SampleUniformSphereW(aRng.GetVec2f());
@@ -1439,15 +1471,15 @@ protected:
         uint32_t                 aTriangleCount)
     {
         Rng rng;
-        for (uint32_t triangle = 0; triangle < aTriangleCount; triangle++)
+        for (uint32_t triangleIdx = 0; triangleIdx < aTriangleCount; triangleIdx++)
         {
             Vec3f vertexCoords[3];
             GenerateRandomTriangleVertices(rng, vertexCoords);
 
             float vertexLuminances[3] {
-                static_cast<float>(triangle),
-                static_cast<float>(triangle) + 0.3f,
-                static_cast<float>(triangle) + 0.6f
+                static_cast<float>(triangleIdx),
+                static_cast<float>(triangleIdx) + 0.3f,
+                static_cast<float>(triangleIdx) + 0.6f
             };
 
             std::vector<std::shared_ptr<Vertex>> sharedVertices(3);
@@ -1455,11 +1487,12 @@ protected:
             GenerateSharedVertex(sharedVertices[1], vertexCoords[1], vertexLuminances[1]);
             GenerateSharedVertex(sharedVertices[2], vertexCoords[2], vertexLuminances[2]);
 
-            aTriangles.push_back(new TriangleNode(
+            auto triangle = new TriangleNode(
                 sharedVertices[0],
                 sharedVertices[1],
                 sharedVertices[2],
-                0));
+                triangleIdx);
+            aTriangles.push_back(triangle);
         }
     }
 
@@ -2043,22 +2076,52 @@ protected:
 
     // Build a balanced tree from the provided list of nodes (typically triangles).
     // The tree is built from bottom to top, accumulating the children data into their parents.
-    // The triangles are either moved from the list into the tree or deleted on error.
+    // The triangles are either moved into the tree or deleted on error.
     static bool BuildTriangleTree(
         std::list<TreeNode*>        &aNodes,
         std::unique_ptr<TreeNode>   &oTreeRoot)
     {
-        aNodes, oTreeRoot;
+        oTreeRoot.reset(nullptr);
 
-        // TODO: While there is more than one node, do:
-        //  - Replace pairs of nodes with nodes containing the pair as its children.
-        //    Un-paired noded (if any) stays in the list for the next iteration.
+        // TODO: Switch to a more efficient container? (e.g. deque - less allocations?)
 
-        // TODO: Move the resulting node (if any) to the tree root
+        // Process in layers from bottom to top.
+        // If the current layer has odd element count, the last element can be merged with 
+        // the first element of the next layer. This does not increase the height of the tree,
+        // but can lead to worse memory access pattern (a triangle subset from the one end 
+        // is merged with a subset from the other end of list).
+        // TODO: Move the last element of an odd list to the end of the next layer?
+        while (aNodes.size() >= 2)
+        {
+            const auto node1 = aNodes.front(); aNodes.pop_front();
+            const auto node2 = aNodes.front(); aNodes.pop_front();
 
-        // TODO: Assert: triangles list is empty
+            PG3_ASSERT(node1 != nullptr);
+            PG3_ASSERT(node2 != nullptr);
 
-        return false; // debug
+            auto newNode = new InnerNode(node1, node2);
+            if (newNode == nullptr)
+            {
+                delete node1;
+                delete node2;
+                FreeNodesList(aNodes);
+                return false;
+            }
+            aNodes.push_back(newNode);
+        }
+
+        PG3_ASSERT(aNodes.size() <= 1u);
+
+        // Fill tree root
+        if (aNodes.size() == 1u)
+        {
+            oTreeRoot.reset(aNodes.front());
+            aNodes.pop_front();
+        }
+
+        PG3_ASSERT(aNodes.empty());
+
+        return true;
     }
 
     // Randomly pick a triangle with probability proportional to the integral of 
@@ -2355,7 +2418,7 @@ public:
                 (  sharedVertices[0]->weight
                  + sharedVertices[1]->weight
                  + sharedVertices[2]->weight) / 3.0f;
-            if (!referenceWeight.EqualsDelta(triangle->weight, 0.0001f))
+            if (!referenceWeight.EqualsDelta(triangle->GetWeight(), 0.0001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Incorect triangle weight");
@@ -2476,33 +2539,161 @@ public:
         return true;
     }
 
+    static bool _UT_InspectTree(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel     aUtBlockPrintLevel,
+        const char                  *aTestName,
+        const TreeNode              *aCurrentNode,
+        uint32_t                    &oLeafCount,
+        uint32_t                    &oMaxDepth,
+        uint32_t                     aCurrentDepth = 1)
+    {
+        if (aCurrentNode == nullptr)
+            return true; // Accept an empty tree
+
+        if (!aCurrentNode->IsTriangleNode()) // Inner node
+        {
+            auto innerNode  = static_cast<const InnerNode*>(aCurrentNode);
+            auto leftChild  = innerNode->GetLeftChild();
+            auto rightChild = innerNode->GetRightChild();
+
+            // Null pointers
+            if ((leftChild == nullptr) || (rightChild == nullptr))
+            {
+                PG3_UT_END_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    "Found null child node!", aTestName);
+                return false;
+            }
+
+            // Check children recursively
+            if (   !_UT_InspectTree(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
+                        leftChild, oLeafCount, oMaxDepth, aCurrentDepth + 1)
+                || !_UT_InspectTree(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
+                        rightChild, oLeafCount, oMaxDepth, aCurrentDepth + 1))
+            {
+                return false;
+            }
+
+            // Weight validity
+            const auto innerNodeWeight = innerNode->GetWeight();
+            if (!innerNodeWeight.IsValid())
+            {
+                PG3_UT_END_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    "Found invalid inner node weight!", aTestName);
+                return false;
+            }
+
+            // Weight consistency
+            const auto leftChildWeight   = leftChild->GetWeight();
+            const auto rightChildWeight  = rightChild->GetWeight();
+            const auto summedChildWeight = leftChildWeight + rightChildWeight;
+            if (innerNodeWeight != summedChildWeight)
+            {
+                std::ostringstream errorDescription;
+                errorDescription << "Node weight is not equal to the sum of child weights";
+                PG3_UT_END_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    errorDescription.str().c_str(), aTestName);
+                return false;
+            }
+        }
+        else // Triangle node
+        {
+            oLeafCount++;
+            oMaxDepth = std::max(oMaxDepth, aCurrentDepth);
+
+            auto triangleNode = static_cast<const TriangleNode*>(aCurrentNode);
+            for (const auto &vertex : triangleNode->sharedVertices)
+            {
+                if (vertex.get() == nullptr)
+                {
+                    PG3_UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                        "Found null triangle vertex!", aTestName);
+                    return false;
+                }
+
+                // Normalized direction
+                if (!Math::EqualDelta(vertex->dir.LenSqr(), 1.0f, 0.001f))
+                {
+                    PG3_UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                        "Found invalid direction!", aTestName);
+                    return false;
+                }
+
+                // Weight validity
+                if (!vertex->weight.IsValid())
+                {
+                    PG3_UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                        "Found invalid weight!", aTestName);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     static bool _UT_BuildTriangleTree_SingleList(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
+        const char                  *aTestName,
         std::list<TreeNode*>        &aTriangles)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
 
         std::unique_ptr<TreeNode> treeRoot;
+        const auto initialListSize = aTriangles.size();
 
         if (!BuildTriangleTree(aTriangles, treeRoot))
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()",
-                "BuildTriangleTree() failed!");
-            FreeNodesList(aTriangles);
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                "BuildTriangleTree() failed!", aTestName);
             return false;
         }
 
-        // TODO: ...
-        // - nullptrs
-        // - Leaves count (same as initial size)
-        // - Height: ceil(log2(count))
-        // - Both children are valid or it is a leaf
-        // - Inner nodes weights: valid coef, consistent with children
-        // - ...
+        // Analyze tree
+        uint32_t leafCount = 0;
+        uint32_t maxDepth = 0;
+        if (!_UT_InspectTree(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
+                treeRoot.get(), leafCount, maxDepth))
+            return false;
+        
+        // Leaf count
+        if (leafCount != initialListSize)
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                "Leaf count doesn't equal to triangle count!", aTestName);
+            return false;
+        }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()");
+        // Max depth
+        const auto expectedMaxDepth =
+            (initialListSize == 0) ?
+            0 : static_cast<uint32_t>(std::ceil(std::log2((float)initialListSize))) + 1u;
+        if (maxDepth != expectedMaxDepth)
+        {
+            std::ostringstream errorDescription;
+            errorDescription << "Max depth ";
+            errorDescription << maxDepth;
+            errorDescription << " doesn't equal to expected (log) depth ";
+            errorDescription << expectedMaxDepth;
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                errorDescription.str().c_str(), aTestName);
+            return false;
+        }
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
         return true;
     }
 
@@ -2514,8 +2705,13 @@ public:
         std::list<TreeNode*> triangles;
         GenerateRandomTriangulation(triangles, aTriangleCount);
 
+        std::ostringstream testName;
+        testName << "Random triangle list (";
+        testName << aTriangleCount;
+        testName << " items)";
+
         return _UT_BuildTriangleTree_SingleList(
-            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, triangles);
+            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, testName.str().c_str(), triangles);
     }
 
     static bool _UT_BuildTriangleTreeSynthetic(
@@ -2525,16 +2721,22 @@ public:
             aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
 
-        // TODO: List 0
+        for (uint32_t i = 0; i < 9; i++)
+            if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, i))
+                return false;
 
-        // TODO: List 2
-        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 2))
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 10))
             return false;
-
-        // TODO: List 2
-        // TODO: List 3
-        // TODO: List 4
-        // TODO: List 5
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 100))
+            return false;
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 1000))
+            return false;
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 10000))
+            return false;
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 100000))
+            return false;
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 1000000))
+            return false;
 
         PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,

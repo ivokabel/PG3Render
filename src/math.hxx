@@ -17,6 +17,19 @@ namespace Math
     // cosine of 45 degrees
     const float kCosPiDiv4F = 0.70710678118f;
 
+    template <
+        typename T,
+        typename = typename
+            std::enable_if<
+                   std::is_same<double, T>::value
+                || std::is_same<float, T>::value
+                >::type
+        >
+    inline bool IsValid(T aVal)
+    {
+        return !std::isnan(aVal) && std::isfinite(aVal);
+    }
+
     inline float  InfinityF() { return std::numeric_limits<float>::infinity(); }
     inline double InfinityD() { return std::numeric_limits<double>::infinity(); }
 
