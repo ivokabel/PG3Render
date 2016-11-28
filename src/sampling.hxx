@@ -360,13 +360,13 @@ namespace Sampling
 
     Vec3f SampleUniformSphereW(
         const Vec2f  &aSamples,
-        float        *oPdfSA)
+        float        *oPdfSA = nullptr)
     {
         const float phi      = 2.f * Math::kPiF * aSamples.x;
         const float sinTheta = 2.f * std::sqrt(aSamples.y - aSamples.y * aSamples.y);
         const float cosTheta = 1.f - 2.f * aSamples.y;
 
-        PG3_ERROR_CODE_NOT_TESTED("");
+        //PG3_ERROR_CODE_NOT_TESTED("");
 
         const Vec3f ret = Geom::CreateDirection(sinTheta, cosTheta, std::sin(phi), std::cos(phi));
 

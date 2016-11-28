@@ -1408,6 +1408,72 @@ protected:
         return true;
     }
 
+    static void GenerateRandomTriangleVertices(
+        Rng         &aRng,
+        Vec3f       (&oCoords)[3])
+    {
+        float edge0LenSqr = 0.f;
+        float edge1LenSqr = 0.f;
+        float edge2LenSqr = 0.f;
+
+        {
+            oCoords[0] = Sampling::SampleUniformSphereW(aRng.GetVec2f());
+            oCoords[1] = Sampling::SampleUniformSphereW(aRng.GetVec2f());
+            oCoords[2] = Sampling::SampleUniformSphereW(aRng.GetVec2f());
+
+            edge0LenSqr = (oCoords[0] - oCoords[1]).LenSqr();
+            edge1LenSqr = (oCoords[1] - oCoords[2]).LenSqr();
+            edge2LenSqr = (oCoords[2] - oCoords[0]).LenSqr();
+        }
+        while ((edge0LenSqr < 0.001f)
+            || (edge1LenSqr < 0.001f)
+            || (edge2LenSqr < 0.001f));
+    }
+
+    // Generate random triangle list. Mainly for debugging/testing purposes.
+    // Triangles are guaranteed to lie on the unit sphere, but are neither guaranteed to cover
+    // the whole sphere properly, nor face outside the sphere. In fact they are just a bunch of 
+    // randomly genetrated triangles on a sphere.
+    static void GenerateRandomTriangulation(
+        std::list<TreeNode*>    &aTriangles,
+        uint32_t                 aTriangleCount)
+    {
+        Rng rng;
+        for (uint32_t triangle = 0; triangle < aTriangleCount; triangle++)
+        {
+            Vec3f vertexCoords[3];
+            GenerateRandomTriangleVertices(rng, vertexCoords);
+
+            float vertexLuminances[3] {
+                static_cast<float>(triangle),
+                static_cast<float>(triangle) + 0.3f,
+                static_cast<float>(triangle) + 0.6f
+            };
+
+            std::vector<std::shared_ptr<Vertex>> sharedVertices(3);
+            GenerateSharedVertex(sharedVertices[0], vertexCoords[0], vertexLuminances[0]);
+            GenerateSharedVertex(sharedVertices[1], vertexCoords[1], vertexLuminances[1]);
+            GenerateSharedVertex(sharedVertices[2], vertexCoords[2], vertexLuminances[2]);
+
+            aTriangles.push_back(new TriangleNode(
+                sharedVertices[0],
+                sharedVertices[1],
+                sharedVertices[2],
+                0));
+        }
+    }
+
+    static void GenerateSharedVertex(
+        std::shared_ptr<Vertex>     &oSharedVertex,
+        const Vec3f                 &aVertexDir,
+        const float                  aLuminance)
+    {
+        SteeringBasisValue weight;
+        weight.GenerateSphHarm(aVertexDir, aLuminance);
+
+        oSharedVertex = std::make_shared<Vertex>(aVertexDir, weight);
+    }
+
     static void GenerateSharedVertex(
         std::shared_ptr<Vertex>     &oSharedVertex,
         const Vec3f                 &aVertexDir,
@@ -1417,10 +1483,7 @@ protected:
         const auto radiance = aEmImage.Evaluate(aVertexDir, aUseBilinearFiltering);
         const auto luminance = radiance.Luminance();
 
-        SteeringBasisValue weight;
-        weight.GenerateSphHarm(aVertexDir, luminance);
-
-        oSharedVertex = std::make_shared<Vertex>(aVertexDir, weight);
+        GenerateSharedVertex(oSharedVertex, aVertexDir, luminance);
     }
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
@@ -2427,10 +2490,12 @@ public:
             PG3_UT_END_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "BuildTriangleTree()",
                 "BuildTriangleTree() failed!");
+            FreeNodesList(aTriangles);
             return false;
         }
 
         // TODO: ...
+        // - nullptrs
         // - Leaves count (same as initial size)
         // - Height: ceil(log2(count))
         // - Both children are valid or it is a leaf
@@ -2441,6 +2506,18 @@ public:
         return true;
     }
 
+    static bool _UT_BuildTriangleTree_SingleRandomList(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel     aUtBlockPrintLevel,
+        uint32_t                     aTriangleCount)
+    {
+        std::list<TreeNode*> triangles;
+        GenerateRandomTriangulation(triangles, aTriangleCount);
+
+        return _UT_BuildTriangleTree_SingleList(
+            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, triangles);
+    }
+
     static bool _UT_BuildTriangleTreeSynthetic(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
@@ -2448,10 +2525,10 @@ public:
             aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
 
-        // TODO: List 1
-        std::list<TreeNode*> triangles;
-        if (!_UT_BuildTriangleTree_SingleList(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, triangles))
+        // TODO: List 0
+
+        // TODO: List 2
+        if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 2))
             return false;
 
         // TODO: List 2
