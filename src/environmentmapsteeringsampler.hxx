@@ -2308,6 +2308,7 @@ public:
 
     template <class TTriangulationStats>
     static bool _UT_RefineTriangulation(
+        std::list<TreeNode*>        &oRefinedTriangles,
         std::deque<TriangleNode*>   &aInitialTriangles,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
@@ -2318,34 +2319,33 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
-        std::list<TreeNode*> refinedTriangles;
         Parameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
-        if (!RefineEmTriangulation(refinedTriangles, aInitialTriangles,
+        if (!RefineEmTriangulation(oRefinedTriangles, aInitialTriangles,
                                    aEmImage, aUseBilinearFiltering, params, aStats))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
-            FreeNodesList(refinedTriangles);
+            FreeNodesList(oRefinedTriangles);
             return false;
         }
 
         // Triangles count (optional)
-        if ((aExpectedRefinedCount > 0) && (refinedTriangles.size() != aExpectedRefinedCount))
+        if ((aExpectedRefinedCount > 0) && (oRefinedTriangles.size() != aExpectedRefinedCount))
         {
             std::ostringstream errorDescription;
             errorDescription << "Initial triangle count is ";
-            errorDescription << refinedTriangles.size();
+            errorDescription << oRefinedTriangles.size();
             errorDescription << " instead of ";
             errorDescription << aExpectedRefinedCount;
             errorDescription << "!";
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 errorDescription.str().c_str());
-            FreeNodesList(refinedTriangles);
+            FreeNodesList(oRefinedTriangles);
             return false;
         }
 
         // All vertices lie on unit sphere
-        for (auto node : refinedTriangles)
+        for (auto node : oRefinedTriangles)
         {
             auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
             auto &vertices = triangle->sharedVertices;
@@ -2355,13 +2355,13 @@ public:
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Triangulation contains a vertex not lying on the unit sphere");
-                FreeNodesList(refinedTriangles);
+                FreeNodesList(oRefinedTriangles);
                 return false;
             }
         }
 
         // Non-zero triangle size
-        for (auto node : refinedTriangles)
+        for (auto node : oRefinedTriangles)
         {
             auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
             auto surfaceArea = triangle->ComputeSurfaceArea();
@@ -2369,13 +2369,13 @@ public:
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Triangulation contains a degenerated triangle");
-                FreeNodesList(refinedTriangles);
+                FreeNodesList(oRefinedTriangles);
                 return false;
             }
         }
 
         // Sanity check for normals
-        for (auto node : refinedTriangles)
+        for (auto node : oRefinedTriangles)
         {
             const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
             const auto centroid = triangle->ComputeCentroid();
@@ -2386,13 +2386,13 @@ public:
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "A triangle normal is oriented inside the sphere");
-                FreeNodesList(refinedTriangles);
+                FreeNodesList(oRefinedTriangles);
                 return false;
             }
         }
 
         // Weights
-        for (auto node : refinedTriangles)
+        for (auto node : oRefinedTriangles)
         {
             const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
             const auto &sharedVertices = triangle->sharedVertices;
@@ -2408,7 +2408,7 @@ public:
                 {
                     PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                         "Incorect triangle vertex weight");
-                    FreeNodesList(refinedTriangles);
+                    FreeNodesList(oRefinedTriangles);
                     return false;
                 }
             }
@@ -2422,7 +2422,7 @@ public:
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Incorect triangle weight");
-                FreeNodesList(refinedTriangles);
+                FreeNodesList(oRefinedTriangles);
                 return false;
             }
         }
@@ -2436,7 +2436,7 @@ public:
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Failed to generate ZeroSampleCountsVert");
-                FreeNodesList(refinedTriangles);
+                FreeNodesList(oRefinedTriangles);
                 return false;
             }
             for (size_t row = 0; row < zeroSampleCountsVert.size(); ++row)
@@ -2452,14 +2452,12 @@ public:
                 {
                     PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                         "There is an EM row which containt more than 0.4% non-sampled pixels!");
-                    FreeNodesList(refinedTriangles);
+                    FreeNodesList(oRefinedTriangles);
                     return false;
                 }
             }
         }
 
-        FreeNodesList(refinedTriangles);
-        
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         return true;
@@ -2476,6 +2474,7 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
+        // Load image
         std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(aImagePath));
         if (!image)
         {
@@ -2486,6 +2485,7 @@ public:
 
         std::deque<TriangleNode*> initialTriangles;
 
+        // Initial triangulation
         if (!_UT_InitialTriangulation(
                 initialTriangles,
                 aMaxUtBlockPrintLevel,
@@ -2496,11 +2496,15 @@ public:
             return false;
         }
 
+        std::list<TreeNode*> refinedTriangles;
+
+        // Triangulation refinement
         bool refinePassed;
         if (aCheckSamplingCoverage)
         {
             TriangulationStats stats(*image.get());
             refinePassed = _UT_RefineTriangulation(
+                refinedTriangles,
                 initialTriangles,
                 aMaxSubdivLevel,
                 aExpectedRefinedCount,
@@ -2513,6 +2517,7 @@ public:
         {
             TriangulationStatsDummy stats(*image.get());
             refinePassed = _UT_RefineTriangulation(
+                refinedTriangles,
                 initialTriangles,
                 aMaxSubdivLevel,
                 aExpectedRefinedCount,
@@ -2527,12 +2532,10 @@ public:
             return false;
         }
 
-        FreeTrianglesDeque(initialTriangles);
-
-        // TODO: Test build
-        //std::list<TreeNode*> refinedTriangles; from Refine()
-        //if (!_UT_BuildTriangleTree_SingleList(aMaxUtBlockPrintLevel, refinedTriangles))
-        //    return false;
+        // Build tree
+        if (!_UT_BuildTriangleTree_SingleList(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Build tree", refinedTriangles))
+            return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
@@ -2697,6 +2700,7 @@ public:
         return true;
     }
 
+
     static bool _UT_BuildTriangleTree_SingleRandomList(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
@@ -2713,6 +2717,7 @@ public:
         return _UT_BuildTriangleTree_SingleList(
             aMaxUtBlockPrintLevel, aUtBlockPrintLevel, testName.str().c_str(), triangles);
     }
+
 
     static bool _UT_BuildTriangleTreeSynthetic(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
@@ -2800,19 +2805,19 @@ public:
 
         ///////////////
 
-        if (!_UT_Build_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Doge2", 5, 0, false,
-                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                false))
-            return false;
+        //if (!_UT_Build_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Doge2", 5, 0, false,
+        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Build_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Peace Garden", 5, 0, false,
-                ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-                false))
-            return false;
+        //if (!_UT_Build_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Peace Garden", 5, 0, false,
+        //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+        //        false))
+        //    return false;
 
         PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -2823,12 +2828,12 @@ public:
 
     static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
+        SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
 
-        //_UT_SteeringValues(aMaxUtBlockPrintLevel);
-        //_UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
+        _UT_SteeringValues(aMaxUtBlockPrintLevel);
+        _UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
         _UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
-        //_UT_Build(aMaxUtBlockPrintLevel);
+        _UT_Build(aMaxUtBlockPrintLevel);
     }
 #endif
 };
