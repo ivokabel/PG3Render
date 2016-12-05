@@ -415,12 +415,12 @@ namespace Geom
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity");
 
         // Edge lengths
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges lengths");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths");
+        const float edgeReferenceLength = 4.f / std::sqrt(10.f + 2.f * std::sqrt(5.f));
+        const float edgeReferenceLengthSqr = edgeReferenceLength * edgeReferenceLength;
         for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
         {
             auto &face = faces[faceId];
-            const float edgeReferenceLength = 4.f / std::sqrt(10.f + 2.f * std::sqrt(5.f));
-            const float edgeReferenceLengthSqr = edgeReferenceLength * edgeReferenceLength;
             for (uint32_t vertexSeqNum = 0; vertexSeqNum < 3; vertexSeqNum++)
             {
                 auto vertex1Id = face.Get(vertexSeqNum);
@@ -441,13 +441,33 @@ namespace Geom
                     errorDescription << ") instead of sqrt(";
                     errorDescription << edgeReferenceLengthSqr;
                     errorDescription << "))!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges lengths",
+                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths",
                         errorDescription.str().c_str());
                     return false;
                 }
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges lengths");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths");
+
+        // Face surface areas
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas");
+        const float faceReferenceArea =
+            (5.f * std::sqrt(3.f) * Math::Sqr(edgeReferenceLength)) / 20.f;
+        for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
+        {
+            auto &face = faces[faceId];
+            auto area = Geom::TriangleSurfaceArea(
+                vertices[face.Get(0)],
+                vertices[face.Get(1)],
+                vertices[face.Get(2)]);
+            if (!Math::EqualDelta(area, faceReferenceArea, 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas",
+                    "Found ill-sized face!");
+                return false;
+            }
+        }
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas");
 
         // Face uniqueness
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
