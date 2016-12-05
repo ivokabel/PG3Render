@@ -194,6 +194,7 @@ namespace Geom
         PG3_ASSERT_FLOAT_NONNEGATIVE(oGamma);
     }
 
+
     // Area of a spherical triangle on a unit sphere, a.k.a. solid angle
     float SphericalTriangleArea(
         const float       &aAlpha,
@@ -211,6 +212,7 @@ namespace Geom
         return area;
     }
 
+
     // Area of a spherical triangle on a unit sphere, a.k.a. solid angle
     float SphericalTriangleArea(
         const Vec3f &aVertexA,
@@ -224,6 +226,41 @@ namespace Geom
 
         return area;
     }
+
+
+    static Vec3f TriangleCrossProduct(
+        const Vec3f &aVertex0,
+        const Vec3f &aVertex1,
+        const Vec3f &aVertex2)
+    {
+        PG3_ASSERT_VEC3F_VALID(aVertex0);
+        PG3_ASSERT_VEC3F_VALID(aVertex1);
+        PG3_ASSERT_VEC3F_VALID(aVertex2);
+
+        const auto dir1 = (aVertex1 - aVertex0);
+        const auto dir2 = (aVertex2 - aVertex1);
+
+        const auto crossProduct = Cross(dir1, dir2);
+
+        PG3_ASSERT_VEC3F_VALID(crossProduct);
+
+        return crossProduct;
+    }
+
+
+    static float TriangleSurfaceArea(
+        const Vec3f &aVertex0,
+        const Vec3f &aVertex1,
+        const Vec3f &aVertex2)
+    {
+        auto crossProduct = TriangleCrossProduct(aVertex0, aVertex1, aVertex2);
+        float surfaceArea = crossProduct.Length() / 2.f;
+
+        PG3_ASSERT_FLOAT_NONNEGATIVE(surfaceArea);
+
+        return surfaceArea;
+    }
+
 
     // Vertices and faces of a unit length regular icosahedron with centre in the origin [0, 0, 0]
     // Based on: http://geometrictools.com/Documentation/PlatonicSolids.pdf
