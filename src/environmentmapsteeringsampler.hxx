@@ -118,6 +118,19 @@ public:
             return retVal;
         }
 
+        SteeringBasisValue operator* (float aValue) const
+        {
+            SteeringBasisValue retVal;
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                retVal.mBasisValues[i] = mBasisValues[i] * aValue;
+            return retVal;
+        }
+
+        friend SteeringBasisValue operator* (float aValueLeft, const SteeringBasisValue &aValueRight)
+        {
+            return aValueRight * aValueLeft;
+        }
+
         SteeringBasisValue operator+ (const SteeringBasisValue &aValue) const
         {
             SteeringBasisValue retVal;
@@ -685,16 +698,13 @@ public:
 #endif
 
         TriangleNode(
-            std::shared_ptr<Vertex>  aVertex1,
-            std::shared_ptr<Vertex>  aVertex2,
-            std::shared_ptr<Vertex>  aVertex3,
-            uint32_t                 aIndex,
-            const TriangleNode      *aParentTriangle = nullptr
+            const std::shared_ptr<Vertex>   &aVertex0,
+            const std::shared_ptr<Vertex>   &aVertex1,
+            const std::shared_ptr<Vertex>   &aVertex2,
+            uint32_t                         aIndex,
+            const TriangleNode              *aParentTriangle = nullptr // only for the subdivision process
             ) :
-            TreeNode(
-                true,
-                // TODO: Times triangle area
-                SteeringBasisValue((aVertex1->weight + aVertex2->weight + aVertex3->weight) / 3.f)),
+            TreeNode(true, ComputeTriangleWeight(aVertex0, aVertex1, aVertex2)),
             subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
 #ifdef _DEBUG
             //, index([aParentTriangle, aIndex](){
@@ -709,10 +719,25 @@ public:
         {
             aIndex; // unused param (in release)
 
-            sharedVertices[0] = aVertex1;
-            sharedVertices[1] = aVertex2;
-            sharedVertices[2] = aVertex3;
+            sharedVertices[0] = aVertex0;
+            sharedVertices[1] = aVertex1;
+            sharedVertices[2] = aVertex2;
         }
+
+
+        SteeringBasisValue ComputeTriangleWeight(
+            const std::shared_ptr<Vertex>  &aVertex0,
+            const std::shared_ptr<Vertex>  &aVertex1,
+            const std::shared_ptr<Vertex>  &aVertex2)
+        {
+            const float area =
+                Geom::TriangleSurfaceArea(aVertex0->dir, aVertex1->dir, aVertex2->dir);
+            const auto averageVertexWeight =
+                (aVertex0->weight + aVertex1->weight + aVertex2->weight) / 3.f;
+
+            return averageVertexWeight * area;
+        }
+
 
         bool operator == (const TriangleNode &aTriangle)
         {
@@ -722,17 +747,15 @@ public:
                 && (sharedVertices[2] == aTriangle.sharedVertices[2]);
         }
 
+
         Vec3f ComputeCrossProduct() const
         {
-            const auto dir1 = (sharedVertices[1]->dir - sharedVertices[0]->dir);
-            const auto dir2 = (sharedVertices[2]->dir - sharedVertices[1]->dir);
-
-            auto crossProduct = Cross(Normalize(dir1), Normalize(dir2));
-
-            PG3_ASSERT_VEC3F_VALID(crossProduct);
-
-            return crossProduct;
+            return Geom::TriangleCrossProduct(
+                sharedVertices[0]->dir,
+                sharedVertices[1]->dir,
+                sharedVertices[2]->dir);
         }
+
 
         Vec3f ComputeNormal() const
         {
@@ -745,15 +768,15 @@ public:
                 return Vec3f(0.f);
         }
 
+
         float ComputeSurfaceArea() const
         {
-            auto crossProduct = ComputeCrossProduct();
-            auto surfaceArea  = crossProduct.Length();
-
-            PG3_ASSERT_FLOAT_NONNEGATIVE(surfaceArea);
-
-            return surfaceArea;
+            return Geom::TriangleSurfaceArea(
+                sharedVertices[0]->dir,
+                sharedVertices[1]->dir,
+                sharedVertices[2]->dir);
         }
+
 
         Vec3f ComputeCentroid() const
         {
@@ -856,7 +879,7 @@ public:
         const uint32_t          index;
 #endif
 
-        // TODO: This is sub-optimal, both in terms of memory consumption and memory non-locality
+        // TODO: This is sub-optimal, both in terms of memory consumption and memory locality
         std::shared_ptr<Vertex> sharedVertices[3];
     };
 
@@ -2414,10 +2437,11 @@ public:
             }
 
             // Triangle weight
-            SteeringBasisValue referenceWeight =
-                (  sharedVertices[0]->weight
-                 + sharedVertices[1]->weight
-                 + sharedVertices[2]->weight) / 3.0f;
+            const auto area = triangle->ComputeSurfaceArea();
+            const SteeringBasisValue referenceWeight =
+                area * (sharedVertices[0]->weight
+                      + sharedVertices[1]->weight
+                      + sharedVertices[2]->weight) / 3.0f;
             if (!referenceWeight.EqualsDelta(triangle->GetWeight(), 0.0001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -2797,7 +2821,7 @@ public:
 
         if (!_UT_Build_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Satellite", 5, 0, false,
+                "Satellite 4000x2000", 5, 0, false,
                 ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
                 false))
             return false;
