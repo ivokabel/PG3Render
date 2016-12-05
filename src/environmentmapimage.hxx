@@ -14,22 +14,25 @@
 class EnvironmentMapImage
 {
 public:
-    EnvironmentMapImage(uint32_t aWidth, uint32_t aHeight)
+    EnvironmentMapImage(const char *aFilename, uint32_t aWidth, uint32_t aHeight) :
+        mFilename(aFilename),
+        mWidth(aWidth),
+        mHeight(aHeight)
     {
-        mWidth  = aWidth;
-        mHeight = aHeight;
-
         mData = new SpectrumF[mWidth * mHeight];
     }
 
     ~EnvironmentMapImage()
     {
-        if (mData)
-            delete mData;
-        mData   = nullptr;
-        mWidth  = 0;
-        mHeight = 0;
+        delete mData;
     }
+
+    // This class is not copyable because of a const member.
+    // If we don't delete the assignment operator and copy constructor 
+    // explicitly, the compiler may complain about not being able 
+    // to create their default implementations.
+    EnvironmentMapImage & operator=(const EnvironmentMapImage&) = delete;
+    EnvironmentMapImage(const EnvironmentMapImage&) = delete;
 
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
     static EnvironmentMapImage* LoadImage(
@@ -50,7 +53,7 @@ public:
         file.setFrameBuffer(rgbaData - dw.min.x - dw.min.y * width, 1, width);
         file.readPixels(dw.min.y, dw.max.y);
 
-        EnvironmentMapImage* image = new EnvironmentMapImage(width, height);
+        EnvironmentMapImage* image = new EnvironmentMapImage(aFilename, width, height);
 
         int32_t c = 0;
         int32_t iRot = (int32_t)(aAzimuthRotation * width);
@@ -163,7 +166,15 @@ public:
         return mHeight; 
     }
 
-    SpectrumF   *mData;
-    uint32_t     mWidth;
-    uint32_t     mHeight;
+    std::string Filename() const
+    {
+        return mFilename;
+    }
+
+protected:
+
+    const std::string    mFilename;
+    const uint32_t       mWidth;
+    const uint32_t       mHeight;
+    SpectrumF           *mData;
 };

@@ -607,6 +607,115 @@ public:
 
 #endif
 
+        class BuildParameters
+        {
+        public:
+
+            BuildParameters(
+                float   aMaxApproxError = Math::InfinityF(),
+                float   aMaxSubdivLevel = Math::InfinityF(),
+                float   aOversamplingFactorDbg = Math::InfinityF(),
+                float   aMaxTriangleSpanDbg = Math::InfinityF())
+                :
+                maxApproxError(aMaxApproxError),
+                maxSubdivLevel(aMaxSubdivLevel),
+                oversamplingFactorDbg(aOversamplingFactorDbg),
+                maxTriangleSpanDbg(aMaxTriangleSpanDbg)
+            {}
+
+            float GetMaxApproxError() const
+            {
+                return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
+            }
+
+            uint32_t GetMaxSubdivLevel() const
+            {
+                return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
+            }
+
+            float GetOversamplingFactorDbg() const
+            {
+                return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
+            }
+
+            float GetMaxTriangleSpanDbg() const
+            {
+                return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
+            }
+
+        protected:
+
+            float       maxApproxError;
+            float       maxSubdivLevel; // uint32_t, float used for signaling unset value
+
+            float       oversamplingFactorDbg;
+            float       maxTriangleSpanDbg;
+        };
+
+
+protected:
+
+    // Builds the internal structures needed for sampling
+    bool Build(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        const BuildParameters       &aParams)
+    {
+        Cleanup();
+
+        std::list<TreeNode*> tmpTriangles;
+
+        if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering, aParams))
+            return false;
+
+        if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
+            return false;
+
+        return true;
+    }
+
+
+    // Save internal structures needed for sampling to disk
+    bool SaveToDisk(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        const BuildParameters       &aParams)
+    {
+        aEmImage, aUseBilinearFiltering, aParams; // debug
+
+        // TODO:
+        // - Is tree built?
+        // - Save format version
+        // - Save build parameters
+        // - Save the tree
+        //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
+        //   - Vertices
+        //   - Triangles
+        //   - Inner nodes
+        // ...
+
+        return false; // debug
+    }
+
+
+    // Loads pre-built internal structures needed for sampling
+    bool LoadFromDisk(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        const BuildParameters       &aParams)
+    {
+        aEmImage, aUseBilinearFiltering, aParams; // debug
+
+        Cleanup();
+
+        // TODO: ...
+        // - Open file/Check the parameters
+        // - Load the structure (checks: numbers validity, magic numbers padding, ...)
+        // - (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
+
+        return false; // debug
+    }
+
 public:
 
     class Vertex
@@ -885,68 +994,27 @@ public:
 
 public:
 
-    class Parameters
-    {
-    public:
-
-        Parameters(
-            float   aMaxApproxError         = Math::InfinityF(),
-            float   aMaxSubdivLevel         = Math::InfinityF(),
-            float   aOversamplingFactorDbg  = Math::InfinityF(),
-            float   aMaxTriangleSpanDbg     = Math::InfinityF())
-            :
-            maxApproxError(aMaxApproxError),
-            maxSubdivLevel(aMaxSubdivLevel),
-            oversamplingFactorDbg(aOversamplingFactorDbg),
-            maxTriangleSpanDbg(aMaxTriangleSpanDbg)
-        {}
-
-        float GetMaxApproxError() const
-        {
-            return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
-        }
-
-        uint32_t GetMaxSubdivLevel() const
-        {
-            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
-        }
-
-        float GetOversamplingFactorDbg() const
-        {
-            return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
-        }
-
-        float GetMaxTriangleSpanDbg() const
-        {
-            return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
-        }
-
-    protected:
-
-        float       maxApproxError;
-        float       maxSubdivLevel; // uint32_t, float used for signaling unset value
-
-        float       oversamplingFactorDbg;
-        float       maxTriangleSpanDbg;
-    };
-
     // Builds the internal structures needed for sampling
-    bool Build(
+    bool Init(
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const Parameters            &aParams)
+        const BuildParameters       &aParams)
     {
-        Cleanup();
+        // Building the tree is slow - try to load a pre-built tree from disk
+        if (LoadFromDisk(aEmImage, aUseBilinearFiltering, aParams))
+            return true;
 
-        std::list<TreeNode*> tmpTriangles;
+        // Not loaded - build a new tree
+        if (Build(aEmImage, aUseBilinearFiltering, aParams))
+        {
+            if (!SaveToDisk(aEmImage, aUseBilinearFiltering, aParams))
+            {
+                // TODO: Print a warning
+            }
+            return true;
+        }
 
-        if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering, aParams))
-            return false;
-
-        if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
-            return false;
-
-        return true;
+        return false;
     }
 
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
@@ -1400,7 +1468,7 @@ public: // debug: public is for visualisation/testing purposes
         std::list<TreeNode*>        &oTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const Parameters            &aParams)
+        const BuildParameters       &aParams)
     {
         PG3_ASSERT(oTriangles.empty());        
 
@@ -1553,7 +1621,7 @@ protected:
         std::deque<TriangleNode*>   &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const Parameters            &aParams,
+        const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
         PG3_ASSERT(!aToDoTriangles.empty());
@@ -1593,16 +1661,16 @@ protected:
     }
 
     static void SubdivTestSamplesPerDim(
-        const Vec3f         &aVertex0,
-        const Vec3f         &aVertex1,
-        const Vec3f         &aVertex2,
-        const Vec2ui        &aEmSize,
-        const Vec3f         &aPlanarTriangleCentroid,
-        const float          aMinSinClamped,
-        const float          aMaxSinClamped,
-        float               &aMinSamplesPerDimF,
-        float               &aMaxSamplesPerDimF,
-        const Parameters    &aParams)
+        const Vec3f                 &aVertex0,
+        const Vec3f                 &aVertex1,
+        const Vec3f                 &aVertex2,
+        const Vec2ui                &aEmSize,
+        const Vec3f                 &aPlanarTriangleCentroid,
+        const float                  aMinSinClamped,
+        const float                  aMaxSinClamped,
+        float                       &aMinSamplesPerDimF,
+        float                       &aMaxSamplesPerDimF,
+        const BuildParameters       &aParams)
     {
         // Angular sample size based on the size of an EM pixel
         const Vec2f minEmPixelAngularSize{
@@ -1655,7 +1723,7 @@ protected:
         uint32_t                     samplesPerDim,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const Parameters            &aParams,
+        const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
         const float binSize = 1.f / samplesPerDim;
@@ -1714,7 +1782,7 @@ protected:
         const TriangleNode          &aWholeTriangle,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const Parameters            &aParams,
+        const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertex0);
@@ -1818,7 +1886,7 @@ protected:
         const TriangleNode          &aTriangle,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const Parameters            &aParams,
+        const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
@@ -2342,7 +2410,7 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
-        Parameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
+        BuildParameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
         if (!RefineEmTriangulation(oRefinedTriangles, aInitialTriangles,
                                    aEmImage, aUseBilinearFiltering, params, aStats))
         {

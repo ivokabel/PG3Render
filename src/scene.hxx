@@ -491,7 +491,7 @@ public:
                 default: return "";
                 }
             }();
-            EnvironmentMapSteeringSampler::Parameters params(
+            EnvironmentMapSteeringSampler::BuildParameters params(
                 aAuxDbgParams.float2,
                 aAuxDbgParams.float3/*,
                 aAuxDbgParams.float4,
