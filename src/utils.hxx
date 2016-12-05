@@ -82,7 +82,7 @@ namespace Utils
         const uint64_t               aValue,
         const char                  *aHumanReference)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1,"%d", aValue);
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1,"%u", aValue);
 
         std::string result;
         IntegerToHumanReadable(aValue, result);
@@ -96,14 +96,14 @@ namespace Utils
             errorDescription << "\"";
 
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%d",
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%u",
                 errorDescription.str().c_str(), aValue);
         }
 
         // debug
         //printf("%s\n", result.c_str());
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%d", aValue);
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%u", aValue);
         return true;
     }
 
