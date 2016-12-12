@@ -663,7 +663,7 @@ protected:
     {
         Cleanup();
 
-        std::list<TreeNode*> tmpTriangles;
+        std::list<TreeNodeBase*> tmpTriangles;
 
         if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering, aParams))
             return false;
@@ -737,10 +737,10 @@ public:
     };
 
 
-    class TreeNode
+    class TreeNodeBase
     {
     public:
-        TreeNode(bool aIsTriangleNode, const SteeringBasisValue &aWeight) :
+        TreeNodeBase(bool aIsTriangleNode, const SteeringBasisValue &aWeight) :
             mIsTriangleNode(aIsTriangleNode),
             mWeight(aWeight)
         {}
@@ -761,15 +761,15 @@ public:
     };
 
 
-    class InnerNode : public TreeNode
+    class TriangleSetNode : public TreeNodeBase
     {
     public:
         // The node becomes the owner of the children and is responsible for releasing them
-        InnerNode(
-            TreeNode* aLeftChild,
-            TreeNode* aRightChild)
+        TriangleSetNode(
+            TreeNodeBase* aLeftChild,
+            TreeNodeBase* aRightChild)
             :
-            TreeNode(
+            TreeNodeBase(
                 false,
                 [aLeftChild, aRightChild](){
                     if ((aLeftChild != nullptr) && (aRightChild != nullptr))
@@ -781,19 +781,19 @@ public:
             mRightChild(aRightChild)
         {}
 
-        ~InnerNode() {}
+        ~TriangleSetNode() {}
 
-        const TreeNode* GetLeftChild()  const { return mLeftChild.get(); }
-        const TreeNode* GetRightChild() const { return mRightChild.get(); }
+        const TreeNodeBase* GetLeftChild()  const { return mLeftChild.get(); }
+        const TreeNodeBase* GetRightChild() const { return mRightChild.get(); }
 
     protected:
         // Children - owned by the node
-        std::unique_ptr<TreeNode> mLeftChild;
-        std::unique_ptr<TreeNode> mRightChild;
+        std::unique_ptr<TreeNodeBase> mLeftChild;
+        std::unique_ptr<TreeNodeBase> mRightChild;
     };
 
 
-    class TriangleNode : public TreeNode
+    class TriangleNode : public TreeNodeBase
     {
     public:
 
@@ -813,7 +813,7 @@ public:
             uint32_t                         aIndex,
             const TriangleNode              *aParentTriangle = nullptr // only for the subdivision process
             ) :
-            TreeNode(true, ComputeTriangleWeight(aVertex0, aVertex1, aVertex2)),
+            TreeNodeBase(true, ComputeTriangleWeight(aVertex0, aVertex1, aVertex2)),
             subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
 #ifdef _DEBUG
             //, index([aParentTriangle, aIndex](){
@@ -1058,7 +1058,7 @@ protected:
         mTreeRoot.reset(nullptr);
     }
 
-    static void FreeNode(TreeNode* aNode)
+    static void FreeNode(TreeNodeBase* aNode)
     {
         if (aNode == nullptr)
             return;
@@ -1066,18 +1066,18 @@ protected:
         if (aNode->IsTriangleNode())
             delete static_cast<TriangleNode*>(aNode);
         else
-            delete static_cast<InnerNode*>(aNode);
+            delete static_cast<TriangleSetNode*>(aNode);
     }
 
 public:
 
-    static void FreeNodesList(std::list<TreeNode*> &aNodes)
+    static void FreeNodesList(std::list<TreeNodeBase*> &aNodes)
     {
-        for (TreeNode* node : aNodes)
+        for (TreeNodeBase* node : aNodes)
             FreeNode(node);
     }
 
-    static void FreeNodesDeque(std::deque<TreeNode*> &aNodes)
+    static void FreeNodesDeque(std::deque<TreeNodeBase*> &aNodes)
     {
         while (!aNodes.empty())
         {
@@ -1465,7 +1465,7 @@ public: // debug: public is for visualisation/testing purposes
 
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     static bool TriangulateEm(
-        std::list<TreeNode*>        &oTriangles,
+        std::list<TreeNodeBase*>    &oTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams)
@@ -1558,8 +1558,8 @@ protected:
     // the whole sphere properly, nor face outside the sphere. In fact they are just a bunch of 
     // randomly genetrated triangles on a sphere.
     static void GenerateRandomTriangulation(
-        std::list<TreeNode*>    &aTriangles,
-        uint32_t                 aTriangleCount)
+        std::list<TreeNodeBase*>    &aTriangles,
+        uint32_t                     aTriangleCount)
     {
         Rng rng;
         for (uint32_t triangleIdx = 0; triangleIdx < aTriangleCount; triangleIdx++)
@@ -1613,11 +1613,11 @@ protected:
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
     // fills the output list of triangles. The refined triangles are released. The triangles 
     // are either moved from the "to do" set into the output list or deleted on error.
-    // Although the "to do" triangle set is a TreeNode* container, it must contain 
+    // Although the "to do" triangle set is a TreeNodeBase* container, it must contain 
     // TriangleNode* data only, otherwise an error will occur.
     template <class TTriangulationStats>
     static bool RefineEmTriangulation(
-        std::list<TreeNode*>        &oRefinedTriangles,
+        std::list<TreeNodeBase*>    &oRefinedTriangles,
         std::deque<TriangleNode*>   &aToDoTriangles,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
@@ -2169,8 +2169,8 @@ protected:
     // The tree is built from bottom to top, accumulating the children data into their parents.
     // The triangles are either moved into the tree or deleted on error.
     static bool BuildTriangleTree(
-        std::list<TreeNode*>        &aNodes,
-        std::unique_ptr<TreeNode>   &oTreeRoot)
+        std::list<TreeNodeBase*>        &aNodes,
+        std::unique_ptr<TreeNodeBase>   &oTreeRoot)
     {
         oTreeRoot.reset(nullptr);
 
@@ -2190,7 +2190,7 @@ protected:
             PG3_ASSERT(node1 != nullptr);
             PG3_ASSERT(node2 != nullptr);
 
-            auto newNode = new InnerNode(node1, node2);
+            auto newNode = new TriangleSetNode(node1, node2);
             if (newNode == nullptr)
             {
                 delete node1;
@@ -2244,7 +2244,7 @@ protected:
 
 protected:
 
-    std::unique_ptr<TreeNode>   mTreeRoot;
+    std::unique_ptr<TreeNodeBase>   mTreeRoot;
 
 public:
 
@@ -2399,7 +2399,7 @@ public:
 
     template <class TTriangulationStats>
     static bool _UT_RefineTriangulation(
-        std::list<TreeNode*>        &oRefinedTriangles,
+        std::list<TreeNodeBase*>    &oRefinedTriangles,
         std::deque<TriangleNode*>   &aInitialTriangles,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
@@ -2588,7 +2588,7 @@ public:
             return false;
         }
 
-        std::list<TreeNode*> refinedTriangles;
+        std::list<TreeNodeBase*> refinedTriangles;
 
         // Triangulation refinement
         bool refinePassed;
@@ -2638,7 +2638,7 @@ public:
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         const char                  *aTestName,
-        const TreeNode              *aCurrentNode,
+        const TreeNodeBase          *aCurrentNode,
         uint32_t                    &oLeafCount,
         uint32_t                    &oMaxDepth,
         uint32_t                     aCurrentDepth = 1)
@@ -2648,7 +2648,7 @@ public:
 
         if (!aCurrentNode->IsTriangleNode()) // Inner node
         {
-            auto innerNode  = static_cast<const InnerNode*>(aCurrentNode);
+            auto innerNode  = static_cast<const TriangleSetNode*>(aCurrentNode);
             auto leftChild  = innerNode->GetLeftChild();
             auto rightChild = innerNode->GetRightChild();
 
@@ -2739,11 +2739,11 @@ public:
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         const char                  *aTestName,
-        std::list<TreeNode*>        &aTriangles)
+        std::list<TreeNodeBase*>    &aTriangles)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
 
-        std::unique_ptr<TreeNode> treeRoot;
+        std::unique_ptr<TreeNodeBase> treeRoot;
         const auto initialListSize = aTriangles.size();
 
         if (!BuildTriangleTree(aTriangles, treeRoot))
@@ -2798,7 +2798,7 @@ public:
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         uint32_t                     aTriangleCount)
     {
-        std::list<TreeNode*> triangles;
+        std::list<TreeNodeBase*> triangles;
         GenerateRandomTriangulation(triangles, aTriangleCount);
 
         std::ostringstream testName;
