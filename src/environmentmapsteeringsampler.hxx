@@ -687,7 +687,20 @@ public:
             mVertices.reserve(aSize);
         }
 
-        bool AddVertex(const Vertex &aVertex, VertexIndex oIndex)
+        //bool AddVertex(const Vertex &aVertex, VertexIndex oIndex)
+        //{
+        //    mVertices.push_back(aVertex);
+
+        //    if (!mVertices.empty())
+        //    {
+        //        oIndex = mVertices.size() - 1u;
+        //        return true;
+        //    }
+        //    else
+        //        return false;
+        //}
+
+        bool AddVertex(Vertex &&aVertex, VertexIndex &oIndex)
         {
             mVertices.push_back(aVertex);
 
@@ -700,21 +713,20 @@ public:
                 return false;
         }
 
-        bool AddVertex(Vertex &&aVertex, VertexIndex oIndex)
+        Vertex *Get(VertexIndex aIndex)
         {
-            mVertices.push_back(aVertex);
+            PG3_ASSERT(aIndex < mVertices.size());
 
-            if (!mVertices.empty())
-            {
-                oIndex = mVertices.size() - 1u;
-                return true;
-            }
+            if (aIndex < mVertices.size())
+                return &mVertices[aIndex];
             else
-                return false;
+                return nullptr;
         }
 
-        Vertex *GetVertex(VertexIndex aIndex)
+        const Vertex *Get(VertexIndex aIndex) const
         {
+            PG3_ASSERT(aIndex < mVertices.size());
+
             if (aIndex < mVertices.size())
                 return &mVertices[aIndex];
             else
@@ -801,13 +813,16 @@ public:
 #endif
 
         TriangleNode(
-            const std::shared_ptr<Vertex>   &aVertex0,
-            const std::shared_ptr<Vertex>   &aVertex1,
-            const std::shared_ptr<Vertex>   &aVertex2,
-            uint32_t                         aIndex,
-            const TriangleNode              *aParentTriangle = nullptr // only for the subdivision process
-            ) :
-            TreeNodeBase(true, ComputeTriangleWeight(aVertex0, aVertex1, aVertex2)),
+            VertexIndex              aVertexIndex0,
+            VertexIndex              aVertexIndex1,
+            VertexIndex              aVertexIndex2,
+            VertexStorage           &aVertexStorage,
+            uint32_t                 aIndex,
+            const TriangleNode      *aParentTriangle = nullptr) // only for the subdivision process
+            :
+            TreeNodeBase(
+                true,
+                ComputeTriangleWeight(aVertexIndex0, aVertexIndex1, aVertexIndex2, aVertexStorage)),
             subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
 #ifdef _DEBUG
             //, index([aParentTriangle, aIndex](){
@@ -822,21 +837,26 @@ public:
         {
             aIndex; // unused param (in release)
 
-            sharedVertices[0] = aVertex0;
-            sharedVertices[1] = aVertex1;
-            sharedVertices[2] = aVertex2;
+            vertexIndices[0] = aVertexIndex0;
+            vertexIndices[1] = aVertexIndex1;
+            vertexIndices[2] = aVertexIndex2;
         }
 
 
         SteeringBasisValue ComputeTriangleWeight(
-            const std::shared_ptr<Vertex>  &aVertex0,
-            const std::shared_ptr<Vertex>  &aVertex1,
-            const std::shared_ptr<Vertex>  &aVertex2)
+            VertexIndex              aVertexIndex0,
+            VertexIndex              aVertexIndex1,
+            VertexIndex              aVertexIndex2,
+            VertexStorage           &aVertexStorage)
         {
+            const auto &vertex0 = aVertexStorage.Get(aVertexIndex0);
+            const auto &vertex1 = aVertexStorage.Get(aVertexIndex1);
+            const auto &vertex2 = aVertexStorage.Get(aVertexIndex2);
+
             const float area =
-                Geom::TriangleSurfaceArea(aVertex0->dir, aVertex1->dir, aVertex2->dir);
+                Geom::TriangleSurfaceArea(vertex0->dir, vertex1->dir, vertex2->dir);
             const auto averageVertexWeight =
-                (aVertex0->weight + aVertex1->weight + aVertex2->weight) / 3.f;
+                (vertex0->weight + vertex1->weight + vertex2->weight) / 3.f;
 
             return averageVertexWeight * area;
         }
@@ -845,24 +865,24 @@ public:
         bool operator == (const TriangleNode &aTriangle)
         {
             return (mWeight == aTriangle.mWeight)
-                && (sharedVertices[0] == aTriangle.sharedVertices[0])
-                && (sharedVertices[1] == aTriangle.sharedVertices[1])
-                && (sharedVertices[2] == aTriangle.sharedVertices[2]);
+                && (vertexIndices[0] == aTriangle.vertexIndices[0])
+                && (vertexIndices[1] == aTriangle.vertexIndices[1])
+                && (vertexIndices[2] == aTriangle.vertexIndices[2]);
         }
 
 
-        Vec3f ComputeCrossProduct() const
+        Vec3f ComputeCrossProduct(const VertexStorage &aVertexStorage) const
         {
             return Geom::TriangleCrossProduct(
-                sharedVertices[0]->dir,
-                sharedVertices[1]->dir,
-                sharedVertices[2]->dir);
+                aVertexStorage.Get(vertexIndices[0])->dir,
+                aVertexStorage.Get(vertexIndices[1])->dir,
+                aVertexStorage.Get(vertexIndices[2])->dir);
         }
 
 
-        Vec3f ComputeNormal() const
+        Vec3f ComputeNormal(const VertexStorage &aVertexStorage) const
         {
-            auto crossProduct = ComputeCrossProduct();
+            auto crossProduct = ComputeCrossProduct(aVertexStorage);
 
             auto lenSqr = crossProduct.LenSqr();
             if (lenSqr > 0.0001f)
@@ -872,21 +892,21 @@ public:
         }
 
 
-        float ComputeSurfaceArea() const
+        float ComputeSurfaceArea(const VertexStorage &aVertexStorage) const
         {
             return Geom::TriangleSurfaceArea(
-                sharedVertices[0]->dir,
-                sharedVertices[1]->dir,
-                sharedVertices[2]->dir);
+                aVertexStorage.Get(vertexIndices[0])->dir,
+                aVertexStorage.Get(vertexIndices[1])->dir,
+                aVertexStorage.Get(vertexIndices[2])->dir);
         }
 
 
-        Vec3f ComputeCentroid() const
+        Vec3f ComputeCentroid(const VertexStorage &aVertexStorage) const
         {
             const Vec3f centroid = Geom::TriangleCentroid(
-                sharedVertices[0]->dir,
-                sharedVertices[1]->dir,
-                sharedVertices[2]->dir);
+                aVertexStorage.Get(vertexIndices[0])->dir,
+                aVertexStorage.Get(vertexIndices[1])->dir,
+                aVertexStorage.Get(vertexIndices[2])->dir);
             return centroid;
         }
 
@@ -896,19 +916,22 @@ public:
         // TODO: Delete this?
         float EvaluateLuminanceApproxForDirection(
             const Vec3f                 &aDirection,
+            const VertexStorage         &aVertexStorage,
             const EnvironmentMapImage   &aEmImage,
             bool                         aUseBilinearFiltering
             ) const
         {
             PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
 
+            const auto &dir0 = aVertexStorage.Get(vertexIndices[0])->dir;
+            const auto &dir1 = aVertexStorage.Get(vertexIndices[1])->dir;
+            const auto &dir2 = aVertexStorage.Get(vertexIndices[2])->dir;
+
             float t, u, v;
             bool isIntersection =
                 Geom::RayTriangleIntersect(
                     Vec3f(0.f, 0.f, 0.f), aDirection,
-                    sharedVertices[0]->dir,
-                    sharedVertices[1]->dir,
-                    sharedVertices[2]->dir,
+                    dir0, dir1, dir2,
                     t, u, v, 0.20f); //0.09f); //0.05f);
             u = Math::Clamp(u, 0.0f, 1.0f);
             v = Math::Clamp(v, 0.0f, 1.0f);
@@ -924,9 +947,9 @@ public:
             PG3_ASSERT_FLOAT_IN_RANGE(w, -0.0001f, 1.0001f);
 
             // TODO: Cache the luminances in the triangle
-            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->dir, aUseBilinearFiltering);
-            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->dir, aUseBilinearFiltering);
-            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->dir, aUseBilinearFiltering);
+            const auto emVal0 = aEmImage.Evaluate(dir0, aUseBilinearFiltering);
+            const auto emVal1 = aEmImage.Evaluate(dir1, aUseBilinearFiltering);
+            const auto emVal2 = aEmImage.Evaluate(dir2, aUseBilinearFiltering);
             const float luminance0 = emVal0.Luminance();
             const float luminance1 = emVal1.Luminance();
             const float luminance2 = emVal2.Luminance();
@@ -945,6 +968,7 @@ public:
         // (without cosine multiplication) in the given barycentric coordinates.
         float EvaluateLuminanceApprox(
             const Vec2f                 &aBaryCoords,
+            const VertexStorage         &aVertexStorage,
             const EnvironmentMapImage   &aEmImage,
             bool                         aUseBilinearFiltering
             ) const
@@ -957,9 +981,12 @@ public:
                 0.0f, 1.0f);
 
             // TODO: Cache the luminances in the triangle
-            const auto emVal0 = aEmImage.Evaluate(sharedVertices[0]->dir, aUseBilinearFiltering);
-            const auto emVal1 = aEmImage.Evaluate(sharedVertices[1]->dir, aUseBilinearFiltering);
-            const auto emVal2 = aEmImage.Evaluate(sharedVertices[2]->dir, aUseBilinearFiltering);
+            const auto &dir0 = aVertexStorage.Get(vertexIndices[0])->dir;
+            const auto &dir1 = aVertexStorage.Get(vertexIndices[1])->dir;
+            const auto &dir2 = aVertexStorage.Get(vertexIndices[2])->dir;
+            const auto emVal0 = aEmImage.Evaluate(dir0, aUseBilinearFiltering);
+            const auto emVal1 = aEmImage.Evaluate(dir1, aUseBilinearFiltering);
+            const auto emVal2 = aEmImage.Evaluate(dir2, aUseBilinearFiltering);
             const float luminance0 = emVal0.Luminance();
             const float luminance1 = emVal1.Luminance();
             const float luminance2 = emVal2.Luminance();
@@ -975,15 +1002,15 @@ public:
         }
 
     public:
-        uint32_t                subdivLevel;
+        uint32_t            subdivLevel;
 
 #ifdef _DEBUG
-        //const std::string       index;
-        const uint32_t          index;
+        //const std::string   index;
+        const uint32_t      index;
 #endif
 
-        // TODO: This is sub-optimal, both in terms of memory consumption and memory locality
-        std::shared_ptr<Vertex> sharedVertices[3];
+        // Indices to a VertexStorage, which is not stored here to save memory
+        VertexIndex         vertexIndices[3];
     };
 
 
@@ -1567,11 +1594,11 @@ protected:
         Vec3ui faces[20];
         Geom::UnitIcosahedron(vertices, faces);
 
-        std::vector<std::shared_ptr<Vertex>> sharedVertices(Utils::ArrayLength(vertices));
+        std::array<VertexIndex, 12> vertexIndices;
 
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
-            CreateNewVertex(sharedVertices[i], aVertexStorage, vertices[i], aEmImage, aUseBilinearFiltering);
+            CreateNewVertex(vertexIndices[i], aVertexStorage, vertices[i], aEmImage, aUseBilinearFiltering);
 
         // Build triangle set
         for (uint32_t i = 0; i < Utils::ArrayLength(faces); i++)
@@ -1583,9 +1610,10 @@ protected:
             PG3_ASSERT_INTEGER_IN_RANGE(faceVertices.Get(2), 0, Utils::ArrayLength(vertices) - 1);
 
             oTriangles.push_back(new TriangleNode(
-                sharedVertices[faceVertices.Get(0)],
-                sharedVertices[faceVertices.Get(1)],
-                sharedVertices[faceVertices.Get(2)],
+                vertexIndices[faceVertices.Get(0)],
+                vertexIndices[faceVertices.Get(1)],
+                vertexIndices[faceVertices.Get(2)],
+                aVertexStorage,
                 i+1));
         }
 
@@ -1635,22 +1663,23 @@ protected:
                 static_cast<float>(triangleIdx) + 0.6f
             };
 
-            std::vector<std::shared_ptr<Vertex>> sharedVertices(3);
-            CreateNewVertex(sharedVertices[0], aVertexStorage, vertexCoords[0], vertexLuminances[0]);
-            CreateNewVertex(sharedVertices[1], aVertexStorage, vertexCoords[1], vertexLuminances[1]);
-            CreateNewVertex(sharedVertices[2], aVertexStorage, vertexCoords[2], vertexLuminances[2]);
+            std::array<VertexIndex, 3> vertexIndices;
+            CreateNewVertex(vertexIndices[0], aVertexStorage, vertexCoords[0], vertexLuminances[0]);
+            CreateNewVertex(vertexIndices[1], aVertexStorage, vertexCoords[1], vertexLuminances[1]);
+            CreateNewVertex(vertexIndices[2], aVertexStorage, vertexCoords[2], vertexLuminances[2]);
 
             auto triangle = new TriangleNode(
-                sharedVertices[0],
-                sharedVertices[1],
-                sharedVertices[2],
+                vertexIndices[0],
+                vertexIndices[1],
+                vertexIndices[2],
+                aVertexStorage,
                 triangleIdx);
             aTriangles.push_back(triangle);
         }
     }
 
     static void CreateNewVertex(
-        std::shared_ptr<Vertex>     &oSharedVertex,
+        VertexIndex                 &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const float                  aLuminance)
@@ -1658,11 +1687,11 @@ protected:
         SteeringBasisValue weight;
         weight.GenerateSphHarm(aVertexDir, aLuminance);
 
-        oSharedVertex = std::make_shared<Vertex>(aVertexDir, weight);
+        aVertexStorage.AddVertex(Vertex(aVertexDir, weight), oVertexIndex);
     }
 
     static void CreateNewVertex(
-        std::shared_ptr<Vertex>     &oSharedVertex,
+        VertexIndex                 &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const EnvironmentMapImage   &aEmImage,
@@ -1671,7 +1700,7 @@ protected:
         const auto radiance = aEmImage.Evaluate(aVertexDir, aUseBilinearFiltering);
         const auto luminance = radiance.Luminance();
 
-        CreateNewVertex(oSharedVertex, aVertexStorage, aVertexDir, luminance);
+        CreateNewVertex(oVertexIndex, aVertexStorage, aVertexDir, luminance);
     }
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
@@ -1705,7 +1734,7 @@ protected:
                 continue;
 
             if (TriangleHasToBeSubdivided(
-                    *currentTriangle, aEmImage, aUseBilinearFiltering, aParams, aStats))
+                    *currentTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering, aParams, aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -1782,6 +1811,7 @@ protected:
     template <class TTriangulationStats>
     static bool IsEstimationErrorTooLarge(
         const TriangleNode          &aWholeTriangle,
+        VertexStorage               &aVertexStorage,
         const Vec3f                 &aSubVertex0,
         const Vec3f                 &aSubVertex1,
         const Vec3f                 &aSubVertex2,
@@ -1805,9 +1835,9 @@ protected:
                     subTriangleSampleBary);
                 const Vec2f wholeTriangleSampleBary = Geom::TriangleBarycentricCoords(
                     point,
-                    aWholeTriangle.sharedVertices[0]->dir,
-                    aWholeTriangle.sharedVertices[1]->dir,
-                    aWholeTriangle.sharedVertices[2]->dir,
+                    aVertexStorage.Get(aWholeTriangle.vertexIndices[0])->dir,
+                    aVertexStorage.Get(aWholeTriangle.vertexIndices[1])->dir,
+                    aVertexStorage.Get(aWholeTriangle.vertexIndices[2])->dir,
                     0.1f);
 
                 // Evaluate
@@ -1816,7 +1846,7 @@ protected:
                     Math::Clamp(wholeTriangleSampleBary.y, 0.f, 1.f),
                 };
                 const auto approxVal = aWholeTriangle.EvaluateLuminanceApprox(
-                    wholeTriangleSampleBaryCrop, aEmImage, aUseBilinearFiltering);
+                    wholeTriangleSampleBaryCrop, aVertexStorage, aEmImage, aUseBilinearFiltering);
                 const auto sampleDir = Normalize(point);
                 const auto emRadiance = aEmImage.Evaluate(sampleDir, aUseBilinearFiltering);
                 const auto emVal = emRadiance.Luminance();
@@ -1845,6 +1875,7 @@ protected:
         const Vec3f                 &aVertex2,
         const float                  aVertex2Sin,
         const TriangleNode          &aWholeTriangle,
+        VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
@@ -1904,7 +1935,7 @@ protected:
                     aVertex0, aVertex0Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
-                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
                     aParams, aStats))
                 return true;
 
@@ -1913,7 +1944,7 @@ protected:
                     aVertex1, aVertex1Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
-                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
                     aParams, aStats))
                 return true;
 
@@ -1922,7 +1953,7 @@ protected:
                     aVertex2, aVertex2Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
-                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
                     aParams, aStats))
                 return true;
 
@@ -1931,7 +1962,7 @@ protected:
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
-                    aWholeTriangle, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
                     aParams, aStats))
                 return true;
 
@@ -1940,7 +1971,8 @@ protected:
 
         // Sample and check error
         const bool result = IsEstimationErrorTooLarge(
-            aWholeTriangle, aVertex0, aVertex1, aVertex2, (uint32_t)std::ceil(maxSamplesPerDimF),
+            aWholeTriangle, aVertexStorage, aVertex0, aVertex1, aVertex2,
+            (uint32_t)std::ceil(maxSamplesPerDimF),
             aEmImage, aUseBilinearFiltering, aParams, aStats);
 
         return result;
@@ -1949,6 +1981,7 @@ protected:
     template <class TTriangulationStats>
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
+        VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
@@ -1958,17 +1991,19 @@ protected:
         if (aTriangle.subdivLevel >= aParams.GetMaxSubdivLevel())
             return false;
 
-        const auto &vertices = aTriangle.sharedVertices;
+        const auto &dir0 = aVertexStorage.Get(aTriangle.vertexIndices[0])->dir;
+        const auto &dir1 = aVertexStorage.Get(aTriangle.vertexIndices[1])->dir;
+        const auto &dir2 = aVertexStorage.Get(aTriangle.vertexIndices[2])->dir;
 
-        const float vertex0Sin = std::sqrt(1.f - Math::Sqr(vertices[0]->dir.z));
-        const float vertex1Sin = std::sqrt(1.f - Math::Sqr(vertices[1]->dir.z));
-        const float vertex2Sin = std::sqrt(1.f - Math::Sqr(vertices[2]->dir.z));
+        const float vertex0Sin = std::sqrt(1.f - Math::Sqr(dir0.z));
+        const float vertex1Sin = std::sqrt(1.f - Math::Sqr(dir1.z));
+        const float vertex2Sin = std::sqrt(1.f - Math::Sqr(dir2.z));
 
         bool result = TriangleHasToBeSubdividedImpl(
-            vertices[0]->dir, vertex0Sin,
-            vertices[1]->dir, vertex1Sin,
-            vertices[2]->dir, vertex2Sin,
-            aTriangle, aEmImage, aUseBilinearFiltering,
+            dir0, vertex0Sin,
+            dir1, vertex1Sin,
+            dir2, vertex2Sin,
+            aTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
             aParams, aStats);
 
         return result;
@@ -1991,29 +2026,31 @@ protected:
         // New vertex coordinates
         // We don't have to use slerp - normalization does the trick
         Vec3f newVertexCoords[3];
-        const auto &verts = aTriangle.sharedVertices;
-        newVertexCoords[0] = ((verts[0]->dir + verts[1]->dir) / 2.f).Normalize();
-        newVertexCoords[1] = ((verts[1]->dir + verts[2]->dir) / 2.f).Normalize();
-        newVertexCoords[2] = ((verts[2]->dir + verts[0]->dir) / 2.f).Normalize();
+        const auto &dir0 = aVertexStorage.Get(aTriangle.vertexIndices[0])->dir;
+        const auto &dir1 = aVertexStorage.Get(aTriangle.vertexIndices[1])->dir;
+        const auto &dir2 = aVertexStorage.Get(aTriangle.vertexIndices[2])->dir;
+        newVertexCoords[0] = ((dir0 + dir1) / 2.f).Normalize();
+        newVertexCoords[1] = ((dir1 + dir2) / 2.f).Normalize();
+        newVertexCoords[2] = ((dir2 + dir0) / 2.f).Normalize();
 
         // New shared vertices
-        std::vector<std::shared_ptr<Vertex>> newVertices(3);
-        CreateNewVertex(newVertices[0], aVertexStorage, newVertexCoords[0], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(newVertices[1], aVertexStorage, newVertexCoords[1], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(newVertices[2], aVertexStorage, newVertexCoords[2], aEmImage, aUseBilinearFiltering);
+        std::array<VertexIndex, 3> newIndices;
+        CreateNewVertex(newIndices[0], aVertexStorage, newVertexCoords[0], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(newIndices[1], aVertexStorage, newVertexCoords[1], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(newIndices[2], aVertexStorage, newVertexCoords[2], aEmImage, aUseBilinearFiltering);
 
         // Central triangle
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], newVertices[1], newVertices[2], 1, &aTriangle));
+            new TriangleNode(newIndices[0], newIndices[1], newIndices[2], aVertexStorage, 1, &aTriangle));
 
         // 3 corner triangles
-        const auto &oldVertices = aTriangle.sharedVertices;
+        const auto &oldIndices = aTriangle.vertexIndices;
         oSubdivisionTriangles.push_back(
-            new TriangleNode(oldVertices[0], newVertices[0], newVertices[2], 2, &aTriangle));
+            new TriangleNode(oldIndices[0], newIndices[0], newIndices[2], aVertexStorage, 2, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[0], oldVertices[1], newVertices[1], 3, &aTriangle));
+            new TriangleNode(newIndices[0], oldIndices[1], newIndices[1], aVertexStorage, 3, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newVertices[1], oldVertices[2], newVertices[2], 4, &aTriangle));
+            new TriangleNode(newIndices[1], oldIndices[2], newIndices[2], aVertexStorage, 4, &aTriangle));
 
         PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 4);
 
@@ -2120,11 +2157,11 @@ protected:
         VertexStorage vertexStorage;
 
         // Generate triangle with vertices
-        std::vector<std::shared_ptr<Vertex>> vertices(3);
-        CreateNewVertex(vertices[0], vertexStorage, aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(vertices[1], vertexStorage, aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(vertices[2], vertexStorage, aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
-        TriangleNode triangle(vertices[0], vertices[1], vertices[2], 0);
+        std::array<VertexIndex, 3> vertexIndices;
+        CreateNewVertex(vertexIndices[0], vertexStorage, aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(vertexIndices[1], vertexStorage, aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(vertexIndices[2], vertexStorage, aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
+        TriangleNode triangle(vertexIndices[0], vertexIndices[1], vertexIndices[2], vertexStorage, 0);
 
         // Subdivide
         std::list<TriangleNode*> subdivisionTriangles;
@@ -2151,10 +2188,10 @@ protected:
 
         // Check orientation
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation");
-        const auto triangleNormal = triangle.ComputeNormal();
+        const auto triangleNormal = triangle.ComputeNormal(vertexStorage);
         for (auto subdividedTriange : subdivisionTriangles)
         {
-            const auto subdivNormal = subdividedTriange->ComputeNormal();
+            const auto subdivNormal = subdividedTriange->ComputeNormal(vertexStorage);
             const auto dot = Dot(subdivNormal, triangleNormal);
             if (dot < 0.90f)
             {
@@ -2172,50 +2209,66 @@ protected:
         auto itSubdivs = subdivisionTriangles.begin();
 
         // Central triangle
-        const auto &centralSubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !centralSubdivVertices[0]->dir.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
-            || !centralSubdivVertices[1]->dir.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
-            || !centralSubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
-                "Central subdivision triangle has at least one incorrectly positioned vertex");
-            return false;
+            const auto &dir0 = vertexStorage.Get((**itSubdivs).vertexIndices[0])->dir;
+            const auto &dir1 = vertexStorage.Get((**itSubdivs).vertexIndices[1])->dir;
+            const auto &dir2 = vertexStorage.Get((**itSubdivs).vertexIndices[2])->dir;
+            if (   !dir0.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+                || !dir1.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
+                || !dir2.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                    "Central subdivision triangle has at least one incorrectly positioned vertex");
+                return false;
+            }
         }
         itSubdivs++;
 
         // Corner triangle 1
-        const auto &corner1SubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !corner1SubdivVertices[0]->dir.EqualsDelta(aTriangleCoords[0],    0.0001f)
-            || !corner1SubdivVertices[1]->dir.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
-            || !corner1SubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
-                "Corner 1 subdivision triangle has at least one incorrectly positioned vertex");
-            return false;
+            const auto &dir0 = vertexStorage.Get((**itSubdivs).vertexIndices[0])->dir;
+            const auto &dir1 = vertexStorage.Get((**itSubdivs).vertexIndices[1])->dir;
+            const auto &dir2 = vertexStorage.Get((**itSubdivs).vertexIndices[2])->dir;
+            if (   !dir0.EqualsDelta(aTriangleCoords[0],    0.0001f)
+                || !dir1.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+                || !dir2.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                    "Corner 1 subdivision triangle has at least one incorrectly positioned vertex");
+                return false;
+            }
         }
         itSubdivs++;
 
         // Corner triangle 2
-        const auto &corner2SubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !corner2SubdivVertices[0]->dir.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
-            || !corner2SubdivVertices[1]->dir.EqualsDelta(aTriangleCoords[1],    0.0001f)
-            || !corner2SubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
-                "Corner 2 subdivision triangle has at least one incorrectly positioned vertex");
-            return false;
+            const auto &dir0 = vertexStorage.Get((**itSubdivs).vertexIndices[0])->dir;
+            const auto &dir1 = vertexStorage.Get((**itSubdivs).vertexIndices[1])->dir;
+            const auto &dir2 = vertexStorage.Get((**itSubdivs).vertexIndices[2])->dir;
+            if (   !dir0.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
+                || !dir1.EqualsDelta(aTriangleCoords[1],    0.0001f)
+                || !dir2.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                    "Corner 2 subdivision triangle has at least one incorrectly positioned vertex");
+                return false;
+            }
         }
         itSubdivs++;
 
         // Corner triangle 3
-        const auto &corner3SubdivVertices = (**itSubdivs).sharedVertices;
-        if (   !corner3SubdivVertices[0]->dir.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
-            || !corner3SubdivVertices[1]->dir.EqualsDelta(aTriangleCoords[2],    0.0001f)
-            || !corner3SubdivVertices[2]->dir.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
-                "Corner 3 subdivision triangle has at least one incorrectly positioned vertex");
-            return false;
+            const auto &dir0 = vertexStorage.Get((**itSubdivs).vertexIndices[0])->dir;
+            const auto &dir1 = vertexStorage.Get((**itSubdivs).vertexIndices[1])->dir;
+            const auto &dir2 = vertexStorage.Get((**itSubdivs).vertexIndices[2])->dir;
+            if (   !dir0.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
+                || !dir1.EqualsDelta(aTriangleCoords[2],    0.0001f)
+                || !dir2.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
+            {
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                    "Corner 3 subdivision triangle has at least one incorrectly positioned vertex");
+                return false;
+            }
         }
         itSubdivs++;
 
@@ -2312,7 +2365,12 @@ protected:
 
 protected:
 
+    // Contains all used vertices.
+    // Referenced from mTreeRoot through indices
     VertexStorage                   mVertexStorage;
+
+    // Sampling tree. Leaves represent triangles, inner nodes represent sets of triangles.
+    // Triangles reference vertices in mVertexStorage through indices.
     std::unique_ptr<TreeNodeBase>   mTreeRoot;
 
 public:
@@ -2351,13 +2409,14 @@ public:
         std::list<std::set<Vertex*>> alreadyFoundFaceVertices;
         for (const auto &triangle : oTriangles)
         {
-            const auto &sharedVertices = triangle->sharedVertices;
+            std::array<Vertex*, 3> vertices = {
+                aVertexStorage.Get(triangle->vertexIndices[0]),
+                aVertexStorage.Get(triangle->vertexIndices[1]),
+                aVertexStorage.Get(triangle->vertexIndices[2]) };
 
             // Each triangle is unique
             {
-                std::set<Vertex*> vertexSet = {sharedVertices[0].get(),
-                                               sharedVertices[1].get(),
-                                               sharedVertices[2].get()};
+                std::set<Vertex*> vertexSet = { vertices[0], vertices[1], vertices[2] };
                 auto it = std::find(alreadyFoundFaceVertices.begin(),
                                     alreadyFoundFaceVertices.end(),
                                     vertexSet);
@@ -2372,9 +2431,9 @@ public:
 
             // Vertices are not equal
             {
-                const auto vertex0 = sharedVertices[0].get();
-                const auto vertex1 = sharedVertices[1].get();
-                const auto vertex2 = sharedVertices[2].get();
+                const auto vertex0 = vertices[0];
+                const auto vertex1 = vertices[1];
+                const auto vertex2 = vertices[2];
                 if (   (vertex0 == vertex1) || (*vertex0 == *vertex1)
                     || (vertex1 == vertex2) || (*vertex1 == *vertex2)
                     || (vertex2 == vertex0) || (*vertex2 == *vertex0)
@@ -2399,8 +2458,8 @@ public:
                 const float edgeReferenceLengthSqr = edgeReferenceLength * edgeReferenceLength;
                 for (uint32_t vertexSeqNum = 0; vertexSeqNum < 3; vertexSeqNum++)
                 {
-                    const auto vertex     = sharedVertices[vertexSeqNum].get();
-                    const auto vertexNext = sharedVertices[(vertexSeqNum + 1) % 3].get();
+                    const auto vertex     = vertices[vertexSeqNum];
+                    const auto vertexNext = vertices[(vertexSeqNum + 1) % 3];
 
                     if ((vertex == nullptr) || (vertexNext == nullptr))
                     {
@@ -2428,20 +2487,20 @@ public:
                         return false;
                     }
 
-                    // Each vertex must be shared by exactly 5 owning triangles
-                    auto useCount = sharedVertices[vertexSeqNum].use_count();
-                    if (useCount != 5)
-                    {
-                        std::ostringstream errorDescription;
-                        errorDescription << "The vertex ";
-                        errorDescription << vertexSeqNum;
-                        errorDescription << " is shared by ";
-                        errorDescription << useCount;
-                        errorDescription << " owners instead of 5!";
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
-                            errorDescription.str().c_str());
-                        return false;
-                    }
+                    //// Each vertex must be shared by exactly 5 owning triangles
+                    //auto useCount = vertices[vertexSeqNum].use_count();
+                    //if (useCount != 5)
+                    //{
+                    //    std::ostringstream errorDescription;
+                    //    errorDescription << "The vertex ";
+                    //    errorDescription << vertexSeqNum;
+                    //    errorDescription << " is shared by ";
+                    //    errorDescription << useCount;
+                    //    errorDescription << " owners instead of 5!";
+                    //    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                    //        errorDescription.str().c_str());
+                    //    return false;
+                    //}
 
                     // Vertex weights
                     const auto radiance  = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
@@ -2510,10 +2569,12 @@ public:
         for (auto node : oRefinedTriangles)
         {
             auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            auto &vertices = triangle->sharedVertices;
-            if (   !Math::EqualDelta(vertices[0]->dir.LenSqr(), 1.0f, 0.001f)
-                || !Math::EqualDelta(vertices[1]->dir.LenSqr(), 1.0f, 0.001f)
-                || !Math::EqualDelta(vertices[2]->dir.LenSqr(), 1.0f, 0.001f))
+            const auto &dir0 = aVertexStorage.Get(triangle->vertexIndices[0])->dir;
+            const auto &dir1 = aVertexStorage.Get(triangle->vertexIndices[1])->dir;
+            const auto &dir2 = aVertexStorage.Get(triangle->vertexIndices[2])->dir;
+            if (   !Math::EqualDelta(dir0.LenSqr(), 1.0f, 0.001f)
+                || !Math::EqualDelta(dir1.LenSqr(), 1.0f, 0.001f)
+                || !Math::EqualDelta(dir2.LenSqr(), 1.0f, 0.001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Triangulation contains a vertex not lying on the unit sphere");
@@ -2526,7 +2587,7 @@ public:
         for (auto node : oRefinedTriangles)
         {
             auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            auto surfaceArea = triangle->ComputeSurfaceArea();
+            auto surfaceArea = triangle->ComputeSurfaceArea(aVertexStorage);
             if (surfaceArea < 0.0001f)
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -2540,9 +2601,9 @@ public:
         for (auto node : oRefinedTriangles)
         {
             const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            const auto centroid = triangle->ComputeCentroid();
+            const auto centroid = triangle->ComputeCentroid(aVertexStorage);
             const auto centroidDirection = Normalize(centroid);
-            const auto normal = triangle->ComputeNormal();
+            const auto normal = triangle->ComputeNormal(aVertexStorage);
             const auto dot = Dot(centroidDirection, normal);
             if (dot < 0.0f)
             {
@@ -2557,11 +2618,12 @@ public:
         for (auto node : oRefinedTriangles)
         {
             const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-            const auto &sharedVertices = triangle->sharedVertices;
 
             // Vertex weights
-            for (const auto &vertex : sharedVertices)
+            for (auto vertexIndex : triangle->vertexIndices)
             {
+                auto vertex = aVertexStorage.Get(vertexIndex);
+
                 const auto radiance = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
                 const auto luminance = radiance.Luminance();
                 const auto referenceWeight =
@@ -2576,11 +2638,11 @@ public:
             }
 
             // Triangle weight
-            const auto area = triangle->ComputeSurfaceArea();
+            const auto area = triangle->ComputeSurfaceArea(aVertexStorage);
             const SteeringBasisValue referenceWeight =
-                area * (sharedVertices[0]->weight
-                      + sharedVertices[1]->weight
-                      + sharedVertices[2]->weight) / 3.0f;
+                area * (aVertexStorage.Get(triangle->vertexIndices[0])->weight
+                      + aVertexStorage.Get(triangle->vertexIndices[1])->weight
+                      + aVertexStorage.Get(triangle->vertexIndices[2])->weight) / 3.0f;
             if (!referenceWeight.EqualsDelta(triangle->GetWeight(), 0.0001f))
             {
                 PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -2700,7 +2762,8 @@ public:
 
         // Build tree
         if (!_UT_BuildTriangleTree_SingleList(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Build tree", refinedTriangles))
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Build tree",
+                refinedTriangles, vertexStorage))
             return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -2713,6 +2776,7 @@ public:
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         const char                  *aTestName,
         const TreeNodeBase          *aCurrentNode,
+        VertexStorage               &aVertexStorage,
         uint32_t                    &oLeafCount,
         uint32_t                    &oMaxDepth,
         uint32_t                     aCurrentDepth = 1)
@@ -2738,10 +2802,10 @@ public:
             // Check children recursively
             if (   !_UT_InspectTree(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
-                        leftChild, oLeafCount, oMaxDepth, aCurrentDepth + 1)
+                        leftChild, aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1)
                 || !_UT_InspectTree(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
-                        rightChild, oLeafCount, oMaxDepth, aCurrentDepth + 1))
+                        rightChild, aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1))
             {
                 return false;
             }
@@ -2776,9 +2840,11 @@ public:
             oMaxDepth = std::max(oMaxDepth, aCurrentDepth);
 
             auto triangleNode = static_cast<const TriangleNode*>(aCurrentNode);
-            for (const auto &vertex : triangleNode->sharedVertices)
+            for (auto vertexIndex : triangleNode->vertexIndices)
             {
-                if (vertex.get() == nullptr)
+                auto vertex = aVertexStorage.Get(vertexIndex);
+
+                if (vertex == nullptr)
                 {
                     PG3_UT_END_FAILED(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
@@ -2813,7 +2879,8 @@ public:
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         const char                  *aTestName,
-        std::list<TreeNodeBase*>    &aTriangles)
+        std::list<TreeNodeBase*>    &aTriangles,
+        VertexStorage               &aVertexStorage)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
 
@@ -2833,7 +2900,7 @@ public:
         uint32_t maxDepth = 0;
         if (!_UT_InspectTree(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
-                treeRoot.get(), leafCount, maxDepth))
+                treeRoot.get(), aVertexStorage, leafCount, maxDepth))
             return false;
         
         // Leaf count
@@ -2882,7 +2949,8 @@ public:
         testName << " items)";
 
         return _UT_BuildTriangleTree_SingleList(
-            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, testName.str().c_str(), triangles);
+            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, testName.str().c_str(),
+            triangles, vertexStorage);
     }
 
 

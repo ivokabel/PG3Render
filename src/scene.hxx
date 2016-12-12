@@ -516,10 +516,13 @@ public:
                     for (const auto &node : triangles)
                     {
                         const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+                        const auto &dir0 = vertexStorage.Get(triangle->vertexIndices[0])->dir;
+                        const auto &dir1 = vertexStorage.Get(triangle->vertexIndices[1])->dir;
+                        const auto &dir2 = vertexStorage.Get(triangle->vertexIndices[2])->dir;
                         geometryList->mGeometry.push_back(new Triangle(
-                            ballCenter + ballRadius * triangle->sharedVertices[0]->dir,
-                            ballCenter + ballRadius * triangle->sharedVertices[1]->dir,
-                            ballCenter + ballRadius * triangle->sharedVertices[2]->dir,
+                            ballCenter + ballRadius * dir0,
+                            ballCenter + ballRadius * dir1,
+                            ballCenter + ballRadius * dir2,
                             8));
                     }
                     EnvironmentMapSteeringSampler::FreeNodesList(triangles);
