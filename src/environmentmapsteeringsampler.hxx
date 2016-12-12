@@ -1041,6 +1041,49 @@ protected:
     }
 
 
+    static bool GenerateSaveFilePath(
+        std::string                         &oPath,
+        const EnvironmentMapImage           &aEmImage,
+        bool                                 aUseBilinearFiltering,
+        const BuildParameters               &aParams)
+    {
+        std::string emDirPath;
+        std::string emFilenameWithExt;
+
+        const auto emPath = aEmImage.Filename();
+        if (!Utils::GetDirAndFileName(emPath.c_str(), emDirPath, emFilenameWithExt))
+            return false;
+
+        // Build the full path
+
+        std::ostringstream ossPath;
+
+        ossPath << emDirPath;
+        ossPath << emFilenameWithExt;
+        ossPath << ".";
+
+        ossPath << (aUseBilinearFiltering ? "bi" : "nn");
+
+        ossPath << "_e";
+        ossPath << std::setprecision(2) << aParams.GetMaxApproxError();
+
+        ossPath << "_sl";
+        ossPath << aParams.GetMaxSubdivLevel();
+
+        ossPath << "_ts";
+        ossPath << std::setprecision(2) << aParams.GetMaxTriangleSpanDbg();
+
+        ossPath << "_os";
+        ossPath << std::setprecision(2) << aParams.GetOversamplingFactorDbg();
+
+        ossPath << ".emssd";
+
+        oPath = ossPath.str();
+
+        return true;
+    }
+
+
     // Save internal structures needed for sampling to disk
     static bool SaveToDisk(
         const VertexStorage                 &aVertexStorage,
@@ -1051,16 +1094,16 @@ protected:
     {
         //aEmImage, aUseBilinearFiltering, aParams; // debug
 
-        // Is built?
+        // Is tree built?
         if ((aTreeRoot.get() == nullptr) || aVertexStorage.IsEmpty())
             return false;
 
         // File path and name
-        auto emFilename = aEmImage.Filename();
-        std::string dirPath;
-        std::string filenameWithExt;
-        if (!Utils::GetDirAndFileName(emFilename.c_str(), dirPath, filenameWithExt))
+        std::string savePath;
+        if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
             return false;
+
+        // TODO: Open file stream...
 
         // TODO: Save format version
 
@@ -1099,7 +1142,7 @@ protected:
         bool                             aUseBilinearFiltering,
         const BuildParameters           &aParams)
     {
-        aEmImage, aUseBilinearFiltering, aParams; // debug
+        aVertexStorage, aTreeRoot, aEmImage, aUseBilinearFiltering, aParams; // debug
 
         // TODO: ...
         // - Open file/Check the parameters
@@ -3058,7 +3101,7 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
 
-        // TODO: Save
+        // Save
         if (!SaveToDisk(aVertexStorage, aTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
         {
             PG3_UT_END_FAILED(
@@ -3067,7 +3110,7 @@ public:
             return false;
         }
 
-        // TODO: Load
+        // Load
         VertexStorage                   loadedVertexStorage;
         std::unique_ptr<TreeNodeBase>   loadedTreeRoot;
         if (!LoadFromDisk(loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
@@ -3082,6 +3125,7 @@ public:
         // - Sanity tests...
         // - Compare with the original tree
         // - ...
+
 
 
         //// Leaf count
@@ -3115,40 +3159,40 @@ public:
                 false))
             return false;
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Const white 512x256", 5, 20, true,
-                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Const white 512x256", 5, 20, true,
+        //        ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Const white 1024x512", 5, 20, true,
-                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Const white 1024x512", 5, 20, true,
+        //        ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Single pixel", 5, 0, false,
-                ".\\Light Probes\\Debugging\\Single pixel.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Single pixel", 5, 0, false,
+        //        ".\\Light Probes\\Debugging\\Single pixel.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Three point lighting 1024x512", 5, 0, false,
-                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Three point lighting 1024x512", 5, 0, false,
+        //        ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Satellite 4000x2000", 5, 0, false,
-                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Satellite 4000x2000", 5, 0, false,
+        //        ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+        //        false))
+        //    return false;
 
 
         ///////////////
