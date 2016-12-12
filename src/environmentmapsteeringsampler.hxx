@@ -737,6 +737,61 @@ public:
     };
 
 
+    typedef size_t VertexIndex;
+
+    class VertexStorage
+    {
+    public:
+
+        void PreAllocate(size_t aSize)
+        {
+            mVertices.reserve(aSize);
+        }
+
+        bool AddVertex(const Vertex &aVertex, VertexIndex oIndex)
+        {
+            mVertices.push_back(aVertex);
+
+            if (!mVertices.empty())
+            {
+                oIndex = mVertices.size() - 1u;
+                return true;
+            }
+            else
+                return false;
+        }
+
+        bool AddVertex(Vertex &&aVertex, VertexIndex oIndex)
+        {
+            mVertices.push_back(aVertex);
+
+            if (!mVertices.empty())
+            {
+                oIndex = mVertices.size() - 1u;
+                return true;
+            }
+            else
+                return false;
+        }
+
+        Vertex *GetVertex(VertexIndex aIndex)
+        {
+            if (aIndex < mVertices.size())
+                return &mVertices[aIndex];
+            else
+                return nullptr;
+        }
+
+        void Free()
+        {
+            mVertices.clear();
+        }
+
+    protected:
+        std::vector<Vertex> mVertices;
+    };
+
+
     class TreeNodeBase
     {
     public:
