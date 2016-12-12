@@ -682,6 +682,11 @@ public:
     {
     public:
 
+        bool IsEmpty() const
+        {
+            return mVertices.empty();
+        }
+
         void PreAllocate(size_t aSize)
         {
             mVertices.reserve(aSize);
@@ -1037,23 +1042,69 @@ protected:
 
 
     // Save internal structures needed for sampling to disk
+    static bool SaveToDisk(
+        const VertexStorage                 &aVertexStorage,
+        const std::unique_ptr<TreeNodeBase> &aTreeRoot,
+        const EnvironmentMapImage           &aEmImage,
+        bool                                 aUseBilinearFiltering,
+        const BuildParameters               &aParams)
+    {
+        //aEmImage, aUseBilinearFiltering, aParams; // debug
+
+        // Is built?
+        if ((aTreeRoot.get() == nullptr) || aVertexStorage.IsEmpty())
+            return false;
+
+        // File path and name
+        auto emFilename = aEmImage.Filename();
+        std::string dirPath;
+        std::string filenameWithExt;
+        if (!Utils::GetDirAndFileName(emFilename.c_str(), dirPath, filenameWithExt))
+            return false;
+
+        // TODO: Save format version
+
+        // TODO: Save build parameters
+
+        // TODO: Save the tree
+        //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
+        //   - Vertices: mVertexStorage
+        //   - Triangles
+        //   - Inner nodes
+
+        // TODO: ...
+
+        return false; // debug
+    }
+
+
+    // Save internal structures needed for sampling to disk
     bool SaveToDisk(
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
+        const BuildParameters       &aParams) const
+    {
+        if (!IsBuilt())
+            return false;
+
+        return SaveToDisk(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams);
+    }
+
+
+    // Loads pre-built internal structures needed for sampling
+    static bool LoadFromDisk(
+        VertexStorage                   &aVertexStorage,
+        std::unique_ptr<TreeNodeBase>   &aTreeRoot,
+        const EnvironmentMapImage       &aEmImage,
+        bool                             aUseBilinearFiltering,
+        const BuildParameters           &aParams)
     {
         aEmImage, aUseBilinearFiltering, aParams; // debug
 
-        // TODO:
-        // - Is tree built?
-        // - Save format version
-        // - Save build parameters
-        // - Save the tree
-        //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
-        //   - Vertices
-        //   - Triangles
-        //   - Inner nodes
-        // ...
+        // TODO: ...
+        // - Open file/Check the parameters
+        // - Load the structure (checks: numbers validity, magic numbers padding, ...)
+        // - (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
 
         return false; // debug
     }
@@ -1065,16 +1116,9 @@ protected:
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams)
     {
-        aEmImage, aUseBilinearFiltering, aParams; // debug
-
         Cleanup();
 
-        // TODO: ...
-        // - Open file/Check the parameters
-        // - Load the structure (checks: numbers validity, magic numbers padding, ...)
-        // - (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
-
-        return false; // debug
+        return LoadFromDisk(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams);
     }
 
 
@@ -1101,6 +1145,11 @@ public:
         }
 
         return false;
+    }
+
+    bool IsBuilt() const
+    {
+        return (mTreeRoot.get() != nullptr) && (!mVertexStorage.IsEmpty());
     }
 
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
@@ -1142,6 +1191,7 @@ protected:
     void Cleanup()
     {
         mTreeRoot.reset(nullptr);
+        mVertexStorage.Free();
     }
 
     static void FreeNode(TreeNodeBase* aNode)
@@ -2531,7 +2581,7 @@ public:
         std::list<TreeNodeBase*>    &oRefinedTriangles,
         std::deque<TriangleNode*>   &aInitialTriangles,
         VertexStorage               &aVertexStorage,
-        uint32_t                     aMaxSubdivLevel,
+        BuildParameters             &aParams,
         uint32_t                     aExpectedRefinedCount,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         TTriangulationStats         &aStats,
@@ -2540,9 +2590,9 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
-        BuildParameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
-        if (!RefineEmTriangulation(oRefinedTriangles, aInitialTriangles, aVertexStorage,
-                                   aEmImage, aUseBilinearFiltering, params, aStats))
+        if (!RefineEmTriangulation(
+                oRefinedTriangles, aInitialTriangles, aVertexStorage,
+                aEmImage, aUseBilinearFiltering, aParams, aStats))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
@@ -2688,7 +2738,8 @@ public:
         return true;
     }
 
-    static bool _UT_Build_SingleEm(
+
+    static bool _UT_Init_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
         uint32_t                     aMaxSubdivLevel,
@@ -2711,6 +2762,9 @@ public:
         VertexStorage vertexStorage;
         std::deque<TriangleNode*> initialTriangles;
         std::list<TreeNodeBase*> refinedTriangles;
+        std::unique_ptr<TreeNodeBase> treeRoot;
+
+        BuildParameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
 
         // Initial triangulation
         if (!_UT_InitialTriangulation(
@@ -2733,7 +2787,7 @@ public:
                 refinedTriangles,
                 initialTriangles,
                 vertexStorage,
-                aMaxSubdivLevel,
+                params,
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
                 stats,
@@ -2747,7 +2801,7 @@ public:
                 refinedTriangles,
                 initialTriangles,
                 vertexStorage,
-                aMaxSubdivLevel,
+                params,
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
                 stats,
@@ -2763,7 +2817,13 @@ public:
         // Build tree
         if (!_UT_BuildTriangleTree_SingleList(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Build tree",
-                refinedTriangles, vertexStorage))
+                refinedTriangles, vertexStorage, treeRoot))
+            return false;
+
+        // Save to and Load from disk
+        if (!_UT_SaveToAndLoadFromDisk(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                vertexStorage, treeRoot, *image.get(), aUseBilinearFiltering, params))
             return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -2876,18 +2936,18 @@ public:
     }
 
     static bool _UT_BuildTriangleTree_SingleList(
-        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
-        const UnitTestBlockLevel     aUtBlockPrintLevel,
-        const char                  *aTestName,
-        std::list<TreeNodeBase*>    &aTriangles,
-        VertexStorage               &aVertexStorage)
+        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel         aUtBlockPrintLevel,
+        const char                      *aTestName,
+        std::list<TreeNodeBase*>        &aTriangles,
+        VertexStorage                   &aVertexStorage,
+        std::unique_ptr<TreeNodeBase>   &oTreeRoot)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
 
-        std::unique_ptr<TreeNodeBase> treeRoot;
         const auto initialListSize = aTriangles.size();
 
-        if (!BuildTriangleTree(aTriangles, treeRoot))
+        if (!BuildTriangleTree(aTriangles, oTreeRoot))
         {
             PG3_UT_END_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
@@ -2900,7 +2960,7 @@ public:
         uint32_t maxDepth = 0;
         if (!_UT_InspectTree(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
-                treeRoot.get(), aVertexStorage, leafCount, maxDepth))
+                oTreeRoot.get(), aVertexStorage, leafCount, maxDepth))
             return false;
         
         // Leaf count
@@ -2941,6 +3001,8 @@ public:
     {
         VertexStorage vertexStorage;
         std::list<TreeNodeBase*> triangles;
+        std::unique_ptr<TreeNodeBase> treeRoot;
+
         GenerateRandomTriangulation(triangles, vertexStorage, aTriangleCount);
 
         std::ostringstream testName;
@@ -2950,7 +3012,7 @@ public:
 
         return _UT_BuildTriangleTree_SingleList(
             aMaxUtBlockPrintLevel, aUtBlockPrintLevel, testName.str().c_str(),
-            triangles, vertexStorage);
+            triangles, vertexStorage, treeRoot);
     }
 
 
@@ -2985,7 +3047,58 @@ public:
     }
 
 
-    static bool _UT_Build(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    static bool _UT_SaveToAndLoadFromDisk(
+        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel         aUtBlockPrintLevel,
+        VertexStorage                   &aVertexStorage,
+        std::unique_ptr<TreeNodeBase>   &aTreeRoot,
+        const EnvironmentMapImage       &aEmImage,
+        bool                             aUseBilinearFiltering,
+        BuildParameters                 &aParams)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
+
+        // TODO: Save
+        if (!SaveToDisk(aVertexStorage, aTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
+                "SaveToDisk() failed!");
+            return false;
+        }
+
+        // TODO: Load
+        VertexStorage                   loadedVertexStorage;
+        std::unique_ptr<TreeNodeBase>   loadedTreeRoot;
+        if (!LoadFromDisk(loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
+                "LoadFromDisk() failed!");
+            return false;
+        }
+
+        // TODO:
+        // - Sanity tests...
+        // - Compare with the original tree
+        // - ...
+
+
+        //// Leaf count
+        //if (leafCount != initialListSize)
+        //{
+        //    PG3_UT_END_FAILED(
+        //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
+        //        "Leaf count doesn't equal to triangle count!");
+        //    return false;
+        //}
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
+        return true;
+    }
+
+
+    static bool _UT_Init(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -2995,42 +3108,42 @@ public:
         // TODO: Black constant EM (Luminance 0)
         // TODO: ?
 
-        if (!_UT_Build_SingleEm(
+        if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 8x4", 5, 20, true,
                 ".\\Light Probes\\Debugging\\Const white 8x4.exr",
                 false))
             return false;
 
-        if (!_UT_Build_SingleEm(
+        if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 512x256", 5, 20, true,
                 ".\\Light Probes\\Debugging\\Const white 512x256.exr",
                 false))
             return false;
 
-        if (!_UT_Build_SingleEm(
+        if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 1024x512", 5, 20, true,
                 ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
                 false))
             return false;
 
-        if (!_UT_Build_SingleEm(
+        if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Single pixel", 5, 0, false,
                 ".\\Light Probes\\Debugging\\Single pixel.exr",
                 false))
             return false;
 
-        if (!_UT_Build_SingleEm(
+        if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Three point lighting 1024x512", 5, 0, false,
                 ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
                 false))
             return false;
 
-        if (!_UT_Build_SingleEm(
+        if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Satellite 4000x2000", 5, 0, false,
                 ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
@@ -3040,14 +3153,14 @@ public:
 
         ///////////////
 
-        //if (!_UT_Build_SingleEm(
+        //if (!_UT_Init_SingleEm(
         //        aMaxUtBlockPrintLevel,
         //        "Doge2", 5, 0, false,
         //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
         //        false))
         //    return false;
 
-        //if (!_UT_Build_SingleEm(
+        //if (!_UT_Init_SingleEm(
         //        aMaxUtBlockPrintLevel,
         //        "Peace Garden", 5, 0, false,
         //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
@@ -3063,12 +3176,12 @@ public:
 
     static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
+        //SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
 
-        _UT_SteeringValues(aMaxUtBlockPrintLevel);
-        _UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
-        _UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
-        _UT_Build(aMaxUtBlockPrintLevel);
+        //_UT_SteeringValues(aMaxUtBlockPrintLevel);
+        //_UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
+        //_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
+        _UT_Init(aMaxUtBlockPrintLevel);
     }
 #endif
 };
