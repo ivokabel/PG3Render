@@ -227,9 +227,8 @@ namespace Utils
         }
     }
 
-    bool GetFileName(const char *aPath, std::string &oResult)
+    bool GetFileName(const char *aPath, std::string &oFilenameWithExt)
     {
-        //char path_buffer[_MAX_PATH];
         //char drive[_MAX_DRIVE];
         //char dir[_MAX_DIR];
         char fname[_MAX_FNAME];
@@ -248,8 +247,37 @@ namespace Utils
         //printf("  Filename: %s\n", fname);
         //printf("  Ext: %s\n", ext);
 
-        oResult  = fname;
-        oResult += ext;
+        oFilenameWithExt  = fname;
+        oFilenameWithExt += ext;
+        return true;
+    }
+
+    bool GetDirAndFileName(const char *aPath, std::string &oDirPath, std::string &oFilenameWithExt)
+    {
+        char drive[_MAX_DRIVE];
+        char dir[_MAX_DIR];
+        char fname[_MAX_FNAME];
+        char ext[_MAX_EXT];
+        errno_t err;
+
+        err = _splitpath_s(aPath, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
+        if (err != 0)
+        {
+            //printf("Error splitting the path. Error code %d.\n", err);
+            return false;
+        }
+        //printf("Path extracted with _splitpath_s:\n");
+        //printf("  Drive: %s\n", drive);
+        //printf("  Dir: %s\n", dir);
+        //printf("  Filename: %s\n", fname);
+        //printf("  Ext: %s\n", ext);
+
+        oDirPath  = drive;
+        oDirPath += dir;
+
+        oFilenameWithExt = fname;
+        oFilenameWithExt += ext;
+
         return true;
     }
 
