@@ -653,69 +653,6 @@ public:
         };
 
 
-protected:
-
-    // Builds the internal structures needed for sampling
-    bool Build(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
-    {
-        Cleanup();
-
-        std::list<TreeNodeBase*> tmpTriangles;
-
-        if (!TriangulateEm(tmpTriangles, aEmImage, aUseBilinearFiltering, aParams))
-            return false;
-
-        if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
-            return false;
-
-        return true;
-    }
-
-
-    // Save internal structures needed for sampling to disk
-    bool SaveToDisk(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
-    {
-        aEmImage, aUseBilinearFiltering, aParams; // debug
-
-        // TODO:
-        // - Is tree built?
-        // - Save format version
-        // - Save build parameters
-        // - Save the tree
-        //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
-        //   - Vertices
-        //   - Triangles
-        //   - Inner nodes
-        // ...
-
-        return false; // debug
-    }
-
-
-    // Loads pre-built internal structures needed for sampling
-    bool LoadFromDisk(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
-    {
-        aEmImage, aUseBilinearFiltering, aParams; // debug
-
-        Cleanup();
-
-        // TODO: ...
-        // - Open file/Check the parameters
-        // - Load the structure (checks: numbers validity, magic numbers padding, ...)
-        // - (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
-
-        return false; // debug
-    }
-
 public:
 
     class Vertex
@@ -736,6 +673,8 @@ public:
         SteeringBasisValue  weight;
     };
 
+
+public:
 
     typedef size_t VertexIndex;
 
@@ -1046,6 +985,71 @@ public:
         // TODO: This is sub-optimal, both in terms of memory consumption and memory locality
         std::shared_ptr<Vertex> sharedVertices[3];
     };
+
+
+protected:
+
+    // Builds the internal structures needed for sampling
+    bool Build(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        const BuildParameters       &aParams)
+    {
+        Cleanup();
+
+        std::list<TreeNodeBase*> tmpTriangles;
+
+        if (!TriangulateEm(tmpTriangles, mVertexStorage, aEmImage, aUseBilinearFiltering, aParams))
+            return false;
+
+        if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
+            return false;
+
+        return true;
+    }
+
+
+    // Save internal structures needed for sampling to disk
+    bool SaveToDisk(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        const BuildParameters       &aParams)
+    {
+        aEmImage, aUseBilinearFiltering, aParams; // debug
+
+        // TODO:
+        // - Is tree built?
+        // - Save format version
+        // - Save build parameters
+        // - Save the tree
+        //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
+        //   - Vertices
+        //   - Triangles
+        //   - Inner nodes
+        // ...
+
+        return false; // debug
+    }
+
+
+    // Loads pre-built internal structures needed for sampling
+    bool LoadFromDisk(
+        const EnvironmentMapImage   &aEmImage,
+        bool                         aUseBilinearFiltering,
+        const BuildParameters       &aParams)
+    {
+        aEmImage, aUseBilinearFiltering, aParams; // debug
+
+        Cleanup();
+
+        // TODO: ...
+        // - Open file/Check the parameters
+        // - Load the structure (checks: numbers validity, magic numbers padding, ...)
+        // - (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
+
+        return false; // debug
+    }
+
 
 public:
 
@@ -1521,6 +1525,7 @@ public: // debug: public is for visualisation/testing purposes
     // Generates adaptive triangulation of the given environment map: fills the list of triangles
     static bool TriangulateEm(
         std::list<TreeNodeBase*>    &oTriangles,
+        VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams)
@@ -1531,10 +1536,10 @@ public: // debug: public is for visualisation/testing purposes
 
         TriangulationStatsSwitchable stats(aEmImage);
 
-        if (!GenerateInitialEmTriangulation(toDoTriangles, aEmImage, aUseBilinearFiltering))
+        if (!GenerateInitialEmTriangulation(toDoTriangles, aVertexStorage, aEmImage, aUseBilinearFiltering))
             return false;
 
-        if (!RefineEmTriangulation(oTriangles, toDoTriangles,
+        if (!RefineEmTriangulation(oTriangles, toDoTriangles, aVertexStorage,
                                    aEmImage, aUseBilinearFiltering,
                                    aParams, stats))
             return false;
@@ -1551,6 +1556,7 @@ protected:
     // Generates initial set of triangles and their vertices
     static bool GenerateInitialEmTriangulation(
         std::deque<TriangleNode*>   &oTriangles,
+        VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
@@ -1565,7 +1571,7 @@ protected:
 
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
-            GenerateSharedVertex(sharedVertices[i], vertices[i], aEmImage, aUseBilinearFiltering);
+            CreateNewVertex(sharedVertices[i], aVertexStorage, vertices[i], aEmImage, aUseBilinearFiltering);
 
         // Build triangle set
         for (uint32_t i = 0; i < Utils::ArrayLength(faces); i++)
@@ -1614,6 +1620,7 @@ protected:
     // randomly genetrated triangles on a sphere.
     static void GenerateRandomTriangulation(
         std::list<TreeNodeBase*>    &aTriangles,
+        VertexStorage               &aVertexStorage,
         uint32_t                     aTriangleCount)
     {
         Rng rng;
@@ -1629,9 +1636,9 @@ protected:
             };
 
             std::vector<std::shared_ptr<Vertex>> sharedVertices(3);
-            GenerateSharedVertex(sharedVertices[0], vertexCoords[0], vertexLuminances[0]);
-            GenerateSharedVertex(sharedVertices[1], vertexCoords[1], vertexLuminances[1]);
-            GenerateSharedVertex(sharedVertices[2], vertexCoords[2], vertexLuminances[2]);
+            CreateNewVertex(sharedVertices[0], aVertexStorage, vertexCoords[0], vertexLuminances[0]);
+            CreateNewVertex(sharedVertices[1], aVertexStorage, vertexCoords[1], vertexLuminances[1]);
+            CreateNewVertex(sharedVertices[2], aVertexStorage, vertexCoords[2], vertexLuminances[2]);
 
             auto triangle = new TriangleNode(
                 sharedVertices[0],
@@ -1642,8 +1649,9 @@ protected:
         }
     }
 
-    static void GenerateSharedVertex(
+    static void CreateNewVertex(
         std::shared_ptr<Vertex>     &oSharedVertex,
+        VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const float                  aLuminance)
     {
@@ -1653,8 +1661,9 @@ protected:
         oSharedVertex = std::make_shared<Vertex>(aVertexDir, weight);
     }
 
-    static void GenerateSharedVertex(
+    static void CreateNewVertex(
         std::shared_ptr<Vertex>     &oSharedVertex,
+        VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
@@ -1662,7 +1671,7 @@ protected:
         const auto radiance = aEmImage.Evaluate(aVertexDir, aUseBilinearFiltering);
         const auto luminance = radiance.Luminance();
 
-        GenerateSharedVertex(oSharedVertex, aVertexDir, luminance);
+        CreateNewVertex(oSharedVertex, aVertexStorage, aVertexDir, luminance);
     }
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
@@ -1674,6 +1683,7 @@ protected:
     static bool RefineEmTriangulation(
         std::list<TreeNodeBase*>    &oRefinedTriangles,
         std::deque<TriangleNode*>   &aToDoTriangles,
+        VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
@@ -1699,7 +1709,7 @@ protected:
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
-                SubdivideTriangle(subdivisionTriangles, *currentTriangle, aEmImage, aUseBilinearFiltering);
+                SubdivideTriangle(subdivisionTriangles, *currentTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering);
                 aStats.RemoveTriangle(*currentTriangle);
                 delete currentTriangle;
                 for (auto triangle : subdivisionTriangles)
@@ -1967,6 +1977,7 @@ protected:
     static void SubdivideTriangle(
         std::list<TriangleNode*>    &oSubdivisionTriangles,
         const TriangleNode          &aTriangle,
+        VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
@@ -1987,9 +1998,9 @@ protected:
 
         // New shared vertices
         std::vector<std::shared_ptr<Vertex>> newVertices(3);
-        GenerateSharedVertex(newVertices[0], newVertexCoords[0], aEmImage, aUseBilinearFiltering);
-        GenerateSharedVertex(newVertices[1], newVertexCoords[1], aEmImage, aUseBilinearFiltering);
-        GenerateSharedVertex(newVertices[2], newVertexCoords[2], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(newVertices[0], aVertexStorage, newVertexCoords[0], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(newVertices[1], aVertexStorage, newVertexCoords[1], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(newVertices[2], aVertexStorage, newVertexCoords[2], aEmImage, aUseBilinearFiltering);
 
         // Central triangle
         oSubdivisionTriangles.push_back(
@@ -2106,16 +2117,18 @@ protected:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
+        VertexStorage vertexStorage;
+
         // Generate triangle with vertices
         std::vector<std::shared_ptr<Vertex>> vertices(3);
-        GenerateSharedVertex(vertices[0], aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
-        GenerateSharedVertex(vertices[1], aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
-        GenerateSharedVertex(vertices[2], aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(vertices[0], vertexStorage, aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(vertices[1], vertexStorage, aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(vertices[2], vertexStorage, aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
         TriangleNode triangle(vertices[0], vertices[1], vertices[2], 0);
 
         // Subdivide
         std::list<TriangleNode*> subdivisionTriangles;
-        SubdivideTriangle(subdivisionTriangles, triangle, aEmImage, aUseBilinearFiltering);
+        SubdivideTriangle(subdivisionTriangles, triangle, vertexStorage, aEmImage, aUseBilinearFiltering);
 
         // Check subdivision count
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
@@ -2299,6 +2312,7 @@ protected:
 
 protected:
 
+    VertexStorage                   mVertexStorage;
     std::unique_ptr<TreeNodeBase>   mTreeRoot;
 
 public:
@@ -2307,13 +2321,14 @@ public:
 
     static bool _UT_InitialTriangulation(
         std::deque<TriangleNode*>   &oTriangles,
+        VertexStorage               &aVertexStorage,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const EnvironmentMapImage   &aEmImage,
         bool                         aUseBilinearFiltering)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
 
-        if (!GenerateInitialEmTriangulation(oTriangles, aEmImage, aUseBilinearFiltering))
+        if (!GenerateInitialEmTriangulation(oTriangles, aVertexStorage, aEmImage, aUseBilinearFiltering))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                 "GenerateInitialEmTriangulation() failed!");
@@ -2456,6 +2471,7 @@ public:
     static bool _UT_RefineTriangulation(
         std::list<TreeNodeBase*>    &oRefinedTriangles,
         std::deque<TriangleNode*>   &aInitialTriangles,
+        VertexStorage               &aVertexStorage,
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
@@ -2466,7 +2482,7 @@ public:
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         BuildParameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
-        if (!RefineEmTriangulation(oRefinedTriangles, aInitialTriangles,
+        if (!RefineEmTriangulation(oRefinedTriangles, aInitialTriangles, aVertexStorage,
                                    aEmImage, aUseBilinearFiltering, params, aStats))
         {
             PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -2630,11 +2646,14 @@ public:
             return false;
         }
 
+        VertexStorage vertexStorage;
         std::deque<TriangleNode*> initialTriangles;
+        std::list<TreeNodeBase*> refinedTriangles;
 
         // Initial triangulation
         if (!_UT_InitialTriangulation(
                 initialTriangles,
+                vertexStorage,
                 aMaxUtBlockPrintLevel,
                 *image.get(),
                 aUseBilinearFiltering))
@@ -2642,8 +2661,6 @@ public:
             FreeTrianglesDeque(initialTriangles);
             return false;
         }
-
-        std::list<TreeNodeBase*> refinedTriangles;
 
         // Triangulation refinement
         bool refinePassed;
@@ -2653,6 +2670,7 @@ public:
             refinePassed = _UT_RefineTriangulation(
                 refinedTriangles,
                 initialTriangles,
+                vertexStorage,
                 aMaxSubdivLevel,
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
@@ -2666,6 +2684,7 @@ public:
             refinePassed = _UT_RefineTriangulation(
                 refinedTriangles,
                 initialTriangles,
+                vertexStorage,
                 aMaxSubdivLevel,
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
@@ -2853,8 +2872,9 @@ public:
         const UnitTestBlockLevel     aUtBlockPrintLevel,
         uint32_t                     aTriangleCount)
     {
+        VertexStorage vertexStorage;
         std::list<TreeNodeBase*> triangles;
-        GenerateRandomTriangulation(triangles, aTriangleCount);
+        GenerateRandomTriangulation(triangles, vertexStorage, aTriangleCount);
 
         std::ostringstream testName;
         testName << "Random triangle list (";

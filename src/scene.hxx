@@ -508,8 +508,10 @@ public:
                 (aAuxDbgParams.float5 != Math::InfinityF()) ? aAuxDbgParams.float5 : 0.0f));
             if (image)
             {
+                EnvironmentMapSteeringSampler::VertexStorage vertexStorage;
                 std::list<EnvironmentMapSteeringSampler::TreeNodeBase*> triangles;
-                if (EnvironmentMapSteeringSampler::TriangulateEm(triangles, *image, false, params))
+                if (EnvironmentMapSteeringSampler::TriangulateEm(
+                        triangles, vertexStorage, *image, false, params))
                 {
                     for (const auto &node : triangles)
                     {
