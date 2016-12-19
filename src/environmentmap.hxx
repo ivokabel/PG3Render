@@ -160,7 +160,7 @@ private:
 
         Distribution2D* distribution = new Distribution2D(srcData, size.x, size.y);
 
-        delete srcData;
+        delete[] srcData;
 
         return distribution;
     }

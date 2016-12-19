@@ -1408,7 +1408,7 @@ protected:
                     Utils::IntegerToHumanReadable(level.GetAllTriangleCount(), allTriangleCountStr);
                     Utils::IntegerToHumanReadable(level.GetSampleCount(), sampleCountStr);
                     printf(
-                        "Level %2d: % 4s/% 4s triangles, % 4s samples (% 10.1f per triangle)\n",
+                        "Level %2u: % 4s/% 4s triangles, % 4s samples (% 10.1f per triangle)\n",
                         i,
                         finalTriangleCountStr.c_str(),
                         allTriangleCountStr.c_str(),

@@ -72,7 +72,7 @@ public:
             }
         }
 
-        delete rgbaData;
+        delete[] rgbaData;
 
         return image;
     }
