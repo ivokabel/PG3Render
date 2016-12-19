@@ -12,6 +12,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace Utils
 {
+    // Returns the length of an array
+    template <typename T, size_t N>
+    inline uint32_t ArrayLength(const T(&)[N])
+    {
+        return uint32_t(N);
+    }
+
     template <typename T>
     inline bool IsMasked(const T &aVal, const T &aMask)
     {
@@ -227,65 +234,136 @@ namespace Utils
         }
     }
 
-    bool GetFileName(const char *aPath, std::string &oFilenameWithExt)
+    namespace IO
     {
-        //char drive[_MAX_DRIVE];
-        //char dir[_MAX_DIR];
-        char fname[_MAX_FNAME];
-        char ext[_MAX_EXT];
-        errno_t err;
-
-        err = _splitpath_s(aPath, nullptr, 0, nullptr, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
-        if (err != 0)
+        bool GetFileName(const char *aPath, std::string &oFilenameWithExt)
         {
-            //printf("Error splitting the path. Error code %d.\n", err);
-            return false;
+            //char drive[_MAX_DRIVE];
+            //char dir[_MAX_DIR];
+            char fname[_MAX_FNAME];
+            char ext[_MAX_EXT];
+            errno_t err;
+
+            err = _splitpath_s(aPath, nullptr, 0, nullptr, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
+            if (err != 0)
+            {
+                //printf("Error splitting the path. Error code %d.\n", err);
+                return false;
+            }
+            //printf("Path extracted with _splitpath_s:\n");
+            //printf("  Drive: %s\n", drive);
+            //printf("  Dir: %s\n", dir);
+            //printf("  Filename: %s\n", fname);
+            //printf("  Ext: %s\n", ext);
+
+            oFilenameWithExt = fname;
+            oFilenameWithExt += ext;
+            return true;
         }
-        //printf("Path extracted with _splitpath_s:\n");
-        //printf("  Drive: %s\n", drive);
-        //printf("  Dir: %s\n", dir);
-        //printf("  Filename: %s\n", fname);
-        //printf("  Ext: %s\n", ext);
 
-        oFilenameWithExt  = fname;
-        oFilenameWithExt += ext;
-        return true;
-    }
 
-    bool GetDirAndFileName(const char *aPath, std::string &oDirPath, std::string &oFilenameWithExt)
-    {
-        char drive[_MAX_DRIVE];
-        char dir[_MAX_DIR];
-        char fname[_MAX_FNAME];
-        char ext[_MAX_EXT];
-        errno_t err;
-
-        err = _splitpath_s(aPath, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
-        if (err != 0)
+        bool GetDirAndFileName(const char *aPath, std::string &oDirPath, std::string &oFilenameWithExt)
         {
-            //printf("Error splitting the path. Error code %d.\n", err);
-            return false;
+            char drive[_MAX_DRIVE];
+            char dir[_MAX_DIR];
+            char fname[_MAX_FNAME];
+            char ext[_MAX_EXT];
+            errno_t err;
+
+            err = _splitpath_s(aPath, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
+            if (err != 0)
+            {
+                //printf("Error splitting the path. Error code %d.\n", err);
+                return false;
+            }
+            //printf("Path extracted with _splitpath_s:\n");
+            //printf("  Drive: %s\n", drive);
+            //printf("  Dir: %s\n", dir);
+            //printf("  Filename: %s\n", fname);
+            //printf("  Ext: %s\n", ext);
+
+            oDirPath = drive;
+            oDirPath += dir;
+
+            oFilenameWithExt = fname;
+            oFilenameWithExt += ext;
+
+            return true;
         }
-        //printf("Path extracted with _splitpath_s:\n");
-        //printf("  Drive: %s\n", drive);
-        //printf("  Dir: %s\n", dir);
-        //printf("  Filename: %s\n", fname);
-        //printf("  Ext: %s\n", ext);
 
-        oDirPath  = drive;
-        oDirPath += dir;
 
-        oFilenameWithExt = fname;
-        oFilenameWithExt += ext;
+        template <typename T>
+        static void WriteVariableToStream(
+            std::ofstream       &aOfs,
+            const T             &aValue,
+            bool                 aDebugging = false)
+        {
+            if (aDebugging)
+            {
+                // debugging, textual version of data
+                aOfs.precision(20);
+                aOfs << aValue;
+                aOfs << " - " << typeid(aValue).name() << ", size " << sizeof(T);
+                aOfs << std::endl;
+            }
+            else
+                aOfs.write(reinterpret_cast<const char*>(&aValue), sizeof(T));
+        }
 
-        return true;
-    }
 
-    // Returns the length of an array
-    template <typename T, size_t N>
-    inline uint32_t ArrayLength(const T(&)[N])
-    {
-        return uint32_t(N);
+        static void WriteStringToStream(
+            std::ofstream       &aOfs,
+            const char          *aStrBuff,
+            bool                 aDebugging = false)
+        {
+            if (aStrBuff == nullptr)
+                return;
+
+            const size_t buffLength = std::strlen(aStrBuff) + 1; // add trailing zero
+            if (aDebugging)
+            {
+                // debugging, textual version of data
+                aOfs.precision(20);
+                aOfs << "\"" << aStrBuff << "\"";
+                aOfs << " - " << typeid(aStrBuff).name();
+                aOfs << ", size " << buffLength << " * " << sizeof(char);
+                aOfs << std::endl;
+            }
+            else
+                aOfs.write(reinterpret_cast<const char*>(aStrBuff), buffLength * sizeof(char));
+        }
+
+
+        template <typename T>
+        static bool LoadVariableFromStream(
+            std::ifstream       &aIfs,
+            T                   &aValue)
+        {
+            aIfs.read(reinterpret_cast<char*>(&aValue), sizeof(T));
+
+            return !aIfs.fail();
+        }
+
+
+        static bool LoadStringFromStream(
+            std::ifstream       &aIfs,
+            char                *aStrBuff,
+            const size_t         aCharCount)
+        {
+            if (aStrBuff == nullptr)
+                return false;
+            if (aCharCount == 0)
+                return false;
+
+            aIfs.read(reinterpret_cast<char*>(aStrBuff), aCharCount * sizeof(char));
+
+            if (aIfs.fail())
+                return false;
+            if (aStrBuff[aCharCount - 1] != '\0')
+                return false;
+
+            return true;
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////

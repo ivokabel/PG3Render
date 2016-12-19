@@ -332,7 +332,7 @@ public:
     static void PrintHelp(const char *argv[])
     {
         std::string filename;
-        if (!Utils::GetFileName(argv[0], filename))
+        if (!Utils::IO::GetFileName(argv[0], filename))
             filename = argv[0];
 
         printf("\n");

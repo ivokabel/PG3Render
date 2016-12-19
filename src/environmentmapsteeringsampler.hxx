@@ -1051,7 +1051,7 @@ protected:
         std::string emFilenameWithExt;
 
         const auto emPath = aEmImage.Filename();
-        if (!Utils::GetDirAndFileName(emPath.c_str(), emDirPath, emFilenameWithExt))
+        if (!Utils::IO::GetDirAndFileName(emPath.c_str(), emDirPath, emFilenameWithExt))
             return false;
 
         // Build the full path
@@ -1084,18 +1084,23 @@ protected:
     }
 
 
-    // Save internal structures needed for sampling to disk
-    static bool SaveToDisk(
-        const VertexStorage                 &aVertexStorage,
-        const std::unique_ptr<TreeNodeBase> &aTreeRoot,
-        const EnvironmentMapImage           &aEmImage,
-        bool                                 aUseBilinearFiltering,
-        const BuildParameters               &aParams)
+    static const char * SaveLoadFileHeader10()
     {
-        //aEmImage, aUseBilinearFiltering, aParams; // debug
+        return "Environment Map Steering Sampler Data, format ver. 1.0\n";
+    }
 
+
+    // Save internal structures needed for sampling to disk
+    static bool SaveToDisk10(
+        const VertexStorage             &aVertexStorage,
+        const TreeNodeBase              *aTreeRoot,
+        const EnvironmentMapImage       &aEmImage,
+        bool                             aUseBilinearFiltering,
+        const BuildParameters           &aParams,
+        const bool                       aUseDebuggingSave = false)
+    {
         // Is tree built?
-        if ((aTreeRoot.get() == nullptr) || aVertexStorage.IsEmpty())
+        if ((aTreeRoot == nullptr) || aVertexStorage.IsEmpty())
             return false;
 
         // File path and name
@@ -1103,11 +1108,23 @@ protected:
         if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
             return false;
 
-        // TODO: Open file stream...
+        // Open file
+        std::ofstream ofs(savePath, std::ios::binary | std::ios::trunc);
+        if (ofs.fail())
+            return false;
+        if (!ofs.is_open())
+            return false;
 
-        // TODO: Save format version
+        // debug
+        //Utils::WriteVariableToStream(ofs, uint16_t(1u), aUseDebuggingSave);
+        //Utils::WriteVariableToStream(ofs, int32_t(-1), aUseDebuggingSave);
+        //Utils::WriteVariableToStream(ofs, float(123.456f), aUseDebuggingSave);
+        //Utils::WriteVariableToStream(ofs, double(123.4567891), aUseDebuggingSave);
 
-        // TODO: Save build parameters
+        // Header
+        Utils::IO::WriteStringToStream(ofs, SaveLoadFileHeader10(), aUseDebuggingSave);
+
+        // TODO: Build parameters?
 
         // TODO: Save the tree
         //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
@@ -1117,7 +1134,10 @@ protected:
 
         // TODO: ...
 
-        return false; // debug
+        // TODO: Close file stream...
+        //ofs.close(); - called by the constructor
+
+        return true;
     }
 
 
@@ -1130,26 +1150,64 @@ protected:
         if (!IsBuilt())
             return false;
 
-        return SaveToDisk(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams);
+        return SaveToDisk10(mVertexStorage, mTreeRoot.get(), aEmImage, aUseBilinearFiltering, aParams);
     }
 
 
     // Loads pre-built internal structures needed for sampling
-    static bool LoadFromDisk(
+    static bool LoadFromDisk10(
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
         bool                             aUseBilinearFiltering,
         const BuildParameters           &aParams)
     {
-        aVertexStorage, aTreeRoot, aEmImage, aUseBilinearFiltering, aParams; // debug
+        // Clean-up data structures
+        aTreeRoot.reset(nullptr);
+        aVertexStorage.Free();
 
-        // TODO: ...
-        // - Open file/Check the parameters
-        // - Load the structure (checks: numbers validity, magic numbers padding, ...)
-        // - (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
+        // File path and name
+        std::string savePath;
+        if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
+            return false;
 
-        return false; // debug
+        // Open file
+        std::ifstream ifs(savePath, std::ios::binary);
+        if (ifs.fail())
+            return false;
+        if (!ifs.is_open())
+            return false;
+
+        // debug
+        //uint16_t ui16;
+        //int32_t i32;
+        //float f4;
+        //double d8;
+        //if (!Utils::IO::LoadVariableFromStream(ifs, ui16))
+        //    return false;
+        //if (!Utils::IO::LoadVariableFromStream(ifs, i32))
+        //    return false;
+        //if (!Utils::IO::LoadVariableFromStream(ifs, f4))
+        //    return false;
+        //if (!Utils::IO::LoadVariableFromStream(ifs, d8))
+        //    return false;
+
+        // Header
+        const char *header = SaveLoadFileHeader10();
+        const size_t buffSize = strlen(header) + 1; // with trailing zero
+        std::unique_ptr<char> buff(new char[buffSize]);
+        if (!Utils::IO::LoadStringFromStream(ifs, buff.get(), buffSize))
+            return false;
+        if (strcmp(header, buff.get()) != 0)
+            return false; // Wrong header
+
+        // TODO: Parameters?, check them
+
+        // TODO: Load the structure (checks: numbers validity, magic numbers padding, ...)
+
+        // TODO: (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
+
+        return true;
     }
 
 
@@ -1161,7 +1219,7 @@ protected:
     {
         Cleanup();
 
-        return LoadFromDisk(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams);
+        return LoadFromDisk10(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams);
     }
 
 
@@ -3099,25 +3157,30 @@ public:
         bool                             aUseBilinearFiltering,
         BuildParameters                 &aParams)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10");
+
+        const bool isDebugging = false; // makes the file more human readable (but machine un-readable!)
 
         // Save
-        if (!SaveToDisk(aVertexStorage, aTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        if (!SaveToDisk10(
+                aVertexStorage, aTreeRoot.get(), aEmImage, aUseBilinearFiltering,
+                aParams, isDebugging))
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
-                "SaveToDisk() failed!");
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                "SaveToDisk10() failed!");
             return false;
         }
 
         // Load
         VertexStorage                   loadedVertexStorage;
         std::unique_ptr<TreeNodeBase>   loadedTreeRoot;
-        if (!LoadFromDisk(loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        if (!LoadFromDisk10(
+                loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
-                "LoadFromDisk() failed!");
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                "LoadFromDisk10() failed!");
             return false;
         }
 
@@ -3132,12 +3195,12 @@ public:
         //if (leafCount != initialListSize)
         //{
         //    PG3_UT_END_FAILED(
-        //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
+        //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
         //        "Leaf count doesn't equal to triangle count!");
         //    return false;
         //}
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10");
         return true;
     }
 
