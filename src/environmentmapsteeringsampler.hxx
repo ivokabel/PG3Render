@@ -1090,6 +1090,24 @@ protected:
     }
 
 
+    static bool SaveToDisk10_HeaderAndParams(
+        std::ofstream                   &aOfs,
+        const BuildParameters           &aParams,
+        const bool                       aUseDebugSave)
+    {
+        // Header
+        Utils::IO::WriteStringToStream(aOfs, SaveLoadFileHeader10(), aUseDebugSave);
+
+        // Build parameters
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(), aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(), aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(), aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(), aUseDebugSave);
+
+        return true;
+    }
+
+
     // Save internal structures needed for sampling to disk
     static bool SaveToDisk10(
         const VertexStorage             &aVertexStorage,
@@ -1097,34 +1115,25 @@ protected:
         const EnvironmentMapImage       &aEmImage,
         bool                             aUseBilinearFiltering,
         const BuildParameters           &aParams,
-        const bool                       aUseDebuggingSave = false)
+        const bool                       aUseDebugSave = false)
     {
         // Is tree built?
         if ((aTreeRoot == nullptr) || aVertexStorage.IsEmpty())
             return false;
 
-        // File path and name
+        // Open file
         std::string savePath;
         if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
             return false;
-
-        // Open file
         std::ofstream ofs(savePath, std::ios::binary | std::ios::trunc);
         if (ofs.fail())
             return false;
         if (!ofs.is_open())
             return false;
 
-        // debug
-        //Utils::WriteVariableToStream(ofs, uint16_t(1u), aUseDebuggingSave);
-        //Utils::WriteVariableToStream(ofs, int32_t(-1), aUseDebuggingSave);
-        //Utils::WriteVariableToStream(ofs, float(123.456f), aUseDebuggingSave);
-        //Utils::WriteVariableToStream(ofs, double(123.4567891), aUseDebuggingSave);
-
-        // Header
-        Utils::IO::WriteStringToStream(ofs, SaveLoadFileHeader10(), aUseDebuggingSave);
-
-        // TODO: Build parameters?
+        // Header and Params
+        if (!SaveToDisk10_HeaderAndParams(ofs, aParams, aUseDebugSave))
+            return false;
 
         // TODO: Save the tree
         //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
@@ -1154,6 +1163,50 @@ protected:
     }
 
 
+    static bool LoadFromDisk10_HeaderAndParams(
+        std::ifstream                   &aIfs,
+        const BuildParameters           &aParams)
+    {
+        // Header
+        const char *header = SaveLoadFileHeader10();
+        const size_t buffSize = strlen(header) + 1; // with trailing zero
+        std::unique_ptr<char> buff(new char[buffSize]);
+        if (!Utils::IO::LoadStringFromStream(aIfs, buff.get(), buffSize))
+            return false;
+        if (strcmp(header, buff.get()) != 0)
+            return false; // Wrong header
+
+        // Build parameters
+
+        float maxApproxError;
+        uint32_t maxSubdivLevel;
+        float maxTriangleSpanDbg;
+        float oversamplingFactorDbg;
+
+        // TODO: ?LoadVariableFromStreamAndCompare()?
+
+        if (!Utils::IO::LoadVariableFromStream(aIfs, maxApproxError))
+            return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, maxSubdivLevel))
+            return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSpanDbg))
+            return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, oversamplingFactorDbg))
+            return false;
+
+        if (maxApproxError != aParams.GetMaxApproxError())
+            return false;
+        if (maxSubdivLevel != aParams.GetMaxSubdivLevel())
+            return false;
+        if (maxTriangleSpanDbg != aParams.GetMaxTriangleSpanDbg())
+            return false;
+        if (oversamplingFactorDbg != aParams.GetOversamplingFactorDbg())
+            return false;
+
+        return true;
+    }
+
+
     // Loads pre-built internal structures needed for sampling
     static bool LoadFromDisk10(
         VertexStorage                   &aVertexStorage,
@@ -1166,44 +1219,21 @@ protected:
         aTreeRoot.reset(nullptr);
         aVertexStorage.Free();
 
-        // File path and name
+        // Open file
         std::string savePath;
         if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
             return false;
-
-        // Open file
         std::ifstream ifs(savePath, std::ios::binary);
         if (ifs.fail())
             return false;
         if (!ifs.is_open())
             return false;
 
-        // debug
-        //uint16_t ui16;
-        //int32_t i32;
-        //float f4;
-        //double d8;
-        //if (!Utils::IO::LoadVariableFromStream(ifs, ui16))
-        //    return false;
-        //if (!Utils::IO::LoadVariableFromStream(ifs, i32))
-        //    return false;
-        //if (!Utils::IO::LoadVariableFromStream(ifs, f4))
-        //    return false;
-        //if (!Utils::IO::LoadVariableFromStream(ifs, d8))
-        //    return false;
-
-        // Header
-        const char *header = SaveLoadFileHeader10();
-        const size_t buffSize = strlen(header) + 1; // with trailing zero
-        std::unique_ptr<char> buff(new char[buffSize]);
-        if (!Utils::IO::LoadStringFromStream(ifs, buff.get(), buffSize))
+        if (!LoadFromDisk10_HeaderAndParams(ifs, aParams))
             return false;
-        if (strcmp(header, buff.get()) != 0)
-            return false; // Wrong header
 
-        // TODO: Parameters?, check them
-
-        // TODO: Load the structure (checks: numbers validity, magic numbers padding, ...)
+        // TODO: Load the structure
+        // TODO: Checks: numbers validity, magic numbers padding, ...)
 
         // TODO: (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
 
@@ -3283,7 +3313,7 @@ public:
 
     static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
+        SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
 
         //_UT_SteeringValues(aMaxUtBlockPrintLevel);
         //_UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
