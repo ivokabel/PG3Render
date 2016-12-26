@@ -1147,6 +1147,39 @@ protected:
     }
 
 
+    static bool SaveToDisk10_Vertices(
+        std::ofstream                   &aOfs,
+        const VertexStorage             &aVertexStorage,
+        const bool                       aUseDebugSave)
+    {
+        // Count
+        const size_t count = aVertexStorage.GetCount();
+        Utils::IO::WriteVariableToStream(aOfs, count, aUseDebugSave);
+
+        // List of vertices
+        for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
+        {
+            const Vertex *vertex = aVertexStorage.Get(vertexIndex);
+            Utils::IO::WriteVariableToStream(aOfs, vertex->dir, aUseDebugSave);
+            Utils::IO::WriteVariableToStream(aOfs, vertex->weight, aUseDebugSave);
+        }
+
+        return true;
+    }
+
+
+    static bool SaveToDisk10_Tree(
+        std::ofstream                   &aOfs,
+        const VertexStorage             &aVertexStorage,
+        const TreeNodeBase              *aTreeRoot,
+        const bool                       aUseDebugSave)
+    {
+        // TODO: The tree structure (triangle sets and single triangles): counts + structure
+
+        return true;
+    }
+
+
     // Save internal structures needed for sampling to disk
     static bool SaveToDisk10(
         const VertexStorage             &aVertexStorage,
@@ -1175,26 +1208,12 @@ protected:
             return false;
 
         // Vertices
-        {
-            // Count
-            const size_t count = aVertexStorage.GetCount();
-            Utils::IO::WriteVariableToStream(ofs, count, aUseDebugSave);
+        if (!SaveToDisk10_Vertices(ofs, aVertexStorage, aUseDebugSave))
+            return false;
 
-            // List of vertices
-            for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
-            {
-                const Vertex *vertex = aVertexStorage.Get(vertexIndex);
-                Utils::IO::WriteVariableToStream(ofs, vertex->dir,    aUseDebugSave);
-                Utils::IO::WriteVariableToStream(ofs, vertex->weight, aUseDebugSave);
-            }
-        }
-
-        // TODO: The tree structure (triangle sets and single triangles): counts + structure
-        {
-        }
-
-        // TODO: Close file stream...
-        //ofs.close(); - called by the constructor
+        // The tree structure
+        if (!SaveToDisk10_Tree(ofs, aVertexStorage, aTreeRoot, aUseDebugSave))
+            return false;
 
         return true;
     }
@@ -1257,6 +1276,43 @@ protected:
     }
 
 
+    static bool LoadFromDisk10_Vertices(
+        std::ifstream                   &aIfs,
+        VertexStorage                   &aVertexStorage)
+    {
+        // Count
+        size_t count;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, count))
+            return false;
+        aVertexStorage.PreAllocate(count); // TODO: count check or exception handling?
+
+        // List of vertices
+        for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
+        {
+            Vec3f dir;
+            SteeringBasisValue weight;
+            if (!Utils::IO::LoadVariableFromStream(aIfs, dir))
+                return false;
+            if (!Utils::IO::LoadVariableFromStream(aIfs, weight))
+                return false;
+            aVertexStorage.AddVertex(Vertex(dir, weight), vertexIndex);
+        }
+
+        return true;
+    }
+
+
+    static bool LoadFromDisk10_Tree(
+        std::ifstream                   &aIfs,
+        VertexStorage                   &aVertexStorage,
+        std::unique_ptr<TreeNodeBase>   &aTreeRoot)
+    {
+        // TODO: The tree structure (triangle sets and single triangles): counts + structure
+
+        return true;
+    }
+
+
     // Loads pre-built internal structures needed for sampling
     static bool LoadFromDisk10(
         VertexStorage                   &aVertexStorage,
@@ -1279,33 +1335,17 @@ protected:
         if (!ifs.is_open())
             return false;
 
+        // Header
         if (!LoadFromDisk10_HeaderAndParams(ifs, aParams))
             return false;
 
         // Vertices
-        {
-            // Count
-            size_t count;
-            if (!Utils::IO::LoadVariableFromStream(ifs, count))
-                return false;
-            aVertexStorage.PreAllocate(count); // TODO: count check or exception handling?
+        if (!LoadFromDisk10_Vertices(ifs, aVertexStorage))
+            return false;
 
-            // List of vertices
-            for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
-            {
-                Vec3f dir;
-                SteeringBasisValue weight;
-                if (!Utils::IO::LoadVariableFromStream(ifs, dir))
-                    return false;
-                if (!Utils::IO::LoadVariableFromStream(ifs, weight))
-                    return false;
-                aVertexStorage.AddVertex(Vertex(dir, weight), vertexIndex);
-            }
-        }
-
-        // TODO: The tree structure (triangle sets and single triangles): counts + structure
-        {
-        }
+        // The tree structure
+        if (!LoadFromDisk10_Tree(ifs, aVertexStorage, aTreeRoot))
+            return false;
 
         // TODO: Checks: numbers validity, magic numbers padding, ...)
 
