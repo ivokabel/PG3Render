@@ -147,6 +147,17 @@ public:
             return retVal;
         }
 
+        friend std::ostream &operator<< (std::ostream &aStream, const SteeringBasisValue &aBasis)
+        {
+            for (size_t i = 0; i < aBasis.mBasisValues.size(); i++)
+            {
+                if (i > 0)
+                    aStream << ", ";
+                aStream << aBasis.mBasisValues[i];
+            }
+            return aStream;
+        }
+
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
     public:
@@ -499,6 +510,19 @@ public:
 
             return *this;
         }
+
+        friend std::ostream &operator<< (std::ostream &aStream, const SteeringCoefficients &aBasis)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("");
+
+            for (size_t i = 0; i < aBasis.mBasisValues.size(); i++)
+            {
+                if (i > 0)
+                    aStream << ", ";
+                aStream << aBasis.mBasisValues[i];
+            }
+            return aStream;
+        }
     };
 
 
@@ -676,8 +700,6 @@ public:
 
 public:
 
-    typedef size_t VertexIndex;
-
     class VertexStorage
     {
     public:
@@ -692,20 +714,22 @@ public:
             mVertices.reserve(aSize);
         }
 
-        //bool AddVertex(const Vertex &aVertex, VertexIndex oIndex)
-        //{
-        //    mVertices.push_back(aVertex);
+        bool AddVertex(const Vertex &aVertex, size_t oIndex)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("");
 
-        //    if (!mVertices.empty())
-        //    {
-        //        oIndex = mVertices.size() - 1u;
-        //        return true;
-        //    }
-        //    else
-        //        return false;
-        //}
+            mVertices.push_back(aVertex);
 
-        bool AddVertex(Vertex &&aVertex, VertexIndex &oIndex)
+            if (!mVertices.empty())
+            {
+                oIndex = mVertices.size() - 1u;
+                return true;
+            }
+            else
+                return false;
+        }
+
+        bool AddVertex(Vertex &&aVertex, size_t &oIndex)
         {
             mVertices.push_back(aVertex);
 
@@ -718,7 +742,7 @@ public:
                 return false;
         }
 
-        Vertex *Get(VertexIndex aIndex)
+        Vertex *Get(size_t aIndex)
         {
             PG3_ASSERT(aIndex < mVertices.size());
 
@@ -728,7 +752,7 @@ public:
                 return nullptr;
         }
 
-        const Vertex *Get(VertexIndex aIndex) const
+        const Vertex *Get(size_t aIndex) const
         {
             PG3_ASSERT(aIndex < mVertices.size());
 
@@ -736,11 +760,26 @@ public:
                 return &mVertices[aIndex];
             else
                 return nullptr;
+        }
+
+        size_t GetCount() const
+        {
+            return static_cast<size_t>(mVertices.size());
         }
 
         void Free()
         {
             mVertices.clear();
+        }
+
+        bool operator == (const VertexStorage &aStorage) const
+        {
+            return mVertices == aStorage.mVertices;
+        }
+
+        bool operator != (const VertexStorage &aStorage) const
+        {
+            return mVertices != aStorage.mVertices;
         }
 
     protected:
@@ -818,9 +857,9 @@ public:
 #endif
 
         TriangleNode(
-            VertexIndex              aVertexIndex0,
-            VertexIndex              aVertexIndex1,
-            VertexIndex              aVertexIndex2,
+            size_t                   aVertexIndex0,
+            size_t                   aVertexIndex1,
+            size_t                   aVertexIndex2,
             VertexStorage           &aVertexStorage,
             uint32_t                 aIndex,
             const TriangleNode      *aParentTriangle = nullptr) // only for the subdivision process
@@ -849,9 +888,9 @@ public:
 
 
         SteeringBasisValue ComputeTriangleWeight(
-            VertexIndex              aVertexIndex0,
-            VertexIndex              aVertexIndex1,
-            VertexIndex              aVertexIndex2,
+            size_t                   aVertexIndex0,
+            size_t                   aVertexIndex1,
+            size_t                   aVertexIndex2,
             VertexStorage           &aVertexStorage)
         {
             const auto &vertex0 = aVertexStorage.Get(aVertexIndex0);
@@ -1015,7 +1054,7 @@ public:
 #endif
 
         // Indices to a VertexStorage, which is not stored here to save memory
-        VertexIndex         vertexIndices[3];
+        size_t              vertexIndices[3];
     };
 
 
@@ -1135,13 +1174,24 @@ protected:
         if (!SaveToDisk10_HeaderAndParams(ofs, aParams, aUseDebugSave))
             return false;
 
-        // TODO: Save the tree
-        //   - Counts: vertices, triangles, inner nodes (needed for pre-allocation)
-        //   - Vertices: mVertexStorage
-        //   - Triangles
-        //   - Inner nodes
+        // Vertices
+        {
+            // Count
+            const size_t count = aVertexStorage.GetCount();
+            Utils::IO::WriteVariableToStream(ofs, count, aUseDebugSave);
 
-        // TODO: ...
+            // List of vertices
+            for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
+            {
+                const Vertex *vertex = aVertexStorage.Get(vertexIndex);
+                Utils::IO::WriteVariableToStream(ofs, vertex->dir,    aUseDebugSave);
+                Utils::IO::WriteVariableToStream(ofs, vertex->weight, aUseDebugSave);
+            }
+        }
+
+        // TODO: The tree structure (triangle sets and single triangles): counts + structure
+        {
+        }
 
         // TODO: Close file stream...
         //ofs.close(); - called by the constructor
@@ -1232,7 +1282,31 @@ protected:
         if (!LoadFromDisk10_HeaderAndParams(ifs, aParams))
             return false;
 
-        // TODO: Load the structure
+        // Vertices
+        {
+            // Count
+            size_t count;
+            if (!Utils::IO::LoadVariableFromStream(ifs, count))
+                return false;
+            aVertexStorage.PreAllocate(count); // TODO: count check or exception handling?
+
+            // List of vertices
+            for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
+            {
+                Vec3f dir;
+                SteeringBasisValue weight;
+                if (!Utils::IO::LoadVariableFromStream(ifs, dir))
+                    return false;
+                if (!Utils::IO::LoadVariableFromStream(ifs, weight))
+                    return false;
+                aVertexStorage.AddVertex(Vertex(dir, weight), vertexIndex);
+            }
+        }
+
+        // TODO: The tree structure (triangle sets and single triangles): counts + structure
+        {
+        }
+
         // TODO: Checks: numbers validity, magic numbers padding, ...)
 
         // TODO: (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
@@ -1775,7 +1849,7 @@ protected:
         Vec3ui faces[20];
         Geom::UnitIcosahedron(vertices, faces);
 
-        std::array<VertexIndex, 12> vertexIndices;
+        std::array<size_t, 12> vertexIndices;
 
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
@@ -1844,7 +1918,7 @@ protected:
                 static_cast<float>(triangleIdx) + 0.6f
             };
 
-            std::array<VertexIndex, 3> vertexIndices;
+            std::array<size_t, 3> vertexIndices;
             CreateNewVertex(vertexIndices[0], aVertexStorage, vertexCoords[0], vertexLuminances[0]);
             CreateNewVertex(vertexIndices[1], aVertexStorage, vertexCoords[1], vertexLuminances[1]);
             CreateNewVertex(vertexIndices[2], aVertexStorage, vertexCoords[2], vertexLuminances[2]);
@@ -1860,7 +1934,7 @@ protected:
     }
 
     static void CreateNewVertex(
-        VertexIndex                 &oVertexIndex,
+        size_t                      &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const float                  aLuminance)
@@ -1872,7 +1946,7 @@ protected:
     }
 
     static void CreateNewVertex(
-        VertexIndex                 &oVertexIndex,
+        size_t                      &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const EnvironmentMapImage   &aEmImage,
@@ -2215,7 +2289,7 @@ protected:
         newVertexCoords[2] = ((dir2 + dir0) / 2.f).Normalize();
 
         // New shared vertices
-        std::array<VertexIndex, 3> newIndices;
+        std::array<size_t, 3> newIndices;
         CreateNewVertex(newIndices[0], aVertexStorage, newVertexCoords[0], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(newIndices[1], aVertexStorage, newVertexCoords[1], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(newIndices[2], aVertexStorage, newVertexCoords[2], aEmImage, aUseBilinearFiltering);
@@ -2338,7 +2412,7 @@ protected:
         VertexStorage vertexStorage;
 
         // Generate triangle with vertices
-        std::array<VertexIndex, 3> vertexIndices;
+        std::array<size_t, 3> vertexIndices;
         CreateNewVertex(vertexIndices[0], vertexStorage, aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(vertexIndices[1], vertexStorage, aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(vertexIndices[2], vertexStorage, aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
@@ -3214,9 +3288,18 @@ public:
             return false;
         }
 
+        // Compare vertices
+        if (aVertexStorage != loadedVertexStorage)
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                "Loaded vertex storage differs from the saved one!");
+            return false;
+        }
+
         // TODO:
-        // - Sanity tests...
         // - Compare with the original tree
+        // - Sanity tests?...
         // - ...
 
 
@@ -3313,7 +3396,7 @@ public:
 
     static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
+        //SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
 
         //_UT_SteeringValues(aMaxUtBlockPrintLevel);
         //_UT_SubdivideTriangle(aMaxUtBlockPrintLevel);

@@ -458,14 +458,16 @@ public:
     friend Vec3Base Min(const Vec3Base& a, const Vec3Base& b)
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::min(a.Get(i), b.Get(i));
+        for (uint32_t i = 0; i < 3; i++)
+            result.Get(i) = std::min(a.Get(i), b.Get(i));
         return result;
     }
 
     friend Vec3Base Max(const Vec3Base& a, const Vec3Base& b)
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::max(a.Get(i), b.Get(i));
+        for (uint32_t i = 0; i < 3; i++)
+            result.Get(i) = std::max(a.Get(i), b.Get(i));
         return result;
     }
 
@@ -477,14 +479,16 @@ public:
     Vec3Base Sqrt() const
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::sqrt(Get(i));
+        for (uint32_t i = 0; i < 3; i++)
+            result.Get(i) = std::sqrt(Get(i));
         return result;
     }
 
     Vec3Base Tan() const
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++) result.Get(i) = std::tan(Get(i));
+        for (uint32_t i = 0; i < 3; i++)
+            result.Get(i) = std::tan(Get(i));
         return result;
     }
 
@@ -513,6 +517,17 @@ public:
     float           LenSqr() const  { return Dot(*this, *this);   }
     float           Length() const  { return std::sqrt(LenSqr()); }
     Vec3Base<T>&    Normalize()     { this->operator/=(Length()); return *this; }
+
+    friend std::ostream &operator<< (std::ostream &aStream, const Vec3Base &aVector)
+    {
+        for (uint32_t i = 0; i < 3; i++)
+        {
+            if (i > 0)
+                aStream << ", ";
+            aStream << aVector.Get(i);
+        }
+        return aStream;
+    }
 
 public:
 

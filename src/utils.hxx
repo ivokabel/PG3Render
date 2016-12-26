@@ -301,9 +301,9 @@ namespace Utils
             if (aDebugging)
             {
                 // debugging, textual version of data
+                aOfs << typeid(aValue).name() << ", size " << sizeof(T) << ": ";
                 aOfs.precision(20);
                 aOfs << aValue;
-                aOfs << " - " << typeid(aValue).name() << ", size " << sizeof(T);
                 aOfs << std::endl;
             }
             else
@@ -323,10 +323,10 @@ namespace Utils
             if (aDebugging)
             {
                 // debugging, textual version of data
+                aOfs << typeid(aStrBuff).name();
+                aOfs << ", size " << buffLength << "*" << sizeof(char) << ": ";
                 aOfs.precision(20);
                 aOfs << "\"" << aStrBuff << "\"";
-                aOfs << " - " << typeid(aStrBuff).name();
-                aOfs << ", size " << buffLength << " * " << sizeof(char);
                 aOfs << std::endl;
             }
             else
