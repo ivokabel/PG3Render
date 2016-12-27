@@ -311,6 +311,17 @@ namespace Utils
         }
 
 
+        template <>
+        static void WriteVariableToStream(
+            std::ofstream       &aOfs,
+            const bool          &aBoolValue,
+            bool                 aDebugging)
+        {
+            const uint32_t uintVal = aBoolValue ? 1u : 0u;
+            WriteVariableToStream(aOfs, uintVal, aDebugging);
+        }
+
+
         static void WriteStringToStream(
             std::ofstream       &aOfs,
             const char          *aStrBuff,
@@ -341,7 +352,22 @@ namespace Utils
         {
             aIfs.read(reinterpret_cast<char*>(&aValue), sizeof(T));
 
-            return !aIfs.fail();
+            bool retVal = !aIfs.fail();
+            return retVal;
+        }
+
+
+        template <>
+        static bool LoadVariableFromStream(
+            std::ifstream       &aIfs,
+            bool                &aBoolValue)
+        {
+            uint32_t uintValue;
+            if (!LoadVariableFromStream(aIfs, uintValue))
+                return false;
+
+            aBoolValue = uintValue != 0u;
+            return true;
         }
 
 

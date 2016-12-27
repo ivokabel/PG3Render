@@ -32,6 +32,11 @@ public:
             mBasisValues(aBasisValues)
         {}
 
+        SteeringValue(float aValue)
+        {
+            mBasisValues.fill(aValue);
+        }
+
         float operator* (const SteeringValue &aValue)
         {
             PG3_ASSERT_INTEGER_EQUAL(mBasisValues.size(), aValue.mBasisValues.size());
@@ -75,6 +80,10 @@ public:
 
         SteeringBasisValue(const std::array<float, 9> &aBasisValues) :
             SteeringValue(aBasisValues)
+        {}
+
+        SteeringBasisValue(float aValue) :
+            SteeringValue(aValue)
         {}
 
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
@@ -498,6 +507,11 @@ public:
     class SteeringCoefficients : public SteeringValue
     {
     public:
+
+        //SteeringCoefficients(float aValue) :
+        //    SteeringValue(aValue)
+        //{}
+
         // Generate clamped cosine spherical harmonic coefficients for the given normal
         SteeringCoefficients& GenerateForClampedCosSh(const Vec3f &aNormal)
         {
@@ -709,12 +723,12 @@ public:
             return mVertices.empty();
         }
 
-        void PreAllocate(size_t aSize)
+        void PreAllocate(uint32_t aSize)
         {
             mVertices.reserve(aSize);
         }
 
-        bool AddVertex(const Vertex &aVertex, size_t oIndex)
+        bool AddVertex(const Vertex &aVertex, uint32_t oIndex)
         {
             PG3_ERROR_CODE_NOT_TESTED("");
 
@@ -722,49 +736,49 @@ public:
 
             if (!mVertices.empty())
             {
-                oIndex = mVertices.size() - 1u;
+                oIndex = static_cast<uint32_t>(mVertices.size()) - 1u;
                 return true;
             }
             else
                 return false;
         }
 
-        bool AddVertex(Vertex &&aVertex, size_t &oIndex)
+        bool AddVertex(Vertex &&aVertex, uint32_t &oIndex)
         {
             mVertices.push_back(aVertex);
 
             if (!mVertices.empty())
             {
-                oIndex = mVertices.size() - 1u;
+                oIndex = static_cast<uint32_t>(mVertices.size()) - 1u;
                 return true;
             }
             else
                 return false;
         }
 
-        Vertex *Get(size_t aIndex)
+        Vertex *Get(uint32_t aIndex)
         {
-            PG3_ASSERT(aIndex < mVertices.size());
+            PG3_ASSERT(aIndex < static_cast<uint32_t>(mVertices.size()));
 
-            if (aIndex < mVertices.size())
+            if (aIndex < static_cast<uint32_t>(mVertices.size()))
                 return &mVertices[aIndex];
             else
                 return nullptr;
         }
 
-        const Vertex *Get(size_t aIndex) const
+        const Vertex *Get(uint32_t aIndex) const
         {
-            PG3_ASSERT(aIndex < mVertices.size());
+            PG3_ASSERT(aIndex < static_cast<uint32_t>(mVertices.size()));
 
-            if (aIndex < mVertices.size())
+            if (aIndex < static_cast<uint32_t>(mVertices.size()))
                 return &mVertices[aIndex];
             else
                 return nullptr;
         }
 
-        size_t GetCount() const
+        uint32_t GetCount() const
         {
-            return static_cast<size_t>(mVertices.size());
+            return static_cast<uint32_t>(mVertices.size());
         }
 
         void Free()
@@ -779,7 +793,7 @@ public:
 
         bool operator != (const VertexStorage &aStorage) const
         {
-            return mVertices != aStorage.mVertices;
+            return !(*this == aStorage);
         }
 
     protected:
@@ -789,11 +803,14 @@ public:
 
     class TreeNodeBase
     {
-    public:
+    protected:
+
         TreeNodeBase(bool aIsTriangleNode, const SteeringBasisValue &aWeight) :
             mIsTriangleNode(aIsTriangleNode),
             mWeight(aWeight)
         {}
+
+    public:
 
         bool IsTriangleNode() const
         {
@@ -814,6 +831,7 @@ public:
     class TriangleSetNode : public TreeNodeBase
     {
     public:
+
         // The node becomes the owner of the children and is responsible for releasing them
         TriangleSetNode(
             TreeNodeBase* aLeftChild,
@@ -831,7 +849,22 @@ public:
             mRightChild(aRightChild)
         {}
 
+
         ~TriangleSetNode() {}
+
+
+        bool operator == (const TriangleSetNode &aTriangleSet) const
+        {
+            return (*GetLeftChild()  == *aTriangleSet.GetLeftChild())
+                && (*GetRightChild() == *aTriangleSet.GetRightChild());
+        }
+
+
+        bool operator != (const TriangleSetNode &aTriangleSet)
+        {
+            return !(*this == aTriangleSet);
+        }
+
 
         const TreeNodeBase* GetLeftChild()  const { return mLeftChild.get(); }
         const TreeNodeBase* GetRightChild() const { return mRightChild.get(); }
@@ -856,18 +889,19 @@ public:
         TriangleNode(const TriangleNode&) = delete;
 #endif
 
+
         TriangleNode(
-            size_t                   aVertexIndex0,
-            size_t                   aVertexIndex1,
-            size_t                   aVertexIndex2,
+            uint32_t                 aVertexIndex0,
+            uint32_t                 aVertexIndex1,
+            uint32_t                 aVertexIndex2,
             VertexStorage           &aVertexStorage,
             uint32_t                 aIndex,
-            const TriangleNode      *aParentTriangle = nullptr) // only for the subdivision process
+            uint32_t                 aSubdivLevel)
             :
             TreeNodeBase(
                 true,
                 ComputeTriangleWeight(aVertexIndex0, aVertexIndex1, aVertexIndex2, aVertexStorage)),
-            subdivLevel((aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
+            subdivLevel(aSubdivLevel)
 #ifdef _DEBUG
             //, index([aParentTriangle, aIndex](){
             //    std::ostringstream outStream;
@@ -887,15 +921,36 @@ public:
         }
 
 
+        TriangleNode(
+            uint32_t                 aVertexIndex0,
+            uint32_t                 aVertexIndex1,
+            uint32_t                 aVertexIndex2,
+            VertexStorage           &aVertexStorage,
+            uint32_t                 aIndex,
+            const TriangleNode      *aParentTriangle = nullptr) // only for the subdivision process
+            :
+            TriangleNode(
+                aVertexIndex0,
+                aVertexIndex1,
+                aVertexIndex2,
+                aVertexStorage,
+                aIndex,
+                (aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
+        {}
+
+
         SteeringBasisValue ComputeTriangleWeight(
-            size_t                   aVertexIndex0,
-            size_t                   aVertexIndex1,
-            size_t                   aVertexIndex2,
+            uint32_t                 aVertexIndex0,
+            uint32_t                 aVertexIndex1,
+            uint32_t                 aVertexIndex2,
             VertexStorage           &aVertexStorage)
         {
-            const auto &vertex0 = aVertexStorage.Get(aVertexIndex0);
-            const auto &vertex1 = aVertexStorage.Get(aVertexIndex1);
-            const auto &vertex2 = aVertexStorage.Get(aVertexIndex2);
+            const auto vertex0 = aVertexStorage.Get(aVertexIndex0);
+            const auto vertex1 = aVertexStorage.Get(aVertexIndex1);
+            const auto vertex2 = aVertexStorage.Get(aVertexIndex2);
+
+            if ((vertex0 == nullptr) || (vertex1 == nullptr) || (vertex2 == nullptr))
+                return SteeringBasisValue(0.f);
 
             const float area =
                 Geom::TriangleSurfaceArea(vertex0->dir, vertex1->dir, vertex2->dir);
@@ -906,12 +961,18 @@ public:
         }
 
 
-        bool operator == (const TriangleNode &aTriangle)
+        bool operator == (const TriangleNode &aTriangle) const
         {
             return (mWeight == aTriangle.mWeight)
                 && (vertexIndices[0] == aTriangle.vertexIndices[0])
                 && (vertexIndices[1] == aTriangle.vertexIndices[1])
                 && (vertexIndices[2] == aTriangle.vertexIndices[2]);
+        }
+
+
+        bool operator != (const TriangleNode &aTriangle)
+        {
+            return !(*this == aTriangle);
         }
 
 
@@ -1046,16 +1107,42 @@ public:
         }
 
     public:
-        uint32_t            subdivLevel;
+        uint32_t            subdivLevel; // Used only for building the tree and introspection
 
 #ifdef _DEBUG
         //const std::string   index;
         const uint32_t      index;
 #endif
 
-        // Indices to a VertexStorage, which is not stored here to save memory
-        size_t              vertexIndices[3];
+        // Indices of shared vertices pointing into a VertexStorage
+        uint32_t            vertexIndices[3];
     };
+
+
+    friend bool operator == (const TreeNodeBase &aNode1, const TreeNodeBase &aNode2)
+    {
+        if (aNode1.IsTriangleNode() != aNode2.IsTriangleNode())
+            return false;
+
+        if (aNode1.IsTriangleNode())
+        {
+            const TriangleNode *triangle1 = static_cast<const TriangleNode*>(&aNode1);
+            const TriangleNode *triangle2 = static_cast<const TriangleNode*>(&aNode2);
+            return (*triangle1 == *triangle2);
+        }
+        else
+        {
+            const TriangleSetNode *triangleSet1 = static_cast<const TriangleSetNode*>(&aNode1);
+            const TriangleSetNode *triangleSet2 = static_cast<const TriangleSetNode*>(&aNode2);
+            return (*triangleSet1 == *triangleSet2);
+        }
+    }
+
+
+    friend bool operator != (const TreeNodeBase &aNode1, const TreeNodeBase &aNode2)
+    {
+        return !(aNode1 == aNode2);
+    }
 
 
 protected:
@@ -1077,6 +1164,27 @@ protected:
             return false;
 
         return true;
+    }
+
+
+    static void CountNodes(
+        const TreeNodeBase      *aNode,
+        uint32_t                &oNonTriangleCount,
+        uint32_t                &oTriangleCount)
+    {
+        if (aNode == nullptr)
+            return;
+
+        if (!aNode->IsTriangleNode())
+        {
+            oNonTriangleCount++;
+
+            const TriangleSetNode *triangleSetNode = static_cast<const TriangleSetNode*>(aNode);
+            CountNodes(triangleSetNode->GetLeftChild(),  oNonTriangleCount, oTriangleCount);
+            CountNodes(triangleSetNode->GetRightChild(), oNonTriangleCount, oTriangleCount);
+        }
+        else
+            oTriangleCount++;
     }
 
 
@@ -1138,10 +1246,10 @@ protected:
         Utils::IO::WriteStringToStream(aOfs, SaveLoadFileHeader10(), aUseDebugSave);
 
         // Build parameters
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(), aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(), aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(), aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(), aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(),         aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(),         aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(),     aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(),  aUseDebugSave);
 
         return true;
     }
@@ -1153,11 +1261,11 @@ protected:
         const bool                       aUseDebugSave)
     {
         // Count
-        const size_t count = aVertexStorage.GetCount();
+        const uint32_t count = aVertexStorage.GetCount();
         Utils::IO::WriteVariableToStream(aOfs, count, aUseDebugSave);
 
         // List of vertices
-        for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
+        for (uint32_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
         {
             const Vertex *vertex = aVertexStorage.Get(vertexIndex);
             Utils::IO::WriteVariableToStream(aOfs, vertex->dir, aUseDebugSave);
@@ -1168,13 +1276,46 @@ protected:
     }
 
 
+    static bool SaveToDisk10_TreeNode(
+        std::ofstream                   &aOfs,
+        const TreeNodeBase              *aNode,
+        const bool                       aUseDebugSave)
+    {
+        if (aNode == nullptr)
+            return false;
+
+        Utils::IO::WriteVariableToStream(aOfs, aNode->IsTriangleNode(), aUseDebugSave);
+
+        if (!aNode->IsTriangleNode())
+        {
+            const TriangleSetNode *triangleSetNode = static_cast<const TriangleSetNode*>(aNode);
+            SaveToDisk10_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
+            SaveToDisk10_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
+        }
+        else
+        {
+            const TriangleNode *triangleNode = static_cast<const TriangleNode*>(aNode);
+            Utils::IO::WriteVariableToStream(aOfs, triangleNode->subdivLevel, aUseDebugSave);
+            Utils::IO::WriteVariableToStream(aOfs, triangleNode->vertexIndices, aUseDebugSave);
+        }
+
+        return true;
+    }
+
+        
     static bool SaveToDisk10_Tree(
         std::ofstream                   &aOfs,
-        const VertexStorage             &aVertexStorage,
         const TreeNodeBase              *aTreeRoot,
         const bool                       aUseDebugSave)
     {
-        // TODO: The tree structure (triangle sets and single triangles): counts + structure
+        // Counts
+        uint32_t nonTriangleCount = 0u, triangleCount = 0u;
+        CountNodes(aTreeRoot, nonTriangleCount, triangleCount);
+        Utils::IO::WriteVariableToStream(aOfs, nonTriangleCount, aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs,    triangleCount, aUseDebugSave);
+
+        // Nodes
+        SaveToDisk10_TreeNode(aOfs, aTreeRoot, aUseDebugSave);
 
         return true;
     }
@@ -1211,8 +1352,8 @@ protected:
         if (!SaveToDisk10_Vertices(ofs, aVertexStorage, aUseDebugSave))
             return false;
 
-        // The tree structure
-        if (!SaveToDisk10_Tree(ofs, aVertexStorage, aTreeRoot, aUseDebugSave))
+        // Tree
+        if (!SaveToDisk10_Tree(ofs, aTreeRoot, aUseDebugSave))
             return false;
 
         return true;
@@ -1281,13 +1422,13 @@ protected:
         VertexStorage                   &aVertexStorage)
     {
         // Count
-        size_t count;
+        uint32_t count;
         if (!Utils::IO::LoadVariableFromStream(aIfs, count))
             return false;
-        aVertexStorage.PreAllocate(count); // TODO: count check or exception handling?
+        aVertexStorage.PreAllocate(count); // TODO: count check and/or exception handling?
 
         // List of vertices
-        for (size_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
+        for (uint32_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
         {
             Vec3f dir;
             SteeringBasisValue weight;
@@ -1302,12 +1443,76 @@ protected:
     }
 
 
+    static bool LoadFromDisk10_TreeNode(
+        std::ifstream                   &aIfs,
+        VertexStorage                   &aVertexStorage,
+        std::unique_ptr<TreeNodeBase>   &oNode)
+    {
+        bool isTriangleNode;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, isTriangleNode))
+            return false;
+
+        if (!isTriangleNode)
+        {
+            std::unique_ptr<TreeNodeBase> leftChild, rightChild;
+            if (!LoadFromDisk10_TreeNode(aIfs, aVertexStorage, leftChild))
+                return false;
+            if (!LoadFromDisk10_TreeNode(aIfs, aVertexStorage, rightChild))
+                return false;
+
+            oNode.reset(new TriangleSetNode(leftChild.release(), rightChild.release()));
+        }
+        else
+        {
+            uint32_t subdivLevel;
+            uint32_t vertexIndices[3];
+            if (!Utils::IO::LoadVariableFromStream(aIfs, subdivLevel))
+                return false;
+            if (!Utils::IO::LoadVariableFromStream(aIfs, vertexIndices))
+                return false;
+
+            if (   (aVertexStorage.Get(vertexIndices[0]) == nullptr)
+                || (aVertexStorage.Get(vertexIndices[1]) == nullptr)
+                || (aVertexStorage.Get(vertexIndices[2]) == nullptr))
+                return false;
+
+            oNode.reset(
+                new TriangleNode(
+                    vertexIndices[0],
+                    vertexIndices[1],
+                    vertexIndices[2],
+                    aVertexStorage,
+                    0, // Ignoring index - it is used only for debugging triangle sub-division
+                    subdivLevel));
+        }
+
+        return true;
+    }
+
+
     static bool LoadFromDisk10_Tree(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot)
     {
-        // TODO: The tree structure (triangle sets and single triangles): counts + structure
+        // TODO: Pre-allocate nodes (nodes storage/tree wrapper?) with count check and/or exception handling?
+
+        // Counts
+        uint32_t nonTriangleCount, triangleCount;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, nonTriangleCount))
+            return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, triangleCount))
+            return false;
+
+        // Nodes
+        if (!LoadFromDisk10_TreeNode(aIfs, aVertexStorage, aTreeRoot))
+            return false;
+
+        // Sanity check: node counts
+        uint32_t treeNonTriangleCount = 0u, treeTriangleCount = 0u;
+        CountNodes(aTreeRoot.get(), treeNonTriangleCount, treeTriangleCount);
+        if ((nonTriangleCount != treeNonTriangleCount) || (triangleCount != treeTriangleCount))
+            return false;
 
         return true;
     }
@@ -1343,11 +1548,24 @@ protected:
         if (!LoadFromDisk10_Vertices(ifs, aVertexStorage))
             return false;
 
-        // The tree structure
+        // Tree
         if (!LoadFromDisk10_Tree(ifs, aVertexStorage, aTreeRoot))
             return false;
 
-        // TODO: Checks: numbers validity, magic numbers padding, ...)
+        // Sanity tests on stream
+        {
+            if (ifs.bad())
+                return false;
+
+            // Did we reach the end of file just now?
+            // ...we need to try read something to find out
+            char dummy;
+            ifs >> dummy;
+            if (!ifs.eof())
+                return false;
+        }
+
+        // TODO: Checks: magic numbers padding, numbers validity, usage of all vertices, ...)
 
         // TODO: (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
 
@@ -1363,7 +1581,13 @@ protected:
     {
         Cleanup();
 
-        return LoadFromDisk10(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams);
+        if (!LoadFromDisk10(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        {
+            Cleanup();
+            return false;
+        }
+        else
+            return true;
     }
 
 
@@ -1889,7 +2113,7 @@ protected:
         Vec3ui faces[20];
         Geom::UnitIcosahedron(vertices, faces);
 
-        std::array<size_t, 12> vertexIndices;
+        std::array<uint32_t, 12> vertexIndices;
 
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
@@ -1958,7 +2182,7 @@ protected:
                 static_cast<float>(triangleIdx) + 0.6f
             };
 
-            std::array<size_t, 3> vertexIndices;
+            std::array<uint32_t, 3> vertexIndices;
             CreateNewVertex(vertexIndices[0], aVertexStorage, vertexCoords[0], vertexLuminances[0]);
             CreateNewVertex(vertexIndices[1], aVertexStorage, vertexCoords[1], vertexLuminances[1]);
             CreateNewVertex(vertexIndices[2], aVertexStorage, vertexCoords[2], vertexLuminances[2]);
@@ -1974,7 +2198,7 @@ protected:
     }
 
     static void CreateNewVertex(
-        size_t                      &oVertexIndex,
+        uint32_t                    &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const float                  aLuminance)
@@ -1986,7 +2210,7 @@ protected:
     }
 
     static void CreateNewVertex(
-        size_t                      &oVertexIndex,
+        uint32_t                    &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
         const EnvironmentMapImage   &aEmImage,
@@ -2329,7 +2553,7 @@ protected:
         newVertexCoords[2] = ((dir2 + dir0) / 2.f).Normalize();
 
         // New shared vertices
-        std::array<size_t, 3> newIndices;
+        std::array<uint32_t, 3> newIndices;
         CreateNewVertex(newIndices[0], aVertexStorage, newVertexCoords[0], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(newIndices[1], aVertexStorage, newVertexCoords[1], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(newIndices[2], aVertexStorage, newVertexCoords[2], aEmImage, aUseBilinearFiltering);
@@ -2452,7 +2676,7 @@ protected:
         VertexStorage vertexStorage;
 
         // Generate triangle with vertices
-        std::array<size_t, 3> vertexIndices;
+        std::array<uint32_t, 3> vertexIndices;
         CreateNewVertex(vertexIndices[0], vertexStorage, aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(vertexIndices[1], vertexStorage, aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
         CreateNewVertex(vertexIndices[2], vertexStorage, aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
@@ -3065,7 +3289,7 @@ public:
                 refinedTriangles, vertexStorage, treeRoot))
             return false;
 
-        // Save to and Load from disk
+        // Save/Load
         if (!_UT_SaveToAndLoadFromDisk(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                 vertexStorage, treeRoot, *image.get(), aUseBilinearFiltering, params))
@@ -3337,8 +3561,24 @@ public:
             return false;
         }
 
+        if (!loadedTreeRoot)
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                "Loaded tree is empty!");
+            return false;
+        }
+
+        // Compare with the original tree
+        if (*aTreeRoot != *loadedTreeRoot)
+        {
+            PG3_UT_END_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                "Loaded tree differs from the saved one!");
+            return false;
+        }
+
         // TODO:
-        // - Compare with the original tree
         // - Sanity tests?...
         // - ...
 
