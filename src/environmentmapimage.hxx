@@ -28,11 +28,11 @@ public:
     }
 
     // This class is not copyable because of a const member.
-    // If we don't delete the assignment operator and copy constructor 
+    // If we don't delete the assignment operator
     // explicitly, the compiler may complain about not being able 
     // to create their default implementations.
     EnvironmentMapImage & operator=(const EnvironmentMapImage&) = delete;
-    EnvironmentMapImage(const EnvironmentMapImage&) = delete;
+    //EnvironmentMapImage(const EnvironmentMapImage&) = delete;
 
     // Loads, scales and rotates an environment map from an OpenEXR image on the given path.
     static EnvironmentMapImage* LoadImage(

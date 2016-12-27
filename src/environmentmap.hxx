@@ -217,11 +217,11 @@ private:
     }
 
     // This class is not copyable because of a const member.
-    // If we don't delete the assignment operator and copy constructor 
+    // If we don't delete the assignment operator
     // explicitly, the compiler may complain about not being able 
     // to create their default implementations.
     EnvironmentMap & operator=(const EnvironmentMap&) = delete;
-    EnvironmentMap(const EnvironmentMap&) = delete;
+    //EnvironmentMap(const EnvironmentMap&) = delete;
 
     EnvironmentMapImage*            mImage;             // Environment map itself
     EnvironmentMapSteeringSampler*  mSteeringSampler;   // TODO: Describe...
