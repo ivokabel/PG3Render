@@ -174,8 +174,6 @@ public:
         static bool _UT_GenerateSphHarm_SingleDirection(
             const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
             const Vec3f                 &aDirection,
-            //const float                  aTheta,
-            //const float                  aPhi,
             const SteeringBasisValue    &aNormalizedReferenceBasisValue,
             const char                  *aTestName)
         {
@@ -194,8 +192,6 @@ public:
             });
             
             SteeringBasisValue referenceVal = aNormalizedReferenceBasisValue * normalizationValues;
-
-            //Vec3f direction = Geom::CreateDirection(aTheta, aPhi);
 
             SteeringBasisValue generatedValue;
             generatedValue.GenerateSphHarm(aDirection, 1.0f);
@@ -496,7 +492,6 @@ public:
 
             PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
                 "SteeringBasisValue::GenerateSphHarm()");
-
             return true;
         }
 
@@ -513,14 +508,30 @@ public:
         //{}
 
         // Generate clamped cosine spherical harmonic coefficients for the given normal
-        SteeringCoefficients& GenerateForClampedCosSh(const Vec3f &aNormal)
+        SteeringCoefficients& GenerateForClampedCos(const Vec3f &aNormal)
         {
-            aNormal;
+            PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
 
-            // TODO: Asserts:
-            //  - normal: normalized
+            // Constants
+            static const float c1 = .429043f;
+            static const float c2 = .511644f;
+            static const float c3 = .743125f;
+            static const float c4 = .886227f;
+            static const float c5 = .247708f;
 
-            // TODO: Get from paper...
+            // Spherical harmonic coefficients 
+
+            mBasisValues[0] = c4;
+
+            mBasisValues[1] = 2 * c2 * aNormal.y;
+            mBasisValues[2] = 2 * c2 * aNormal.z;
+            mBasisValues[3] = 2 * c2 * aNormal.x;
+
+            mBasisValues[4] = 2 * c1 * aNormal.x * aNormal.y;
+            mBasisValues[5] = 2 * c1 * aNormal.y * aNormal.z;
+            mBasisValues[6] = c3 * Math::Sqr(aNormal.z) - c5;
+            mBasisValues[7] = 2 * c1 * aNormal.x * aNormal.z;
+            mBasisValues[8] = c1 * (Math::Sqr(aNormal.x) - Math::Sqr(aNormal.y));
 
             return *this;
         }
@@ -537,6 +548,31 @@ public:
             }
             return aStream;
         }
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+    public:
+
+        static bool _UT_GenerateForClampedCos(
+            const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel    aUtBlockPrintLevel)
+        {
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "GenerateForClampedCos()");
+
+            //TODO:
+            //  For random normal:
+            //      Compute clamped cos spherical harmonic coefficients
+            //      Test at random directions on whole sphere
+            //          Evaluate clamped cos directly
+            //          Evaluate clamped cos through spherical harmonics
+            //          Delta-compare
+
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "GenerateForClampedCos()");
+            return true;
+        }
+
+#endif
+
     };
 
 
@@ -544,12 +580,9 @@ public:
 
 public:
 
-    static bool _UT_SteeringValues(
+    static bool _UT_SteeringValue(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
-            "Steering value structures");
-
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
 
         // Equality operator
@@ -625,17 +658,25 @@ public:
         }
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
+        return true;
+    }
 
-        // SteeringBasisValue
-        // - initialization and operator==
-        //   - different values
-        //   - same values?
+    static bool _UT_SteeringValueStructures(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+            "Steering value structures");
 
-        // SteeringCoefficients
-        // - initialization and operator==
-        //   - different values
-        //   - same values?
+        if (!_UT_SteeringValue(aMaxUtBlockPrintLevel))
+            return false;
 
+        if (!SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel))
+            return false;
+
+        if (!SteeringCoefficients::_UT_GenerateForClampedCos(
+                aMaxUtBlockPrintLevel,
+                eutblSubTestLevel1))
+            return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
             "Steering value structures");
@@ -1632,7 +1673,7 @@ public:
 
         // TODO: Spherical harmonics coefficients of clamped cosine for given normal
         SteeringCoefficients directionCoeffs;
-        directionCoeffs.GenerateForClampedCosSh(aNormal);
+        directionCoeffs.GenerateForClampedCos(aNormal);
 
         // TODO: Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
@@ -2853,7 +2894,7 @@ protected:
 
     // Randomly pick a triangle with probability proportional to the integral of 
     // the piece-wise bilinear EM approximation over the triangle surface.
-    TriangleNode* PickTriangle(
+    bool PickTriangle(
         const TriangleNode          *&oTriangle,
         float                        &oProbability,
         const SteeringCoefficients   &aDirectionCoeffs,
@@ -2861,12 +2902,12 @@ protected:
     {
         oTriangle; oProbability; aDirectionCoeffs; aSample;
 
-        return nullptr;
+        return false;
     }
 
     // Randomly sample the surface of the triangle with probability density proportional
     // to the the piece-wise bilinear EM approximation
-    void SampleTriangleSurface(
+    bool SampleTriangleSurface(
         Vec3f                       &oSampleDirection,
         float                       &oSamplePdf,
         const TriangleNode          &aTriangle,
@@ -2876,6 +2917,8 @@ protected:
         oSampleDirection; oSamplePdf; aTriangle; aDirectionCoeffs; aSample;
 
         // ...
+
+        return false;
     }
 
 protected:
@@ -3296,6 +3339,7 @@ public:
         return true;
     }
 
+
     static bool _UT_InspectTree(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel     aUtBlockPrintLevel,
@@ -3399,6 +3443,7 @@ public:
 
         return true;
     }
+
 
     static bool _UT_BuildTriangleTree_SingleList(
         const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
@@ -3583,7 +3628,7 @@ public:
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Build()");
+            "EnvironmentMapSteeringSampler::Init");
 
         // TODO: Empty EM
         // TODO: Black constant EM (Luminance 0)
@@ -3596,73 +3641,214 @@ public:
                 false))
             return false;
 
-        //if (!_UT_Init_SingleEm(
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 512x256", 5, 20, true,
+                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+                false))
+            return false;
+
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 1024x512", 5, 20, true,
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                false))
+            return false;
+
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Single pixel", 5, 0, false,
+                ".\\Light Probes\\Debugging\\Single pixel.exr",
+                false))
+            return false;
+
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Three point lighting 1024x512", 5, 0, false,
+                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                false))
+            return false;
+
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Satellite 4000x2000", 5, 0, false,
+                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                false))
+            return false;
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Doge2", 5, 0, false,
+                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+                false))
+            return false;
+
+        if (!_UT_Init_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Peace Garden", 5, 0, false,
+                ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+                false))
+            return false;
+
+        PG3_UT_END_PASSED(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::Init");
+        return true;
+    }
+
+
+    static bool _UT_Sampling_SingleEm(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        char                        *aTestName,
+        char                        *aImagePath,
+        bool                         aUseBilinearFiltering)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+
+        // Load image
+        std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(aImagePath));
+        if (!image)
+        {
+            PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                "%s", "Unable to load image!", aTestName);
+            return false;
+        }
+
+        // Init local sampler
+        EnvironmentMapSteeringSampler sampler;
+        BuildParameters params;
+        sampler.Init(*image, aUseBilinearFiltering, params);
+
+        // TODO: Test random normals
+        Rng rngDirections;
+        {
+            Vec3f normal(0.f, 0.f, 1.f); // debug
+
+            SteeringCoefficients directionCoeffs;
+            directionCoeffs.GenerateForClampedCos(normal);
+
+            // TODO: Many sample triangles
+            Rng rngSamples;
+            {
+                const Vec2f sample(0.f, 0.f); // debug
+
+                // TODO: Triangle picking: 
+                const TriangleNode *triangle;
+                float probability;
+                sampler.PickTriangle(triangle, probability, directionCoeffs, sample);
+                
+                // TODO: Compute relative counts per triangle and compare to relative integrals
+
+                // TODO: Triangle area sampling
+                //float triangleSamplePdf = 0.0f;
+                //Vec3f sampleDirection;
+                //sampler.SampleTriangleSurface(
+                //    sampleDirection, triangleSamplePdf, *triangle, directionCoeffs, sample);
+                //const float samplePdf = triangleSamplePdf * triangleSamplePdf;
+            }
+        }
+
+        // TODO: Sanity test: is triangle node integral equal to the sum of its children?
+
+
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+        return true;
+    }
+
+
+    static bool _UT_Sampling(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::Sampling");
+
+        // TODO: Empty EM
+        // TODO: Black constant EM (Luminance 0)
+        // TODO: ?
+
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 8x4",
+                ".\\Light Probes\\Debugging\\Const white 8x4.exr",
+                false))
+            return false;
+
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Const white 512x256", 5, 20, true,
+        //        "Const white 512x256",
         //        ".\\Light Probes\\Debugging\\Const white 512x256.exr",
         //        false))
         //    return false;
 
-        //if (!_UT_Init_SingleEm(
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Const white 1024x512", 5, 20, true,
+        //        "Const white 1024x512",
         //        ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
         //        false))
         //    return false;
 
-        //if (!_UT_Init_SingleEm(
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Single pixel", 5, 0, false,
+        //        "Single pixel",
         //        ".\\Light Probes\\Debugging\\Single pixel.exr",
         //        false))
         //    return false;
 
-        //if (!_UT_Init_SingleEm(
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Three point lighting 1024x512", 5, 0, false,
+        //        "Three point lighting 1024x512",
         //        ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
         //        false))
         //    return false;
 
-        //if (!_UT_Init_SingleEm(
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Satellite 4000x2000", 5, 0, false,
+        //        "Satellite 4000x2000",
         //        ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
         //        false))
         //    return false;
 
 
-        ///////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////
 
-        //if (!_UT_Init_SingleEm(
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Doge2", 5, 0, false,
+        //        "Doge2",
         //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
         //        false))
         //    return false;
 
-        //if (!_UT_Init_SingleEm(
+        //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Peace Garden", 5, 0, false,
+        //        "Peace Garden",
         //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
         //        false))
         //    return false;
 
         PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Build()");
+            "EnvironmentMapSteeringSampler::Sampling");
         return true;
     }
 
 
-    static void _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel);
+        if (!_UT_SteeringValueStructures(aMaxUtBlockPrintLevel))
+            return false;
+        //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_Init(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_Sampling(aMaxUtBlockPrintLevel))
+        //    return false;
 
-        //_UT_SteeringValues(aMaxUtBlockPrintLevel);
-        //_UT_SubdivideTriangle(aMaxUtBlockPrintLevel);
-        //_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel);
-        _UT_Init(aMaxUtBlockPrintLevel);
+        return true;
     }
 #endif
 };

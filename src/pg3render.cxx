@@ -172,18 +172,26 @@ float Render(
 //////////////////////////////////////////////////////////////////////////
 // Unit testing
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
-void RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
+bool RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
-    Utils::_UT_IntegerToHumanReadable(aMaxUtBlockPrintLevel);
+    //if (!Utils::_UT_IntegerToHumanReadable(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    Geom::_UT_UnitIcosahedron(aMaxUtBlockPrintLevel);
-    Geom::_UT_TriangleBarycentricCoords(aMaxUtBlockPrintLevel);
+    //if (!Geom::_UT_UnitIcosahedron(aMaxUtBlockPrintLevel))
+    //    return false;
+    //if (!Geom::_UT_TriangleBarycentricCoords(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel);
+    //if (!Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel);
+    //if (!Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    EnvironmentMapSteeringSampler::_UnitTests(aMaxUtBlockPrintLevel);
+    if (!EnvironmentMapSteeringSampler::_UnitTests(aMaxUtBlockPrintLevel))
+        return false;
+
+    return true;
 }
 #endif
 
@@ -199,8 +207,8 @@ int32_t main(int32_t argc, const char *argv[])
 
     //for (uint32_t i = 0; i < 1000; i++)
         //RunUnitTests(eutblWholeTest);
-        RunUnitTests(eutblSubTestLevel1);
-        //RunUnitTests(eutblSubTestLevel2);
+        //RunUnitTests(eutblSubTestLevel1);
+        RunUnitTests(eutblSubTestLevel2);
 
     exit(0);
 
