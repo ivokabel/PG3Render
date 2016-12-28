@@ -1393,8 +1393,6 @@ protected:
         float maxTriangleSpanDbg;
         float oversamplingFactorDbg;
 
-        // TODO: ?LoadVariableFromStreamAndCompare()?
-
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxApproxError))
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxSubdivLevel))
@@ -1565,9 +1563,8 @@ protected:
                 return false;
         }
 
-        // TODO: Checks: magic numbers padding, numbers validity, usage of all vertices, ...)
-
-        // TODO: (Optional, UT?) Sanity check (error criterion?, spherical coverage?, ...)
+        // TODO: Possible sanity checks:
+        // magic numbers padding, numbers validity, usage of all vertices, spherical coverage, ...
 
         return true;
     }
@@ -1599,17 +1596,16 @@ public:
         bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams)
     {
-        // Building the tree is slow - try to load a pre-built tree from disk
+        // Building the tree is slow. Try to load a pre-built tree from disk first
         if (LoadFromDisk(aEmImage, aUseBilinearFiltering, aParams))
             return true;
 
-        // Not loaded - build a new tree
+        // Not loaded. Build a new tree
         if (Build(aEmImage, aUseBilinearFiltering, aParams))
         {
+            // Save for future runs
             if (!SaveToDisk(aEmImage, aUseBilinearFiltering, aParams))
-            {
-                // TODO: Print a warning
-            }
+                PG3_WARNING("Unable to save EM steering sampler data to disk!");
             return true;
         }
 
@@ -3577,21 +3573,6 @@ public:
                 "Loaded tree differs from the saved one!");
             return false;
         }
-
-        // TODO:
-        // - Sanity tests?...
-        // - ...
-
-
-
-        //// Leaf count
-        //if (leafCount != initialListSize)
-        //{
-        //    PG3_UT_END_FAILED(
-        //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
-        //        "Leaf count doesn't equal to triangle count!");
-        //    return false;
-        //}
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10");
         return true;
