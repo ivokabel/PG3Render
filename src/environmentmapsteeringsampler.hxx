@@ -37,13 +37,13 @@ public:
             mBasisValues.fill(aValue);
         }
 
-        float operator* (const SteeringValue &aValue)
+        friend float Dot(const SteeringValue &aValue1, const SteeringValue &aValue2)
         {
-            PG3_ASSERT_INTEGER_EQUAL(mBasisValues.size(), aValue.mBasisValues.size());
+            PG3_ASSERT_INTEGER_EQUAL(aValue1.mBasisValues.size(), aValue2.mBasisValues.size());
 
             float retval = 0.0f;
-            for (size_t i = 0; i < mBasisValues.size(); i++)
-                retval += mBasisValues[i] * aValue.mBasisValues[i];
+            for (size_t i = 0; i < aValue1.mBasisValues.size(); i++)
+                retval += aValue1.mBasisValues[i] * aValue2.mBasisValues[i];
             return retval;
         }
 
@@ -87,7 +87,7 @@ public:
         {}
 
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
-        SteeringBasisValue& GenerateSphHarm(const Vec3f &aDir, float aMulFactor)
+        SteeringBasisValue& GenerateSphHarm(const Vec3f &aDir, float aMulFactor = 1.f)
         {
             PG3_ASSERT_VEC3F_NORMALIZED(aDir);
             PG3_ASSERT_FLOAT_NONNEGATIVE(aMulFactor);
@@ -126,6 +126,7 @@ public:
                 retVal.mBasisValues[i] = mBasisValues[i] * aValue.mBasisValues[i];
             return retVal;
         }
+
 
         SteeringBasisValue operator* (float aValue) const
         {
@@ -173,11 +174,12 @@ public:
 
         static bool _UT_GenerateSphHarm_SingleDirection(
             const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel     aUtBlockPrintLevel,
             const Vec3f                 &aDirection,
             const SteeringBasisValue    &aNormalizedReferenceBasisValue,
             const char                  *aTestName)
         {
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
 
             const SteeringBasisValue normalizationValues({
                 0.282095f,          // Y_{0 0}
@@ -194,22 +196,23 @@ public:
             SteeringBasisValue referenceVal = aNormalizedReferenceBasisValue * normalizationValues;
 
             SteeringBasisValue generatedValue;
-            generatedValue.GenerateSphHarm(aDirection, 1.0f);
+            generatedValue.GenerateSphHarm(aDirection);
 
             if (!generatedValue.EqualsDelta(referenceVal, 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                                   "The generated value doesn't match the reference value",
                                   aTestName);
                 return false;
             }
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
             return true;
         }
 
         static bool _UT_GenerateSphHarm_CanonicalDirections(
-            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+            const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel    aUtBlockPrintLevel)
         {
             const char *testName = NULL;
             Vec3f direction;
@@ -224,7 +227,9 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative X direction
@@ -236,7 +241,9 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Positive Y direction
@@ -248,7 +255,9 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative Y direction
@@ -260,7 +269,9 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Positive Z direction
@@ -272,7 +283,9 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative Z direction
@@ -284,14 +297,17 @@ public:
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
         static bool _UT_GenerateSphHarm_XYDiagonalDirections(
-            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+            const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel    aUtBlockPrintLevel)
         {
             const char *testName = NULL;
             Vec3f direction;
@@ -306,7 +322,9 @@ public:
                 1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative X+Y direction
@@ -318,7 +336,9 @@ public:
                 1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Positive X-Y direction
@@ -330,7 +350,9 @@ public:
                 -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative X-Y direction
@@ -342,14 +364,17 @@ public:
                 -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
         static bool _UT_GenerateSphHarm_YZDiagonalDirections(
-            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+            const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel    aUtBlockPrintLevel)
         {
             const char *testName = NULL;
             Vec3f direction;
@@ -365,7 +390,9 @@ public:
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative Y+Z direction
@@ -378,7 +405,9 @@ public:
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Positive Y-Z direction
@@ -391,7 +420,9 @@ public:
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative Y-Z direction
@@ -404,14 +435,17 @@ public:
                 0.f /*Y_{2 1}*/, -Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
         static bool _UT_GenerateSphHarm_XZDiagonalDirections(
-            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+            const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel    aUtBlockPrintLevel)
         {
             const char *testName = NULL;
             Vec3f direction;
@@ -427,7 +461,9 @@ public:
                 1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative X+Z direction
@@ -440,7 +476,9 @@ public:
                 1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Positive X-Z direction
@@ -453,7 +491,9 @@ public:
                 -1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             // Negative X-Z direction
@@ -466,31 +506,38 @@ public:
                 -1.f /*Y_{2 1}*/, Math::Sqr(Math::kCosPiDiv4F) /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
-                    aMaxUtBlockPrintLevel, direction, referenceVal, testName))
+                    aMaxUtBlockPrintLevel,
+                    (UnitTestBlockLevel)(aUtBlockPrintLevel + 1),
+                    direction, referenceVal, testName))
                 return false;
 
             return true;
         }
 
         static bool _UT_GenerateSphHarm(
-            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+            const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
+            const UnitTestBlockLevel    aUtBlockPrintLevel)
         {
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                 "SteeringBasisValue::GenerateSphHarm()");
 
-            if (!_UT_GenerateSphHarm_CanonicalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_CanonicalDirections(
+                    aMaxUtBlockPrintLevel, (UnitTestBlockLevel)(aUtBlockPrintLevel + 1)))
                 return false;
 
-            if (!_UT_GenerateSphHarm_XYDiagonalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_XYDiagonalDirections(
+                    aMaxUtBlockPrintLevel, (UnitTestBlockLevel)(aUtBlockPrintLevel + 1)))
                 return false;
 
-            if (!_UT_GenerateSphHarm_YZDiagonalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_YZDiagonalDirections(
+                    aMaxUtBlockPrintLevel, (UnitTestBlockLevel)(aUtBlockPrintLevel + 1)))
                 return false;
 
-            if (!_UT_GenerateSphHarm_XZDiagonalDirections(aMaxUtBlockPrintLevel))
+            if (!_UT_GenerateSphHarm_XZDiagonalDirections(
+                    aMaxUtBlockPrintLevel, (UnitTestBlockLevel)(aUtBlockPrintLevel + 1)))
                 return false;
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                 "SteeringBasisValue::GenerateSphHarm()");
             return true;
         }
@@ -503,12 +550,10 @@ public:
     {
     public:
 
-        //SteeringCoefficients(float aValue) :
-        //    SteeringValue(aValue)
-        //{}
-
         // Generate clamped cosine spherical harmonic coefficients for the given normal
-        SteeringCoefficients& GenerateForClampedCos(const Vec3f &aNormal)
+        SteeringCoefficients& GenerateForClampedCos(
+            const Vec3f         &aNormal,
+            bool                 bCompensateNegativity)
         {
             PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
 
@@ -521,7 +566,10 @@ public:
 
             // Spherical harmonic coefficients 
 
-            mBasisValues[0] = c4;
+            // We use heavier compensation than 0.09 proposed by the paper because it was 
+            // not sufficient to avoid negative areas in the reconstructed function 
+            // in this implementation
+            mBasisValues[0] = c4 + (bCompensateNegativity ? 0.15f : 0.f);
 
             mBasisValues[1] = 2 * c2 * aNormal.y;
             mBasisValues[2] = 2 * c2 * aNormal.z;
@@ -536,6 +584,30 @@ public:
             return *this;
         }
 
+
+        SteeringCoefficients operator* (const SteeringCoefficients &aValue) const
+        {
+            SteeringCoefficients retVal;
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                retVal.mBasisValues[i] = mBasisValues[i] * aValue.mBasisValues[i];
+            return retVal;
+        }
+
+
+        friend float Dot(const SteeringCoefficients &aValue1, const SteeringBasisValue &aValue2)
+        {
+            auto val1 = static_cast<const SteeringValue*>(&aValue1);
+            auto val2 = static_cast<const SteeringValue*>(&aValue2);
+            return Dot(*val1, *val2);
+        }
+        friend float Dot(const SteeringBasisValue &aValue1, const SteeringCoefficients &aValue2)
+        {
+            auto val1 = static_cast<const SteeringValue*>(&aValue1);
+            auto val2 = static_cast<const SteeringValue*>(&aValue2);
+            return Dot(*val1, *val2);
+        }
+
+
         friend std::ostream &operator<< (std::ostream &aStream, const SteeringCoefficients &aBasis)
         {
             PG3_ERROR_CODE_NOT_TESTED("");
@@ -549,25 +621,121 @@ public:
             return aStream;
         }
 
+
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
     public:
 
         static bool _UT_GenerateForClampedCos(
             const UnitTestBlockLevel    aMaxUtBlockPrintLevel,
-            const UnitTestBlockLevel    aUtBlockPrintLevel)
+            const UnitTestBlockLevel    aUtBlockPrintLevel,
+            bool                        bCompensateNegativity)
         {
-            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "GenerateForClampedCos()");
+            PG3_UT_BEGIN(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                "GenerateForClampedCos(bCompensateNegativity: %s)",
+                bCompensateNegativity ? "true" : "false");
 
-            //TODO:
-            //  For random normal:
-            //      Compute clamped cos spherical harmonic coefficients
-            //      Test at random directions on whole sphere
-            //          Evaluate clamped cos directly
-            //          Evaluate clamped cos through spherical harmonics
-            //          Delta-compare
+            // For random normals
+            Rng rngNormals;
+            for (uint32_t i = 0; i < 2000; ++i)
+            {
+                const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "GenerateForClampedCos()");
+                // Compute clamped cos spherical harmonic coefficients
+                SteeringCoefficients clampedCosCoeffs;
+                clampedCosCoeffs.GenerateForClampedCos(normal, bCompensateNegativity);
+
+                // Test the approximation at random directions on whole sphere
+                Rng rngDirections;
+                for (uint32_t i = 0; i < 10000; ++i)
+                {
+                    const Vec3f direction = Sampling::SampleUniformSphereW(rngDirections.GetVec2f());
+
+                    // Evaluate clamped cosine through spherical harmonics
+                    const SteeringBasisValue sphHarmBasisValue =
+                        SteeringBasisValue().GenerateSphHarm(direction);
+                    const float clampCosSphHarm = Dot(sphHarmBasisValue, clampedCosCoeffs);
+
+                    // Evaluate clamped cosine directly
+                    const float clampCosDirect = std::max(Dot(normal, direction), 0.f);
+
+                    // Evaluate error - max value
+                    if (clampCosSphHarm > (bCompensateNegativity ? 1.105f : 1.07f))
+                    {
+                        std::ostringstream ossError;
+                        ossError << "Clamped cosine value reconstructed from spherical harmonics "
+                            "is too large (";
+                        ossError.precision(12);
+                        ossError << clampCosSphHarm;
+                        ossError << ")!";
+
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                            "GenerateForClampedCos(bCompensateNegativity: %s)",
+                            ossError.str().c_str(),
+                            bCompensateNegativity ? "true" : "false");
+                        return false;
+                    }
+
+                    // Evaluate error - max value in the zero area
+                    if ((clampCosDirect == 0.0f) &&
+                        (clampCosSphHarm > (bCompensateNegativity ? 0.138f : 0.095f)))
+                    {
+                        std::ostringstream ossError;
+                        ossError << "Clamped cosine value reconstructed from spherical harmonics "
+                            "is too large in the zero area (";
+                        ossError.precision(12);
+                        ossError << clampCosSphHarm;
+                        ossError << ")!";
+
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                            "GenerateForClampedCos(bCompensateNegativity: %s)",
+                            ossError.str().c_str(),
+                            bCompensateNegativity ? "true" : "false");
+                        return false;
+                    }
+
+                    // Evaluate error - min value
+                    if (clampCosSphHarm < (bCompensateNegativity ? 0.0f : -0.040f))
+                    {
+                        std::ostringstream ossError;
+                        ossError << "Clamped cosine value reconstructed from spherical harmonics "
+                            "is too small (";
+                        ossError.precision(12);
+                        ossError << clampCosSphHarm;
+                        ossError << ")!";
+
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                            "GenerateForClampedCos(bCompensateNegativity: %s)",
+                            ossError.str().c_str(),
+                            bCompensateNegativity ? "true" : "false");
+                        return false;
+                    }
+
+                    // Evaluate error - diff
+                    const float diff = clampCosSphHarm - clampCosDirect;
+                    const float negativeDiffThresh = (bCompensateNegativity ? 0.0f : -0.040f);
+                    const float positiveDiffThresh = (bCompensateNegativity ? 0.138f : 0.095f);
+                    if ((diff < negativeDiffThresh) || (diff > positiveDiffThresh))
+                    {
+                        std::ostringstream ossError;
+                        ossError << "Clamped cosine value reconstructed from spherical harmonics "
+                            "differs too much from the analytically computed value! There difference is ";
+                        ossError.precision(12);
+                        ossError << diff;
+
+                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                            "GenerateForClampedCos(bCompensateNegativity: %s)", ossError.str().c_str(),
+                            bCompensateNegativity ? "true" : "false");
+                        return false;
+                    }
+                }
+            }
+
+            PG3_UT_END_PASSED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                "GenerateForClampedCos(bCompensateNegativity: %s)",
+                bCompensateNegativity ? "true" : "false");
             return true;
         }
 
@@ -670,17 +838,21 @@ public:
         if (!_UT_SteeringValue(aMaxUtBlockPrintLevel))
             return false;
 
-        if (!SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel))
+        if (!SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel, eutblSubTestLevel1))
             return false;
 
         if (!SteeringCoefficients::_UT_GenerateForClampedCos(
                 aMaxUtBlockPrintLevel,
-                eutblSubTestLevel1))
+                eutblSubTestLevel1, false))
+            return false;
+
+        if (!SteeringCoefficients::_UT_GenerateForClampedCos(
+                aMaxUtBlockPrintLevel,
+                eutblSubTestLevel1, true))
             return false;
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
             "Steering value structures");
-
         return true;
     }
 
@@ -1673,7 +1845,7 @@ public:
 
         // TODO: Spherical harmonics coefficients of clamped cosine for given normal
         SteeringCoefficients directionCoeffs;
-        directionCoeffs.GenerateForClampedCos(aNormal);
+        directionCoeffs.GenerateForClampedCos(aNormal, true);
 
         // TODO: Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
@@ -3679,19 +3851,19 @@ public:
 
         ///////////////////////////////////////////////////////////////////////////////////////////
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Doge2", 5, 0, false,
-                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Doge2", 5, 0, false,
+        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Init_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Peace Garden", 5, 0, false,
-                ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-                false))
-            return false;
+        //if (!_UT_Init_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Peace Garden", 5, 0, false,
+        //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
+        //        false))
+        //    return false;
 
         PG3_UT_END_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
@@ -3728,7 +3900,7 @@ public:
             Vec3f normal(0.f, 0.f, 1.f); // debug
 
             SteeringCoefficients directionCoeffs;
-            directionCoeffs.GenerateForClampedCos(normal);
+            directionCoeffs.GenerateForClampedCos(normal, true);
 
             // TODO: Many sample triangles
             Rng rngSamples;
@@ -3837,16 +4009,16 @@ public:
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        if (!_UT_SteeringValueStructures(aMaxUtBlockPrintLevel))
-            return false;
+        //if (!_UT_SteeringValueStructures(aMaxUtBlockPrintLevel))
+        //    return false;
         //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
         //    return false;
         //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
         //    return false;
         //if (!_UT_Init(aMaxUtBlockPrintLevel))
         //    return false;
-        //if (!_UT_Sampling(aMaxUtBlockPrintLevel))
-        //    return false;
+        if (!_UT_Sampling(aMaxUtBlockPrintLevel))
+            return false;
 
         return true;
     }
