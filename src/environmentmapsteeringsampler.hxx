@@ -863,12 +863,14 @@ public:
         public:
 
             BuildParameters(
-                float   aMaxApproxError = Math::InfinityF(),
-                float   aMaxSubdivLevel = Math::InfinityF(),
-                float   aOversamplingFactorDbg = Math::InfinityF(),
-                float   aMaxTriangleSpanDbg = Math::InfinityF())
+                float   aMaxApproxError         = Math::InfinityF(),
+                float   aMinSubdivLevel         = Math::InfinityF(),
+                float   aMaxSubdivLevel         = Math::InfinityF(),
+                float   aOversamplingFactorDbg  = Math::InfinityF(),
+                float   aMaxTriangleSpanDbg     = Math::InfinityF())
                 :
                 maxApproxError(aMaxApproxError),
+                minSubdivLevel(aMinSubdivLevel),
                 maxSubdivLevel(aMaxSubdivLevel),
                 oversamplingFactorDbg(aOversamplingFactorDbg),
                 maxTriangleSpanDbg(aMaxTriangleSpanDbg)
@@ -877,6 +879,11 @@ public:
             float GetMaxApproxError() const
             {
                 return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
+            }
+
+            uint32_t GetMinSubdivLevel() const
+            {
+                return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 1;
             }
 
             uint32_t GetMaxSubdivLevel() const
@@ -897,6 +904,7 @@ public:
         protected:
 
             float       maxApproxError;
+            float       minSubdivLevel; // uint32_t, float used for signaling unset value
             float       maxSubdivLevel; // uint32_t, float used for signaling unset value
 
             float       oversamplingFactorDbg;
@@ -1427,7 +1435,10 @@ protected:
         ossPath << "_e";
         ossPath << std::setprecision(2) << aParams.GetMaxApproxError();
 
-        ossPath << "_sl";
+        ossPath << "_sll";
+        ossPath << aParams.GetMinSubdivLevel();
+
+        ossPath << "_slu";
         ossPath << aParams.GetMaxSubdivLevel();
 
         ossPath << "_ts";
@@ -1444,22 +1455,23 @@ protected:
     }
 
 
-    static const char * SaveLoadFileHeader10()
+    static const char * SaveLoadFileHeader11()
     {
-        return "Environment Map Steering Sampler Data, format ver. 1.0\n";
+        return "Environment Map Steering Sampler Data, format ver. 1.1\n";
     }
 
 
-    static bool SaveToDisk10_HeaderAndParams(
+    static bool SaveToDisk11_HeaderAndParams(
         std::ofstream                   &aOfs,
         const BuildParameters           &aParams,
         const bool                       aUseDebugSave)
     {
         // Header
-        Utils::IO::WriteStringToStream(aOfs, SaveLoadFileHeader10(), aUseDebugSave);
+        Utils::IO::WriteStringToStream(aOfs, SaveLoadFileHeader11(), aUseDebugSave);
 
         // Build parameters
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(),         aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMinSubdivLevel(),         aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(),         aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(),     aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(),  aUseDebugSave);
@@ -1468,7 +1480,7 @@ protected:
     }
 
 
-    static bool SaveToDisk10_Vertices(
+    static bool SaveToDisk11_Vertices(
         std::ofstream                   &aOfs,
         const VertexStorage             &aVertexStorage,
         const bool                       aUseDebugSave)
@@ -1489,7 +1501,7 @@ protected:
     }
 
 
-    static bool SaveToDisk10_TreeNode(
+    static bool SaveToDisk11_TreeNode(
         std::ofstream                   &aOfs,
         const TreeNodeBase              *aNode,
         const bool                       aUseDebugSave)
@@ -1502,8 +1514,8 @@ protected:
         if (!aNode->IsTriangleNode())
         {
             const TriangleSetNode *triangleSetNode = static_cast<const TriangleSetNode*>(aNode);
-            SaveToDisk10_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
-            SaveToDisk10_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
+            SaveToDisk11_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
+            SaveToDisk11_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
         }
         else
         {
@@ -1516,7 +1528,7 @@ protected:
     }
 
         
-    static bool SaveToDisk10_Tree(
+    static bool SaveToDisk11_Tree(
         std::ofstream                   &aOfs,
         const TreeNodeBase              *aTreeRoot,
         const bool                       aUseDebugSave)
@@ -1528,14 +1540,14 @@ protected:
         Utils::IO::WriteVariableToStream(aOfs,    triangleCount, aUseDebugSave);
 
         // Nodes
-        SaveToDisk10_TreeNode(aOfs, aTreeRoot, aUseDebugSave);
+        SaveToDisk11_TreeNode(aOfs, aTreeRoot, aUseDebugSave);
 
         return true;
     }
 
 
     // Save internal structures needed for sampling to disk
-    static bool SaveToDisk10(
+    static bool SaveToDisk11(
         const VertexStorage             &aVertexStorage,
         const TreeNodeBase              *aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
@@ -1558,15 +1570,15 @@ protected:
             return false;
 
         // Header and Params
-        if (!SaveToDisk10_HeaderAndParams(ofs, aParams, aUseDebugSave))
+        if (!SaveToDisk11_HeaderAndParams(ofs, aParams, aUseDebugSave))
             return false;
 
         // Vertices
-        if (!SaveToDisk10_Vertices(ofs, aVertexStorage, aUseDebugSave))
+        if (!SaveToDisk11_Vertices(ofs, aVertexStorage, aUseDebugSave))
             return false;
 
         // Tree
-        if (!SaveToDisk10_Tree(ofs, aTreeRoot, aUseDebugSave))
+        if (!SaveToDisk11_Tree(ofs, aTreeRoot, aUseDebugSave))
             return false;
 
         return true;
@@ -1582,16 +1594,16 @@ protected:
         if (!IsBuilt())
             return false;
 
-        return SaveToDisk10(mVertexStorage, mTreeRoot.get(), aEmImage, aUseBilinearFiltering, aParams);
+        return SaveToDisk11(mVertexStorage, mTreeRoot.get(), aEmImage, aUseBilinearFiltering, aParams);
     }
 
 
-    static bool LoadFromDisk10_HeaderAndParams(
+    static bool LoadFromDisk11_HeaderAndParams(
         std::ifstream                   &aIfs,
         const BuildParameters           &aParams)
     {
         // Header
-        const char *header = SaveLoadFileHeader10();
+        const char *header = SaveLoadFileHeader11();
         const size_t buffSize = strlen(header) + 1; // with trailing zero
         std::unique_ptr<char> buff(new char[buffSize]);
         if (!Utils::IO::LoadStringFromStream(aIfs, buff.get(), buffSize))
@@ -1602,11 +1614,14 @@ protected:
         // Build parameters
 
         float maxApproxError;
+        uint32_t minSubdivLevel;
         uint32_t maxSubdivLevel;
         float maxTriangleSpanDbg;
         float oversamplingFactorDbg;
 
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxApproxError))
+            return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, minSubdivLevel))
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxSubdivLevel))
             return false;
@@ -1616,6 +1631,8 @@ protected:
             return false;
 
         if (maxApproxError != aParams.GetMaxApproxError())
+            return false;
+        if (minSubdivLevel != aParams.GetMinSubdivLevel())
             return false;
         if (maxSubdivLevel != aParams.GetMaxSubdivLevel())
             return false;
@@ -1628,7 +1645,7 @@ protected:
     }
 
 
-    static bool LoadFromDisk10_Vertices(
+    static bool LoadFromDisk11_Vertices(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage)
     {
@@ -1654,7 +1671,7 @@ protected:
     }
 
 
-    static bool LoadFromDisk10_TreeNode(
+    static bool LoadFromDisk11_TreeNode(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &oNode)
@@ -1666,9 +1683,9 @@ protected:
         if (!isTriangleNode)
         {
             std::unique_ptr<TreeNodeBase> leftChild, rightChild;
-            if (!LoadFromDisk10_TreeNode(aIfs, aVertexStorage, leftChild))
+            if (!LoadFromDisk11_TreeNode(aIfs, aVertexStorage, leftChild))
                 return false;
-            if (!LoadFromDisk10_TreeNode(aIfs, aVertexStorage, rightChild))
+            if (!LoadFromDisk11_TreeNode(aIfs, aVertexStorage, rightChild))
                 return false;
 
             oNode.reset(new TriangleSetNode(leftChild.release(), rightChild.release()));
@@ -1701,7 +1718,7 @@ protected:
     }
 
 
-    static bool LoadFromDisk10_Tree(
+    static bool LoadFromDisk11_Tree(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot)
@@ -1716,7 +1733,7 @@ protected:
             return false;
 
         // Nodes
-        if (!LoadFromDisk10_TreeNode(aIfs, aVertexStorage, aTreeRoot))
+        if (!LoadFromDisk11_TreeNode(aIfs, aVertexStorage, aTreeRoot))
             return false;
 
         // Sanity check: node counts
@@ -1730,7 +1747,7 @@ protected:
 
 
     // Loads pre-built internal structures needed for sampling
-    static bool LoadFromDisk10(
+    static bool LoadFromDisk11(
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
@@ -1752,15 +1769,15 @@ protected:
             return false;
 
         // Header
-        if (!LoadFromDisk10_HeaderAndParams(ifs, aParams))
+        if (!LoadFromDisk11_HeaderAndParams(ifs, aParams))
             return false;
 
         // Vertices
-        if (!LoadFromDisk10_Vertices(ifs, aVertexStorage))
+        if (!LoadFromDisk11_Vertices(ifs, aVertexStorage))
             return false;
 
         // Tree
-        if (!LoadFromDisk10_Tree(ifs, aVertexStorage, aTreeRoot))
+        if (!LoadFromDisk11_Tree(ifs, aVertexStorage, aTreeRoot))
             return false;
 
         // Sanity tests on stream
@@ -1791,7 +1808,7 @@ protected:
     {
         Cleanup();
 
-        if (!LoadFromDisk10(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        if (!LoadFromDisk11(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
         {
             Cleanup();
             return false;
@@ -2716,6 +2733,8 @@ protected:
         TTriangulationStats         &aStats)
     {
         // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
+        if (aTriangle.subdivLevel < aParams.GetMinSubdivLevel())
+            return true;
         if (aTriangle.subdivLevel >= aParams.GetMaxSubdivLevel())
             return false;
 
@@ -3444,7 +3463,7 @@ public:
         std::list<TreeNodeBase*> refinedTriangles;
         std::unique_ptr<TreeNodeBase> treeRoot;
 
-        BuildParameters params(Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
+        BuildParameters params(Math::InfinityF(), Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
 
         // Initial triangulation
         if (!_UT_InitialTriangulation(
@@ -3738,30 +3757,30 @@ public:
         bool                             aUseBilinearFiltering,
         BuildParameters                 &aParams)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
 
         const bool isDebugging = false; // makes the file more human readable (but machine un-readable!)
 
         // Save
-        if (!SaveToDisk10(
+        if (!SaveToDisk11(
                 aVertexStorage, aTreeRoot.get(), aEmImage, aUseBilinearFiltering,
                 aParams, isDebugging))
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
-                "SaveToDisk10() failed!");
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
+                "SaveToDisk11() failed!");
             return false;
         }
 
         // Load
         VertexStorage                   loadedVertexStorage;
         std::unique_ptr<TreeNodeBase>   loadedTreeRoot;
-        if (!LoadFromDisk10(
+        if (!LoadFromDisk11(
                 loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
-                "LoadFromDisk10() failed!");
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
+                "LoadFromDisk11() failed!");
             return false;
         }
 
@@ -3769,7 +3788,7 @@ public:
         if (aVertexStorage != loadedVertexStorage)
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "Loaded vertex storage differs from the saved one!");
             return false;
         }
@@ -3777,7 +3796,7 @@ public:
         if (!loadedTreeRoot)
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "Loaded tree is empty!");
             return false;
         }
@@ -3786,12 +3805,12 @@ public:
         if (*aTreeRoot != *loadedTreeRoot)
         {
             PG3_UT_END_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10",
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "Loaded tree differs from the saved one!");
             return false;
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk10 and LoadFromDisk10");
+        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
         return true;
     }
 

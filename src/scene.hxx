@@ -493,14 +493,17 @@ public:
             }();
             EnvironmentMapSteeringSampler::BuildParameters params(
                 aAuxDbgParams.float2,
+                Math::InfinityF(),
                 aAuxDbgParams.float3/*,
                 aAuxDbgParams.float4,
                 aAuxDbgParams.float5*/);
             printf(
-                "Testing EM \"%s\", error threshold %.3f, max subdiv %d"
+                "Testing EM \"%s\", error threshold %.3f, min subdiv %d, max subdiv %d"
                 //", oversampling %.2f, max triangle span %.3f"
                 ":\n",
-                emPath, params.GetMaxApproxError(), params.GetMaxSubdivLevel()
+                emPath, params.GetMaxApproxError(),
+                params.GetMinSubdivLevel(),
+                params.GetMaxSubdivLevel()
                 //params.GetOversamplingFactorDbg(), params.GetMaxTriangleSpanDbg()
                 );
             std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
