@@ -1043,6 +1043,11 @@ public:
             return mWeight;
         }
 
+        float GetIntegral(const SteeringCoefficients &aClampedCosCoeffs) const
+        {
+            return Dot(mWeight, aClampedCosCoeffs);
+        }
+
     protected:
         bool                mIsTriangleNode; // node can be either triangle (leaf) or inner node
         SteeringBasisValue  mWeight;
@@ -1856,28 +1861,36 @@ public:
         const Vec2f &aSample
         ) const
     {
-        // TODO: Asserts:
-        //  - normal: normalized
-        //  - sample: [0,1]?
+        PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
+        PG3_ASSERT_FLOAT_IN_RANGE(aSample.x, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aSample.y, 0.0f, 1.0f);
 
         // TODO: Spherical harmonics coefficients of clamped cosine for given normal
-        SteeringCoefficients directionCoeffs;
-        directionCoeffs.GenerateForClampedCos(aNormal, true);
+        SteeringCoefficients clampedCosCoeffs;
+        clampedCosCoeffs.GenerateForClampedCos(aNormal, true);
 
         // TODO: Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
         float triangleProbability = 0.0f;
-        PickTriangle(triangle, triangleProbability, directionCoeffs, aSample/*may need some adjustments*/);
+        PickTriangle(triangle, triangleProbability, clampedCosCoeffs, aSample/*may need some adjustments*/);
         if (triangle == nullptr)
             return false;
 
         // TODO: Sample triangle surface (bi-linear surface sampling)
         float triangleSamplePdf = 0.0f;
         SampleTriangleSurface(oSampleDirection, triangleSamplePdf, *triangle,
-                              directionCoeffs, aSample/*may need some adjustments*/);
+                              clampedCosCoeffs, aSample/*may need some adjustments*/);
         oSamplePdf = triangleSamplePdf * triangleSamplePdf;
 
         return true;
+    }
+
+    float GetWholeIntegral(const SteeringCoefficients &aClampedCosCoeffs) const
+    {
+        if (!IsBuilt())
+            return 0.f;
+
+        return mTreeRoot->GetIntegral(aClampedCosCoeffs);
     }
 
 protected:
@@ -2479,7 +2492,9 @@ protected:
                 continue;
 
             if (TriangleHasToBeSubdivided(
-                    *currentTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering, aParams, aStats))
+                    *currentTriangle, aVertexStorage,
+                    aEmImage, aUseBilinearFiltering,
+                    aParams, aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
@@ -3088,12 +3103,27 @@ protected:
     bool PickTriangle(
         const TriangleNode          *&oTriangle,
         float                        &oProbability,
-        const SteeringCoefficients   &aDirectionCoeffs,
+        const SteeringCoefficients   &aClampedCosCoeffs,
         const Vec2f                  &aSample) const
     {
-        oTriangle; oProbability; aDirectionCoeffs; aSample;
+        oProbability; aClampedCosCoeffs; aSample;
 
-        return false;
+        if (!IsBuilt())
+            return false;
+
+        const TreeNodeBase *node = mTreeRoot.get();
+        while ((node != nullptr) && (!node->IsTriangleNode()))
+        {
+            auto triangleSet = static_cast<const TriangleSetNode*>(node);
+            node = triangleSet->GetLeftChild(); // debug
+
+            // TODO: Sanity test: is triangle node integral equal to the sum of its children?
+        }
+        if (node == nullptr)
+            return false;
+        oTriangle = static_cast<const TriangleNode*>(node);
+
+        return true;
     }
 
     // Randomly sample the surface of the triangle with probability density proportional
@@ -3102,10 +3132,10 @@ protected:
         Vec3f                       &oSampleDirection,
         float                       &oSamplePdf,
         const TriangleNode          &aTriangle,
-        const SteeringCoefficients  &aDirectionCoeffs,
+        const SteeringCoefficients  &aClampedCosCoeffs,
         const Vec2f                 &aSample) const
     {
-        oSampleDirection; oSamplePdf; aTriangle; aDirectionCoeffs; aSample;
+        oSampleDirection; oSamplePdf; aTriangle; aClampedCosCoeffs; aSample;
 
         // ...
 
@@ -3911,39 +3941,100 @@ public:
         // Init local sampler
         EnvironmentMapSteeringSampler sampler;
         BuildParameters params;
-        sampler.Init(*image, aUseBilinearFiltering, params);
+        if (!sampler.Init(*image, aUseBilinearFiltering, params))
+        {
+            PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                "%s", "Failed to Init() the sampler!", aTestName);
+            return false;
+        }
 
         // TODO: Test random normals
-        Rng rngDirections;
+        //Rng rngNormals;
+        //for (uint32_t i = 0; i < 2000; ++i)
         {
-            Vec3f normal(0.f, 0.f, 1.f); // debug
+            const Vec3f normal(0.f, 0.f, 1.f); // debug
+            //const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
 
-            SteeringCoefficients directionCoeffs;
-            directionCoeffs.GenerateForClampedCos(normal, true);
+            SteeringCoefficients clampedCosCoeffs;
+            clampedCosCoeffs.GenerateForClampedCos(normal, true);
+
+            struct TTriangleHitCountRecord
+            {
+                TTriangleHitCountRecord() : hitCount(0) {}
+                uint32_t hitCount;
+            };
+            std::map<const TriangleNode*, TTriangleHitCountRecord> triangleHitCountMap;
+            uint32_t totalTriangleHits = 0;
 
             // TODO: Many sample triangles
-            Rng rngSamples;
+            //Rng rngSamples;
+            //for (uint32_t i = 0; i < 10000; ++i)
             {
                 const Vec2f sample(0.f, 0.f); // debug
+                //const Vec2f sample(rngSamples.GetVec2f());
 
-                // TODO: Triangle picking: 
+                // Pick triangle
                 const TriangleNode *triangle;
                 float probability;
-                sampler.PickTriangle(triangle, probability, directionCoeffs, sample);
-                
-                // TODO: Compute relative counts per triangle and compare to relative integrals
+                if (!sampler.PickTriangle(triangle, probability, clampedCosCoeffs, sample))
+                {
+                    PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                        "%s", "PickTriangle failed!", aTestName);
+                    return false;
+                }
 
-                // TODO: Triangle area sampling
+                triangleHitCountMap[triangle].hitCount++;
+                totalTriangleHits++;
+
+                // TODO: Triangle area sampling: ...
                 //float triangleSamplePdf = 0.0f;
                 //Vec3f sampleDirection;
                 //sampler.SampleTriangleSurface(
-                //    sampleDirection, triangleSamplePdf, *triangle, directionCoeffs, sample);
+                //    sampleDirection, triangleSamplePdf, *triangle, clampedCosCoeffs, sample);
                 //const float samplePdf = triangleSamplePdf * triangleSamplePdf;
             }
+
+            if (totalTriangleHits == 0)
+            {
+                PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                    "%s", "No triangle hits!", aTestName);
+                return false;
+            }
+
+            // Evaluate triangle picking quality
+            // TODO: Zero integrals (triangle, whole) cases?
+            const float wholeIntegral = sampler.GetWholeIntegral(clampedCosCoeffs);
+            for (auto triangleHitCount : triangleHitCountMap)
+            {
+                const float relativeHitCount =
+                    (float)triangleHitCount.second.hitCount / totalTriangleHits;
+
+                const float triangleIntegral =
+                    triangleHitCount.first->GetIntegral(clampedCosCoeffs);
+                const float relativeIntegral = triangleIntegral / wholeIntegral; // probability
+
+                if (!Math::EqualDelta(relativeHitCount, relativeIntegral, 0.01f))
+                {
+                    std::ostringstream ossError;
+                    ossError << "A triangle relative hit count (";
+                    ossError.precision(8);
+                    ossError << relativeHitCount;
+                    ossError << "=";
+                    ossError << triangleHitCount.second.hitCount;
+                    ossError << "/";
+                    ossError << totalTriangleHits;
+                    ossError << ") differs too much from the relative integral = expected sampling probability (";
+                    ossError.precision(8);
+                    ossError << relativeIntegral;
+                    ossError << ")";
+
+                    PG3_UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                        ossError.str().c_str(), aTestName);
+                    return false;
+                }
+            }
         }
-
-        // TODO: Sanity test: is triangle node integral equal to the sum of its children?
-
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
         return true;
