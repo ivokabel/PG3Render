@@ -1045,7 +1045,11 @@ public:
 
         float GetIntegral(const SteeringCoefficients &aClampedCosCoeffs) const
         {
-            return Dot(mWeight, aClampedCosCoeffs);
+            const float result = Dot(mWeight, aClampedCosCoeffs);
+
+            PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(result, 0.f);
+
+            return result;
         }
 
     protected:
@@ -1822,6 +1826,31 @@ protected:
             return true;
     }
 
+    template <typename Worker>
+    static bool ForEachTriangleImpl(const TreeNodeBase *aNode, Worker worker)
+    {
+        if (aNode == nullptr)
+            return false;
+
+        if (!aNode->IsTriangleNode())
+        {
+            auto triangleSet = static_cast<const TriangleSetNode*>(aNode);
+
+            if (!ForEachTriangleImpl(triangleSet->GetLeftChild(), worker))
+                return false;
+            if (!ForEachTriangleImpl(triangleSet->GetRightChild(), worker))
+                return false;
+        }
+        else
+        {
+            auto triangle = static_cast<const TriangleNode*>(aNode);
+            if (!worker(triangle))
+                return false;
+        }
+
+        return true;
+    }
+
 
 public:
 
@@ -1891,6 +1920,32 @@ public:
             return 0.f;
 
         return mTreeRoot->GetIntegral(aClampedCosCoeffs);
+    }
+
+    template <typename Worker>
+    bool ForEachTriangle(Worker worker) const
+    {
+        if (!IsBuilt())
+            return false;
+
+        return ForEachTriangleImpl(mTreeRoot.get(), worker);
+    }
+
+    size_t GetTriangleCount() const
+    {
+        size_t count = 0u;
+
+        const bool success =
+            ForEachTriangle([&count](const TriangleNode*)
+            {
+                count++;
+                return true;
+            });
+
+        if (!success)
+            return 0u;
+        else
+            return count;
     }
 
 protected:
@@ -3106,21 +3161,50 @@ protected:
         const SteeringCoefficients   &aClampedCosCoeffs,
         const Vec2f                  &aSample) const
     {
-        oProbability; aClampedCosCoeffs; aSample;
+        oProbability;
 
         if (!IsBuilt())
             return false;
 
         const TreeNodeBase *node = mTreeRoot.get();
+        float randomVal1 = aSample.x;
         while ((node != nullptr) && (!node->IsTriangleNode()))
         {
             auto triangleSet = static_cast<const TriangleSetNode*>(node);
-            node = triangleSet->GetLeftChild(); // debug
+            auto leftChild  = triangleSet->GetLeftChild();
+            auto rightChild = triangleSet->GetRightChild();
 
-            // TODO: Sanity test: is triangle node integral equal to the sum of its children?
+            PG3_ASSERT(leftChild  != nullptr);
+            PG3_ASSERT(rightChild != nullptr);
+
+            const float  leftIntegral =  leftChild->GetIntegral(aClampedCosCoeffs);
+            const float rightIntegral = rightChild->GetIntegral(aClampedCosCoeffs);
+            const float integralSum = leftIntegral + rightIntegral;
+
+            PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(integralSum, 0.f);
+            PG3_ASSERT_FLOAT_EQUAL(integralSum, triangleSet->GetIntegral(aClampedCosCoeffs), 0.001f);
+
+            // Choose child
+            const float threshold = leftIntegral / integralSum; // TODO: What if sum is 0?
+            if (randomVal1 < threshold)
+            {
+                node = leftChild;
+                randomVal1 /= threshold;
+
+                PG3_ASSERT_FLOAT_IN_RANGE(randomVal1, 0.f, 1.f);
+            }
+            else
+            {
+                node = rightChild;
+                randomVal1 = (randomVal1 - threshold) / (1.f - threshold);
+
+                PG3_ASSERT_FLOAT_IN_RANGE(randomVal1, 0.f, 1.f);
+            }
+            // TODO: Clamp random val to [0,1]?
         }
         if (node == nullptr)
-            return false;
+            return false; // corrupted data?
+
         oTriangle = static_cast<const TriangleNode*>(node);
 
         return true;
@@ -3929,6 +4013,12 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
+        BuildParameters params(Math::InfinityF(), 1, 3); // reduced amount to make the test faster
+        const static uint32_t normalsCount = 100;
+        const static uint32_t samplesPerTriangle = 100;
+
+        //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Loading image...", aTestName);
+
         // Load image
         std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(aImagePath));
         if (!image)
@@ -3938,9 +4028,10 @@ public:
             return false;
         }
 
+        //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Initializing sampler...", aTestName);
+
         // Init local sampler
         EnvironmentMapSteeringSampler sampler;
-        BuildParameters params;
         if (!sampler.Init(*image, aUseBilinearFiltering, params))
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
@@ -3948,12 +4039,14 @@ public:
             return false;
         }
 
-        // TODO: Test random normals
-        //Rng rngNormals;
-        //for (uint32_t i = 0; i < 2000; ++i)
+        //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Testing random normals...", aTestName);
+
+        // Test random normals
+        Rng rngNormals;
+        const size_t triangleCount = sampler.GetTriangleCount();
+        for (uint32_t i = 0; i < normalsCount; ++i)
         {
-            const Vec3f normal(0.f, 0.f, 1.f); // debug
-            //const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
+            const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
 
             SteeringCoefficients clampedCosCoeffs;
             clampedCosCoeffs.GenerateForClampedCos(normal, true);
@@ -3966,19 +4059,20 @@ public:
             std::map<const TriangleNode*, TTriangleHitCountRecord> triangleHitCountMap;
             uint32_t totalTriangleHits = 0;
 
-            // TODO: Many sample triangles
-            //Rng rngSamples;
-            //for (uint32_t i = 0; i < 10000; ++i)
+            // Compute statistics for many sample triangles
+            Rng rngSamples;
+            const size_t sampleCount = samplesPerTriangle * triangleCount;
+            for (uint32_t i = 0; i < sampleCount; ++i)
             {
-                const Vec2f sample(0.f, 0.f); // debug
-                //const Vec2f sample(rngSamples.GetVec2f());
+                const Vec2f sample(rngSamples.GetVec2f());
 
                 // Pick triangle
                 const TriangleNode *triangle;
                 float probability;
                 if (!sampler.PickTriangle(triangle, probability, clampedCosCoeffs, sample))
                 {
-                    PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                    PG3_UT_FATAL_ERROR(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1,
                         "%s", "PickTriangle failed!", aTestName);
                     return false;
                 }
@@ -4004,28 +4098,37 @@ public:
             // Evaluate triangle picking quality
             // TODO: Zero integrals (triangle, whole) cases?
             const float wholeIntegral = sampler.GetWholeIntegral(clampedCosCoeffs);
-            for (auto triangleHitCount : triangleHitCountMap)
+            bool forEachReturn = sampler.ForEachTriangle([&](const TriangleNode* aTriangle)
             {
+                // This works also for unhit triangles - defaults to hit count 0
+                auto triangleHitCount = triangleHitCountMap[aTriangle];
+
                 const float relativeHitCount =
-                    (float)triangleHitCount.second.hitCount / totalTriangleHits;
+                    (float)triangleHitCount.hitCount / totalTriangleHits;
 
                 const float triangleIntegral =
-                    triangleHitCount.first->GetIntegral(clampedCosCoeffs);
+                    aTriangle->GetIntegral(clampedCosCoeffs);
                 const float relativeIntegral = triangleIntegral / wholeIntegral; // probability
 
                 if (!Math::EqualDelta(relativeHitCount, relativeIntegral, 0.01f))
                 {
                     std::ostringstream ossError;
                     ossError << "A triangle relative hit count (";
-                    ossError.precision(8);
+                    ossError.precision(6);
                     ossError << relativeHitCount;
                     ossError << "=";
-                    ossError << triangleHitCount.second.hitCount;
+                    ossError << triangleHitCount.hitCount;
                     ossError << "/";
                     ossError << totalTriangleHits;
                     ossError << ") differs too much from the relative integral = expected sampling probability (";
-                    ossError.precision(8);
+                    ossError.precision(6);
                     ossError << relativeIntegral;
+                    ossError << "=";
+                    ossError.precision(6);
+                    ossError << triangleIntegral;
+                    ossError << "/";
+                    ossError.precision(6);
+                    ossError << wholeIntegral;
                     ossError << ")";
 
                     PG3_UT_END_FAILED(
@@ -4033,7 +4136,12 @@ public:
                         ossError.str().c_str(), aTestName);
                     return false;
                 }
-            }
+
+                return true;
+            });
+
+            if (!forEachReturn)
+                return false;
         }
 
         PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -4058,50 +4166,49 @@ public:
                 false))
             return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Const white 512x256",
-        //        ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 512x256",
+                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Const white 1024x512",
-        //        ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 1024x512",
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Single pixel",
-        //        ".\\Light Probes\\Debugging\\Single pixel.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Single pixel",
+                ".\\Light Probes\\Debugging\\Single pixel.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Three point lighting 1024x512",
-        //        ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Three point lighting 1024x512",
+                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Satellite 4000x2000",
-        //        ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Satellite 4000x2000",
+                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                false))
+            return false;
 
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Doge2",
+                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+                false))
+            return false;
 
         /////////////////////////////////////////////////////////////////////////////////////////////
-
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Doge2",
-        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-        //        false))
-        //    return false;
 
         //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
