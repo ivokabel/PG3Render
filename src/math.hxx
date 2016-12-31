@@ -36,6 +36,7 @@ namespace Math
     // Tools be used instead of floating point values comparison against zero.
     // For IEEE floats and doubles this constant was set to 2^-20 and 2^-49 respectively, resulting in
     // 8 * float_eps and 8 * double_eps respectively.
+    //
     // Originally, this was set to  2^-21 and 2^-50 respectively, resulting in 4 * float_eps and 
     // 4 * double_eps respectively, but it was too sensitive in some situations.
 
