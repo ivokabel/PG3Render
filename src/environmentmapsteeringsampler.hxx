@@ -1884,10 +1884,10 @@ public:
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
     // bilinear approximation of the environment map luminance.
     bool Sample(
-        Vec3f       &oSampleDirection,
-        float       &oSamplePdf,
-        const Vec3f &aNormal,
-        const Vec2f &aSample
+        Vec3f           &oSampleDirection,
+        float           &oSamplePdf,
+        const Vec3f     &aNormal,
+        Vec2f            aSample // modified during the sampling process
         ) const
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
@@ -1901,7 +1901,7 @@ public:
         // TODO: Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
         float triangleProbability = 0.0f;
-        PickTriangle(triangle, triangleProbability, clampedCosCoeffs, aSample/*may need some adjustments*/);
+        PickTriangle(triangle, triangleProbability, clampedCosCoeffs, aSample.x);
         if (triangle == nullptr)
             return false;
 
@@ -3159,15 +3159,13 @@ protected:
         const TriangleNode          *&oTriangle,
         float                        &oProbability,
         const SteeringCoefficients   &aClampedCosCoeffs,
-        const Vec2f                  &aSample) const
+        float                        &aSample //modified and used by the triangle area sampling later on
+        ) const
     {
-        oProbability;
-
         if (!IsBuilt())
             return false;
 
         const TreeNodeBase *node = mTreeRoot.get();
-        float randomVal1 = aSample.x;
         while ((node != nullptr) && (!node->IsTriangleNode()))
         {
             auto triangleSet = static_cast<const TriangleSetNode*>(node);
@@ -3186,26 +3184,32 @@ protected:
 
             // Choose child
             const float threshold = leftIntegral / integralSum; // TODO: What if sum is 0?
-            if (randomVal1 < threshold)
+            if (aSample < threshold)
             {
                 node = leftChild;
-                randomVal1 /= threshold;
+                aSample /= threshold;
 
-                PG3_ASSERT_FLOAT_IN_RANGE(randomVal1, 0.f, 1.f);
+                PG3_ASSERT_FLOAT_IN_RANGE(aSample, 0.f, 1.f);
             }
             else
             {
                 node = rightChild;
-                randomVal1 = (randomVal1 - threshold) / (1.f - threshold);
+                aSample = (aSample - threshold) / (1.f - threshold);
 
-                PG3_ASSERT_FLOAT_IN_RANGE(randomVal1, 0.f, 1.f);
+                PG3_ASSERT_FLOAT_IN_RANGE(aSample, 0.f, 1.f);
             }
             // TODO: Clamp random val to [0,1]?
         }
         if (node == nullptr)
             return false; // corrupted data?
-
         oTriangle = static_cast<const TriangleNode*>(node);
+
+        const float wholeIntegral    = mTreeRoot->GetIntegral(aClampedCosCoeffs);
+        const float triangleIntegral = oTriangle->GetIntegral(aClampedCosCoeffs);
+        if (Math::IsTiny(wholeIntegral))
+            oProbability = 0.f;
+        else
+            oProbability = triangleIntegral / wholeIntegral;
 
         return true;
     }
@@ -4051,12 +4055,13 @@ public:
             SteeringCoefficients clampedCosCoeffs;
             clampedCosCoeffs.GenerateForClampedCos(normal, true);
 
-            struct TTriangleHitCountRecord
+            struct TriangleHitRecord
             {
-                TTriangleHitCountRecord() : hitCount(0) {}
+                TriangleHitRecord() : hitCount(0), probability(0.f){}
                 uint32_t hitCount;
+                float probability;
             };
-            std::map<const TriangleNode*, TTriangleHitCountRecord> triangleHitCountMap;
+            std::map<const TriangleNode*, TriangleHitRecord> triangleHitMap;
             uint32_t totalTriangleHits = 0;
 
             // Compute statistics for many sample triangles
@@ -4064,12 +4069,12 @@ public:
             const size_t sampleCount = samplesPerTriangle * triangleCount;
             for (uint32_t i = 0; i < sampleCount; ++i)
             {
-                const Vec2f sample(rngSamples.GetVec2f());
+                Vec2f sample(rngSamples.GetVec2f());
 
                 // Pick triangle
                 const TriangleNode *triangle;
-                float probability;
-                if (!sampler.PickTriangle(triangle, probability, clampedCosCoeffs, sample))
+                float triangleProbability;
+                if (!sampler.PickTriangle(triangle, triangleProbability, clampedCosCoeffs, sample.x))
                 {
                     PG3_UT_FATAL_ERROR(
                         aMaxUtBlockPrintLevel, eutblSubTestLevel1,
@@ -4077,7 +4082,28 @@ public:
                     return false;
                 }
 
-                triangleHitCountMap[triangle].hitCount++;
+                auto &triangleHitRecord = triangleHitMap[triangle];
+
+                if (triangleHitRecord.hitCount == 0)
+                    triangleHitRecord.probability = triangleProbability;
+                else if (triangleHitRecord.probability != triangleProbability)
+                {
+                    std::ostringstream ossError;
+                    ossError << "Varying triangle probability detected: now: ";
+                    ossError.precision(10);
+                    ossError << triangleProbability;
+                    ossError << ", before: ";
+                    ossError.precision(10);
+                    ossError << triangleHitRecord.probability;
+                    ossError << "!";
+
+                    PG3_UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                        ossError.str().c_str(), aTestName);
+                    return false;
+                }
+                
+                triangleHitRecord.hitCount++;
                 totalTriangleHits++;
 
                 // TODO: Triangle area sampling: ...
@@ -4101,23 +4127,43 @@ public:
             bool forEachReturn = sampler.ForEachTriangle([&](const TriangleNode* aTriangle)
             {
                 // This works also for unhit triangles - defaults to hit count 0
-                auto triangleHitCount = triangleHitCountMap[aTriangle];
+                auto triangleHitRecord = triangleHitMap[aTriangle];
 
                 const float relativeHitCount =
-                    (float)triangleHitCount.hitCount / totalTriangleHits;
+                    (float)triangleHitRecord.hitCount / totalTriangleHits;
 
                 const float triangleIntegral =
                     aTriangle->GetIntegral(clampedCosCoeffs);
                 const float relativeIntegral = triangleIntegral / wholeIntegral; // probability
 
-                if (!Math::EqualDelta(relativeHitCount, relativeIntegral, 0.01f))
+                // Sanity test
+                if ((triangleHitRecord.hitCount > 0) &&
+                    (triangleHitRecord.probability != relativeIntegral))
+                {
+                    std::ostringstream ossError;
+                    ossError << "Triangle probability ";
+                    ossError.precision(10);
+                    ossError << triangleHitRecord.probability;
+                    ossError << " differs from the relative integral ";
+                    ossError.precision(10);
+                    ossError << relativeIntegral;
+                    ossError << "!";
+
+                    PG3_UT_END_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                        ossError.str().c_str(), aTestName);
+                    return false;
+                }
+
+                // Relative hit count
+                if (!Math::EqualDelta(relativeHitCount, triangleHitRecord.probability, 0.01f))
                 {
                     std::ostringstream ossError;
                     ossError << "A triangle relative hit count (";
                     ossError.precision(6);
                     ossError << relativeHitCount;
                     ossError << "=";
-                    ossError << triangleHitCount.hitCount;
+                    ossError << triangleHitRecord.hitCount;
                     ossError << "/";
                     ossError << totalTriangleHits;
                     ossError << ") differs too much from the relative integral = expected sampling probability (";
