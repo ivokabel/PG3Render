@@ -36,6 +36,27 @@ enum UnitTestBlockLevel
 }
 
 
+// Call only after PG3_UT_BEGIN
+#define PG3_UT_INFO( \
+    _max_print_ut_level, \
+    _ut_block_level, \
+    _block_name, \
+    _message, \
+    ...) \
+{ \
+    if ((_max_print_ut_level) > eutblNone) \
+    { \
+        if ((_ut_block_level) <= (_max_print_ut_level)) \
+        { \
+            for (uint32_t level = (uint32_t)eutblWholeTest; level < (uint32_t)_ut_block_level; level++) \
+                printf("\t"); \
+            printf("Test \"" _block_name "\"", __VA_ARGS__); \
+        } \
+        printf(": %s\n", _message); \
+    } \
+}
+
+
 #define PG3_UT_END_PASSED( \
     _max_print_ut_level, \
     _ut_block_level, \
