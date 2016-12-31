@@ -2,6 +2,7 @@
 
 #include "utils.hxx"
 #include "debugging.hxx"
+#include "geom.hxx"
 #include "math.hxx"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,31 +62,15 @@ namespace Sampling
     }
 
     // Sample triangle uniformly
-    // Returns barycentric coordinates
-    Vec2f SampleUniformTriangle(const Vec2f &aSamples)
-    {
-        PG3_ASSERT_FLOAT_IN_RANGE(aSamples.x, 0.f, 1.f);
-        PG3_ASSERT_FLOAT_IN_RANGE(aSamples.y, 0.f, 1.f);
-
-        const float xSqrt = std::sqrt(aSamples.x);
-        auto result = Vec2f(1.f - xSqrt, aSamples.y * xSqrt);
-
-        PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
-        PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);
-
-        return result;
-    }
-
-    // Sample triangle uniformly
     // Returns point in space
     Vec3f SampleUniformTriangle(
-        const Vec3f &aFace0,
-        const Vec3f &aFace1,
-        const Vec3f &aFace2,
+        const Vec3f &aPoint0,
+        const Vec3f &aPoint1,
+        const Vec3f &aPoint2,
         const Vec2f &aSamples)
     {
-        const Vec2f baryCoords = SampleUniformTriangle(aSamples);
-        const Vec3f samplePoint = Geom::GetTrianglePoint(aFace0, aFace1, aFace2, baryCoords);
+        const Vec2f baryCoords = Geom::Triangle::MapCartToBary(aSamples);
+        const Vec3f samplePoint = Geom::Triangle::GetPoint(aPoint0, aPoint1, aPoint2, baryCoords);
         return samplePoint;
     }
 

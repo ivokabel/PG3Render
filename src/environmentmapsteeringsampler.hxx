@@ -1196,7 +1196,7 @@ public:
                 return SteeringBasisValue(0.f);
 
             const float area =
-                Geom::TriangleSurfaceArea(vertex0->dir, vertex1->dir, vertex2->dir);
+                Geom::Triangle::SurfaceArea(vertex0->dir, vertex1->dir, vertex2->dir);
             const auto averageVertexWeight =
                 (vertex0->weight + vertex1->weight + vertex2->weight) / 3.f;
 
@@ -1221,7 +1221,7 @@ public:
 
         Vec3f ComputeCrossProduct(const VertexStorage &aVertexStorage) const
         {
-            return Geom::TriangleCrossProduct(
+            return Geom::Triangle::CrossProduct(
                 aVertexStorage.Get(vertexIndices[0])->dir,
                 aVertexStorage.Get(vertexIndices[1])->dir,
                 aVertexStorage.Get(vertexIndices[2])->dir);
@@ -1242,7 +1242,7 @@ public:
 
         float ComputeSurfaceArea(const VertexStorage &aVertexStorage) const
         {
-            return Geom::TriangleSurfaceArea(
+            return Geom::Triangle::SurfaceArea(
                 aVertexStorage.Get(vertexIndices[0])->dir,
                 aVertexStorage.Get(vertexIndices[1])->dir,
                 aVertexStorage.Get(vertexIndices[2])->dir);
@@ -1251,7 +1251,7 @@ public:
 
         Vec3f ComputeCentroid(const VertexStorage &aVertexStorage) const
         {
-            const Vec3f centroid = Geom::TriangleCentroid(
+            const Vec3f centroid = Geom::Triangle::Centroid(
                 aVertexStorage.Get(vertexIndices[0])->dir,
                 aVertexStorage.Get(vertexIndices[1])->dir,
                 aVertexStorage.Get(vertexIndices[2])->dir);
@@ -1277,7 +1277,7 @@ public:
 
             float t, u, v;
             bool isIntersection =
-                Geom::RayTriangleIntersect(
+                Geom::Triangle::RayIntersect(
                     Vec3f(0.f, 0.f, 0.f), aDirection,
                     dir0, dir1, dir2,
                     t, u, v, 0.20f); //0.09f); //0.05f);
@@ -2670,14 +2670,13 @@ protected:
         {
             for (uint32_t j = 0; j <= samplesPerDim; ++j)
             {
-                Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
+                const Vec2f sample = Vec2f(Math::Sqr(i * binSize), j * binSize);
 
                 // Sample planar sub-triangle
-                const auto subTriangleSampleBary = Sampling::SampleUniformTriangle(sample);
-                const auto point = Geom::GetTrianglePoint(
-                    aSubVertex0, aSubVertex1, aSubVertex2,
-                    subTriangleSampleBary);
-                const Vec2f wholeTriangleSampleBary = Geom::TriangleBarycentricCoords(
+                const Vec3f point =
+                    Sampling::SampleUniformTriangle(
+                        aSubVertex0, aSubVertex1, aSubVertex2, sample);
+                const Vec2f wholeTriangleSampleBary = Geom::Triangle::BarycentricCoords(
                     point,
                     aVertexStorage.Get(aWholeTriangle.vertexIndices[0])->dir,
                     aVertexStorage.Get(aWholeTriangle.vertexIndices[1])->dir,
@@ -2735,7 +2734,7 @@ protected:
         // Estimate the maximum and minimum sine(theta) value over the triangle.
         // Sine value directly affect the necessary sampling density in each EM pixel.
 
-        const auto triangleCentroid = Geom::TriangleCentroid(aVertex0, aVertex1, aVertex2);
+        const auto triangleCentroid = Geom::Triangle::Centroid(aVertex0, aVertex1, aVertex2);
 
         const auto edgeCentre01Dir = ((aVertex0 + aVertex1) / 2.f).Normalize();
         const auto edgeCentre12Dir = ((aVertex1 + aVertex2) / 2.f).Normalize();

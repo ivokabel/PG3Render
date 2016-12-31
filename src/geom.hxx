@@ -81,8 +81,8 @@ namespace Geom
         // minus sign because we rotate in the opposite direction
         // Math::FastAtan2 is 50 times faster than atan2f at the price of slightly horizontally 
         // distorted mapping with 4 thin "dead" vertical stripes
-        const float phi     = -Math::FastAtan2(aDirection.y, aDirection.x);
-        const float theta   = acosf(aDirection.z);
+        const float phi   = -Math::FastAtan2(aDirection.y, aDirection.x);
+        const float theta = acosf(aDirection.z);
 
         // Convert from [-Pi,Pi] to [0,1]
         //const float uTemp = fmodf(phi * 0.5f * Math::kPiInvF, 1.0f);
@@ -117,8 +117,8 @@ namespace Geom
     // Both vectors are expected to be normalized.
     // Returns whether the input/output direction is in the half-space defined by the normal.
     void Reflect(
-                Vec3f &oDirOut,
-                bool  &oIsAboveSurface,
+        Vec3f &oDirOut,
+        bool  &oIsAboveSurface,
         const Vec3f &aDirIn,
         const Vec3f &aNormal)
     {
@@ -134,12 +134,12 @@ namespace Geom
     }
 
     void Refract(
-                Vec3f &oDirOut,
-                bool  &oIsDirInAboveSurface,
+        Vec3f &oDirOut,
+        bool  &oIsDirInAboveSurface,
         const Vec3f &aDirIn,
         const Vec3f &aNormal,
-                float  aEtaAbs           // internal IOR / external IOR
-                )
+        float  aEtaAbs           // internal IOR / external IOR
+        )
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aDirIn);
         PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
@@ -228,66 +228,69 @@ namespace Geom
     }
 
 
-    static Vec3f TriangleCrossProduct(
-        const Vec3f &aVertex0,
-        const Vec3f &aVertex1,
-        const Vec3f &aVertex2)
+    namespace Triangle
     {
-        PG3_ASSERT_VEC3F_VALID(aVertex0);
-        PG3_ASSERT_VEC3F_VALID(aVertex1);
-        PG3_ASSERT_VEC3F_VALID(aVertex2);
+        static Vec3f CrossProduct(
+            const Vec3f &aVertex0,
+            const Vec3f &aVertex1,
+            const Vec3f &aVertex2)
+        {
+            PG3_ASSERT_VEC3F_VALID(aVertex0);
+            PG3_ASSERT_VEC3F_VALID(aVertex1);
+            PG3_ASSERT_VEC3F_VALID(aVertex2);
 
-        const auto dir1 = (aVertex1 - aVertex0);
-        const auto dir2 = (aVertex2 - aVertex1);
+            const auto dir1 = (aVertex1 - aVertex0);
+            const auto dir2 = (aVertex2 - aVertex1);
 
-        const auto crossProduct = Cross(dir1, dir2);
+            const auto crossProduct = Cross(dir1, dir2);
 
-        PG3_ASSERT_VEC3F_VALID(crossProduct);
+            PG3_ASSERT_VEC3F_VALID(crossProduct);
 
-        return crossProduct;
-    }
+            return crossProduct;
+        }
 
 
-    static float TriangleSurfaceArea(
-        const Vec3f &aVertex0,
-        const Vec3f &aVertex1,
-        const Vec3f &aVertex2)
-    {
-        auto crossProduct = TriangleCrossProduct(aVertex0, aVertex1, aVertex2);
-        float surfaceArea = crossProduct.Length() / 2.f;
+        static float SurfaceArea(
+            const Vec3f &aVertex0,
+            const Vec3f &aVertex1,
+            const Vec3f &aVertex2)
+        {
+            auto crossProduct = CrossProduct(aVertex0, aVertex1, aVertex2);
+            float surfaceArea = crossProduct.Length() / 2.f;
 
-        PG3_ASSERT_FLOAT_NONNEGATIVE(surfaceArea);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(surfaceArea);
 
-        return surfaceArea;
-    }
+            return surfaceArea;
+        }
 
+    } // namespace Triangle
 
     // Vertices and faces of a unit length regular icosahedron with centre in the origin [0, 0, 0]
     // Based on: http://geometrictools.com/Documentation/PlatonicSolids.pdf
     // by David Eberly, Geometric Tools, LLC
-    static void UnitIcosahedron(Vec3f (&vertices)[12], Vec3ui (&faces)[20])
+    static void UnitIcosahedron(Vec3f(&vertices)[12], Vec3ui(&faces)[20])
     {
         // Preprocessing
-        const float t    = (1.0f + std::sqrt(5.0f)) / 2.0f;
-        const float s    = std::sqrt(1.0f + t * t);
+        const float t = (1.0f + std::sqrt(5.0f)) / 2.0f;
+        const float s = std::sqrt(1.0f + t * t);
         const float sInv = 1.0f / s;
 
         // Vertices
 
-        vertices[0]  = Vec3f( t,  1.f, 0.f) * sInv;
-        vertices[1]  = Vec3f(-t,  1.f, 0.f) * sInv;
-        vertices[2]  = Vec3f( t, -1.f, 0.f) * sInv;
-        vertices[3]  = Vec3f(-t, -1.f, 0.f) * sInv;
+        vertices[0]     = Vec3f(t, 1.f, 0.f) * sInv;
+        vertices[1]     = Vec3f(-t, 1.f, 0.f) * sInv;
+        vertices[2]     = Vec3f(t, -1.f, 0.f) * sInv;
+        vertices[3]     = Vec3f(-t, -1.f, 0.f) * sInv;
 
-        vertices[4]  = Vec3f( 1.f, 0.f,  t) * sInv;
-        vertices[5]  = Vec3f( 1.f, 0.f, -t) * sInv;
-        vertices[6]  = Vec3f(-1.f, 0.f,  t) * sInv;
-        vertices[7]  = Vec3f(-1.f, 0.f, -t) * sInv;
+        vertices[4]     = Vec3f(1.f, 0.f, t) * sInv;
+        vertices[5]     = Vec3f(1.f, 0.f, -t) * sInv;
+        vertices[6]     = Vec3f(-1.f, 0.f, t) * sInv;
+        vertices[7]     = Vec3f(-1.f, 0.f, -t) * sInv;
 
-        vertices[8]  = Vec3f(0.f,  t,  1.f) * sInv;
-        vertices[9]  = Vec3f(0.f, -t,  1.f) * sInv;
-        vertices[10] = Vec3f(0.f,  t, -1.f) * sInv;
-        vertices[11] = Vec3f(0.f, -t, -1.f) * sInv;
+        vertices[8]     = Vec3f(0.f, t, 1.f) * sInv;
+        vertices[9]     = Vec3f(0.f, -t, 1.f) * sInv;
+        vertices[10]    = Vec3f(0.f, t, -1.f) * sInv;
+        vertices[11]    = Vec3f(0.f, -t, -1.f) * sInv;
 
 #ifdef PG3_ASSERT_ENABLED
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
@@ -296,30 +299,30 @@ namespace Geom
 
         // Faces
 
-        faces[ 0].Set( 0,  8,  4);
-        faces[ 1].Set( 1, 10,  7);
-        faces[ 2].Set( 2,  9, 11);
-        faces[ 3].Set( 7,  3,  1);
+        faces[0].Set(0, 8, 4);
+        faces[1].Set(1, 10, 7);
+        faces[2].Set(2, 9, 11);
+        faces[3].Set(7, 3, 1);
 
-        faces[ 4].Set( 0,  5, 10);
-        faces[ 5].Set( 3,  9,  6);
-        faces[ 6].Set( 3, 11,  9);
-        faces[ 7].Set( 8,  6,  4);
+        faces[4].Set(0, 5, 10);
+        faces[5].Set(3, 9, 6);
+        faces[6].Set(3, 11, 9);
+        faces[7].Set(8, 6, 4);
 
-        faces[ 8].Set( 2,  4,  9);
-        faces[ 9].Set( 3,  7, 11);
-        faces[10].Set( 4,  2,  0);
-        faces[11].Set( 9,  4,  6);
+        faces[8].Set(2, 4, 9);
+        faces[9].Set(3, 7, 11);
+        faces[10].Set(4, 2, 0);
+        faces[11].Set(9, 4, 6);
 
-        faces[12].Set( 2, 11,  5);
-        faces[13].Set( 0, 10,  8);
-        faces[14].Set( 5,  0,  2);
-        faces[15].Set(10,  5,  7);
+        faces[12].Set(2, 11, 5);
+        faces[13].Set(0, 10, 8);
+        faces[14].Set(5, 0, 2);
+        faces[15].Set(10, 5, 7);
 
-        faces[16].Set( 1,  6,  8);
-        faces[17].Set( 1,  8, 10);
-        faces[18].Set( 6,  1,  3);
-        faces[19].Set(11,  7,  5);
+        faces[16].Set(1, 6, 8);
+        faces[17].Set(1, 8, 10);
+        faces[18].Set(6, 1, 3);
+        faces[19].Set(11, 7, 5);
     }
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
@@ -461,7 +464,7 @@ namespace Geom
         for (uint32_t faceId = 0; faceId < Utils::ArrayLength(faces); faceId++)
         {
             auto &face = faces[faceId];
-            auto area = Geom::TriangleSurfaceArea(
+            auto area = Geom::Triangle::SurfaceArea(
                 vertices[face.Get(0)],
                 vertices[face.Get(1)],
                 vertices[face.Get(2)]);
@@ -483,8 +486,8 @@ namespace Geom
             auto &face = faces[faceId];
             std::set<uint32_t> vertexSet = { face.Get(0), face.Get(1), face.Get(2) };
             auto it = std::find(alreadyFoundFaceVertices.begin(),
-                                alreadyFoundFaceVertices.end(),
-                                vertexSet);
+                alreadyFoundFaceVertices.end(),
+                vertexSet);
             if (it != alreadyFoundFaceVertices.end())
             {
                 PG3_UT_FAILED(
@@ -521,255 +524,284 @@ namespace Geom
 
 #endif
 
-    // Code adapted from:
-    // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
-    bool RayTriangleIntersect(
-        const Vec3f &aRayOrig,
-        const Vec3f &aRayDir,
-        const Vec3f &aVertex0,
-        const Vec3f &aVertex1,
-        const Vec3f &aVertex2,
-              float &oT,
-              float &oU,
-              float &oV,
-        const float  aEdgeNumThreshold = 0.0f)
+    namespace Triangle
     {
-        PG3_ASSERT_FLOAT_NONNEGATIVE(aEdgeNumThreshold);
+        // Code adapted from:
+        // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
+        bool RayIntersect(
+            const Vec3f     &aRayOrig,
+            const Vec3f     &aRayDir,
+            const Vec3f     &aVertex0,
+            const Vec3f     &aVertex1,
+            const Vec3f     &aVertex2,
+            float           &oT,
+            float           &oU,
+            float           &oV,
+            const float      aEdgeNumThreshold = 0.0f)
+        {
+            PG3_ASSERT_FLOAT_NONNEGATIVE(aEdgeNumThreshold);
 
-        // compute plane's normal
-        const Vec3f v0v1 = aVertex1 - aVertex0;
-        const Vec3f v0v2 = aVertex2 - aVertex0;
-        const Vec3f N = Cross(v0v1, v0v2); // no need to normalize
-        const float denom = Dot(N, N);
+            // compute plane's normal
+            const Vec3f v0v1 = aVertex1 - aVertex0;
+            const Vec3f v0v2 = aVertex2 - aVertex0;
+            const Vec3f N = Cross(v0v1, v0v2); // no need to normalize
+            const float denom = Dot(N, N);
 
-        //////////////////////
-        // Step 1: finding P
-        //////////////////////
+            //////////////////////
+            // Step 1: finding P
+            //////////////////////
 
-        // check if ray and plane are parallel ?
-        const float NdotRayDirection = Dot(N, aRayDir);
-        if (fabs(NdotRayDirection) < 0.0001f) // almost 0 
-            return false; // they are parallel so they don't intersect ! 
+            // check if ray and plane are parallel ?
+            const float NdotRayDirection = Dot(N, aRayDir);
+            if (fabs(NdotRayDirection) < 0.0001f) // almost 0 
+                return false; // they are parallel so they don't intersect ! 
 
-        // compute d parameter using equation 2
-        const float d = Dot(N, aVertex0);
+            // compute d parameter using equation 2
+            const float d = Dot(N, aVertex0);
 
-        // compute t (equation 3)
-        oT = (Dot(N, aRayOrig) + d) / NdotRayDirection;
-        // check if the triangle is in behind the ray
-        if (oT < 0)
-            return false; // the triangle is behind 
+            // compute t (equation 3)
+            oT = (Dot(N, aRayOrig) + d) / NdotRayDirection;
+            // check if the triangle is in behind the ray
+            if (oT < 0)
+                return false; // the triangle is behind 
 
-        // compute the intersection point using equation 1
-        const Vec3f P = aRayOrig + oT * aRayDir;
+            // compute the intersection point using equation 1
+            const Vec3f P = aRayOrig + oT * aRayDir;
 
-        ////////////////////////////////
-        // Step 2: inside-outside test
-        ////////////////////////////////
+            ////////////////////////////////
+            // Step 2: inside-outside test
+            ////////////////////////////////
 
-        Vec3f C; // vector perpendicular to triangle's plane 
+            Vec3f C; // vector perpendicular to triangle's plane 
 
-        // edge 0
-        const Vec3f edge01 = aVertex1 - aVertex0;
-        const Vec3f v0p = P - aVertex0;
-        C = Cross(edge01, v0p);
-        const float nc = Dot(N, C);
-        if (nc < -aEdgeNumThreshold)
-            return false; // P is on the right side 
+            // edge 0
+            const Vec3f edge01 = aVertex1 - aVertex0;
+            const Vec3f v0p = P - aVertex0;
+            C = Cross(edge01, v0p);
+            const float nc = Dot(N, C);
+            if (nc < -aEdgeNumThreshold)
+                return false; // P is on the right side 
 
-        // edge 1
-        const Vec3f edge12 = aVertex2 - aVertex1;
-        const Vec3f v1p = P - aVertex1;
-        C = Cross(edge12, v1p);
-        oU = Dot(N, C);
-        if (oU < -aEdgeNumThreshold)
-            return false; // P is on the right side 
+            // edge 1
+            const Vec3f edge12 = aVertex2 - aVertex1;
+            const Vec3f v1p = P - aVertex1;
+            C = Cross(edge12, v1p);
+            oU = Dot(N, C);
+            if (oU < -aEdgeNumThreshold)
+                return false; // P is on the right side 
 
-        // edge 2
-        const Vec3f edge20 = aVertex0 - aVertex2;
-        const Vec3f v2p = P - aVertex2;
-        C = Cross(edge20, v2p);
-        oV = Dot(N, C);
-        if (oV < -aEdgeNumThreshold)
-            return false; // P is on the right side; 
+            // edge 2
+            const Vec3f edge20 = aVertex0 - aVertex2;
+            const Vec3f v2p = P - aVertex2;
+            C = Cross(edge20, v2p);
+            oV = Dot(N, C);
+            if (oV < -aEdgeNumThreshold)
+                return false; // P is on the right side; 
 
-        oU /= denom;
-        oV /= denom;
+            oU /= denom;
+            oV /= denom;
 
-        PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(oU, 1.0f + aEdgeNumThreshold);
-        PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(oV, 1.0f + aEdgeNumThreshold);
+            PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(oU, 1.0f + aEdgeNumThreshold);
+            PG3_ASSERT_FLOAT_LESS_THAN_OR_EQUAL_TO(oV, 1.0f + aEdgeNumThreshold);
 
-        return true; // this ray hits the triangle 
-    }
+            return true; // this ray hits the triangle 
+        }
 
-    // Find barycentric cordinates of a point lying within a triangle.
-    // The triangle and the point are assumed to be coplanar.
-    // Code adapted from RayTriangleIntersect from
-    // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
-    Vec2f TriangleBarycentricCoords(
-        const Vec3f &aPoint,
-        const Vec3f &aVertex0,
-        const Vec3f &aVertex1,
-        const Vec3f &aVertex2,
-        const float  aEdgeNumThreshold = 0.0f)
-    {
-        // TODO: Assert: point lies in the triangle's plane (coplanarity)
+        // Find barycentric cordinates of a point lying within a triangle in 3D.
+        // The triangle and the point are assumed to be coplanar.
+        // Code adapted from RayIntersect from
+        // http://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
+        Vec2f BarycentricCoords(
+            const Vec3f     &aPoint,
+            const Vec3f     &aVertex0,
+            const Vec3f     &aVertex1,
+            const Vec3f     &aVertex2,
+            const float      aEdgeNumThreshold = 0.0f)
+        {
+            // TODO: Assert: point lies in the triangle's plane (coplanarity)
 
-        // compute plane's normal
-        const Vec3f v0v1 = aVertex1 - aVertex0;
-        const Vec3f v0v2 = aVertex2 - aVertex0;
-        const Vec3f N = Cross(v0v1, v0v2); // no need to normalize
-        const float denom = Dot(N, N);
+            // compute plane's normal
+            const Vec3f v0v1 = aVertex1 - aVertex0;
+            const Vec3f v0v2 = aVertex2 - aVertex0;
+            const Vec3f N = Cross(v0v1, v0v2); // no need to normalize
+            const float denom = Dot(N, N);
 
-        PG3_ASSERT_FLOAT_LARGER_THAN(denom, 0.0001f); // triangle is not empty
+            PG3_ASSERT_FLOAT_LARGER_THAN(denom, 0.0001f); // triangle is not empty
 
-        Vec2f baryCoords;
+            Vec2f baryCoords;
 
-        Vec3f C; // vector perpendicular to triangle's plane 
+            Vec3f C; // vector perpendicular to triangle's plane 
 
-        // edge 1
-        const Vec3f edge12 = aVertex2 - aVertex1;
-        const Vec3f v1p = aPoint - aVertex1;
-        C = Cross(edge12, v1p);
-        baryCoords.x = Dot(N, C);
+            // edge 1
+            const Vec3f edge12 = aVertex2 - aVertex1;
+            const Vec3f v1p = aPoint - aVertex1;
+            C = Cross(edge12, v1p);
+            baryCoords.x = Dot(N, C);
 
-        // edge 2
-        const Vec3f edge20 = aVertex0 - aVertex2;
-        const Vec3f v2p = aPoint - aVertex2;
-        C = Cross(edge20, v2p);
-        baryCoords.y = Dot(N, C);
+            // edge 2
+            const Vec3f edge20 = aVertex0 - aVertex2;
+            const Vec3f v2p = aPoint - aVertex2;
+            C = Cross(edge20, v2p);
+            baryCoords.y = Dot(N, C);
 
-        baryCoords /= denom;
+            baryCoords /= denom;
 
-        aEdgeNumThreshold; // possibly unused param
-        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
-        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.y, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
+            aEdgeNumThreshold; // possibly unused param
+            PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
+            PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.y, -aEdgeNumThreshold, 1.f + aEdgeNumThreshold);
 
-        return baryCoords;
-    }
+            return baryCoords;
+        }
 
-    Vec3f GetTrianglePoint(
-        const Vec3f &aP0,
-        const Vec3f &aP1,
-        const Vec3f &aP2,
-        const Vec2f &aBarycentricCoords)
-    {
-        const auto barycentricCoordZ = (1.0f - aBarycentricCoords.x - aBarycentricCoords.y);
-        const Vec3f point =
-              aBarycentricCoords.x * aP0
-            + aBarycentricCoords.y * aP1
-            + barycentricCoordZ    * aP2;
-        
-        return point;
-    }
+        Vec3f GetPoint(
+            const Vec3f &aP0,
+            const Vec3f &aP1,
+            const Vec3f &aP2,
+            const Vec2f &aBarycentricCoords)
+        {
+            const auto barycentricCoordZ = (1.0f - aBarycentricCoords.x - aBarycentricCoords.y);
+            const Vec3f point =
+                  aBarycentricCoords.x * aP0
+                + aBarycentricCoords.y * aP1
+                + barycentricCoordZ    * aP2;
+
+            return point;
+        }
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 
-    bool _UT_TriangleBarycentricCoords_SingleTriangle(
-        const UnitTestBlockLevel aMaxUtBlockPrintLevel,
-        const Vec3f &aVertex0,
-        const Vec3f &aVertex1,
-        const Vec3f &aVertex2)
-    {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
-            "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
-            aVertex0.x, aVertex0.y, aVertex0.z,
-            aVertex1.x, aVertex1.y, aVertex1.z,
-            aVertex2.x, aVertex2.y, aVertex2.z);
+        bool _UT_TriangleBarycentricCoords_SingleTriangle(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel,
+            const Vec3f &aVertex0,
+            const Vec3f &aVertex1,
+            const Vec3f &aVertex2)
+        {
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
+                aVertex0.x, aVertex0.y, aVertex0.z,
+                aVertex1.x, aVertex1.y, aVertex1.z,
+                aVertex2.x, aVertex2.y, aVertex2.z);
 
-        const uint32_t binsPerDimension = 20;
-        const float binSize = 1.0f / binsPerDimension;
-        for (float u = 0.f; u <= 1.0001f; u += binSize)
-            for (float v = 0.f; v <= 1.0001f; v += binSize)
-            {
-                const Vec2f baryCoordsOld = {
-                    std::min(u, 1.0f),
-                    std::min(v, 1.0f) };
-
-                const auto point =
-                    GetTrianglePoint(aVertex0, aVertex1, aVertex2, baryCoordsOld);
-
-                const Vec2f baryCoordsNew =
-                    TriangleBarycentricCoords(point, aVertex0, aVertex1, aVertex2);
-
-                if (!(baryCoordsOld.EqualsDelta(baryCoordsNew, 0.0001f)))
+            const uint32_t binsPerDimension = 20;
+            const float binSize = 1.0f / binsPerDimension;
+            for (float u = 0.f; u <= 1.0001f; u += binSize)
+                for (float v = 0.f; v <= 1.0001f; v += binSize)
                 {
-                    std::ostringstream errorDescription;
-                    errorDescription << "Old and new barycentric coordinates do not match: old [";
-                    errorDescription << baryCoordsOld.x;
-                    errorDescription << ",";
-                    errorDescription << baryCoordsOld.y;
-                    errorDescription << "], new [";
-                    errorDescription << baryCoordsNew.x;
-                    errorDescription << ",";
-                    errorDescription << baryCoordsNew.y;
-                    errorDescription << "]";
+                    const Vec2f baryCoordsOld = {
+                        std::min(u, 1.0f),
+                        std::min(v, 1.0f) };
 
-                    PG3_UT_FAILED(
-                        aMaxUtBlockPrintLevel, eutblSubTestLevel1,
-                        "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
-                        errorDescription.str().c_str(),
-                        aVertex0.x, aVertex0.y, aVertex0.z,
-                        aVertex1.x, aVertex1.y, aVertex1.z,
-                        aVertex2.x, aVertex2.y, aVertex2.z);
-                    return false;
+                    const auto point =
+                        GetPoint(aVertex0, aVertex1, aVertex2, baryCoordsOld);
+
+                    const Vec2f baryCoordsNew =
+                        BarycentricCoords(point, aVertex0, aVertex1, aVertex2);
+
+                    if (!(baryCoordsOld.EqualsDelta(baryCoordsNew, 0.0001f)))
+                    {
+                        std::ostringstream errorDescription;
+                        errorDescription << "Old and new barycentric coordinates do not match: old [";
+                        errorDescription << baryCoordsOld.x;
+                        errorDescription << ",";
+                        errorDescription << baryCoordsOld.y;
+                        errorDescription << "], new [";
+                        errorDescription << baryCoordsNew.x;
+                        errorDescription << ",";
+                        errorDescription << baryCoordsNew.y;
+                        errorDescription << "]";
+
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                            "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
+                            errorDescription.str().c_str(),
+                            aVertex0.x, aVertex0.y, aVertex0.z,
+                            aVertex1.x, aVertex1.y, aVertex1.z,
+                            aVertex2.x, aVertex2.y, aVertex2.z);
+                        return false;
+                    }
                 }
-            }
 
-        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
-            "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
-            aVertex0.x, aVertex0.y, aVertex0.z,
-            aVertex1.x, aVertex1.y, aVertex1.z,
-            aVertex2.x, aVertex2.y, aVertex2.z);
-        return true;
-    }
+            PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
+                aVertex0.x, aVertex0.y, aVertex0.z,
+                aVertex1.x, aVertex1.y, aVertex1.z,
+                aVertex2.x, aVertex2.y, aVertex2.z);
+            return true;
+        }
 
-    bool _UT_TriangleBarycentricCoords(
-        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
-    {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
+        bool _UT_TriangleBarycentricCoords(
+            const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+        {
+            PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::Triangle::BarycentricCoords()");
 
-        const Vec3f vertices[8] = {
-            Vec3f(0.f, 0.f, 0.f),
-            Vec3f(0.f, 0.f, 1.f),
-            Vec3f(0.f, 1.f, 0.f),
-            Vec3f(0.f, 1.f, 1.f),
-            Vec3f(1.f, 0.f, 0.f),
-            Vec3f(1.f, 0.f, 1.f),
-            Vec3f(1.f, 1.f, 0.f),
-            Vec3f(1.f, 1.f, 1.f),
-        };
+            const Vec3f vertices[8] = {
+                Vec3f(0.f, 0.f, 0.f),
+                Vec3f(0.f, 0.f, 1.f),
+                Vec3f(0.f, 1.f, 0.f),
+                Vec3f(0.f, 1.f, 1.f),
+                Vec3f(1.f, 0.f, 0.f),
+                Vec3f(1.f, 0.f, 1.f),
+                Vec3f(1.f, 1.f, 0.f),
+                Vec3f(1.f, 1.f, 1.f),
+            };
 
-        for (uint32_t index0 = 0; index0 < 8; ++index0)
-            for (uint32_t index1 = 0; index1 < 8; ++index1)
-                for (uint32_t index2 = 0; index2 < 8; ++index2)
-                {
-                    // Skip empty triangles
-                    if (   (vertices[index0] == vertices[index1])
-                        || (vertices[index1] == vertices[index2])
-                        || (vertices[index2] == vertices[index0]))
-                        continue;
+            for (uint32_t index0 = 0; index0 < 8; ++index0)
+                for (uint32_t index1 = 0; index1 < 8; ++index1)
+                    for (uint32_t index2 = 0; index2 < 8; ++index2)
+                    {
+                        // Skip empty triangles
+                        if ((vertices[index0] == vertices[index1])
+                            || (vertices[index1] == vertices[index2])
+                            || (vertices[index2] == vertices[index0]))
+                            continue;
 
-                    // Test
-                    if (!_UT_TriangleBarycentricCoords_SingleTriangle(
+                        // Test
+                        if (!_UT_TriangleBarycentricCoords_SingleTriangle(
                             aMaxUtBlockPrintLevel,
                             vertices[index0], vertices[index1], vertices[index2]))
-                        return false;
-                }
+                            return false;
+                    }
 
-        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
-        return true;
-    }
+            PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::Triangle::BarycentricCoords()");
+            return true;
+        }
 
 #endif
 
-    Vec3f TriangleCentroid(
-        const Vec3f &aVertex0,
-        const Vec3f &aVertex1,
-        const Vec3f &aVertex2)
-    {
-        const Vec3f centroid = (aVertex0 + aVertex1 + aVertex2) / 3.f;
-        return centroid;
-    }
+        Vec3f Centroid(
+            const Vec3f &aVertex0,
+            const Vec3f &aVertex1,
+            const Vec3f &aVertex2)
+        {
+            const Vec3f centroid = (aVertex0 + aVertex1 + aVertex2) / 3.f;
+            return centroid;
+        }
+
+        // Maps cartezian coordinates [0,1]^2 to triangle barycentric coordinates
+        // while maintaining uniform distribution density of the resulting values.
+        // Usually used for uniform sampling of triangles.
+        Vec2f MapCartToBary(const Vec2f &aSamples)
+        {
+            PG3_ASSERT_FLOAT_IN_RANGE(aSamples.x, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aSamples.y, 0.f, 1.f);
+
+            const float xSqrt = std::sqrt(aSamples.x);
+            auto result = Vec2f(1.f - xSqrt, aSamples.y * xSqrt);
+
+            PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);
+
+            return result;
+        }
+
+        // Maps triangle barycentric coordinates to cartezian coordinates [0,1]^2
+        // while maintaining uniform distribution density of the resulting values.
+        // Inverse mapping to MapCartToBary()
+        //Vec2f MapBaryToCart(const Vec2f &aSamples)
+        //{
+        //    return Vec2f();
+        //}
+
+    } // namespace Triangle
 
 } // namespace Geom
