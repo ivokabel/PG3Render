@@ -871,58 +871,58 @@ public:
 
 #endif
 
-        class BuildParameters
+    class BuildParameters
+    {
+    public:
+
+        BuildParameters(
+            float   aMaxApproxError         = Math::InfinityF(),
+            float   aMinSubdivLevel         = Math::InfinityF(),
+            float   aMaxSubdivLevel         = Math::InfinityF(),
+            float   aOversamplingFactorDbg  = Math::InfinityF(),
+            float   aMaxTriangleSpanDbg     = Math::InfinityF())
+            :
+            maxApproxError(aMaxApproxError),
+            minSubdivLevel(aMinSubdivLevel),
+            maxSubdivLevel(aMaxSubdivLevel),
+            oversamplingFactorDbg(aOversamplingFactorDbg),
+            maxTriangleSpanDbg(aMaxTriangleSpanDbg)
+        {}
+
+        float GetMaxApproxError() const
         {
-        public:
+            return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
+        }
 
-            BuildParameters(
-                float   aMaxApproxError         = Math::InfinityF(),
-                float   aMinSubdivLevel         = Math::InfinityF(),
-                float   aMaxSubdivLevel         = Math::InfinityF(),
-                float   aOversamplingFactorDbg  = Math::InfinityF(),
-                float   aMaxTriangleSpanDbg     = Math::InfinityF())
-                :
-                maxApproxError(aMaxApproxError),
-                minSubdivLevel(aMinSubdivLevel),
-                maxSubdivLevel(aMaxSubdivLevel),
-                oversamplingFactorDbg(aOversamplingFactorDbg),
-                maxTriangleSpanDbg(aMaxTriangleSpanDbg)
-            {}
+        uint32_t GetMinSubdivLevel() const
+        {
+            return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 1;
+        }
 
-            float GetMaxApproxError() const
-            {
-                return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
-            }
+        uint32_t GetMaxSubdivLevel() const
+        {
+            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
+        }
 
-            uint32_t GetMinSubdivLevel() const
-            {
-                return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 1;
-            }
+        float GetOversamplingFactorDbg() const
+        {
+            return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
+        }
 
-            uint32_t GetMaxSubdivLevel() const
-            {
-                return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
-            }
+        float GetMaxTriangleSpanDbg() const
+        {
+            return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
+        }
 
-            float GetOversamplingFactorDbg() const
-            {
-                return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
-            }
+    protected:
 
-            float GetMaxTriangleSpanDbg() const
-            {
-                return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
-            }
+        float       maxApproxError;
+        float       minSubdivLevel; // uint32_t, float used for signaling unset value
+        float       maxSubdivLevel; // uint32_t, float used for signaling unset value
 
-        protected:
-
-            float       maxApproxError;
-            float       minSubdivLevel; // uint32_t, float used for signaling unset value
-            float       maxSubdivLevel; // uint32_t, float used for signaling unset value
-
-            float       oversamplingFactorDbg;
-            float       maxTriangleSpanDbg;
-        };
+        float       oversamplingFactorDbg;
+        float       maxTriangleSpanDbg;
+    };
 
 
 public:
@@ -2063,15 +2063,26 @@ protected:
     {
     public:
 
-        TriangulationStats(const EnvironmentMapImage &aEmImage) :
+        TriangulationStats(
+            const EnvironmentMapImage   &aEmImage,
+            const BuildParameters       &aBuildParams
+            ) :
             mEmWidth(aEmImage.Width()),
             mEmHeight(aEmImage.Height()),
-            mEmSampleCounts(  aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
+            mBuildParams(aBuildParams),
+            mEmSampleCounts(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
 #ifdef _DEBUG
             //,mEmHasSampleFlags(aEmImage.Height(), std::vector<std::string>(aEmImage.Width(), "*"))
             , mEmHasSampleFrom(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
 #endif
         {}
+
+        // This class is not copyable because of a const member.
+        // If we don't delete the assignment operator
+        // explicitly, the compiler may complain about not being able 
+        // to create their default implementations.
+        TriangulationStats & operator=(const TriangulationStats&) = delete;
+        //TriangulationStats(const TriangulationStats&) = delete;
 
         bool IsActive()
         {
@@ -2103,8 +2114,10 @@ protected:
 
             mLevelStats[aTriangle.subdivLevel].AddSample();
 
-            // Sample counts per EM pixel (just for the first level of triangles)
-            if (aTriangle.subdivLevel == 0)
+            // Sample counts per EM pixel.
+            // We do it just for the first level of triangles which is sampled
+            // (some levels can be subdivided automatically without sample-based checking)
+            if (aTriangle.subdivLevel == mBuildParams.GetMinSubdivLevel())
             {
                 const Vec2f uv = Geom::Dir2LatLongFast(aSampleDir);
 
@@ -2293,8 +2306,9 @@ protected:
         std::vector<SingleLevelTriangulationStats>  mLevelStats;
         uint32_t                                    mEmWidth;
         uint32_t                                    mEmHeight;
+        const BuildParameters                       mBuildParams;
 
-        // Just for the first level of triangles (which covers the sphere completely)
+        // Just for the first sampled level of triangles (which covers the sphere completely)
         std::vector<std::vector<uint32_t>>          mEmSampleCounts;
 
         // Computed in the post-processing step
@@ -2313,9 +2327,11 @@ protected:
     {
     public:
 
-        TriangulationStatsDummy(const EnvironmentMapImage &aEmImage)
+        TriangulationStatsDummy(
+            const EnvironmentMapImage   &aEmImage,
+            const BuildParameters       &aBuildParams)
         {
-            aEmImage; // unused param
+            aEmImage, aBuildParams; // unused params
         }
 
         bool IsActive()
@@ -2387,7 +2403,7 @@ public: // debug: public is for visualisation/testing purposes
 
         std::deque<TriangleNode*> toDoTriangles;
 
-        TriangulationStatsSwitchable stats(aEmImage);
+        TriangulationStatsSwitchable stats(aEmImage, aParams);
 
         if (!GenerateInitialEmTriangulation(toDoTriangles, aVertexStorage, aEmImage, aUseBilinearFiltering))
             return false;
@@ -3450,9 +3466,9 @@ public:
         if ((aExpectedRefinedCount > 0) && (oRefinedTriangles.size() != aExpectedRefinedCount))
         {
             std::ostringstream errorDescription;
-            errorDescription << "Initial triangle count is ";
+            errorDescription << "Refined triangle count is ";
             errorDescription << oRefinedTriangles.size();
-            errorDescription << " instead of ";
+            errorDescription << " instead of expected ";
             errorDescription << aExpectedRefinedCount;
             errorDescription << "!";
             PG3_UT_FAILED(
@@ -3578,9 +3594,14 @@ public:
                 // this should be switched to 0.0.
                 if (zeroCountPercent >= 0.4)
                 {
-                        "There is an EM row which containt more than 0.4% non-sampled pixels!");
+                    std::ostringstream errorDescription;
+                    errorDescription << "There is an EM row which contains more than 0.4% non-sampled pixels: ";
+                    errorDescription.precision(8);
+                    errorDescription << zeroCountPercent;
+                    errorDescription << "!";
                     PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                        errorDescription.str().c_str());
                     FreeNodesList(oRefinedTriangles);
                     return false;
                 }
@@ -3982,21 +4003,21 @@ public:
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 8x4", 5, 20, true,
+                "Const white 8x4", 5, 80, true,
                 ".\\Light Probes\\Debugging\\Const white 8x4.exr",
                 false))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 512x256", 5, 20, true,
+                "Const white 512x256", 5, 80, true,
                 ".\\Light Probes\\Debugging\\Const white 512x256.exr",
                 false))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 1024x512", 5, 20, true,
+                "Const white 1024x512", 5, 80, true,
                 ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
                 false))
             return false;
