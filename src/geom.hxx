@@ -345,7 +345,8 @@ namespace Geom
                     errorDescription << " of vertex ";
                     errorDescription << vertexId;
                     errorDescription << " is NaN!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
                         errorDescription.str().c_str());
                     return false;
                 }
@@ -357,7 +358,8 @@ namespace Geom
                     errorDescription << " of vertex ";
                     errorDescription << vertexId;
                     errorDescription << " is NOT FINITE!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
                         errorDescription.str().c_str());
                     return false;
                 }
@@ -370,13 +372,14 @@ namespace Geom
                 errorDescription << "The direction of vertex ";
                 errorDescription << vertexId;
                 errorDescription << " is NOT UNIT!";
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices",
                     errorDescription.str().c_str());
                 return false;
             }
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Vertices");
         return true;
     }
 
@@ -406,13 +409,14 @@ namespace Geom
                     errorDescription << " is out of range (";
                     errorDescription << vertexId;
                     errorDescription << " >= 12)!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity",
                         errorDescription.str().c_str());
                     return false;
                 }
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex indices validity");
 
         // Edge lengths
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths");
@@ -441,13 +445,14 @@ namespace Geom
                     errorDescription << ") instead of sqrt(";
                     errorDescription << edgeReferenceLengthSqr;
                     errorDescription << "))!";
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths",
                         errorDescription.str().c_str());
                     return false;
                 }
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Edges' lengths");
 
         // Face surface areas
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas");
@@ -462,12 +467,13 @@ namespace Geom
                 vertices[face.Get(2)]);
             if (!Math::EqualDelta(area, faceReferenceArea, 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas",
                     "Found ill-sized face!");
                 return false;
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces' surface areas");
 
         // Face uniqueness
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
@@ -481,15 +487,16 @@ namespace Geom
                                 vertexSet);
             if (it != alreadyFoundFaceVertices.end())
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness",
                     "Found duplicate face!");
                 return false;
             }
             alreadyFoundFaceVertices.push_back(vertexSet);
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Face uniqueness");
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Faces");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "Faces");
         return true;
     }
 
@@ -508,7 +515,7 @@ namespace Geom
         if (!_UT_UnitIcosahedron_Faces(aMaxUtBlockPrintLevel, vertices, faces))
             return false;
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::UnitIcosahedron()");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::UnitIcosahedron()");
         return true;
     }
 
@@ -698,7 +705,8 @@ namespace Geom
                     errorDescription << baryCoordsNew.y;
                     errorDescription << "]";
 
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1,
                         "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
                         errorDescription.str().c_str(),
                         aVertex0.x, aVertex0.y, aVertex0.z,
@@ -708,7 +716,7 @@ namespace Geom
                 }
             }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
             "triangle: (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f), (%.1f,%.1f,%.1f))",
             aVertex0.x, aVertex0.y, aVertex0.z,
             aVertex1.x, aVertex1.y, aVertex1.z,
@@ -749,7 +757,7 @@ namespace Geom
                         return false;
                 }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom::TriangleBarycentricCoords()");
         return true;
     }
 

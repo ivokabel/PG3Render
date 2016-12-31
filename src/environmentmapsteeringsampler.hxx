@@ -200,13 +200,14 @@ public:
 
             if (!generatedValue.EqualsDelta(referenceVal, 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                                  "The generated value doesn't match the reference value",
-                                  aTestName);
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    "The generated value doesn't match the reference value",
+                    aTestName);
                 return false;
             }
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
+            PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
             return true;
         }
 
@@ -537,7 +538,8 @@ public:
                     aMaxUtBlockPrintLevel, (UnitTestBlockLevel)(aUtBlockPrintLevel + 1)))
                 return false;
 
-            PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+            PG3_UT_PASSED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                 "SteeringBasisValue::GenerateSphHarm()");
             return true;
         }
@@ -670,7 +672,8 @@ public:
                         ossError << clampCosSphHarm;
                         ossError << ")!";
 
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                             "GenerateForClampedCos(bCompensateNegativity: %s)",
                             ossError.str().c_str(),
                             bCompensateNegativity ? "true" : "false");
@@ -688,7 +691,8 @@ public:
                         ossError << clampCosSphHarm;
                         ossError << ")!";
 
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                             "GenerateForClampedCos(bCompensateNegativity: %s)",
                             ossError.str().c_str(),
                             bCompensateNegativity ? "true" : "false");
@@ -705,7 +709,8 @@ public:
                         ossError << clampCosSphHarm;
                         ossError << ")!";
 
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                             "GenerateForClampedCos(bCompensateNegativity: %s)",
                             ossError.str().c_str(),
                             bCompensateNegativity ? "true" : "false");
@@ -724,7 +729,8 @@ public:
                         ossError.precision(12);
                         ossError << diff;
 
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                             "GenerateForClampedCos(bCompensateNegativity: %s)", ossError.str().c_str(),
                             bCompensateNegativity ? "true" : "false");
                         return false;
@@ -732,7 +738,7 @@ public:
                 }
             }
 
-            PG3_UT_END_PASSED(
+            PG3_UT_PASSED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
                 "GenerateForClampedCos(bCompensateNegativity: %s)",
                 bCompensateNegativity ? "true" : "false");
@@ -758,7 +764,8 @@ public:
         if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) !=
             SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't match itself!");
             return false;
         }
@@ -766,7 +773,8 @@ public:
         if (SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) !=
             SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't match itself!");
             return false;
         }
@@ -774,7 +782,8 @@ public:
         if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) ==
             SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
                 "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) match!");
             return false;
@@ -785,7 +794,8 @@ public:
         if (!SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
              SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }), 0.001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't delta-match itself!");
             return false;
         }
@@ -793,7 +803,8 @@ public:
         if (!SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
              SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't delta-match itself!");
             return false;
         }
@@ -801,7 +812,8 @@ public:
         if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
             SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
                 "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) delta-match!");
             return false;
@@ -810,7 +822,8 @@ public:
         if (!SteeringValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }).EqualsDelta(
              SteeringValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }), 0.001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }) and "
                 "SteeringValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }) don't delta-match!");
             return false;
@@ -819,13 +832,14 @@ public:
         if (SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
             SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }), 0.001f))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
                 "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }) and "
                 "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }) delta-match!");
             return false;
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
         return true;
     }
 
@@ -851,8 +865,7 @@ public:
                 eutblSubTestLevel1, true))
             return false;
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
-            "Steering value structures");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Steering value structures");
         return true;
     }
 
@@ -2954,7 +2967,8 @@ public:
                 *dummyImage, false))
             return false;
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+        PG3_UT_PASSED(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::SubdivideTriangle");
         return true;
     }
@@ -2988,7 +3002,8 @@ protected:
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
         if (subdivisionTriangles.size() != 4)
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count",
                 "Subdivision triangle count is not 4");
             return false;
         }
@@ -2996,12 +3011,13 @@ protected:
         {
             if (subdividedTriange == nullptr)
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count",
-                                  "Subdivision triangle is null");
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count",
+                    "Subdivision triangle is null");
                 return false;
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
 
         // Check orientation
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation");
@@ -3012,13 +3028,13 @@ protected:
             const auto dot = Dot(subdivNormal, triangleNormal);
             if (dot < 0.90f)
             {
-                PG3_UT_END_FAILED(
+                PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation",
                     "Subdivision triangle has orientation which differs too much from the original triangle");
                 return false;
             }
         }
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Faces orientation");
 
         // Check vertex positions
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions");
@@ -3034,7 +3050,8 @@ protected:
                 || !dir1.EqualsDelta(aSubdivisionPoints[1], 0.0001f)
                 || !dir2.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                     "Central subdivision triangle has at least one incorrectly positioned vertex");
                 return false;
             }
@@ -3050,7 +3067,8 @@ protected:
                 || !dir1.EqualsDelta(aSubdivisionPoints[0], 0.0001f)
                 || !dir2.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                     "Corner 1 subdivision triangle has at least one incorrectly positioned vertex");
                 return false;
             }
@@ -3066,7 +3084,8 @@ protected:
                 || !dir1.EqualsDelta(aTriangleCoords[1],    0.0001f)
                 || !dir2.EqualsDelta(aSubdivisionPoints[1], 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                     "Corner 2 subdivision triangle has at least one incorrectly positioned vertex");
                 return false;
             }
@@ -3082,20 +3101,21 @@ protected:
                 || !dir1.EqualsDelta(aTriangleCoords[2],    0.0001f)
                 || !dir2.EqualsDelta(aSubdivisionPoints[2], 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions",
                     "Corner 3 subdivision triangle has at least one incorrectly positioned vertex");
                 return false;
             }
         }
         itSubdivs++;
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Vertex positions");
         
         // TODO: Weights??
 
         FreeTrianglesList(subdivisionTriangles);
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
         return true;
     }
 
@@ -3255,7 +3275,8 @@ public:
 
         if (!GenerateInitialEmTriangulation(oTriangles, aVertexStorage, aEmImage, aUseBilinearFiltering))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                 "GenerateInitialEmTriangulation() failed!");
             return false;
         }
@@ -3267,8 +3288,9 @@ public:
             errorDescription << "Initial triangle count is ";
             errorDescription << oTriangles.size();
             errorDescription << " instead of 20!";
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
-                                errorDescription.str().c_str());
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                errorDescription.str().c_str());
             return false;
         }
 
@@ -3289,7 +3311,8 @@ public:
                                     vertexSet);
                 if (it != alreadyFoundFaceVertices.end())
                 {
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                         "Found duplicate face!");
                     return false;
                 }
@@ -3313,7 +3336,8 @@ public:
                     errorDescription << vertex1;
                     errorDescription << ", ";
                     errorDescription << vertex2;
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                         errorDescription.str().c_str());
                     return false;
                 }
@@ -3330,8 +3354,9 @@ public:
 
                     if ((vertex == nullptr) || (vertexNext == nullptr))
                     {
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
-                                            "A triangle contains a null pointer to vertex");
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                            "A triangle contains a null pointer to vertex");
                         return false;
                     }
 
@@ -3349,7 +3374,8 @@ public:
                         errorDescription << ") instead of sqrt(";
                         errorDescription << edgeReferenceLengthSqr;
                         errorDescription << "))!";
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                             errorDescription.str().c_str());
                         return false;
                     }
@@ -3364,7 +3390,8 @@ public:
                     //    errorDescription << " is shared by ";
                     //    errorDescription << useCount;
                     //    errorDescription << " owners instead of 5!";
-                    //    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                    //    PG3_UT_FAILED(
+                    //        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                     //        errorDescription.str().c_str());
                     //    return false;
                     //}
@@ -3380,7 +3407,8 @@ public:
                         errorDescription << "Incorect weight at vertex ";
                         errorDescription << vertexSeqNum;
                         errorDescription << "!";
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
                             errorDescription.str().c_str());
                         return false;
                     }
@@ -3388,7 +3416,7 @@ public:
             }
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
 
         return true;
     }
@@ -3411,7 +3439,8 @@ public:
                 oRefinedTriangles, aInitialTriangles, aVertexStorage,
                 aEmImage, aUseBilinearFiltering, aParams, aStats))
         {
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 "RefineEmTriangulation() failed!");
             FreeNodesList(oRefinedTriangles);
             return false;
@@ -3426,7 +3455,8 @@ public:
             errorDescription << " instead of ";
             errorDescription << aExpectedRefinedCount;
             errorDescription << "!";
-            PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                 errorDescription.str().c_str());
             FreeNodesList(oRefinedTriangles);
             return false;
@@ -3443,7 +3473,8 @@ public:
                 || !Math::EqualDelta(dir1.LenSqr(), 1.0f, 0.001f)
                 || !Math::EqualDelta(dir2.LenSqr(), 1.0f, 0.001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Triangulation contains a vertex not lying on the unit sphere");
                 FreeNodesList(oRefinedTriangles);
                 return false;
@@ -3457,7 +3488,8 @@ public:
             auto surfaceArea = triangle->ComputeSurfaceArea(aVertexStorage);
             if (surfaceArea < 0.0001f)
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Triangulation contains a degenerated triangle");
                 FreeNodesList(oRefinedTriangles);
                 return false;
@@ -3474,7 +3506,8 @@ public:
             const auto dot = Dot(centroidDirection, normal);
             if (dot < 0.0f)
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "A triangle normal is oriented inside the sphere");
                 FreeNodesList(oRefinedTriangles);
                 return false;
@@ -3497,7 +3530,8 @@ public:
                     SteeringBasisValue().GenerateSphHarm(vertex->dir, luminance);
                 if (vertex->weight != referenceWeight)
                 {
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                         "Incorect triangle vertex weight");
                     FreeNodesList(oRefinedTriangles);
                     return false;
@@ -3512,7 +3546,8 @@ public:
                       + aVertexStorage.Get(triangle->vertexIndices[2])->weight) / 3.0f;
             if (!referenceWeight.EqualsDelta(triangle->GetWeight(), 0.0001f))
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Incorect triangle weight");
                 FreeNodesList(oRefinedTriangles);
                 return false;
@@ -3526,7 +3561,8 @@ public:
             const auto &zeroSampleCountsVert = aStats.GetZeroSampleCountsVert();
             if (zeroSampleCountsVert.empty())
             {
-                PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     "Failed to generate ZeroSampleCountsVert");
                 FreeNodesList(oRefinedTriangles);
                 return false;
@@ -3542,15 +3578,16 @@ public:
                 // this should be switched to 0.0.
                 if (zeroCountPercent >= 0.4)
                 {
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                         "There is an EM row which containt more than 0.4% non-sampled pixels!");
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                     FreeNodesList(oRefinedTriangles);
                     return false;
                 }
             }
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         return true;
     }
@@ -3599,7 +3636,7 @@ public:
         bool refinePassed;
         if (aCheckSamplingCoverage)
         {
-            TriangulationStats stats(*image.get());
+            TriangulationStats stats(*image.get(), params);
             refinePassed = _UT_RefineTriangulation(
                 refinedTriangles,
                 initialTriangles,
@@ -3613,7 +3650,7 @@ public:
         }
         else
         {
-            TriangulationStatsDummy stats(*image.get());
+            TriangulationStatsDummy stats(*image.get(), params);
             refinePassed = _UT_RefineTriangulation(
                 refinedTriangles,
                 initialTriangles,
@@ -3643,7 +3680,7 @@ public:
                 vertexStorage, treeRoot, *image.get(), aUseBilinearFiltering, params))
             return false;
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
         return true;
     }
@@ -3671,7 +3708,7 @@ public:
             // Null pointers
             if ((leftChild == nullptr) || (rightChild == nullptr))
             {
-                PG3_UT_END_FAILED(
+                PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                     "Found null child node!", aTestName);
                 return false;
@@ -3692,7 +3729,7 @@ public:
             const auto innerNodeWeight = innerNode->GetWeight();
             if (!innerNodeWeight.IsValid())
             {
-                PG3_UT_END_FAILED(
+                PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                     "Found invalid inner node weight!", aTestName);
                 return false;
@@ -3706,7 +3743,7 @@ public:
             {
                 std::ostringstream errorDescription;
                 errorDescription << "Node weight is not equal to the sum of child weights";
-                PG3_UT_END_FAILED(
+                PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                     errorDescription.str().c_str(), aTestName);
                 return false;
@@ -3724,7 +3761,7 @@ public:
 
                 if (vertex == nullptr)
                 {
-                    PG3_UT_END_FAILED(
+                    PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                         "Found null triangle vertex!", aTestName);
                     return false;
@@ -3733,7 +3770,7 @@ public:
                 // Normalized direction
                 if (!Math::EqualDelta(vertex->dir.LenSqr(), 1.0f, 0.001f))
                 {
-                    PG3_UT_END_FAILED(
+                    PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                         "Found invalid direction!", aTestName);
                     return false;
@@ -3742,7 +3779,7 @@ public:
                 // Weight validity
                 if (!vertex->weight.IsValid())
                 {
-                    PG3_UT_END_FAILED(
+                    PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                         "Found invalid weight!", aTestName);
                     return false;
@@ -3768,7 +3805,7 @@ public:
 
         if (!BuildTriangleTree(aTriangles, oTreeRoot))
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                 "BuildTriangleTree() failed!", aTestName);
             return false;
@@ -3785,7 +3822,7 @@ public:
         // Leaf count
         if (leafCount != initialListSize)
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                 "Leaf count doesn't equal to triangle count!", aTestName);
             return false;
@@ -3802,13 +3839,13 @@ public:
             errorDescription << maxDepth;
             errorDescription << " doesn't equal to expected (log) depth ";
             errorDescription << expectedMaxDepth;
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                 errorDescription.str().c_str(), aTestName);
             return false;
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
         return true;
     }
 
@@ -3859,7 +3896,7 @@ public:
         if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, 1000000))
             return false;
 
-        PG3_UT_END_PASSED(
+        PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
         return true;
@@ -3884,7 +3921,7 @@ public:
                 aVertexStorage, aTreeRoot.get(), aEmImage, aUseBilinearFiltering,
                 aParams, isDebugging))
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "SaveToDisk11() failed!");
             return false;
@@ -3896,7 +3933,7 @@ public:
         if (!LoadFromDisk11(
                 loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "LoadFromDisk11() failed!");
             return false;
@@ -3905,7 +3942,7 @@ public:
         // Compare vertices
         if (aVertexStorage != loadedVertexStorage)
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "Loaded vertex storage differs from the saved one!");
             return false;
@@ -3913,7 +3950,7 @@ public:
 
         if (!loadedTreeRoot)
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "Loaded tree is empty!");
             return false;
@@ -3922,13 +3959,13 @@ public:
         // Compare with the original tree
         if (*aTreeRoot != *loadedTreeRoot)
         {
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
                 "Loaded tree differs from the saved one!");
             return false;
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
         return true;
     }
 
@@ -3985,7 +4022,6 @@ public:
                 false))
             return false;
 
-
         ///////////////////////////////////////////////////////////////////////////////////////////
 
         //if (!_UT_Init_SingleEm(
@@ -4002,7 +4038,7 @@ public:
         //        false))
         //    return false;
 
-        PG3_UT_END_PASSED(
+        PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::Init");
         return true;
@@ -4097,7 +4133,7 @@ public:
                     ossError << triangleHitRecord.probability;
                     ossError << "!";
 
-                    PG3_UT_END_FAILED(
+                    PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
                         ossError.str().c_str(), aTestName);
                     return false;
@@ -4149,7 +4185,7 @@ public:
                     ossError << relativeIntegral;
                     ossError << "!";
 
-                    PG3_UT_END_FAILED(
+                    PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
                         ossError.str().c_str(), aTestName);
                     return false;
@@ -4177,7 +4213,7 @@ public:
                     ossError << wholeIntegral;
                     ossError << ")";
 
-                    PG3_UT_END_FAILED(
+                    PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
                         ossError.str().c_str(), aTestName);
                     return false;
@@ -4190,7 +4226,7 @@ public:
                 return false;
         }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
         return true;
     }
 
@@ -4263,7 +4299,7 @@ public:
         //        false))
         //    return false;
 
-        PG3_UT_END_PASSED(
+        PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::Sampling");
         return true;

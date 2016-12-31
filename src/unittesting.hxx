@@ -57,7 +57,7 @@ enum UnitTestBlockLevel
 }
 
 
-#define PG3_UT_END_PASSED( \
+#define PG3_UT_PASSED( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \
@@ -106,7 +106,7 @@ enum UnitTestBlockLevel
 }
 
 
-#define PG3_UT_END_FAILED( \
+#define PG3_UT_FAILED( \
     _max_print_ut_level, \
     _ut_block_level, \
     _block_name, \

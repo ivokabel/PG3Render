@@ -215,7 +215,8 @@ namespace Sampling
                 {
                     if ((signsNormalized.Get(i) * triangleSample.Get(i)) < -0.0001f)
                     {
-                        PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
                             "The resulting sample is outside the requested octant", testName);
                         return false;
                     }
@@ -224,13 +225,14 @@ namespace Sampling
                 // Test: On the sphere
                 if (!Math::EqualDelta(triangleSample.LenSqr(), 1.0f, 0.001f))
                 {
-                    PG3_UT_END_FAILED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
                         "The resulting sample doesn't lie on the unit sphere", testName);
                     return false;
                 }
             }
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", testName);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", testName);
         return true;
     }
 
@@ -251,7 +253,8 @@ namespace Sampling
 
         // TODO: Small, empty triangle?
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest,
+        PG3_UT_PASSED(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
             "EnvironmentMapSteeringSampler::SampleUniformSphericalTriangle");
         return true;
     }

@@ -102,7 +102,7 @@ namespace Utils
             errorDescription << aHumanReference;
             errorDescription << "\"";
 
-            PG3_UT_END_FAILED(
+            PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%u",
                 errorDescription.str().c_str(), aValue);
         }
@@ -110,7 +110,7 @@ namespace Utils
         // debug
         //printf("%s\n", result.c_str());
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%u", aValue);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%u", aValue);
         return true;
     }
 
@@ -204,7 +204,7 @@ namespace Utils
         if (!_UT_IntegerToHumanReadable_SingleNumber(aMaxUtBlockPrintLevel, (uint64_t)1E12 + 1, "1000T"))
             return false;
 
-        PG3_UT_END_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Utils::IntegerToHumanReadable()");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Utils::IntegerToHumanReadable()");
         return true;
     }
 
