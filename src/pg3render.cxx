@@ -177,9 +177,7 @@ bool RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
     //if (!Utils::_UT_IntegerToHumanReadable(aMaxUtBlockPrintLevel))
     //    return false;
 
-    //if (!Geom::_UT_UnitIcosahedron(aMaxUtBlockPrintLevel))
-    //    return false;
-    //if (!Geom::_UT_TriangleBarycentricCoords(aMaxUtBlockPrintLevel))
+    //if (!Geom::_UnitTests(aMaxUtBlockPrintLevel))
     //    return false;
 
     //if (!Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel))

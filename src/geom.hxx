@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rng.hxx"
 #include "debugging.hxx"
 #include "unittesting.hxx"
 #include "math.hxx"
@@ -780,13 +781,13 @@ namespace Geom
         // Maps cartezian coordinates [0,1]^2 to triangle barycentric coordinates
         // while maintaining uniform distribution density of the resulting values.
         // Usually used for uniform sampling of triangles.
-        Vec2f MapCartToBary(const Vec2f &aSamples)
+        Vec2f MapCartToBary(const Vec2f &aCartCoords)
         {
-            PG3_ASSERT_FLOAT_IN_RANGE(aSamples.x, 0.f, 1.f);
-            PG3_ASSERT_FLOAT_IN_RANGE(aSamples.y, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aCartCoords.x, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aCartCoords.y, 0.f, 1.f);
 
-            const float xSqrt = std::sqrt(aSamples.x);
-            auto result = Vec2f(1.f - xSqrt, aSamples.y * xSqrt);
+            const float xSqrt = std::sqrt(aCartCoords.x);
+            auto result = Vec2f(1.f - xSqrt, aCartCoords.y * xSqrt);
 
             PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
             PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);
@@ -797,11 +798,184 @@ namespace Geom
         // Maps triangle barycentric coordinates to cartezian coordinates [0,1]^2
         // while maintaining uniform distribution density of the resulting values.
         // Inverse mapping to MapCartToBary()
-        //Vec2f MapBaryToCart(const Vec2f &aSamples)
-        //{
-        //    return Vec2f();
-        //}
+        Vec2f MapBaryToCart(const Vec2f &aBaryCoords)
+        {
+            Vec2f cartCoords;
+
+            PG3_ASSERT_FLOAT_IN_RANGE(aBaryCoords.x, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aBaryCoords.y, 0.f, 1.f);
+            PG3_ASSERT((aBaryCoords.x + aBaryCoords.y) <= 1.001f);
+
+            cartCoords.x =
+                  aBaryCoords.x * aBaryCoords.x
+                - 2.f * aBaryCoords.x
+                + 1.f;
+
+            // TODO: Clamp to [0,1] for to sqrt?
+
+            if (Math::IsTiny(aBaryCoords.y) || Math::IsTiny(cartCoords.x))
+                cartCoords.y = 0.f;
+            else
+                cartCoords.y = aBaryCoords.y / std::sqrt(cartCoords.x);
+
+            PG3_ASSERT_FLOAT_IN_RANGE(cartCoords.x, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(cartCoords.y, 0.f, 1.f);
+
+            return cartCoords;
+        }
 
     } // namespace Triangle
+
+
+#ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+
+
+    bool _UT_CartesianBarycentricMapping_SingleSample(
+        const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
+        const Vec2f                 &aSample)
+    {
+        PG3_UT_BEGIN(
+            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+            "Sample (%.1f,%.1f)",
+            aSample.x, aSample.y);
+
+        if (!Math::IsInRange(aSample.x, 0.0f, 1.0f)
+            || !Math::IsInRange(aSample.y, 0.0f, 1.0f))
+        {
+            PG3_UT_FATAL_ERROR(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+                "Sample (%.1f,%.1f)",
+                "Sample values are not within [0,1]^2!",
+                aSample.x, aSample.y);
+            return false;
+        }
+
+        // Test Cartesian -> Barycentric -> Cartesian
+        {
+            PG3_UT_BEGIN(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                "Cartesian -> Barycentric -> Cartesian");
+
+            const Vec2f origCartesian = aSample;
+            const Vec2f tmpBarycentric = Triangle::MapCartToBary(origCartesian);
+            const Vec2f computedCartesian = Triangle::MapBaryToCart(tmpBarycentric);
+
+            const bool isAtSingularPoint = Math::EqualDelta(tmpBarycentric.x, 1.f, 0.05f);
+            const bool isRegularPointMismatch =
+                !isAtSingularPoint
+                && !computedCartesian.EqualsDelta(origCartesian, 0.0001f);
+            const bool isSingularPointMismatch =
+                isAtSingularPoint
+                && (!Math::EqualDelta(origCartesian.x, 0.f, 0.05f)
+                || !Math::EqualDelta(computedCartesian.x, 0.f, 0.05f));
+
+            if (isSingularPointMismatch || isRegularPointMismatch)
+            {
+                std::ostringstream errorDescription;
+                errorDescription << "Original and computed cartesian coordinates do not match: original [";
+                errorDescription << origCartesian.x;
+                errorDescription << ",";
+                errorDescription << origCartesian.y;
+                errorDescription << "], computed [";
+                errorDescription << computedCartesian.x;
+                errorDescription << ",";
+                errorDescription << computedCartesian.y;
+                errorDescription << "]";
+
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                    "Cartesian -> Barycentric -> Cartesian",
+                    errorDescription.str().c_str());
+                return false;
+            }
+
+            PG3_UT_PASSED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                "Cartesian -> Barycentric -> Cartesian");
+        }
+
+        // Test Barycentric -> Cartesian -> Barycentric
+        if ((aSample.x + aSample.y) <= 1.0f) // valid barycentric coordinates
+        {
+            PG3_UT_BEGIN(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                "Barycentric -> Cartesian -> Barycentric");
+
+            const Vec2f origBarycentric     = aSample;
+            const Vec2f tmpCartesian        = Triangle::MapBaryToCart(origBarycentric);
+            const Vec2f computedBarycentric = Triangle::MapCartToBary(tmpCartesian);
+
+            if (!computedBarycentric.EqualsDelta(origBarycentric, 0.0001f))
+            {
+                std::ostringstream errorDescription;
+                errorDescription << "Original and computed barycentric coordinates do not match: original [";
+                errorDescription << origBarycentric.x;
+                errorDescription << ",";
+                errorDescription << origBarycentric.y;
+                errorDescription << "], computed [";
+                errorDescription << computedBarycentric.x;
+                errorDescription << ",";
+                errorDescription << computedBarycentric.y;
+                errorDescription << "]";
+
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                    "Barycentric -> Cartesian -> Barycentric",
+                    errorDescription.str().c_str());
+                return false;
+            }
+
+            PG3_UT_PASSED(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                "Barycentric -> Cartesian -> Barycentric");
+        }
+
+        PG3_UT_PASSED(
+            aMaxUtBlockPrintLevel, eutblSubTestLevel1,
+            "Sample (%.1f,%.1f)",
+            aSample.x, aSample.y);
+        return true;
+    }
+
+
+    bool _UT_CartesianBarycentricMapping(
+        const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom:: Cartesian-Barycentric Mapping");
+
+        if (!_UT_CartesianBarycentricMapping_SingleSample(aMaxUtBlockPrintLevel, Vec2f(0.f, 0.f)))
+            return false;
+        if (!_UT_CartesianBarycentricMapping_SingleSample(aMaxUtBlockPrintLevel, Vec2f(0.f, 1.f)))
+            return false;
+        if (!_UT_CartesianBarycentricMapping_SingleSample(aMaxUtBlockPrintLevel, Vec2f(1.f, 0.f)))
+            return false;
+        if (!_UT_CartesianBarycentricMapping_SingleSample(aMaxUtBlockPrintLevel, Vec2f(1.f, 1.f)))
+            return false;
+
+        Rng rng;
+        for (uint32_t i = 0; i < 10000; ++i)
+        {
+            const Vec2f sample = rng.GetVec2f();
+            if (!_UT_CartesianBarycentricMapping_SingleSample(aMaxUtBlockPrintLevel, sample))
+                return false;
+        }
+
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Geom:: Cartesian-Barycentric Mapping");
+        return true;
+    }
+
+    static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        if (!_UT_UnitIcosahedron(aMaxUtBlockPrintLevel))
+            return false;
+        if (!Triangle::_UT_TriangleBarycentricCoords(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_CartesianBarycentricMapping(aMaxUtBlockPrintLevel))
+            return false;
+
+        return true;
+    }
+
+#endif
 
 } // namespace Geom
