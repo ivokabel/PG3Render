@@ -67,8 +67,11 @@ namespace Math
     const float kHugeF  = 2.147483648E+9f;
     const double kHugeD = 5.78960446186580977117855E+76;
 
-    //////////////////////////////////////////////////////////////////////////
-    // Math section
+    template <typename T>
+    bool IsInRange(const T &aVal, const T &aMin, const T &aMax)
+    {
+        return (aVal >= aMin) && (aVal <= aMax);
+    }
 
     bool EqualDelta(float aVal1, float aVal2, float aMaxDelta)
     {
