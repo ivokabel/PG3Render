@@ -654,17 +654,34 @@ namespace Geom
             return baryCoords;
         }
 
+        template <typename T>
+        T InterpolateValues(
+            const T         &aValue0,
+            const T         &aValue1,
+            const T         &aValue2,
+            const Vec2f     &aBarycentricCoords)
+        {
+            PG3_ASSERT_FLOAT_IN_RANGE(aBarycentricCoords.x, 0.f, 1.f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aBarycentricCoords.y, 0.f, 1.f);
+            PG3_ASSERT((aBarycentricCoords.x + aBarycentricCoords.y) <= 1.001f);
+
+            const auto barycentricCoordZ = (1.0f - aBarycentricCoords.x - aBarycentricCoords.y);
+
+            const T retVal =
+                  aBarycentricCoords.x * aValue0
+                + aBarycentricCoords.y * aValue1
+                + barycentricCoordZ    * aValue2;
+
+            return retVal;
+        }
+
         Vec3f GetPoint(
             const Vec3f &aP0,
             const Vec3f &aP1,
             const Vec3f &aP2,
             const Vec2f &aBarycentricCoords)
         {
-            const auto barycentricCoordZ = (1.0f - aBarycentricCoords.x - aBarycentricCoords.y);
-            const Vec3f point =
-                  aBarycentricCoords.x * aP0
-                + aBarycentricCoords.y * aP1
-                + barycentricCoordZ    * aP2;
+            const Vec3f point = InterpolateValues(aP0, aP1, aP2, aBarycentricCoords);
 
             return point;
         }
@@ -791,6 +808,7 @@ namespace Geom
 
             PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
             PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);
+            PG3_ASSERT((aBaryCoords.x + aBaryCoords.y) <= 1.001f);
 
             return result;
         }

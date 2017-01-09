@@ -1132,7 +1132,6 @@ public:
         //TriangleNode(const TriangleNode&) = delete;
 #endif
 
-
         TriangleNode(
             uint32_t                 aVertexIndex0,
             uint32_t                 aVertexIndex1,
@@ -1203,6 +1202,34 @@ public:
             return averageVertexWeight * area;
         }
 
+
+        bool GetVertexValues(
+            float                       &oValue0,
+            float                       &oValue1,
+            float                       &oValue2,
+            const SteeringCoefficients  &aClampedCosCoeffs,
+            const VertexStorage         &aVertexStorage
+            ) const
+        {
+            const auto vertex0 = aVertexStorage.Get(vertexIndices[0]);
+            const auto vertex1 = aVertexStorage.Get(vertexIndices[1]);
+            const auto vertex2 = aVertexStorage.Get(vertexIndices[2]);
+
+            if (   (vertex0 == nullptr)
+                || (vertex1 == nullptr)
+                || (vertex2 == nullptr))
+                return false;
+
+            oValue0 = Dot(vertex0->weight, aClampedCosCoeffs);
+            oValue1 = Dot(vertex1->weight, aClampedCosCoeffs);
+            oValue2 = Dot(vertex2->weight, aClampedCosCoeffs);
+
+            PG3_ASSERT_FLOAT_POSITIVE(oValue0);
+            PG3_ASSERT_FLOAT_POSITIVE(oValue1);
+            PG3_ASSERT_FLOAT_POSITIVE(oValue2);
+
+            return true;
+        }
 
         bool operator == (const TriangleNode &aTriangle) const
         {
@@ -1889,10 +1916,12 @@ public:
         return false;
     }
 
+
     bool IsBuilt() const
     {
         return (mTreeRoot.get() != nullptr) && (!mVertexStorage.IsEmpty());
     }
+
 
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
     // bilinear approximation of the environment map luminance.
@@ -1907,25 +1936,35 @@ public:
         PG3_ASSERT_FLOAT_IN_RANGE(aSample.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aSample.y, 0.0f, 1.0f);
 
-        // TODO: Spherical harmonics coefficients of clamped cosine for given normal
+        // Spherical harmonics coefficients of clamped cosine for given normal
         SteeringCoefficients clampedCosCoeffs;
         clampedCosCoeffs.GenerateForClampedCos(aNormal, true);
 
-        // TODO: Pick a triangle (descend the tree)
+        // Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
         float triangleProbability = 0.0f;
         PickTriangle(triangle, triangleProbability, clampedCosCoeffs, aSample.x);
         if (triangle == nullptr)
             return false;
 
-        // TODO: Sample triangle surface (bi-linear surface sampling)
-        float triangleSamplePdf = 0.0f;
-        SampleTriangleSurface(oSampleDirection, triangleSamplePdf, *triangle,
-                              clampedCosCoeffs, aSample/*may need some adjustments*/);
-        oSamplePdf = triangleSamplePdf * triangleSamplePdf;
+        // Sample triangle surface (bi-linear surface sampling)
+        float sampleValue = 0.f;
+        if (!SampleTriangleSurface(
+                oSampleDirection, sampleValue, *triangle, clampedCosCoeffs, aSample))
+            return false;
+
+        // TODO: Move the PDF computation outside the sampling functions
+        // TODO: Explain...
+        //oSamplePdf = triangleProbability * triangleSamplePdf;
+        const float wholeIntegral = mTreeRoot->GetIntegral(clampedCosCoeffs);
+        if (Math::IsTiny(wholeIntegral))
+            oSamplePdf = 0.f;
+        else
+            oSamplePdf = sampleValue / wholeIntegral;
 
         return true;
     }
+
 
     float GetWholeIntegral(const SteeringCoefficients &aClampedCosCoeffs) const
     {
@@ -1935,6 +1974,7 @@ public:
         return mTreeRoot->GetIntegral(aClampedCosCoeffs);
     }
 
+
     template <typename Worker>
     bool ForEachTriangle(Worker worker) const
     {
@@ -1943,6 +1983,7 @@ public:
 
         return ForEachTriangleImpl(mTreeRoot.get(), worker);
     }
+
 
     size_t GetTriangleCount() const
     {
@@ -1960,6 +2001,18 @@ public:
         else
             return count;
     }
+
+    bool GetTriangleVertexValues(
+        float                       &oValue0,
+        float                       &oValue1,
+        float                       &oValue2,
+        const TriangleNode          aTriangle,
+        const SteeringCoefficients  &aClampedCosCoeffs
+        ) const
+    {
+        return aTriangle.GetVertexValues(oValue0, oValue1, oValue2, aClampedCosCoeffs, mVertexStorage);
+    }
+
 
 protected:
 
@@ -3138,6 +3191,19 @@ protected:
 
 protected:
 
+    static float SampleTriangleFFunction()
+    {
+        return 0.0f;
+    }
+
+    static float SampleTriangleGFunction()
+    {
+        return 0.0f;
+    }
+
+protected:
+
+
     // Build a balanced tree from the provided list of nodes (typically triangles).
     // The tree is built from bottom to top, accumulating the children data into their parents.
     // The triangles are either moved into the tree or deleted on error.
@@ -3187,6 +3253,7 @@ protected:
 
         return true;
     }
+
 
     // Randomly pick a triangle with probability proportional to the integral of 
     // the piece-wise bilinear EM approximation over the triangle surface.
@@ -3249,21 +3316,53 @@ protected:
         return true;
     }
 
+
     // Randomly sample the surface of the triangle with probability density proportional
-    // to the the piece-wise bilinear EM approximation
+    // to the the piece-wise bilinear EM approximation.
+    // Generates triangle barycentric coordinates.
     bool SampleTriangleSurface(
-        Vec3f                       &oSampleDirection,
-        float                       &oSamplePdf,
+        Vec2f                       &oBaryCoords,
+        float                       &oSampleValue,
         const TriangleNode          &aTriangle,
         const SteeringCoefficients  &aClampedCosCoeffs,
         const Vec2f                 &aSample) const
     {
-        oSampleDirection; oSamplePdf; aTriangle; aClampedCosCoeffs; aSample;
+        oBaryCoords; oSampleValue; aTriangle; aClampedCosCoeffs; aSample;
 
-        // ...
+        //float value0, value1, value2;
+        //aTriangle.GetVertexValues(value0, value1, value2, aClampedCosCoeffs, mVertexStorage);
+
+        //const float s = SampleTriangleFFunction(aSample.x, value0, value1, value2);
+        //const float t = SampleTriangleGFunction(aSample.y, value0, value1, value2);
+
+        // TODO: ...
 
         return false;
     }
+
+
+    // Randomly sample the surface of the triangle with probability density proportional
+    // to the the piece-wise bilinear EM approximation.
+    // Generates direction.
+    bool SampleTriangleSurface(
+        Vec3f                       &oDirection,
+        float                       &oSampleValue,
+        const TriangleNode          &aTriangle,
+        const SteeringCoefficients  &aClampedCosCoeffs,
+        const Vec2f                 &aSample) const
+    {
+        Vec2f baryCoords;
+        if (!SampleTriangleSurface(baryCoords, oSampleValue, aTriangle, aClampedCosCoeffs, aSample))
+            return false;
+
+        const auto &dir0 = mVertexStorage.Get(aTriangle.vertexIndices[0])->dir;
+        const auto &dir1 = mVertexStorage.Get(aTriangle.vertexIndices[1])->dir;
+        const auto &dir2 = mVertexStorage.Get(aTriangle.vertexIndices[2])->dir;
+        oDirection = Geom::Triangle::GetPoint(dir0, dir1, dir2, baryCoords);
+
+        return true;
+    }
+
 
 protected:
 
@@ -4065,6 +4164,293 @@ public:
     }
 
 
+    static bool _UT_Sampling_Tree(
+        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel         aUtBlockPrintLevel,
+        const SteeringCoefficients      &aClampedCosCoeffs,
+        EnvironmentMapSteeringSampler   &aSampler)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling");
+
+        const static uint32_t avgSamplesPerTriangle = 100;
+        const size_t triangleCount = aSampler.GetTriangleCount();
+
+        struct TriangleHitRecord
+        {
+            TriangleHitRecord() : hitCount(0), probability(0.f){}
+            uint32_t hitCount;
+            float probability;
+        };
+        std::map<const TriangleNode*, TriangleHitRecord> triangleHitMap;
+        uint32_t totalTriangleHits = 0;
+
+        // Compute statistics for many sample triangles
+        Rng rngSamples;
+        const size_t sampleCount = avgSamplesPerTriangle * triangleCount;
+        for (uint32_t i = 0; i < sampleCount; ++i)
+        {
+            Vec2f sample(rngSamples.GetVec2f());
+
+            // Pick triangle
+            const TriangleNode *triangle;
+            float triangleProbability;
+            if (!aSampler.PickTriangle(triangle, triangleProbability, aClampedCosCoeffs, sample.x))
+            {
+                PG3_UT_FATAL_ERROR(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                    "Tree sampling", "PickTriangle failed!");
+                return false;
+            }
+
+            auto &triangleHitRecord = triangleHitMap[triangle];
+
+            if (triangleHitRecord.hitCount == 0)
+                triangleHitRecord.probability = triangleProbability;
+            else if (triangleHitRecord.probability != triangleProbability)
+            {
+                std::ostringstream ossError;
+                ossError << "Varying triangle probability detected: now: ";
+                ossError.precision(10);
+                ossError << triangleProbability;
+                ossError << ", before: ";
+                ossError.precision(10);
+                ossError << triangleHitRecord.probability;
+                ossError << "!";
+
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling",
+                    ossError.str().c_str());
+                return false;
+            }
+
+            triangleHitRecord.hitCount++;
+            totalTriangleHits++;
+        }
+
+        if (totalTriangleHits == 0)
+        {
+            PG3_UT_FATAL_ERROR(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                "Tree sampling", "No triangle hits!");
+            return false;
+        }
+
+        // Evaluate triangle picking quality
+        // TODO: Zero integrals (triangle, whole) cases?
+        const float wholeIntegral = aSampler.GetWholeIntegral(aClampedCosCoeffs);
+        bool forEachReturn = aSampler.ForEachTriangle([&](const TriangleNode* aTriangle)
+        {
+            // This works also for unhit triangles - defaults to hit count 0
+            auto triangleHitRecord = triangleHitMap[aTriangle];
+
+            const float relativeHitCount =
+                (float)triangleHitRecord.hitCount / totalTriangleHits;
+
+            const float triangleIntegral =
+                aTriangle->GetIntegral(aClampedCosCoeffs);
+            const float relativeIntegral = triangleIntegral / wholeIntegral; // probability
+
+            // Sanity test
+            if ((triangleHitRecord.hitCount > 0) &&
+                (triangleHitRecord.probability != relativeIntegral))
+            {
+                std::ostringstream ossError;
+                ossError << "Triangle probability ";
+                ossError.precision(10);
+                ossError << triangleHitRecord.probability;
+                ossError << " differs from the relative integral ";
+                ossError.precision(10);
+                ossError << relativeIntegral;
+                ossError << "!";
+
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling",
+                    ossError.str().c_str());
+                return false;
+            }
+
+            // Relative hit count
+            if (!Math::EqualDelta(relativeHitCount, triangleHitRecord.probability, 0.01f))
+            {
+                std::ostringstream ossError;
+                ossError << "A triangle relative hit count (";
+                ossError.precision(6);
+                ossError << relativeHitCount;
+                ossError << "=";
+                ossError << triangleHitRecord.hitCount;
+                ossError << "/";
+                ossError << totalTriangleHits;
+                ossError << ") differs too much from the relative integral = expected sampling probability (";
+                ossError.precision(6);
+                ossError << relativeIntegral;
+                ossError << "=";
+                ossError.precision(6);
+                ossError << triangleIntegral;
+                ossError << "/";
+                ossError.precision(6);
+                ossError << wholeIntegral;
+                ossError << ")";
+
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling",
+                    ossError.str().c_str());
+                return false;
+            }
+
+            return true;
+        });
+        if (!forEachReturn)
+            return false;
+
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling");
+        return true;
+    }
+
+
+    static bool _UT_Sampling_Triangles(
+        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel         aUtBlockPrintLevel,
+        const SteeringCoefficients      &aClampedCosCoeffs,
+        EnvironmentMapSteeringSampler   &aSampler)
+    {
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling");
+
+        const static uint32_t gridSizePerDim = 3u; // debug; TODO: 10u?
+        const static uint32_t gridCellCount = gridSizePerDim * gridSizePerDim;
+        const static uint32_t samplesPerTriangle = 10u /*100u*/ * gridCellCount;
+
+        bool forEachReturn = aSampler.ForEachTriangle([&](const TriangleNode* aTriangle)
+        {
+            // Bin sample counters
+            std::vector<std::vector<uint32_t>> binCounts(
+                gridSizePerDim, std::vector<uint32_t>(gridSizePerDim, 0u));
+            uint32_t totalCount = 0u;
+
+            // Generate samples & accumulate them within grid
+            Rng rngSamples;
+            for (uint32_t i = 0; i < samplesPerTriangle; ++i)
+            {
+                Vec2f uniformSample(rngSamples.GetVec2f());
+
+                float triangleSampleValue = 0.0f;
+                Vec2f baryCoords;
+                aSampler.SampleTriangleSurface(
+                    baryCoords, triangleSampleValue,
+                    *aTriangle, aClampedCosCoeffs, uniformSample);
+
+                // Map coordinates of the sample onto the cartesian grid
+                const Vec2f gridCoordsF = Geom::Triangle::MapBaryToCart(baryCoords);
+                if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.f)
+                    || !Math::IsInRange(gridCoordsF.y, 0.f, 1.f))
+                {
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                        "Triangle sampling", "Grid coords are otside range!");
+                    return false;
+                }
+
+                // Increase sample count
+                Vec2ui gridCoordsUi(
+                    std::min((uint32_t)(gridCoordsF.x * gridSizePerDim), gridSizePerDim - 1),
+                    std::min((uint32_t)(gridCoordsF.y * gridSizePerDim), gridSizePerDim - 1));
+                binCounts[gridCoordsUi.x][gridCoordsUi.y]++;
+                totalCount++;
+
+                //// TODO: Evaluate sample PDF quality
+                //float value0, value1, value2;
+                //if (!aSampler.GetTriangleVertexValues(
+                //        value0, value1, value2, *aTriangle, aClampedCosCoeffs))
+                //{
+                //    PG3_UT_FAILED(
+                //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                //        "Triangle sampling", "GetTriangleVertexValues() failed!");
+                //    return false;
+                //}
+                //// TODO: Compute ideal PDF
+                //// TODO:    Interpolate the values (using barycentric coords)
+                //// TODO:    Get whole integral
+            }
+
+            if (totalCount == 0)
+                return true; // OK?
+
+            // TODO: Check sampling quality:
+            for (uint32_t columnId = 0; columnId < binCounts.size(); ++columnId)
+            {
+                const auto &column = binCounts[columnId];
+                for (uint32_t rowId = 0; rowId < column.size(); ++rowId)
+                {
+                    const uint32_t cellCount = column[rowId];
+
+                    const float relativeCount = (float)cellCount / totalCount;
+
+                    // Compute coordinates of the cell vertices:
+                    // logical -> cartesian -> barycentric -> values
+
+                    const Vec2ui vertex00Logical(columnId,     rowId);
+                    const Vec2ui vertex01Logical(columnId,     rowId + 1);
+                    const Vec2ui vertex10Logical(columnId + 1, rowId);
+                    const Vec2ui vertex11Logical(columnId + 1, rowId + 1);
+                    
+                    const Vec2f vertex00Cartesian((float)vertex00Logical.x / gridSizePerDim,
+                                                  (float)vertex00Logical.y / gridSizePerDim);
+                    const Vec2f vertex01Cartesian((float)vertex01Logical.x / gridSizePerDim,
+                                                  (float)vertex01Logical.y / gridSizePerDim);
+                    const Vec2f vertex10Cartesian((float)vertex10Logical.x / gridSizePerDim,
+                                                  (float)vertex10Logical.y / gridSizePerDim);
+                    const Vec2f vertex11Cartesian((float)vertex11Logical.x / gridSizePerDim,
+                                                  (float)vertex11Logical.y / gridSizePerDim);
+                    
+                    const Vec2f vertex00Bary = Geom::Triangle::MapCartToBary(vertex00Cartesian);
+                    const Vec2f vertex01Bary = Geom::Triangle::MapCartToBary(vertex01Cartesian);
+                    const Vec2f vertex10Bary = Geom::Triangle::MapCartToBary(vertex10Cartesian);
+                    const Vec2f vertex11Bary = Geom::Triangle::MapCartToBary(vertex11Cartesian);
+                    
+                    float value0, value1, value2;
+                    if (!aSampler.GetTriangleVertexValues(
+                            value0, value1, value2, *aTriangle, aClampedCosCoeffs))
+                    {
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                            "Triangle sampling", "GetTriangleVertexValues() failed!");
+                        return false;
+                    }
+
+                    // Interpolate triangle vertex values
+                    const float vertex00Value =
+                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex00Bary);
+                    const float vertex01Value =
+                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex01Bary);
+                    const float vertex10Value =
+                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex10Bary);
+                    const float vertex11Value =
+                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex11Bary);
+
+                    //Geom::Triangle::SurfaceArea();
+
+                    // Compute/estimate ideal cell (integral of PDF over the cell)
+                    const float cellArea = 1.0f / gridCellCount; // because mapping retains density
+                    const float triangle1Area = 0.f; // TODO...
+                    const float triangle2Area = 0.f; // TODO...
+                    const float cellIntegral =
+                          (  triangle1Area * (vertex00Value + vertex10Value + vertex11Value)
+                           + triangle2Area * (vertex00Value + vertex11Value + vertex01Value))
+                        / 3.f;
+
+                    // TODO: Compare
+                }
+            }
+
+            return true;
+        });
+        if (!forEachReturn)
+            return false;
+
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling");
+        return true;
+    }
+
+
     static bool _UT_Sampling_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
@@ -4075,7 +4461,6 @@ public:
 
         BuildParameters params(Math::InfinityF(), 1, 3); // reduced amount to make the test faster
         const static uint32_t normalsCount = 100;
-        const static uint32_t samplesPerTriangle = 100;
 
         //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Loading image...", aTestName);
 
@@ -4103,7 +4488,6 @@ public:
 
         // Test random normals
         Rng rngNormals;
-        const size_t triangleCount = sampler.GetTriangleCount();
         for (uint32_t i = 0; i < normalsCount; ++i)
         {
             const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
@@ -4111,138 +4495,16 @@ public:
             SteeringCoefficients clampedCosCoeffs;
             clampedCosCoeffs.GenerateForClampedCos(normal, true);
 
-            struct TriangleHitRecord
-            {
-                TriangleHitRecord() : hitCount(0), probability(0.f){}
-                uint32_t hitCount;
-                float probability;
-            };
-            std::map<const TriangleNode*, TriangleHitRecord> triangleHitMap;
-            uint32_t totalTriangleHits = 0;
-
-            // Compute statistics for many sample triangles
-            Rng rngSamples;
-            const size_t sampleCount = samplesPerTriangle * triangleCount;
-            for (uint32_t i = 0; i < sampleCount; ++i)
-            {
-                Vec2f sample(rngSamples.GetVec2f());
-
-                // Pick triangle
-                const TriangleNode *triangle;
-                float triangleProbability;
-                if (!sampler.PickTriangle(triangle, triangleProbability, clampedCosCoeffs, sample.x))
-                {
-                    PG3_UT_FATAL_ERROR(
-                        aMaxUtBlockPrintLevel, eutblSubTestLevel1,
-                        "%s", "PickTriangle failed!", aTestName);
-                    return false;
-                }
-
-                auto &triangleHitRecord = triangleHitMap[triangle];
-
-                if (triangleHitRecord.hitCount == 0)
-                    triangleHitRecord.probability = triangleProbability;
-                else if (triangleHitRecord.probability != triangleProbability)
-                {
-                    std::ostringstream ossError;
-                    ossError << "Varying triangle probability detected: now: ";
-                    ossError.precision(10);
-                    ossError << triangleProbability;
-                    ossError << ", before: ";
-                    ossError.precision(10);
-                    ossError << triangleHitRecord.probability;
-                    ossError << "!";
-
-                    PG3_UT_FAILED(
-                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
-                        ossError.str().c_str(), aTestName);
-                    return false;
-                }
-                
-                triangleHitRecord.hitCount++;
-                totalTriangleHits++;
-
-                // TODO: Triangle area sampling: ...
-                //float triangleSamplePdf = 0.0f;
-                //Vec3f sampleDirection;
-                //sampler.SampleTriangleSurface(
-                //    sampleDirection, triangleSamplePdf, *triangle, clampedCosCoeffs, sample);
-                //const float samplePdf = triangleSamplePdf * triangleSamplePdf;
-            }
-
-            if (totalTriangleHits == 0)
-            {
-                PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
-                    "%s", "No triangle hits!", aTestName);
+            // Tree sampling
+            if (!_UT_Sampling_Tree(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                    clampedCosCoeffs, sampler))
                 return false;
-            }
 
-            // Evaluate triangle picking quality
-            // TODO: Zero integrals (triangle, whole) cases?
-            const float wholeIntegral = sampler.GetWholeIntegral(clampedCosCoeffs);
-            bool forEachReturn = sampler.ForEachTriangle([&](const TriangleNode* aTriangle)
-            {
-                // This works also for unhit triangles - defaults to hit count 0
-                auto triangleHitRecord = triangleHitMap[aTriangle];
-
-                const float relativeHitCount =
-                    (float)triangleHitRecord.hitCount / totalTriangleHits;
-
-                const float triangleIntegral =
-                    aTriangle->GetIntegral(clampedCosCoeffs);
-                const float relativeIntegral = triangleIntegral / wholeIntegral; // probability
-
-                // Sanity test
-                if ((triangleHitRecord.hitCount > 0) &&
-                    (triangleHitRecord.probability != relativeIntegral))
-                {
-                    std::ostringstream ossError;
-                    ossError << "Triangle probability ";
-                    ossError.precision(10);
-                    ossError << triangleHitRecord.probability;
-                    ossError << " differs from the relative integral ";
-                    ossError.precision(10);
-                    ossError << relativeIntegral;
-                    ossError << "!";
-
-                    PG3_UT_FAILED(
-                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
-                        ossError.str().c_str(), aTestName);
-                    return false;
-                }
-
-                // Relative hit count
-                if (!Math::EqualDelta(relativeHitCount, triangleHitRecord.probability, 0.01f))
-                {
-                    std::ostringstream ossError;
-                    ossError << "A triangle relative hit count (";
-                    ossError.precision(6);
-                    ossError << relativeHitCount;
-                    ossError << "=";
-                    ossError << triangleHitRecord.hitCount;
-                    ossError << "/";
-                    ossError << totalTriangleHits;
-                    ossError << ") differs too much from the relative integral = expected sampling probability (";
-                    ossError.precision(6);
-                    ossError << relativeIntegral;
-                    ossError << "=";
-                    ossError.precision(6);
-                    ossError << triangleIntegral;
-                    ossError << "/";
-                    ossError.precision(6);
-                    ossError << wholeIntegral;
-                    ossError << ")";
-
-                    PG3_UT_FAILED(
-                        aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s",
-                        ossError.str().c_str(), aTestName);
-                    return false;
-                }
-
-                return true;
-            });
-
-            if (!forEachReturn)
+            // Sampling of each triangle
+            if (!_UT_Sampling_Triangles(
+                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+                    clampedCosCoeffs, sampler))
                 return false;
         }
 
@@ -4268,47 +4530,47 @@ public:
                 false))
             return false;
 
-        if (!_UT_Sampling_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Const white 512x256",
-                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-                false))
-            return false;
+        //if (!_UT_Sampling_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Const white 512x256",
+        //        ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Sampling_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Const white 1024x512",
-                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                false))
-            return false;
+        //if (!_UT_Sampling_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Const white 1024x512",
+        //        ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Sampling_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Single pixel",
-                ".\\Light Probes\\Debugging\\Single pixel.exr",
-                false))
-            return false;
+        //if (!_UT_Sampling_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Single pixel",
+        //        ".\\Light Probes\\Debugging\\Single pixel.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Sampling_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Three point lighting 1024x512",
-                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                false))
-            return false;
+        //if (!_UT_Sampling_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Three point lighting 1024x512",
+        //        ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Sampling_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Satellite 4000x2000",
-                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                false))
-            return false;
+        //if (!_UT_Sampling_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Satellite 4000x2000",
+        //        ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+        //        false))
+        //    return false;
 
-        if (!_UT_Sampling_SingleEm(
-                aMaxUtBlockPrintLevel,
-                "Doge2",
-                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                false))
-            return false;
+        //if (!_UT_Sampling_SingleEm(
+        //        aMaxUtBlockPrintLevel,
+        //        "Doge2",
+        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+        //        false))
+        //    return false;
 
         /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -4341,5 +4603,6 @@ public:
 
         return true;
     }
+
 #endif
 };
