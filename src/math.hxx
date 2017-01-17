@@ -245,6 +245,67 @@ namespace Math
 
         return atan;
     }
+
+    class CubicFunction
+    {
+    public:
+        CubicFunction(float aA, float aB, float aC, float aD) : a(aA), b(aB), c(aC), d(aD) {}
+
+        // This class is not copyable because of a const member.
+        // If we don't delete the assignment operator
+        // explicitly, the compiler may complain about not being able 
+        // to create its default implementation.
+        CubicFunction & operator=(const CubicFunction&) = delete;
+        //CubicFunction(const CubicFunction&) = delete;
+
+        float Evaluate(float aX) const
+        {
+            return aX * (aX * (aX * a + b) + c) + d;
+        }
+
+        float EvaluateDerivative(float aX) const
+        {
+            return aX * (aX * 3.f * a + 2.f * b) + c;
+        }
+
+    private:
+        const float a, b, c, d;
+    };
+
+    // Tries to find one equation root using a fixed-iteration implementation
+    // of the Newton-Raphson method
+    template <class TFunction>
+    float FindRootNewtonRaphson(
+        const TFunction     &aFunction,
+        const float          aMin,
+        const float          aMax,
+        const float          aStart,
+        const size_t         aIterationCount)
+    {
+        float x = aStart;
+
+        float function, derivative;
+        for (size_t iteration = 0u; iteration < aIterationCount; ++iteration)
+        {
+            function   = aFunction.Evaluate(x);
+            derivative = aFunction.EvaluateDerivative(x);
+
+            // TODO: If too small switch to bisection method?
+            if (fabs(derivative) < 0.0001f)
+                return aStart; // debug
+
+            x = x - function / derivative;
+            x = Clamp(x, aMin, aMax);
+        }
+
+        // debug
+        function = aFunction.Evaluate(x);
+        if (function > 0.001f)
+            return x;
+
+        return x;
+    }
+
 } // namespace Math
 
 template<typename T>
