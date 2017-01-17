@@ -46,13 +46,18 @@ enum UnitTestBlockLevel
 { \
     if ((_max_print_ut_level) > eutblNone) \
     { \
+        if ((_ut_block_level) == (_max_print_ut_level)) \
+            printf("%s\n", _message); \
+        \
         if ((_ut_block_level) <= (_max_print_ut_level)) \
         { \
             for (uint32_t level = (uint32_t)eutblWholeTest; level < (uint32_t)_ut_block_level; level++) \
                 printf("\t"); \
-            printf("Test \"" _block_name "\"", __VA_ARGS__); \
+            printf("Test \"" _block_name "\": ", __VA_ARGS__); \
         } \
-        printf(": %s\n", _message); \
+        \
+        if ((_ut_block_level) < (_max_print_ut_level)) \
+            printf("%s\n", _message); \
     } \
 }
 
