@@ -1127,7 +1127,7 @@ public:
         // This class is not copyable because of a const member.
         // If we don't delete the assignment operator
         // explicitly, the compiler may complain about not being able 
-        // to create their default implementations.
+        // to create its default implementation.
         TriangleNode & operator=(const TriangleNode&) = delete;
         //TriangleNode(const TriangleNode&) = delete;
 #endif
