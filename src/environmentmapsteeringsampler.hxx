@@ -1203,6 +1203,30 @@ public:
         }
 
 
+        bool GetVertexDirections(
+            Vec3f                       &oDir0,
+            Vec3f                       &oDir1,
+            Vec3f                       &oDir2,
+            const VertexStorage         &aVertexStorage
+            ) const
+        {
+            const auto vertex0 = aVertexStorage.Get(vertexIndices[0]);
+            const auto vertex1 = aVertexStorage.Get(vertexIndices[1]);
+            const auto vertex2 = aVertexStorage.Get(vertexIndices[2]);
+
+            if (   (vertex0 == nullptr)
+                || (vertex1 == nullptr)
+                || (vertex2 == nullptr))
+                return false;
+
+            oDir0 = vertex0->dir;
+            oDir1 = vertex1->dir;
+            oDir2 = vertex2->dir;
+
+            return true;
+        }
+
+
         bool GetVertexValues(
             float                       &oValue0,
             float                       &oValue1,
@@ -1230,6 +1254,7 @@ public:
 
             return true;
         }
+
 
         bool operator == (const TriangleNode &aTriangle) const
         {
@@ -2002,6 +2027,21 @@ public:
             return count;
     }
 
+
+    bool GetTrianglePoint(
+        Vec3f                       &oPoint,
+        const TriangleNode           aTriangle,
+        const Vec2f                 &aBarycentricCoords
+        ) const
+    {
+        Vec3f vertex0, vertex1, vertex2;
+        if (!aTriangle.GetVertexDirections(vertex0, vertex1, vertex2, mVertexStorage))
+            return false;
+        oPoint = Geom::Triangle::GetPoint(vertex0, vertex1, vertex2, aBarycentricCoords);
+        return true;
+    }
+
+
     bool GetTriangleVertexValues(
         float                       &oValue0,
         float                       &oValue1,
@@ -2133,7 +2173,7 @@ protected:
         // This class is not copyable because of a const member.
         // If we don't delete the assignment operator
         // explicitly, the compiler may complain about not being able 
-        // to create their default implementations.
+        // to create its default implementation.
         TriangulationStats & operator=(const TriangulationStats&) = delete;
         //TriangulationStats(const TriangulationStats&) = delete;
 
@@ -3191,14 +3231,42 @@ protected:
 
 protected:
 
-    static float SampleTriangleFFunction()
+    static float SampleTriangleFFunction(
+        const float         aSample,
+        const float         aValA,
+        const float         aValB,
+        const float         aValC)
     {
-        return 0.0f;
+        const float x = (aValB - aValA) / 3.f + (aValC - aValB) / 6.f;
+        const float y = aValA / 2.f;
+
+        const float alpha = x / (x + y);
+        const float beta  = y / (x + y);
+
+        return Math::FindRootNewtonRaphson(
+            Math::CubicFunction(alpha, beta, 0.f, -aSample),
+            0.f, 1.f, 0.5f/*debug*/, 5u/*debug*/);
     }
 
-    static float SampleTriangleGFunction()
+
+    static float SampleTriangleGFunction(
+        const float         aS,
+        const float         aSample,
+        const float         aValA,
+        const float         aValB,
+        const float         aValC)
     {
-        return 0.0f;
+        const float t =
+              (aS * (aValC - aValB))
+            + (2.f * (1.f - aS) * aValA)
+            + (aS * aValB);
+        const float gamma   = aS * (aValC - aValB) / t;
+        const float rho     = 2.f * ((1.f - aS) * aValA + aS * aValB) / t;
+
+        const float discr = rho * rho + 4.f * gamma * aSample;
+        const float result = 2.f * aSample / (rho + Math::SafeSqrt(discr));
+
+        return result;
     }
 
 protected:
@@ -3327,17 +3395,20 @@ protected:
         const SteeringCoefficients  &aClampedCosCoeffs,
         const Vec2f                 &aSample) const
     {
-        oBaryCoords; oSampleValue; aTriangle; aClampedCosCoeffs; aSample;
+        float value0, value1, value2;
+        if (!aTriangle.GetVertexValues(value0, value1, value2, aClampedCosCoeffs, mVertexStorage))
+            return false;
 
-        //float value0, value1, value2;
-        //aTriangle.GetVertexValues(value0, value1, value2, aClampedCosCoeffs, mVertexStorage);
+        const float s = SampleTriangleFFunction(   aSample.x, value0, value1, value2);
+        const float t = SampleTriangleGFunction(s, aSample.y, value0, value1, value2);
 
-        //const float s = SampleTriangleFFunction(aSample.x, value0, value1, value2);
-        //const float t = SampleTriangleGFunction(aSample.y, value0, value1, value2);
+        oBaryCoords.x = 1.f - s;
+        oBaryCoords.y = s * (1.f - t);
+        //const float baryZ = s * t;
 
-        // TODO: ...
+        oSampleValue = Geom::Triangle::InterpolateValues(value0, value1, value2, oBaryCoords);
 
-        return false;
+        return true;
     }
 
 
@@ -3355,12 +3426,7 @@ protected:
         if (!SampleTriangleSurface(baryCoords, oSampleValue, aTriangle, aClampedCosCoeffs, aSample))
             return false;
 
-        const auto &dir0 = mVertexStorage.Get(aTriangle.vertexIndices[0])->dir;
-        const auto &dir1 = mVertexStorage.Get(aTriangle.vertexIndices[1])->dir;
-        const auto &dir2 = mVertexStorage.Get(aTriangle.vertexIndices[2])->dir;
-        oDirection = Geom::Triangle::GetPoint(dir0, dir1, dir2, baryCoords);
-
-        return true;
+        return GetTrianglePoint(oDirection, aTriangle, baryCoords);
     }
 
 
@@ -4317,7 +4383,7 @@ public:
 
         const static uint32_t gridSizePerDim = 3u; // debug; TODO: 10u?
         const static uint32_t gridCellCount = gridSizePerDim * gridSizePerDim;
-        const static uint32_t samplesPerTriangle = 10u /*100u*/ * gridCellCount;
+        const static uint32_t samplesPerTriangle = 1000u * gridCellCount;
 
         bool forEachReturn = aSampler.ForEachTriangle([&](const TriangleNode* aTriangle)
         {
@@ -4338,7 +4404,7 @@ public:
                     baryCoords, triangleSampleValue,
                     *aTriangle, aClampedCosCoeffs, uniformSample);
 
-                // Map coordinates of the sample onto the cartesian grid
+                // Map coordinates of the sample onto cartesian grid
                 const Vec2f gridCoordsF = Geom::Triangle::MapBaryToCart(baryCoords);
                 if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.f)
                     || !Math::IsInRange(gridCoordsF.y, 0.f, 1.f))
@@ -4374,18 +4440,15 @@ public:
             if (totalCount == 0)
                 return true; // OK?
 
-            // TODO: Check sampling quality:
+            // Check sampling quality
+            const float wholeTriangleIntegral = aTriangle->GetIntegral(aClampedCosCoeffs);
             for (uint32_t columnId = 0; columnId < binCounts.size(); ++columnId)
             {
                 const auto &column = binCounts[columnId];
                 for (uint32_t rowId = 0; rowId < column.size(); ++rowId)
                 {
-                    const uint32_t cellCount = column[rowId];
-
-                    const float relativeCount = (float)cellCount / totalCount;
-
-                    // Compute coordinates of the cell vertices:
-                    // logical -> cartesian -> barycentric -> values
+                    // Compute the grid cell:
+                    // logical coords -> cartesian coords -> barycentric coords -> 3D coords, values
 
                     const Vec2ui vertex00Logical(columnId,     rowId);
                     const Vec2ui vertex01Logical(columnId,     rowId + 1);
@@ -4405,10 +4468,28 @@ public:
                     const Vec2f vertex01Bary = Geom::Triangle::MapCartToBary(vertex01Cartesian);
                     const Vec2f vertex10Bary = Geom::Triangle::MapCartToBary(vertex10Cartesian);
                     const Vec2f vertex11Bary = Geom::Triangle::MapCartToBary(vertex11Cartesian);
-                    
-                    float value0, value1, value2;
+
+                    Vec3f vertex00Coords;
+                    Vec3f vertex01Coords;
+                    Vec3f vertex10Coords;
+                    Vec3f vertex11Coords;
+                    if (   !aSampler.GetTrianglePoint(vertex00Coords, *aTriangle, vertex00Bary)
+                        || !aSampler.GetTrianglePoint(vertex01Coords, *aTriangle, vertex01Bary)
+                        || !aSampler.GetTrianglePoint(vertex10Coords, *aTriangle, vertex10Bary)
+                        || !aSampler.GetTrianglePoint(vertex11Coords, *aTriangle, vertex11Bary))
+                    {
+                        PG3_UT_FAILED(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                            "Triangle sampling", "GetTrianglePoint() failed!");
+                        return false;
+                    }
+
+                    float vertexValue0;
+                    float vertexValue1;
+                    float vertexValue2;
                     if (!aSampler.GetTriangleVertexValues(
-                            value0, value1, value2, *aTriangle, aClampedCosCoeffs))
+                            vertexValue0, vertexValue1, vertexValue2,
+                            *aTriangle, aClampedCosCoeffs))
                     {
                         PG3_UT_FAILED(
                             aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
@@ -4416,28 +4497,78 @@ public:
                         return false;
                     }
 
-                    // Interpolate triangle vertex values
                     const float vertex00Value =
-                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex00Bary);
+                        Geom::Triangle::InterpolateValues(
+                            vertexValue0, vertexValue1, vertexValue2, vertex00Bary);
                     const float vertex01Value =
-                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex01Bary);
+                        Geom::Triangle::InterpolateValues(
+                            vertexValue0, vertexValue1, vertexValue2, vertex01Bary);
                     const float vertex10Value =
-                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex10Bary);
+                        Geom::Triangle::InterpolateValues(
+                            vertexValue0, vertexValue1, vertexValue2, vertex10Bary);
                     const float vertex11Value =
-                        Geom::Triangle::InterpolateValues(value0, value1, value2, vertex11Bary);
+                        Geom::Triangle::InterpolateValues(
+                            vertexValue0, vertexValue1, vertexValue2, vertex11Bary);
 
-                    //Geom::Triangle::SurfaceArea();
+                    // Compute expected integral of PDF over the cell
 
-                    // Compute/estimate ideal cell (integral of PDF over the cell)
-                    const float cellArea = 1.0f / gridCellCount; // because mapping retains density
-                    const float triangle1Area = 0.f; // TODO...
-                    const float triangle2Area = 0.f; // TODO...
+                    const float triangle1Area = Geom::Triangle::SurfaceArea(
+                        vertex00Coords,
+                        vertex01Coords,
+                        vertex10Coords);
+                    const float triangle2Area = Geom::Triangle::SurfaceArea(
+                        vertex11Coords,
+                        vertex10Coords,
+                        vertex01Coords);
+
                     const float cellIntegral =
-                          (  triangle1Area * (vertex00Value + vertex10Value + vertex11Value)
-                           + triangle2Area * (vertex00Value + vertex11Value + vertex01Value))
+                          (  triangle1Area * (vertex00Value + vertex01Value + vertex10Value)
+                           + triangle2Area * (vertex11Value + vertex10Value + vertex01Value))
                         / 3.f;
+                    const float expectedCellProbability = cellIntegral / wholeTriangleIntegral;
 
-                    // TODO: Compare
+                    // Evaluate
+                    const uint32_t cellCount = column[rowId];
+                    const float relativeCount = (float)cellCount / totalCount;
+                    if (!Math::EqualDelta(relativeCount, expectedCellProbability, 0.00001f))
+                    {
+                        std::ostringstream ossError;
+                        ossError << "Grid cell [";
+                        ossError << std::setfill(' ') << std::setw(2) << columnId;
+                        ossError << ",";
+                        ossError << std::setfill(' ') << std::setw(2) << rowId;
+                        ossError << "] relative hit count (";
+                        ossError << std::fixed;
+                        ossError.precision(2);
+                        ossError << relativeCount;
+                        ossError << " = ";
+                        ossError << std::setfill(' ') << std::setw(5) << cellCount;
+                        ossError << "/";
+                        ossError << std::setfill(' ') << std::setw(5) << totalCount;
+                        ossError << ") differs from the cell expected sampling probability (";
+                        ossError << std::fixed;
+                        ossError.precision(2);
+                        ossError << expectedCellProbability;
+                        ossError << " = ";
+                        ossError << std::fixed;
+                        ossError.precision(3);
+                        ossError << cellIntegral;
+                        ossError << " / ";
+                        ossError << std::fixed;
+                        ossError.precision(3);
+                        ossError << wholeTriangleIntegral;
+                        ossError << ")!";
+
+                        //PG3_UT_FAILED(
+                        //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                        //    ossError.str().c_str());
+                        //return false;
+
+                        // debug
+                        PG3_UT_INFO(
+                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                            ossError.str().c_str());
+                    }
                 }
             }
 
@@ -4496,10 +4627,10 @@ public:
             clampedCosCoeffs.GenerateForClampedCos(normal, true);
 
             // Tree sampling
-            if (!_UT_Sampling_Tree(
-                    aMaxUtBlockPrintLevel, eutblSubTestLevel2,
-                    clampedCosCoeffs, sampler))
-                return false;
+            //if (!_UT_Sampling_Tree(
+            //        aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+            //        clampedCosCoeffs, sampler))
+            //    return false;
 
             // Sampling of each triangle
             if (!_UT_Sampling_Triangles(
