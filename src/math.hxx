@@ -246,10 +246,11 @@ namespace Math
         return atan;
     }
 
+    template <typename T>
     class CubicFunction
     {
     public:
-        CubicFunction(float aA, float aB, float aC, float aD) : a(aA), b(aB), c(aC), d(aD) {}
+        CubicFunction(T aA, T aB, T aC, T aD) : a(aA), b(aB), c(aC), d(aD) {}
 
         // This class is not copyable because of a const member.
         // If we don't delete the assignment operator
@@ -258,40 +259,40 @@ namespace Math
         CubicFunction & operator=(const CubicFunction&) = delete;
         //CubicFunction(const CubicFunction&) = delete;
 
-        float Evaluate(float aX) const
+        T Evaluate(T aX) const
         {
             return aX * (aX * (aX * a + b) + c) + d;
         }
 
-        float EvaluateDerivative(float aX) const
+        T EvaluateDerivative(T aX) const
         {
             return aX * (aX * 3.f * a + 2.f * b) + c;
         }
 
     private:
-        const float a, b, c, d;
+        const T a, b, c, d;
     };
 
     // Tries to find one equation root using a fixed-iteration implementation
     // of the Newton-Raphson method
-    template <class TFunction>
-    float FindRootNewtonRaphson(
+    template <typename T, class TFunction>
+    T FindRootNewtonRaphson(
         const TFunction     &aFunction,
-        const float          aMin,
-        const float          aMax,
-        const float          aStart,
+        const T              aMin,
+        const T              aMax,
+        const T              aStart,
         const size_t         aIterationCount)
     {
-        float x = aStart;
+        T x = aStart;
 
-        float function, derivative;
+        T function, derivative;
         for (size_t iteration = 0u; iteration < aIterationCount; ++iteration)
         {
             function   = aFunction.Evaluate(x);
             derivative = aFunction.EvaluateDerivative(x);
 
             // TODO: If too small switch to bisection method?
-            if (fabs(derivative) < 0.0001f)
+            if (std::abs(derivative) < T(0.0001))
                 return aStart; // debug
 
             x = x - function / derivative;
@@ -300,7 +301,7 @@ namespace Math
 
         // debug
         function = aFunction.Evaluate(x);
-        if (function > 0.001f)
+        if (function > T(0.001))
             return x;
 
         return x;

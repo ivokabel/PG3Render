@@ -857,7 +857,7 @@ namespace Geom
             "Sample (%.1f,%.1f)",
             aSample.x, aSample.y);
 
-        if (!Math::IsInRange(aSample.x, 0.0f, 1.0f)
+        if (   !Math::IsInRange(aSample.x, 0.0f, 1.0f)
             || !Math::IsInRange(aSample.y, 0.0f, 1.0f))
         {
             PG3_UT_FATAL_ERROR(
@@ -875,17 +875,17 @@ namespace Geom
                 "Cartesian -> Barycentric -> Cartesian");
 
             const Vec2f origCartesian = aSample;
-            const Vec2f tmpBarycentric = Triangle::MapCartToBary(origCartesian);
+            const Vec2f tmpBarycentric    = Triangle::MapCartToBary(origCartesian);
             const Vec2f computedCartesian = Triangle::MapBaryToCart(tmpBarycentric);
 
             const bool isAtSingularPoint = Math::EqualDelta(tmpBarycentric.x, 1.f, 0.05f);
             const bool isRegularPointMismatch =
-                !isAtSingularPoint
+                   !isAtSingularPoint
                 && !computedCartesian.EqualsDelta(origCartesian, 0.0001f);
             const bool isSingularPointMismatch =
-                isAtSingularPoint
-                && (!Math::EqualDelta(origCartesian.x, 0.f, 0.05f)
-                || !Math::EqualDelta(computedCartesian.x, 0.f, 0.05f));
+                   isAtSingularPoint
+                && (   !Math::EqualDelta(origCartesian.x,     0.f, 0.05f)
+                    || !Math::EqualDelta(computedCartesian.x, 0.f, 0.05f));
 
             if (isSingularPointMismatch || isRegularPointMismatch)
             {

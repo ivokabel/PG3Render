@@ -3231,40 +3231,42 @@ protected:
 
 protected:
 
-    static float SampleTriangleFFunction(
-        const float         aSample,
-        const float         aValA,
-        const float         aValB,
-        const float         aValC)
+    template <typename T>
+    static T SampleTriangleFFunction(
+        const T     aSample,
+        const T     aValA,
+        const T     aValB,
+        const T     aValC)
     {
-        const float x = (aValB - aValA) / 3.f + (aValC - aValB) / 6.f;
-        const float y = aValA / 2.f;
+        const T x = (aValB - aValA) / T(3.) + (aValC - aValB) / T(6.);
+        const T y = aValA / T(2.);
 
-        const float alpha = x / (x + y);
-        const float beta  = y / (x + y);
+        const T alpha = x / (x + y);
+        const T beta  = y / (x + y);
 
-        return Math::FindRootNewtonRaphson(
-            Math::CubicFunction(alpha, beta, 0.f, -aSample),
-            0.f, 1.f, 0.5f/*debug*/, 5u/*debug*/);
+        return Math::FindRootNewtonRaphson<T>(
+            Math::CubicFunction<T>(alpha, beta, T(0.), -aSample),
+            T(0.), T(1.), T(0.5)/*debug*/, 4u/*debug*/);
     }
 
 
-    static float SampleTriangleGFunction(
-        const float         aS,
-        const float         aSample,
-        const float         aValA,
-        const float         aValB,
-        const float         aValC)
+    template <typename T>
+    static T SampleTriangleGFunction(
+        const T     aS,
+        const T     aSample,
+        const T     aValA,
+        const T     aValB,
+        const T     aValC)
     {
-        const float t =
+        const T t =
               (aS * (aValC - aValB))
-            + (2.f * (1.f - aS) * aValA)
+            + (T(2.) * (T(1.) - aS) * aValA)
             + (aS * aValB);
-        const float gamma   = aS * (aValC - aValB) / t;
-        const float rho     = 2.f * ((1.f - aS) * aValA + aS * aValB) / t;
+        const T gamma   = aS * (aValC - aValB) / t;
+        const T rho     = T(2.) * ((T(1.) - aS) * aValA + aS * aValB) / t;
 
-        const float discr = rho * rho + 4.f * gamma * aSample;
-        const float result = 2.f * aSample / (rho + Math::SafeSqrt(discr));
+        const T discr = rho * rho + T(4.) * gamma * aSample;
+        const T result = T(2.) * aSample / (rho + Math::SafeSqrt(discr));
 
         return result;
     }
@@ -3385,9 +3387,33 @@ protected:
     }
 
 
+    // Randomly sample the surface of a triangle with probability density proportional
+    // to the piece-wise bilinear function defined by the value in triangle vertices.
+    // Generates barycentric coordinates.
+    // TODO: Move to namespace Sampling?
+    template <typename T>
+    static Vec2f SampleTriangleBilinear(
+        const Vec2f     aSample,
+        const float     aValue0,
+        const float     aValue1,
+        const float     aValue2)
+    {
+        const T s = SampleTriangleFFunction<T>(   aSample.x, aValue0, aValue1, aValue2);
+        const T t = SampleTriangleGFunction<T>(s, aSample.y, aValue0, aValue1, aValue2);
+
+        const Vec2f baryCoords(
+            float(T(1.) - s),
+            float(s * (T(1.) - t)));
+        //const float baryZ = s * t;
+
+        return baryCoords;
+    }
+
+
     // Randomly sample the surface of the triangle with probability density proportional
-    // to the the piece-wise bilinear EM approximation.
+    // to the piece-wise bilinear EM approximation.
     // Generates triangle barycentric coordinates.
+    template <typename T>
     bool SampleTriangleSurface(
         Vec2f                       &oBaryCoords,
         float                       &oSampleValue,
@@ -3399,12 +3425,7 @@ protected:
         if (!aTriangle.GetVertexValues(value0, value1, value2, aClampedCosCoeffs, mVertexStorage))
             return false;
 
-        const float s = SampleTriangleFFunction(   aSample.x, value0, value1, value2);
-        const float t = SampleTriangleGFunction(s, aSample.y, value0, value1, value2);
-
-        oBaryCoords.x = 1.f - s;
-        oBaryCoords.y = s * (1.f - t);
-        //const float baryZ = s * t;
+        oBaryCoords = SampleTriangleBilinear<T>(aSample, value0, value1, value2);
 
         oSampleValue = Geom::Triangle::InterpolateValues(value0, value1, value2, oBaryCoords);
 
@@ -3423,7 +3444,8 @@ protected:
         const Vec2f                 &aSample) const
     {
         Vec2f baryCoords;
-        if (!SampleTriangleSurface(baryCoords, oSampleValue, aTriangle, aClampedCosCoeffs, aSample))
+        if (!SampleTriangleSurface<float>(
+                baryCoords, oSampleValue, aTriangle, aClampedCosCoeffs, aSample))
             return false;
 
         return GetTrianglePoint(oDirection, aTriangle, baryCoords);
@@ -4381,7 +4403,7 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling");
 
-        const static uint32_t gridSizePerDim = 3u; // debug; TODO: 10u?
+        const static uint32_t gridSizePerDim = 4u; // debug; TODO: 10u?
         const static uint32_t gridCellCount = gridSizePerDim * gridSizePerDim;
         const static uint32_t samplesPerTriangle = 1000u * gridCellCount;
 
@@ -4392,6 +4414,27 @@ public:
                 gridSizePerDim, std::vector<uint32_t>(gridSizePerDim, 0u));
             uint32_t totalCount = 0u;
 
+            // debug
+            {
+                float val0, val1, val2;
+                aSampler.GetTriangleVertexValues(val0, val1, val2, *aTriangle, aClampedCosCoeffs);
+
+                if (   !Math::IsInRange(val0, 0.97f, 1.03f)
+                    || !Math::IsInRange(val1, 0.97f, 1.03f)
+                    || !Math::IsInRange(val2, 0.97f, 1.03f))
+                    return true;
+
+                std::ostringstream ossInfo;
+                ossInfo << "Triangle values: ";
+                ossInfo << std::setprecision(2) << std::fixed << val0 << ", ";
+                ossInfo << std::setprecision(2) << std::fixed << val1 << ", ";
+                ossInfo << std::setprecision(2) << std::fixed << val2;
+
+                PG3_UT_INFO(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                    ossInfo.str().c_str());
+            }
+
             // Generate samples & accumulate them within grid
             Rng rngSamples;
             for (uint32_t i = 0; i < samplesPerTriangle; ++i)
@@ -4400,7 +4443,7 @@ public:
 
                 float triangleSampleValue = 0.0f;
                 Vec2f baryCoords;
-                aSampler.SampleTriangleSurface(
+                aSampler.SampleTriangleSurface<float>(
                     baryCoords, triangleSampleValue,
                     *aTriangle, aClampedCosCoeffs, uniformSample);
 
@@ -4411,7 +4454,7 @@ public:
                 {
                     PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                        "Triangle sampling", "Grid coords are otside range!");
+                        "Triangle sampling", "Grid coords are outside range [0,1]!");
                     return false;
                 }
 
@@ -4421,20 +4464,6 @@ public:
                     std::min((uint32_t)(gridCoordsF.y * gridSizePerDim), gridSizePerDim - 1));
                 binCounts[gridCoordsUi.x][gridCoordsUi.y]++;
                 totalCount++;
-
-                //// TODO: Evaluate sample PDF quality
-                //float value0, value1, value2;
-                //if (!aSampler.GetTriangleVertexValues(
-                //        value0, value1, value2, *aTriangle, aClampedCosCoeffs))
-                //{
-                //    PG3_UT_FAILED(
-                //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                //        "Triangle sampling", "GetTriangleVertexValues() failed!");
-                //    return false;
-                //}
-                //// TODO: Compute ideal PDF
-                //// TODO:    Interpolate the values (using barycentric coords)
-                //// TODO:    Get whole integral
             }
 
             if (totalCount == 0)
@@ -4444,6 +4473,17 @@ public:
             const float wholeTriangleIntegral = aTriangle->GetIntegral(aClampedCosCoeffs);
             for (uint32_t columnId = 0; columnId < binCounts.size(); ++columnId)
             {
+                // debug
+                {
+                    std::ostringstream ossInfo;
+                    ossInfo << "Grid column [";
+                    ossInfo << std::setfill(' ') << std::setw(2) << columnId;
+                    ossInfo << ", *] ===";
+                    PG3_UT_INFO(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                        ossInfo.str().c_str());
+                }
+
                 const auto &column = binCounts[columnId];
                 for (uint32_t rowId = 0; rowId < column.size(); ++rowId)
                 {
@@ -4539,17 +4579,19 @@ public:
                         ossError << std::setfill(' ') << std::setw(2) << rowId;
                         ossError << "] relative hit count (";
                         ossError << std::fixed;
-                        ossError.precision(2);
-                        ossError << relativeCount;
-                        ossError << " = ";
+                        ossError.width(4);
+                        ossError.precision(1);
+                        ossError << 100.f * relativeCount;
+                        ossError << " % = ";
                         ossError << std::setfill(' ') << std::setw(5) << cellCount;
                         ossError << "/";
                         ossError << std::setfill(' ') << std::setw(5) << totalCount;
-                        ossError << ") differs from the cell expected sampling probability (";
+                        ossError << ") differs from the expected probability (";
                         ossError << std::fixed;
-                        ossError.precision(2);
-                        ossError << expectedCellProbability;
-                        ossError << " = ";
+                        ossError.precision(1);
+                        ossError.width(4);
+                        ossError << 100.f * expectedCellProbability;
+                        ossError << " % = ";
                         ossError << std::fixed;
                         ossError.precision(3);
                         ossError << cellIntegral;
@@ -4572,7 +4614,11 @@ public:
                 }
             }
 
-            return true;
+            // debug
+            PG3_UT_INFO(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling", "");
+
+            //return true;
+            return false; // debug
         });
         if (!forEachReturn)
             return false;
