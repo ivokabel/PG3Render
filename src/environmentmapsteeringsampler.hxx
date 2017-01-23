@@ -2042,6 +2042,17 @@ public:
     }
 
 
+    bool GetTriangleVertices(
+        Vec3f                       &oVertex0,
+        Vec3f                       &oVertex1,
+        Vec3f                       &oVertex2,
+        const TriangleNode           aTriangle
+        ) const
+    {
+        return aTriangle.GetVertexDirections(oVertex0, oVertex1, oVertex2, mVertexStorage);
+    }
+
+
     bool GetTriangleVertexValues(
         float                       &oValue0,
         float                       &oValue1,
@@ -4395,6 +4406,198 @@ public:
     }
 
 
+    static bool _UT_Sampling_SingleTriangle(
+        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel         aUtBlockPrintLevel,
+        const char                      *aTestName,
+        const Vec3f                     &aVertex0,
+        const Vec3f                     &aVertex1,
+        const Vec3f                     &aVertex2,
+        const float                      aVertexValue0,
+        const float                      aVertexValue1,
+        const float                      aVertexValue2)
+    {
+        const static uint32_t gridSizePerDim = 4u; // debug; TODO: 10u?
+        const static uint32_t gridCellCount = gridSizePerDim * gridSizePerDim;
+        const static uint32_t samplesPerTriangle = 1000u * gridCellCount;
+
+        // Bin sample counters
+        std::vector<std::vector<uint32_t>> binCounts(
+            gridSizePerDim, std::vector<uint32_t>(gridSizePerDim, 0u));
+        uint32_t totalCount = 0u;
+
+        // Generate samples & accumulate them within a grid
+        Rng rngSamples;
+        for (uint32_t i = 0; i < samplesPerTriangle; ++i)
+        {
+            const Vec2f uniformSample(rngSamples.GetVec2f());
+
+            const Vec2f baryCoords = SampleTriangleBilinear<float>(
+                uniformSample, aVertexValue0, aVertexValue1, aVertexValue2);
+            //const Vec2f baryCoords = Geom::Triangle::MapCartToBary(uniformSample); // debug: uniform smapling
+
+            // Map coordinates of the sample onto cartesian grid
+            const Vec2f gridCoordsF = Geom::Triangle::MapBaryToCart(baryCoords);
+            if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.f)
+                || !Math::IsInRange(gridCoordsF.y, 0.f, 1.f))
+            {
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                    "%s", "Grid coords are outside range [0,1]!", aTestName);
+                return false;
+            }
+
+            // Increase sample count
+            Vec2ui gridCoordsUi(
+                std::min((uint32_t)(gridCoordsF.x * gridSizePerDim), gridSizePerDim - 1),
+                std::min((uint32_t)(gridCoordsF.y * gridSizePerDim), gridSizePerDim - 1));
+            binCounts[gridCoordsUi.x][gridCoordsUi.y]++;
+            totalCount++;
+        }
+
+        if (totalCount == 0)
+        {
+            PG3_UT_FAILED(
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                "%s", "Total sample count is 0!", aTestName);
+            return false;
+        }
+
+        // Check sampling quality
+        const float triangleArea = Geom::Triangle::SurfaceArea(aVertex0, aVertex1, aVertex2);
+        const float wholeTriangleIntegral =
+            triangleArea * (aVertexValue0 + aVertexValue1 + aVertexValue2) / 3.f;
+        for (uint32_t columnId = 0; columnId < binCounts.size(); ++columnId)
+        {
+            // debug
+            {
+                std::ostringstream ossInfo;
+                ossInfo << "Grid column [";
+                ossInfo << std::setfill(' ') << std::setw(2) << columnId;
+                ossInfo << ", *] ===";
+                PG3_UT_INFO(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    ossInfo.str().c_str(), aTestName);
+            }
+
+            const auto &column = binCounts[columnId];
+            for (uint32_t rowId = 0; rowId < column.size(); ++rowId)
+            {
+                // Compute the grid cell:
+                // logical coords -> cartesian coords -> barycentric coords -> 3D coords, values
+
+                const Vec2ui vertex00Logical(columnId,     rowId);
+                const Vec2ui vertex01Logical(columnId,     rowId + 1);
+                const Vec2ui vertex10Logical(columnId + 1, rowId);
+                const Vec2ui vertex11Logical(columnId + 1, rowId + 1);
+                    
+                const Vec2f vertex00Cartesian((float)vertex00Logical.x / gridSizePerDim,
+                                              (float)vertex00Logical.y / gridSizePerDim);
+                const Vec2f vertex01Cartesian((float)vertex01Logical.x / gridSizePerDim,
+                                              (float)vertex01Logical.y / gridSizePerDim);
+                const Vec2f vertex10Cartesian((float)vertex10Logical.x / gridSizePerDim,
+                                              (float)vertex10Logical.y / gridSizePerDim);
+                const Vec2f vertex11Cartesian((float)vertex11Logical.x / gridSizePerDim,
+                                              (float)vertex11Logical.y / gridSizePerDim);
+                    
+                const Vec2f vertex00Bary = Geom::Triangle::MapCartToBary(vertex00Cartesian);
+                const Vec2f vertex01Bary = Geom::Triangle::MapCartToBary(vertex01Cartesian);
+                const Vec2f vertex10Bary = Geom::Triangle::MapCartToBary(vertex10Cartesian);
+                const Vec2f vertex11Bary = Geom::Triangle::MapCartToBary(vertex11Cartesian);
+
+                const Vec3f vertex00Coords =
+                    Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, vertex00Bary);
+                const Vec3f vertex01Coords =
+                    Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, vertex01Bary);
+                const Vec3f vertex10Coords =
+                    Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, vertex10Bary);
+                const Vec3f vertex11Coords =
+                    Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, vertex11Bary);
+
+                const float vertex00Value =
+                    Geom::Triangle::InterpolateValues(
+                        aVertexValue0, aVertexValue1, aVertexValue2, vertex00Bary);
+                const float vertex01Value =
+                    Geom::Triangle::InterpolateValues(
+                        aVertexValue0, aVertexValue1, aVertexValue2, vertex01Bary);
+                const float vertex10Value =
+                    Geom::Triangle::InterpolateValues(
+                        aVertexValue0, aVertexValue1, aVertexValue2, vertex10Bary);
+                const float vertex11Value =
+                    Geom::Triangle::InterpolateValues(
+                        aVertexValue0, aVertexValue1, aVertexValue2, vertex11Bary);
+
+                // Compute expected integral of PDF over the cell
+
+                const float triangle1Area = Geom::Triangle::SurfaceArea(
+                    vertex00Coords,
+                    vertex01Coords,
+                    vertex10Coords);
+                const float triangle2Area = Geom::Triangle::SurfaceArea(
+                    vertex11Coords,
+                    vertex10Coords,
+                    vertex01Coords);
+
+                const float cellIntegral =
+                        (  triangle1Area * (vertex00Value + vertex01Value + vertex10Value)
+                         + triangle2Area * (vertex11Value + vertex10Value + vertex01Value))
+                    / 3.f;
+                const float expectedCellProbability = cellIntegral / wholeTriangleIntegral;
+
+                // Evaluate
+                const uint32_t cellCount = column[rowId];
+                const float relativeCount = (float)cellCount / totalCount;
+                if (!Math::EqualDelta(relativeCount, expectedCellProbability, 0.00001f))
+                {
+                    std::ostringstream ossError;
+                    ossError << "Grid cell [";
+                    ossError << std::setfill(' ') << std::setw(2) << columnId;
+                    ossError << ",";
+                    ossError << std::setfill(' ') << std::setw(2) << rowId;
+                    ossError << "] relative hit count (";
+                    ossError << std::fixed;
+                    ossError.width(4);
+                    ossError.precision(1);
+                    ossError << 100.f * relativeCount;
+                    ossError << " % = ";
+                    ossError << std::setfill(' ') << std::setw(5) << cellCount;
+                    ossError << "/";
+                    ossError << std::setfill(' ') << std::setw(5) << totalCount;
+                    ossError << ") differs from the expected probability (";
+                    ossError << std::fixed;
+                    ossError.precision(1);
+                    ossError.width(4);
+                    ossError << 100.f * expectedCellProbability;
+                    ossError << " % = ";
+                    ossError << std::fixed;
+                    ossError.precision(3);
+                    ossError << cellIntegral;
+                    ossError << " / ";
+                    ossError << std::fixed;
+                    ossError.precision(3);
+                    ossError << wholeTriangleIntegral;
+                    ossError << ")!";
+
+                    //PG3_UT_FAILED(
+                    //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    //    ossError.str().c_str(), aTestName);
+                    //return false;
+
+                    // debug
+                    PG3_UT_INFO(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                        ossError.str().c_str(), aTestName);
+                }
+            }
+        }
+
+        // debug
+        PG3_UT_INFO(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", aTestName);
+
+        return true;
+    }
+
+
     static bool _UT_Sampling_Triangles(
         const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel         aUtBlockPrintLevel,
@@ -4403,219 +4606,55 @@ public:
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling");
 
-        const static uint32_t gridSizePerDim = 4u; // debug; TODO: 10u?
-        const static uint32_t gridCellCount = gridSizePerDim * gridSizePerDim;
-        const static uint32_t samplesPerTriangle = 1000u * gridCellCount;
-
         bool forEachReturn = aSampler.ForEachTriangle([&](const TriangleNode* aTriangle)
         {
-            // Bin sample counters
-            std::vector<std::vector<uint32_t>> binCounts(
-                gridSizePerDim, std::vector<uint32_t>(gridSizePerDim, 0u));
-            uint32_t totalCount = 0u;
+            Vec3f vertex0;
+            Vec3f vertex1;
+            Vec3f vertex2;
+            if (!aSampler.GetTriangleVertices(vertex0, vertex1, vertex2, *aTriangle))
+            {
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                    "Triangle sampling", "GetTriangleVertices() failed!");
+                return false;
+            }
+
+            float vertexValue0;
+            float vertexValue1;
+            float vertexValue2;
+            if (!aSampler.GetTriangleVertexValues(
+                    vertexValue0, vertexValue1, vertexValue2,
+                    *aTriangle, aClampedCosCoeffs))
+            {
+                PG3_UT_FAILED(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+                    "Triangle sampling", "GetTriangleVertexValues() failed!");
+                return false;
+            }
 
             // debug
             {
-                float val0, val1, val2;
-                aSampler.GetTriangleVertexValues(val0, val1, val2, *aTriangle, aClampedCosCoeffs);
-
-                if (   !Math::IsInRange(val0, 0.97f, 1.03f)
-                    || !Math::IsInRange(val1, 0.97f, 1.03f)
-                    || !Math::IsInRange(val2, 0.97f, 1.03f))
+                if (   !Math::IsInRange(vertexValue0, 0.97f, 1.03f)
+                    || !Math::IsInRange(vertexValue1, 0.97f, 1.03f)
+                    || !Math::IsInRange(vertexValue2, 0.97f, 1.03f))
                     return true;
 
                 std::ostringstream ossInfo;
                 ossInfo << "Triangle values: ";
-                ossInfo << std::setprecision(2) << std::fixed << val0 << ", ";
-                ossInfo << std::setprecision(2) << std::fixed << val1 << ", ";
-                ossInfo << std::setprecision(2) << std::fixed << val2;
+                ossInfo << std::setprecision(2) << std::fixed << vertexValue0 << ", ";
+                ossInfo << std::setprecision(2) << std::fixed << vertexValue1 << ", ";
+                ossInfo << std::setprecision(2) << std::fixed << vertexValue2;
 
                 PG3_UT_INFO(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
                     ossInfo.str().c_str());
             }
 
-            // Generate samples & accumulate them within grid
-            Rng rngSamples;
-            for (uint32_t i = 0; i < samplesPerTriangle; ++i)
-            {
-                Vec2f uniformSample(rngSamples.GetVec2f());
-
-                float triangleSampleValue = 0.0f;
-                Vec2f baryCoords;
-                aSampler.SampleTriangleSurface<float>(
-                    baryCoords, triangleSampleValue,
-                    *aTriangle, aClampedCosCoeffs, uniformSample);
-
-                // Map coordinates of the sample onto cartesian grid
-                const Vec2f gridCoordsF = Geom::Triangle::MapBaryToCart(baryCoords);
-                if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.f)
-                    || !Math::IsInRange(gridCoordsF.y, 0.f, 1.f))
-                {
-                    PG3_UT_FAILED(
-                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                        "Triangle sampling", "Grid coords are outside range [0,1]!");
-                    return false;
-                }
-
-                // Increase sample count
-                Vec2ui gridCoordsUi(
-                    std::min((uint32_t)(gridCoordsF.x * gridSizePerDim), gridSizePerDim - 1),
-                    std::min((uint32_t)(gridCoordsF.y * gridSizePerDim), gridSizePerDim - 1));
-                binCounts[gridCoordsUi.x][gridCoordsUi.y]++;
-                totalCount++;
-            }
-
-            if (totalCount == 0)
-                return true; // OK?
-
-            // Check sampling quality
-            const float wholeTriangleIntegral = aTriangle->GetIntegral(aClampedCosCoeffs);
-            for (uint32_t columnId = 0; columnId < binCounts.size(); ++columnId)
-            {
-                // debug
-                {
-                    std::ostringstream ossInfo;
-                    ossInfo << "Grid column [";
-                    ossInfo << std::setfill(' ') << std::setw(2) << columnId;
-                    ossInfo << ", *] ===";
-                    PG3_UT_INFO(
-                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
-                        ossInfo.str().c_str());
-                }
-
-                const auto &column = binCounts[columnId];
-                for (uint32_t rowId = 0; rowId < column.size(); ++rowId)
-                {
-                    // Compute the grid cell:
-                    // logical coords -> cartesian coords -> barycentric coords -> 3D coords, values
-
-                    const Vec2ui vertex00Logical(columnId,     rowId);
-                    const Vec2ui vertex01Logical(columnId,     rowId + 1);
-                    const Vec2ui vertex10Logical(columnId + 1, rowId);
-                    const Vec2ui vertex11Logical(columnId + 1, rowId + 1);
-                    
-                    const Vec2f vertex00Cartesian((float)vertex00Logical.x / gridSizePerDim,
-                                                  (float)vertex00Logical.y / gridSizePerDim);
-                    const Vec2f vertex01Cartesian((float)vertex01Logical.x / gridSizePerDim,
-                                                  (float)vertex01Logical.y / gridSizePerDim);
-                    const Vec2f vertex10Cartesian((float)vertex10Logical.x / gridSizePerDim,
-                                                  (float)vertex10Logical.y / gridSizePerDim);
-                    const Vec2f vertex11Cartesian((float)vertex11Logical.x / gridSizePerDim,
-                                                  (float)vertex11Logical.y / gridSizePerDim);
-                    
-                    const Vec2f vertex00Bary = Geom::Triangle::MapCartToBary(vertex00Cartesian);
-                    const Vec2f vertex01Bary = Geom::Triangle::MapCartToBary(vertex01Cartesian);
-                    const Vec2f vertex10Bary = Geom::Triangle::MapCartToBary(vertex10Cartesian);
-                    const Vec2f vertex11Bary = Geom::Triangle::MapCartToBary(vertex11Cartesian);
-
-                    Vec3f vertex00Coords;
-                    Vec3f vertex01Coords;
-                    Vec3f vertex10Coords;
-                    Vec3f vertex11Coords;
-                    if (   !aSampler.GetTrianglePoint(vertex00Coords, *aTriangle, vertex00Bary)
-                        || !aSampler.GetTrianglePoint(vertex01Coords, *aTriangle, vertex01Bary)
-                        || !aSampler.GetTrianglePoint(vertex10Coords, *aTriangle, vertex10Bary)
-                        || !aSampler.GetTrianglePoint(vertex11Coords, *aTriangle, vertex11Bary))
-                    {
-                        PG3_UT_FAILED(
-                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                            "Triangle sampling", "GetTrianglePoint() failed!");
-                        return false;
-                    }
-
-                    float vertexValue0;
-                    float vertexValue1;
-                    float vertexValue2;
-                    if (!aSampler.GetTriangleVertexValues(
-                            vertexValue0, vertexValue1, vertexValue2,
-                            *aTriangle, aClampedCosCoeffs))
-                    {
-                        PG3_UT_FAILED(
-                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                            "Triangle sampling", "GetTriangleVertexValues() failed!");
-                        return false;
-                    }
-
-                    const float vertex00Value =
-                        Geom::Triangle::InterpolateValues(
-                            vertexValue0, vertexValue1, vertexValue2, vertex00Bary);
-                    const float vertex01Value =
-                        Geom::Triangle::InterpolateValues(
-                            vertexValue0, vertexValue1, vertexValue2, vertex01Bary);
-                    const float vertex10Value =
-                        Geom::Triangle::InterpolateValues(
-                            vertexValue0, vertexValue1, vertexValue2, vertex10Bary);
-                    const float vertex11Value =
-                        Geom::Triangle::InterpolateValues(
-                            vertexValue0, vertexValue1, vertexValue2, vertex11Bary);
-
-                    // Compute expected integral of PDF over the cell
-
-                    const float triangle1Area = Geom::Triangle::SurfaceArea(
-                        vertex00Coords,
-                        vertex01Coords,
-                        vertex10Coords);
-                    const float triangle2Area = Geom::Triangle::SurfaceArea(
-                        vertex11Coords,
-                        vertex10Coords,
-                        vertex01Coords);
-
-                    const float cellIntegral =
-                          (  triangle1Area * (vertex00Value + vertex01Value + vertex10Value)
-                           + triangle2Area * (vertex11Value + vertex10Value + vertex01Value))
-                        / 3.f;
-                    const float expectedCellProbability = cellIntegral / wholeTriangleIntegral;
-
-                    // Evaluate
-                    const uint32_t cellCount = column[rowId];
-                    const float relativeCount = (float)cellCount / totalCount;
-                    if (!Math::EqualDelta(relativeCount, expectedCellProbability, 0.00001f))
-                    {
-                        std::ostringstream ossError;
-                        ossError << "Grid cell [";
-                        ossError << std::setfill(' ') << std::setw(2) << columnId;
-                        ossError << ",";
-                        ossError << std::setfill(' ') << std::setw(2) << rowId;
-                        ossError << "] relative hit count (";
-                        ossError << std::fixed;
-                        ossError.width(4);
-                        ossError.precision(1);
-                        ossError << 100.f * relativeCount;
-                        ossError << " % = ";
-                        ossError << std::setfill(' ') << std::setw(5) << cellCount;
-                        ossError << "/";
-                        ossError << std::setfill(' ') << std::setw(5) << totalCount;
-                        ossError << ") differs from the expected probability (";
-                        ossError << std::fixed;
-                        ossError.precision(1);
-                        ossError.width(4);
-                        ossError << 100.f * expectedCellProbability;
-                        ossError << " % = ";
-                        ossError << std::fixed;
-                        ossError.precision(3);
-                        ossError << cellIntegral;
-                        ossError << " / ";
-                        ossError << std::fixed;
-                        ossError.precision(3);
-                        ossError << wholeTriangleIntegral;
-                        ossError << ")!";
-
-                        //PG3_UT_FAILED(
-                        //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
-                        //    ossError.str().c_str());
-                        //return false;
-
-                        // debug
-                        PG3_UT_INFO(
-                            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
-                            ossError.str().c_str());
-                    }
-                }
-            }
-
-            // debug
-            PG3_UT_INFO(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling", "");
+            if (!_UT_Sampling_SingleTriangle(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                    vertex0, vertex1, vertex2,
+                    vertexValue0, vertexValue1, vertexValue2))
+                return false;
 
             //return true;
             return false; // debug
@@ -4630,8 +4669,8 @@ public:
 
     static bool _UT_Sampling_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
-        char                        *aTestName,
-        char                        *aImagePath,
+        const char                  *aTestName,
+        const char                  *aImagePath,
         bool                         aUseBilinearFiltering)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
