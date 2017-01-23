@@ -4409,7 +4409,6 @@ public:
     static bool _UT_Sampling_SingleTriangle(
         const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel         aUtBlockPrintLevel,
-        const char                      *aTestName,
         const Vec3f                     &aVertex0,
         const Vec3f                     &aVertex1,
         const Vec3f                     &aVertex2,
@@ -4417,9 +4416,20 @@ public:
         const float                      aVertexValue1,
         const float                      aVertexValue2)
     {
-        const static uint32_t gridSizePerDim = 4u; // debug; TODO: 10u?
-        const static uint32_t gridCellCount = gridSizePerDim * gridSizePerDim;
-        const static uint32_t samplesPerTriangle = 1000u * gridCellCount;
+        const static uint32_t gridSizePerDim        = 4u; // debug; TODO: 10u?
+        const static uint32_t gridCellCount         = gridSizePerDim * gridSizePerDim;
+        const static uint32_t samplesPerTriangle    = 1000u * gridCellCount;
+
+        std::ostringstream ossTestName;
+        ossTestName << "Triangle (";
+        ossTestName << std::setprecision(2) << std::fixed << aVertexValue0 << ",";
+        ossTestName << std::setprecision(2) << std::fixed << aVertexValue1 << ",";
+        ossTestName << std::setprecision(2) << std::fixed << aVertexValue2 << ")";;
+        const std::string testName = ossTestName.str();
+
+        PG3_UT_BEGIN(
+            aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
+            "%s", testName.c_str());
 
         // Bin sample counters
         std::vector<std::vector<uint32_t>> binCounts(
@@ -4434,7 +4444,6 @@ public:
 
             const Vec2f baryCoords = SampleTriangleBilinear<float>(
                 uniformSample, aVertexValue0, aVertexValue1, aVertexValue2);
-            //const Vec2f baryCoords = Geom::Triangle::MapCartToBary(uniformSample); // debug: uniform smapling
 
             // Map coordinates of the sample onto cartesian grid
             const Vec2f gridCoordsF = Geom::Triangle::MapBaryToCart(baryCoords);
@@ -4443,7 +4452,7 @@ public:
             {
                 PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                    "%s", "Grid coords are outside range [0,1]!", aTestName);
+                    "%s", "Grid coords are outside range [0,1]!", testName.c_str());
                 return false;
             }
 
@@ -4459,7 +4468,7 @@ public:
         {
             PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                "%s", "Total sample count is 0!", aTestName);
+                "%s", "Total sample count is 0!", testName.c_str());
             return false;
         }
 
@@ -4477,7 +4486,7 @@ public:
                 ossInfo << ", *] ===";
                 PG3_UT_INFO(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                    ossInfo.str().c_str(), aTestName);
+                    ossInfo.str().c_str(), testName.c_str());
             }
 
             const auto &column = binCounts[columnId];
@@ -4580,19 +4589,19 @@ public:
 
                     //PG3_UT_FAILED(
                     //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                    //    ossError.str().c_str(), aTestName);
+                    //    ossError.str().c_str(), testName.c_str());
                     //return false;
 
                     // debug
                     PG3_UT_INFO(
                         aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                        ossError.str().c_str(), aTestName);
+                        ossError.str().c_str(), testName.c_str());
                 }
             }
         }
 
         // debug
-        PG3_UT_INFO(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", aTestName);
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", testName.c_str());
 
         return true;
     }
@@ -4639,19 +4648,19 @@ public:
                     || !Math::IsInRange(vertexValue2, 0.97f, 1.03f))
                     return true;
 
-                std::ostringstream ossInfo;
-                ossInfo << "Triangle values: ";
-                ossInfo << std::setprecision(2) << std::fixed << vertexValue0 << ", ";
-                ossInfo << std::setprecision(2) << std::fixed << vertexValue1 << ", ";
-                ossInfo << std::setprecision(2) << std::fixed << vertexValue2;
+                //std::ostringstream ossInfo;
+                //ossInfo << "Triangle values: ";
+                //ossInfo << std::setprecision(2) << std::fixed << vertexValue0 << ", ";
+                //ossInfo << std::setprecision(2) << std::fixed << vertexValue1 << ", ";
+                //ossInfo << std::setprecision(2) << std::fixed << vertexValue2;
 
-                PG3_UT_INFO(
-                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
-                    ossInfo.str().c_str());
+                //PG3_UT_INFO(
+                //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                //    ossInfo.str().c_str());
             }
 
             if (!_UT_Sampling_SingleTriangle(
-                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling",
+                    aMaxUtBlockPrintLevel, (UnitTestBlockLevel)((int32_t)aUtBlockPrintLevel + 1),
                     vertex0, vertex1, vertex2,
                     vertexValue0, vertexValue1, vertexValue2))
                 return false;
@@ -4729,11 +4738,11 @@ public:
     }
 
 
-    static bool _UT_Sampling(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    static bool _UT_Sampling_EM(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Sampling");
+            "EnvironmentMapSteeringSampler::Sampling_EM");
 
         // TODO: Empty EM
         // TODO: Black constant EM (Luminance 0)
@@ -4799,7 +4808,31 @@ public:
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Sampling");
+            "EnvironmentMapSteeringSampler::Sampling_EM");
+        return true;
+    }
+
+
+    static bool _UT_Sampling_Synthetic(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
+    {
+        PG3_UT_BEGIN(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::Sampling_Synthetic");
+
+        const Vec3f aVertex0(0.f, 0.f, 0.f);
+        const Vec3f aVertex1(1.f, 0.f, 0.f);
+        const Vec3f aVertex2(0.f, 1.f, 0.f);
+
+        if (!_UT_Sampling_SingleTriangle(
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+                1.f, 1.f, 1.f))
+            return false;
+
+        // ...
+
+        PG3_UT_PASSED(
+            aMaxUtBlockPrintLevel, eutblWholeTest,
+            "EnvironmentMapSteeringSampler::Sampling_Synthetic");
         return true;
     }
 
@@ -4814,8 +4847,10 @@ public:
         //    return false;
         //if (!_UT_Init(aMaxUtBlockPrintLevel))
         //    return false;
-        if (!_UT_Sampling(aMaxUtBlockPrintLevel))
+        if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
             return false;
+        //if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+        //    return false;
 
         return true;
     }
