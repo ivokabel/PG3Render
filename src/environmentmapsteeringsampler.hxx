@@ -3265,19 +3265,19 @@ protected:
     static T SampleTriangleGFunction(
         const T     aS,
         const T     aSample,
-        const T     aValA,
-        const T     aValB,
-        const T     aValC)
+        const T     aA,
+        const T     aB,
+        const T     aC)
     {
         const T t =
-              (aS * (aValC - aValB))
-            + (T(2.) * (T(1.) - aS) * aValA)
-            + (aS * aValB);
-        const T gamma   = aS * (aValC - aValB) / t;
-        const T rho     = T(2.) * ((T(1.) - aS) * aValA + aS * aValB) / t;
+              (aS * (aC - aB))
+            + (T(2.) * (T(1.) - aS) * aA)
+            + (aS * aB);
+        const T gamma   = aS * (aC - aB) / t;
+        const T rho     = T(2.) * ((T(1.) - aS) * aA + aS * aB) / t;
 
-        const T discr = rho * rho + T(4.) * gamma * aSample;
-        const T result = T(2.) * aSample / (rho + Math::SafeSqrt(discr));
+        const T discr  = rho * rho + T(4.) * gamma * aSample;
+        const T result = (T(2.) * aSample) / (rho + Math::SafeSqrt(discr));
 
         return result;
     }
@@ -4416,9 +4416,10 @@ public:
         const float                      aVertexValue1,
         const float                      aVertexValue2)
     {
-        const static uint32_t gridSizePerDim        = 4u; // debug; TODO: 10u?
-        const static uint32_t gridCellCount         = gridSizePerDim * gridSizePerDim;
-        const static uint32_t samplesPerTriangle    = 1000u * gridCellCount;
+        const static uint32_t gridSizePerDimX       = 4u; // debug; TODO: 10u?
+        const static uint32_t gridSizePerDimY       = 4u; // debug; TODO: 10u?
+        const static uint32_t gridCellCount         = gridSizePerDimX * gridSizePerDimY;
+        const static uint32_t samplesPerTriangle    = 10000u * gridCellCount;
 
         std::ostringstream ossTestName;
         ossTestName << "Triangle (";
@@ -4433,7 +4434,7 @@ public:
 
         // Bin sample counters
         std::vector<std::vector<uint32_t>> binCounts(
-            gridSizePerDim, std::vector<uint32_t>(gridSizePerDim, 0u));
+            gridSizePerDimX, std::vector<uint32_t>(gridSizePerDimY, 0u));
         uint32_t totalCount = 0u;
 
         // Generate samples & accumulate them within a grid
@@ -4458,8 +4459,8 @@ public:
 
             // Increase sample count
             Vec2ui gridCoordsUi(
-                std::min((uint32_t)(gridCoordsF.x * gridSizePerDim), gridSizePerDim - 1),
-                std::min((uint32_t)(gridCoordsF.y * gridSizePerDim), gridSizePerDim - 1));
+                std::min((uint32_t)(gridCoordsF.x * gridSizePerDimX), gridSizePerDimX - 1),
+                std::min((uint32_t)(gridCoordsF.y * gridSizePerDimY), gridSizePerDimY - 1));
             binCounts[gridCoordsUi.x][gridCoordsUi.y]++;
             totalCount++;
         }
@@ -4479,15 +4480,15 @@ public:
         for (uint32_t columnId = 0; columnId < binCounts.size(); ++columnId)
         {
             // debug
-            {
-                std::ostringstream ossInfo;
-                ossInfo << "Grid column [";
-                ossInfo << std::setfill(' ') << std::setw(2) << columnId;
-                ossInfo << ", *] ===";
-                PG3_UT_INFO(
-                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                    ossInfo.str().c_str(), testName.c_str());
-            }
+            //{
+            //    std::ostringstream ossInfo;
+            //    ossInfo << "Grid column [";
+            //    ossInfo << std::setfill(' ') << std::setw(2) << columnId;
+            //    ossInfo << ", *] ===";
+            //    PG3_UT_INFO(
+            //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+            //        ossInfo.str().c_str(), testName.c_str());
+            //}
 
             const auto &column = binCounts[columnId];
             for (uint32_t rowId = 0; rowId < column.size(); ++rowId)
@@ -4500,14 +4501,14 @@ public:
                 const Vec2ui vertex10Logical(columnId + 1, rowId);
                 const Vec2ui vertex11Logical(columnId + 1, rowId + 1);
                     
-                const Vec2f vertex00Cartesian((float)vertex00Logical.x / gridSizePerDim,
-                                              (float)vertex00Logical.y / gridSizePerDim);
-                const Vec2f vertex01Cartesian((float)vertex01Logical.x / gridSizePerDim,
-                                              (float)vertex01Logical.y / gridSizePerDim);
-                const Vec2f vertex10Cartesian((float)vertex10Logical.x / gridSizePerDim,
-                                              (float)vertex10Logical.y / gridSizePerDim);
-                const Vec2f vertex11Cartesian((float)vertex11Logical.x / gridSizePerDim,
-                                              (float)vertex11Logical.y / gridSizePerDim);
+                const Vec2f vertex00Cartesian((float)vertex00Logical.x / gridSizePerDimX,
+                                              (float)vertex00Logical.y / gridSizePerDimY);
+                const Vec2f vertex01Cartesian((float)vertex01Logical.x / gridSizePerDimX,
+                                              (float)vertex01Logical.y / gridSizePerDimY);
+                const Vec2f vertex10Cartesian((float)vertex10Logical.x / gridSizePerDimX,
+                                              (float)vertex10Logical.y / gridSizePerDimY);
+                const Vec2f vertex11Cartesian((float)vertex11Logical.x / gridSizePerDimX,
+                                              (float)vertex11Logical.y / gridSizePerDimY);
                     
                 const Vec2f vertex00Bary = Geom::Triangle::MapCartToBary(vertex00Cartesian);
                 const Vec2f vertex01Bary = Geom::Triangle::MapCartToBary(vertex01Cartesian);
@@ -4565,7 +4566,7 @@ public:
                     ossError << std::setfill(' ') << std::setw(2) << rowId;
                     ossError << "] relative hit count (";
                     ossError << std::fixed;
-                    ossError.width(4);
+                    ossError.width(5);
                     ossError.precision(1);
                     ossError << 100.f * relativeCount;
                     ossError << " % = ";
@@ -4575,7 +4576,7 @@ public:
                     ossError << ") differs from the expected probability (";
                     ossError << std::fixed;
                     ossError.precision(1);
-                    ossError.width(4);
+                    ossError.width(5);
                     ossError << 100.f * expectedCellProbability;
                     ossError << " % = ";
                     ossError << std::fixed;
@@ -4827,6 +4828,31 @@ public:
                 aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
                 1.f, 1.f, 1.f))
             return false;
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        0.5f, 0.5f, 0.5f))
+        //    return false;
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        1.f, 0.0f, 0.0f))
+        //    return false;
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        0.f, 1.0f, 1.0f))
+        //    return false;
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        0.f, 1.0f, 0.1f))
+        //    return false;
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        0.f, 0.1f, 1.0f))
+        //    return false;
 
         // ...
 
