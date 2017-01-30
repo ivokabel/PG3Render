@@ -553,7 +553,7 @@ public:
         SpectrumF radiance;
 
         // Sample the environment map with the pdf proportional to luminance of the map
-        oSample.mWig                = mEnvMap->Sample(aRng.GetVec2f(), oSample.mPdfW, &radiance);
+        mEnvMap->Sample(aRng.GetVec2f(), oSample.mWig, oSample.mPdfW, radiance);
         oSample.mDist               = std::numeric_limits<float>::max();
         oSample.mLightProbability   = 1.0f;
 

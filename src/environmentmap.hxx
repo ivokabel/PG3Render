@@ -47,44 +47,54 @@ public:
     // Samples direction on unit sphere proportionally to the luminance of the map. 
     // Returns the sample PDF and optionally it's radiance.
     PG3_PROFILING_NOINLINE
-    Vec3f Sample(
+    void Sample(
         const Vec2f &aSamples,
+        Vec3f       &oDirection,
         float       &oPdfW,
-        SpectrumF   *oRadiance = nullptr,
-        float       *oSinMidTheta = nullptr
+        SpectrumF   &oRadiance
         ) const
     {
         PG3_ASSERT(mImage != nullptr);
 
-        const Vec2ui imageSize = mImage->Size();
-        Vec2f uv;
-        Vec2ui segm;
-        float pdf;
+        // TODO: EMSampler.Sample()
+        [](
+            const Vec2f             &aSamples,
+            Vec3f                   &oDirection,
+            SpectrumF               &oRadiance,
+            float                   &oPdfW,
+            EnvironmentMapImage*    mImage, // TMP
+            Distribution2D*         mDistribution, // TMP
+            const float             mPlan2AngPdfCoeff // TMP
+            )
+        {
+            Vec2f uv;
+            Vec2ui segm;
+            float pdf;
 
-        mDistribution->SampleContinuous(aSamples, uv, segm, &pdf);
-        PG3_ASSERT(pdf > 0.f);
+            mDistribution->SampleContinuous(aSamples, uv, segm, &pdf);
+            PG3_ASSERT(pdf > 0.f);
 
-        const Vec3f direction = Geom::LatLong2Dir(uv);
+            oDirection = Geom::LatLong2Dir(uv);
 
-        // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
-        // the angular PDF on the unit sphere over the appropriate trapezoid
-        //
-        // angular pdf = planar pdf * planar segment surf. area / sphere segment surf. area
-        //             = planar pdf * (1 / (width*height)) / (2*Pi*Pi*Sin(MidTheta) / (width*height))
-        //             = planar pdf / (2*Pi*Pi*Sin(MidTheta))
-        //
-        // FIXME: Uniform sampling of a segment of the 2D distribution doesn't yield 
-        //        uniform sampling of a corresponding segment on a sphere 
-        //        - the closer we are to the poles, the denser the sampling will be 
-        //        (even though the overall probability of the segment is correct).
-        // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
-        const float sinMidTheta = SinMidTheta(mImage, segm.y);
-        oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta;
-        if (oSinMidTheta != nullptr)
-            *oSinMidTheta = sinMidTheta;
+            // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
+            // the angular PDF on the unit sphere over the appropriate trapezoid
+            //
+            // angular pdf = planar pdf * planar segment surf. area / sphere segment surf. area
+            //             = planar pdf * (1 / (width*height)) / (2*Pi*Pi*Sin(MidTheta) / (width*height))
+            //             = planar pdf / (2*Pi*Pi*Sin(MidTheta))
+            //
+            // FIXME: Uniform sampling of a segment of the 2D distribution doesn't yield 
+            //        uniform sampling of a corresponding segment on a sphere 
+            //        - the closer we are to the poles, the denser the sampling will be 
+            //        (even though the overall probability of the segment is correct).
+            // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
+            const float sinMidTheta = SinMidTheta(mImage, segm.y);
+            oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta;
 
-        if (oRadiance)
-            *oRadiance = EvalRadiance(segm);
+            oRadiance = EvalRadiance(segm);
+        }(
+            aSamples, oDirection, oRadiance, oPdfW,
+            mImage, mDistribution, mPlan2AngPdfCoeff);
 
         return direction;
     }
@@ -172,7 +182,7 @@ private:
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
 
-        // FIXME: This interface shouldn't be used if bilinear of any smoother filtering is active!
+        // FIXME: This interface shouldn't be used if bilinear or any smoother filtering is active!
 
         return mImage->ElementAt(aSegm.x, aSegm.y);
     }
