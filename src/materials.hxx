@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "hardconfig.hxx"
+#include "hard_config.hxx"
 #include "microfacet.hxx"
 #include "sampling.hxx"
 #include "math.hxx"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "environmentmapimage.hxx"
-#include "unittesting.hxx"
+#include "em_image.hxx"
+#include "unit_testing.hxx"
 #include "debugging.hxx"
 #include "spectrum.hxx"
 #include "types.hxx"

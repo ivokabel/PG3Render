@@ -35,12 +35,6 @@
     <ClInclude Include="src\config.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\eyelight.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\framebuffer.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\geometry.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,9 +45,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\math.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\pathtracer.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ray.hxx">
@@ -74,9 +65,6 @@
     <ClInclude Include="src\spectrum.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\environmentmap.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\debugging.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -89,15 +77,6 @@
     <ClInclude Include="src\types.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\directillumination.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\pathtracerbase.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\unittesting.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\microfacet.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -107,13 +86,34 @@
     <ClInclude Include="src\geom.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\hardconfig.hxx">
+    <ClInclude Include="src\em_steerable_sampler.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\environmentmapimage.hxx">
+    <ClInclude Include="src\em_image.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\environmentmapsteeringsampler.hxx">
+    <ClInclude Include="src\direct_illumination.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\em.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\eye_light.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\frame_buffer.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hard_config.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\path_tracer.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\path_tracer_base.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\unit_testing.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

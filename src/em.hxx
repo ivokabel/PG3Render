@@ -1,7 +1,7 @@
 #pragma once
 
-#include "environmentmapimage.hxx"
-#include "environmentmapsteeringsampler.hxx"
+#include "em_image.hxx"
+#include "em_steerable_sampler.hxx"
 #include "spectrum.hxx"
 #include "debugging.hxx"
 #include "geom.hxx"

@@ -3,9 +3,9 @@
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
-#include "environmentmap.hxx"
+#include "em.hxx"
 #include "types.hxx"
-#include "hardconfig.hxx"
+#include "hard_config.hxx"
 
 #include <vector>
 #include <cmath>

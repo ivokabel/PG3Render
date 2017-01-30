@@ -3,10 +3,10 @@
 #include <vector>
 #include <cmath>
 #include "scene.hxx"
-#include "framebuffer.hxx"
+#include "frame_buffer.hxx"
 #include "config.hxx"
 #include "types.hxx"
-#include "hardconfig.hxx"
+#include "hard_config.hxx"
 
 enum PathTerminationReason
 {

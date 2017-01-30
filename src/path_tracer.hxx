@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pathtracerbase.hxx"
+#include "path_tracer_base.hxx"
 
 class PathTracer : public PathTracerBase
 {

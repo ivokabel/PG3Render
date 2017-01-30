@@ -4,11 +4,11 @@
 #include "ray.hxx"
 #include "geometry.hxx"
 #include "camera.hxx"
-#include "framebuffer.hxx"
+#include "frame_buffer.hxx"
 #include "scene.hxx"
 #include "types.hxx"
 #include "utils.hxx"
-#include "hardconfig.hxx"
+#include "hard_config.hxx"
 
 #include <omp.h>
 #include <string>

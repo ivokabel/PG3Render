@@ -2,7 +2,7 @@
 
 #include "rng.hxx"
 #include "debugging.hxx"
-#include "unittesting.hxx"
+#include "unit_testing.hxx"
 #include "math.hxx"
 
 #include <list>
