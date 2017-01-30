@@ -1954,34 +1954,31 @@ public:
         Vec3f           &oSampleDirection,
         float           &oSamplePdf,
         const Vec3f     &aNormal,
-        Vec2f            aSample // modified during the sampling process
+        Vec2f            aSample // non-const, modified during the sampling process
         ) const
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
         PG3_ASSERT_FLOAT_IN_RANGE(aSample.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aSample.y, 0.0f, 1.0f);
 
-        // Spherical harmonics coefficients of clamped cosine for given normal
+        // Clamped cosine coefficients for given normal
         SteeringCoefficients clampedCosCoeffs;
         clampedCosCoeffs.GenerateForClampedCos(aNormal, true);
 
         // Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
-        float triangleProbability = 0.0f;
-        PickTriangle(triangle, triangleProbability, clampedCosCoeffs, aSample.x);
+        PickTriangle(triangle, clampedCosCoeffs, aSample.x);
         if (triangle == nullptr)
             return false;
 
-        // Sample triangle surface (bi-linear surface sampling)
+        // Sample triangle surface (linear approximation)
         float sampleValue = 0.f;
         if (!SampleTriangleSurface(
                 oSampleDirection, sampleValue, *triangle, clampedCosCoeffs, aSample))
             return false;
 
-        // TODO: Move the PDF computation outside the sampling functions
-        // TODO: Explain...
-        //oSamplePdf = triangleProbability * triangleSamplePdf;
-        const float wholeIntegral = mTreeRoot->GetIntegral(clampedCosCoeffs);
+        // PDF can be computed efficiently...
+        const float wholeIntegral = GetWholeIntegral(clampedCosCoeffs);
         if (Math::IsTiny(wholeIntegral))
             oSamplePdf = 0.f;
         else
@@ -3340,7 +3337,6 @@ protected:
     // the piece-wise bilinear EM approximation over the triangle surface.
     bool PickTriangle(
         const TriangleNode          *&oTriangle,
-        float                        &oProbability,
         const SteeringCoefficients   &aClampedCosCoeffs,
         float                        &aSample //modified and used by the triangle area sampling later on
         ) const
@@ -3387,20 +3383,12 @@ protected:
             return false; // corrupted data?
         oTriangle = static_cast<const TriangleNode*>(node);
 
-        const float wholeIntegral    = mTreeRoot->GetIntegral(aClampedCosCoeffs);
-        const float triangleIntegral = oTriangle->GetIntegral(aClampedCosCoeffs);
-        if (Math::IsTiny(wholeIntegral))
-            oProbability = 0.f;
-        else
-            oProbability = triangleIntegral / wholeIntegral;
-
         return true;
     }
 
 
-    // Randomly sample the surface of a triangle with probability density proportional
-    // to the piece-wise bilinear function defined by the value in triangle vertices.
-    // Generates barycentric coordinates.
+    // Randomly sample the surface of a triangle with probability density proportional to 
+    // the linear function defined by the values in vertices. Generates barycentric coordinates.
     // TODO: Move to namespace Sampling?
     template <typename T>
     static Vec2f SampleTriangleBilinear(
@@ -3409,6 +3397,10 @@ protected:
         const float     aValue1,
         const float     aValue2)
     {
+        PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue0, 0.f);
+        PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue1, 0.f);
+        PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue2, 0.f);
+
         const T s = SampleTriangleFFunction<T>(   aSample.x, aValue0, aValue1, aValue2);
         const T t = SampleTriangleGFunction<T>(s, aSample.y, aValue0, aValue1, aValue2);
 
@@ -3422,7 +3414,7 @@ protected:
 
 
     // Randomly sample the surface of the triangle with probability density proportional
-    // to the piece-wise bilinear EM approximation.
+    // to the linear EM approximation.
     // Generates triangle barycentric coordinates.
     template <typename T>
     bool SampleTriangleSurface(
@@ -3445,7 +3437,7 @@ protected:
 
 
     // Randomly sample the surface of the triangle with probability density proportional
-    // to the the piece-wise bilinear EM approximation.
+    // to the the linear EM approximation.
     // Generates direction.
     bool SampleTriangleSurface(
         Vec3f                       &oDirection,
@@ -4292,8 +4284,8 @@ public:
 
             // Pick triangle
             const TriangleNode *triangle;
-            float triangleProbability;
-            if (!aSampler.PickTriangle(triangle, triangleProbability, aClampedCosCoeffs, sample.x))
+            if (   !aSampler.PickTriangle(triangle, aClampedCosCoeffs, sample.x)
+                || (triangle == nullptr))
             {
                 PG3_UT_FATAL_ERROR(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
@@ -4302,6 +4294,12 @@ public:
             }
 
             auto &triangleHitRecord = triangleHitMap[triangle];
+
+            const float wholeIntegral = aSampler.GetWholeIntegral(aClampedCosCoeffs);
+            const float triangleIntegral = triangle->GetIntegral(aClampedCosCoeffs);
+            const float triangleProbability =
+                  (Math::IsTiny(wholeIntegral))
+                ? 0.f : triangleIntegral / wholeIntegral;
 
             if (triangleHitRecord.hitCount == 0)
                 triangleHitRecord.probability = triangleProbability;
