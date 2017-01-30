@@ -2090,6 +2090,7 @@ public:
             FreeNode(node);
     }
 
+
     static void FreeNodesDeque(std::deque<TreeNodeBase*> &aNodes)
     {
         while (!aNodes.empty())
@@ -2099,11 +2100,13 @@ public:
         }
     }
 
+
     static void FreeTrianglesList(std::list<TriangleNode*> &aTriangles)
     {
         for (TriangleNode* triangle : aTriangles)
             delete triangle;
     }
+
 
     static void FreeTrianglesDeque(std::deque<TriangleNode*> &aTriangles)
     {
@@ -2159,6 +2162,7 @@ protected:
         uint32_t mRemovedTriangleCount;
         uint32_t mSampleCount;
     };
+
 
     class TriangulationStats
     {
@@ -2423,6 +2427,7 @@ protected:
 #endif
     };
 
+
     // Empty shell for efficient switching off
     class TriangulationStatsDummy
     {
@@ -2483,6 +2488,7 @@ protected:
 
         std::vector<std::pair<uint32_t, uint32_t>>  mDummyCounts;
     };
+
 
 #if defined PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS && !defined PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
     typedef TriangulationStats      TriangulationStatsSwitchable;
@@ -2563,6 +2569,7 @@ protected:
         return true;
     }
 
+
     static void GenerateRandomTriangleVertices(
         Rng         &aRng,
         Vec3f       (&oCoords)[3])
@@ -2621,6 +2628,7 @@ protected:
         }
     }
 
+
     static void CreateNewVertex(
         uint32_t                    &oVertexIndex,
         VertexStorage               &aVertexStorage,
@@ -2632,6 +2640,7 @@ protected:
 
         aVertexStorage.AddVertex(Vertex(aVertexDir, weight), oVertexIndex);
     }
+
 
     static void CreateNewVertex(
         uint32_t                    &oVertexIndex,
@@ -2645,6 +2654,7 @@ protected:
 
         CreateNewVertex(oVertexIndex, aVertexStorage, aVertexDir, luminance);
     }
+
 
     // Sub-divides the "to do" triangle set of triangles according to the refinement rule and
     // fills the output list of triangles. The refined triangles are released. The triangles 
@@ -2699,6 +2709,7 @@ protected:
         return true;
     }
 
+
     static void SubdivTestSamplesPerDim(
         const Vec3f                 &aVertex0,
         const Vec3f                 &aVertex1,
@@ -2752,6 +2763,7 @@ protected:
         aMaxSamplesPerDimF = samplesPerDim.x; // based on the minimal sine
         aMinSamplesPerDimF = samplesPerDim.y; // based on the maximal sine
     }
+
 
     template <class TTriangulationStats>
     static bool IsEstimationErrorTooLarge(
@@ -2809,6 +2821,7 @@ protected:
 
         return false;
     }
+
 
     template <class TTriangulationStats>
     static bool TriangleHasToBeSubdividedImpl(
@@ -2922,6 +2935,7 @@ protected:
         return result;
     }
 
+
     template <class TTriangulationStats>
     static bool TriangleHasToBeSubdivided(
         const TriangleNode          &aTriangle,
@@ -2954,6 +2968,7 @@ protected:
 
         return result;
     }
+
 
     static void SubdivideTriangle(
         std::list<TriangleNode*>    &oSubdivisionTriangles,
@@ -3453,7 +3468,6 @@ protected:
 
         return GetTrianglePoint(oDirection, aTriangle, baryCoords);
     }
-
 
 protected:
 
