@@ -4740,16 +4740,16 @@ public:
             clampedCosCoeffs.GenerateForClampedCos(normal, true);
 
             // Tree sampling
-            //if (!_UT_Sampling_Tree(
-            //        aMaxUtBlockPrintLevel, eutblSubTestLevel2,
-            //        clampedCosCoeffs, sampler))
-            //    return false;
-
-            // Sampling of each triangle
-            if (!_UT_Sampling_Triangles(
+            if (!_UT_Sampling_Tree(
                     aMaxUtBlockPrintLevel, eutblSubTestLevel2,
                     clampedCosCoeffs, sampler))
                 return false;
+
+            //// Sampling of each triangle
+            //if (!_UT_Sampling_Triangles(
+            //        aMaxUtBlockPrintLevel, eutblSubTestLevel2,
+            //        clampedCosCoeffs, sampler))
+            //    return false;
         }
 
         PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -4774,49 +4774,49 @@ public:
                 false))
             return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Const white 512x256",
-        //        ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 512x256",
+                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Const white 1024x512",
-        //        ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Const white 1024x512",
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Single pixel",
-        //        ".\\Light Probes\\Debugging\\Single pixel.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Single pixel",
+                ".\\Light Probes\\Debugging\\Single pixel.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Three point lighting 1024x512",
-        //        ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Three point lighting 1024x512",
+                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Satellite 4000x2000",
-        //        ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Satellite 4000x2000",
+                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
+                false))
+            return false;
 
-        //if (!_UT_Sampling_SingleEm(
-        //        aMaxUtBlockPrintLevel,
-        //        "Doge2",
-        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-        //        false))
-        //    return false;
+        if (!_UT_Sampling_SingleEm(
+                aMaxUtBlockPrintLevel,
+                "Doge2",
+                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
+                false))
+            return false;
 
-        /////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////
 
         //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
@@ -4883,18 +4883,18 @@ public:
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_Init(aMaxUtBlockPrintLevel))
-        //    return false;
-        if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
+        if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
             return false;
-        //if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+        if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_Init(aMaxUtBlockPrintLevel))
+            return false;
+        //if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
         //    return false;
+        if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+            return false;
 
         return true;
     }
