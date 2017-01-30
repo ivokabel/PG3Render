@@ -57,15 +57,15 @@ public:
         PG3_ASSERT(mImage != nullptr);
 
         // TODO: EMSampler.Sample()
-        [](
-            const Vec2f             &aSamples,
-            Vec3f                   &oDirection,
-            SpectrumF               &oRadiance,
-            float                   &oPdfW,
-            EnvironmentMapImage*    mImage, // TMP
-            Distribution2D*         mDistribution, // TMP
-            const float             mPlan2AngPdfCoeff // TMP
-            )
+        //[](
+        //    const Vec2f             &aSamples,
+        //    Vec3f                   &oDirection,
+        //    SpectrumF               &oRadiance,
+        //    float                   &oPdfW,
+        //    EnvironmentMapImage*    mImage, // TMP
+        //    Distribution2D*         mDistribution, // TMP
+        //    const float             mPlan2AngPdfCoeff // TMP
+        //    )
         {
             Vec2f uv;
             Vec2ui segm;
@@ -92,11 +92,10 @@ public:
             oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta;
 
             oRadiance = EvalRadiance(segm);
-        }(
-            aSamples, oDirection, oRadiance, oPdfW,
-            mImage, mDistribution, mPlan2AngPdfCoeff);
-
-        return direction;
+        }
+        //(
+        //    aSamples, oDirection, oRadiance, oPdfW,
+        //    mImage, mDistribution, mPlan2AngPdfCoeff);
     }
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
