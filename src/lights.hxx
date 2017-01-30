@@ -1,5 +1,6 @@
 #pragma once
 
+#include "materials.hxx"
 #include "math.hxx"
 #include "spectrum.hxx"
 #include "rng.hxx"
