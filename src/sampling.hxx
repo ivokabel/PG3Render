@@ -225,7 +225,7 @@ namespace Sampling
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::SampleUniformSphericalTriangle");
+            "EnvironmentMapSteerableSampler::SampleUniformSphericalTriangle");
 
         for (float x = -1; x <= 1.0001; x += 2)
             for (float y = -1; y <= 1.0001; y += 2)
@@ -240,7 +240,7 @@ namespace Sampling
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::SampleUniformSphericalTriangle");
+            "EnvironmentMapSteerableSampler::SampleUniformSphericalTriangle");
         return true;
     }
 

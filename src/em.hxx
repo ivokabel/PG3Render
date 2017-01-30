@@ -21,7 +21,7 @@ public:
     EnvironmentMap(const std::string aFilename, float aRotate, float aScale) :
         mImage(nullptr),
         mDistribution(nullptr),
-        mSteeringSampler(nullptr),
+        mSteerableSampler(nullptr),
         mPlan2AngPdfCoeff(1.0f / (2.0f * Math::kPiF * Math::kPiF))
     {
         try
@@ -41,7 +41,7 @@ public:
     {
         delete(mImage);
         delete(mDistribution);
-        delete(mSteeringSampler);
+        delete(mSteerableSampler);
     }
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
@@ -233,7 +233,7 @@ private:
     //EnvironmentMap(const EnvironmentMap&) = delete;
 
     EnvironmentMapImage*            mImage;             // Environment map itself
-    EnvironmentMapSteeringSampler*  mSteeringSampler;   // TODO: Describe...
+    EnvironmentMapSteerableSampler* mSteerableSampler;   // TODO: Describe...
     Distribution2D*                 mDistribution;      // 2D distribution of the environment map
     const float                     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
 };

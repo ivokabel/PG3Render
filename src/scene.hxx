@@ -491,7 +491,7 @@ public:
                 default: return "";
                 }
             }();
-            EnvironmentMapSteeringSampler::BuildParameters params(
+            EnvironmentMapSteerableSampler::BuildParameters params(
                 aAuxDbgParams.float2,
                 Math::InfinityF(),
                 aAuxDbgParams.float3/*,
@@ -511,14 +511,14 @@ public:
                 (aAuxDbgParams.float5 != Math::InfinityF()) ? aAuxDbgParams.float5 : 0.0f));
             if (image)
             {
-                EnvironmentMapSteeringSampler::VertexStorage vertexStorage;
-                std::list<EnvironmentMapSteeringSampler::TreeNodeBase*> triangles;
-                if (EnvironmentMapSteeringSampler::TriangulateEm(
+                EnvironmentMapSteerableSampler::VertexStorage vertexStorage;
+                std::list<EnvironmentMapSteerableSampler::TreeNodeBase*> triangles;
+                if (EnvironmentMapSteerableSampler::TriangulateEm(
                         triangles, vertexStorage, *image, false, params))
                 {
                     for (const auto &node : triangles)
                     {
-                        const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+                        const auto triangle = static_cast<EnvironmentMapSteerableSampler::TriangleNode*>(node);
                         const auto &dir0 = vertexStorage.Get(triangle->vertexIndices[0])->dir;
                         const auto &dir1 = vertexStorage.Get(triangle->vertexIndices[1])->dir;
                         const auto &dir2 = vertexStorage.Get(triangle->vertexIndices[2])->dir;
@@ -528,7 +528,7 @@ public:
                             ballCenter + ballRadius * dir2,
                             8));
                     }
-                    EnvironmentMapSteeringSampler::FreeNodesList(triangles);
+                    EnvironmentMapSteerableSampler::FreeNodesList(triangles);
                 }
             }
             //Debugging::Exit(); // debug

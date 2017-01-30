@@ -13,31 +13,31 @@
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
 // from Kartic Subr and Jim Arvo, 2007
-class EnvironmentMapSteeringSampler
+class EnvironmentMapSteerableSampler
 {
 public:
 
-     EnvironmentMapSteeringSampler() {}
-    ~EnvironmentMapSteeringSampler() {}
+     EnvironmentMapSteerableSampler() {}
+    ~EnvironmentMapSteerableSampler() {}
 
 public:
 
-    class SteeringValue
+    class SteerableValue
     {
     public:
 
-        SteeringValue() {}
+        SteerableValue() {}
 
-        SteeringValue(const std::array<float, 9> &aBasisValues) :
+        SteerableValue(const std::array<float, 9> &aBasisValues) :
             mBasisValues(aBasisValues)
         {}
 
-        SteeringValue(float aValue)
+        SteerableValue(float aValue)
         {
             mBasisValues.fill(aValue);
         }
 
-        friend float Dot(const SteeringValue &aValue1, const SteeringValue &aValue2)
+        friend float Dot(const SteerableValue &aValue1, const SteerableValue &aValue2)
         {
             PG3_ASSERT_INTEGER_EQUAL(aValue1.mBasisValues.size(), aValue2.mBasisValues.size());
 
@@ -47,17 +47,17 @@ public:
             return retval;
         }
 
-        bool operator == (const SteeringValue &aBasis) const
+        bool operator == (const SteerableValue &aBasis) const
         {
             return mBasisValues == aBasis.mBasisValues;
         }
 
-        bool operator != (const SteeringValue &aBasis) const
+        bool operator != (const SteerableValue &aBasis) const
         {
             return !(*this == aBasis);
         }
 
-        bool EqualsDelta(const SteeringValue &aBasis, float aDelta) const
+        bool EqualsDelta(const SteerableValue &aBasis, float aDelta) const
         {
             PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
 
@@ -72,22 +72,22 @@ public:
     };
 
 
-    class SteeringBasisValue : public SteeringValue
+    class SteerableBasisValue : public SteerableValue
     {
     public:
 
-        SteeringBasisValue() {}
+        SteerableBasisValue() {}
 
-        SteeringBasisValue(const std::array<float, 9> &aBasisValues) :
-            SteeringValue(aBasisValues)
+        SteerableBasisValue(const std::array<float, 9> &aBasisValues) :
+            SteerableValue(aBasisValues)
         {}
 
-        SteeringBasisValue(float aValue) :
-            SteeringValue(aValue)
+        SteerableBasisValue(float aValue) :
+            SteerableValue(aValue)
         {}
 
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
-        SteeringBasisValue& GenerateSphHarm(const Vec3f &aDir, float aMulFactor = 1.f)
+        SteerableBasisValue& GenerateSphHarm(const Vec3f &aDir, float aMulFactor = 1.f)
         {
             PG3_ASSERT_VEC3F_NORMALIZED(aDir);
             PG3_ASSERT_FLOAT_NONNEGATIVE(aMulFactor);
@@ -119,45 +119,45 @@ public:
             return true;
         }
 
-        SteeringBasisValue operator* (const SteeringBasisValue &aValue) const
+        SteerableBasisValue operator* (const SteerableBasisValue &aValue) const
         {
-            SteeringBasisValue retVal;
+            SteerableBasisValue retVal;
             for (size_t i = 0; i < mBasisValues.size(); i++)
                 retVal.mBasisValues[i] = mBasisValues[i] * aValue.mBasisValues[i];
             return retVal;
         }
 
 
-        SteeringBasisValue operator* (float aValue) const
+        SteerableBasisValue operator* (float aValue) const
         {
-            SteeringBasisValue retVal;
+            SteerableBasisValue retVal;
             for (size_t i = 0; i < mBasisValues.size(); i++)
                 retVal.mBasisValues[i] = mBasisValues[i] * aValue;
             return retVal;
         }
 
-        friend SteeringBasisValue operator* (float aValueLeft, const SteeringBasisValue &aValueRight)
+        friend SteerableBasisValue operator* (float aValueLeft, const SteerableBasisValue &aValueRight)
         {
             return aValueRight * aValueLeft;
         }
 
-        SteeringBasisValue operator+ (const SteeringBasisValue &aValue) const
+        SteerableBasisValue operator+ (const SteerableBasisValue &aValue) const
         {
-            SteeringBasisValue retVal;
+            SteerableBasisValue retVal;
             for (size_t i = 0; i < mBasisValues.size(); i++)
                 retVal.mBasisValues[i] = mBasisValues[i] + aValue.mBasisValues[i];
             return retVal;
         }
 
-        SteeringBasisValue operator/ (float aValue) const
+        SteerableBasisValue operator/ (float aValue) const
         {
-            SteeringBasisValue retVal;
+            SteerableBasisValue retVal;
             for (size_t i = 0; i < mBasisValues.size(); i++)
                 retVal.mBasisValues[i] = mBasisValues[i] / aValue;
             return retVal;
         }
 
-        friend std::ostream &operator<< (std::ostream &aStream, const SteeringBasisValue &aBasis)
+        friend std::ostream &operator<< (std::ostream &aStream, const SteerableBasisValue &aBasis)
         {
             for (size_t i = 0; i < aBasis.mBasisValues.size(); i++)
             {
@@ -176,12 +176,12 @@ public:
             const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
             const UnitTestBlockLevel     aUtBlockPrintLevel,
             const Vec3f                 &aDirection,
-            const SteeringBasisValue    &aNormalizedReferenceBasisValue,
+            const SteerableBasisValue    &aNormalizedReferenceBasisValue,
             const char                  *aTestName)
         {
             PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", aTestName);
 
-            const SteeringBasisValue normalizationValues({
+            const SteerableBasisValue normalizationValues({
                 0.282095f,          // Y_{0 0}
                 0.488603f,          // Y_{1-1}
                 0.488603f,          // Y_{1 0}
@@ -193,9 +193,9 @@ public:
                 0.546274f           // Y_{2 2}
             });
             
-            SteeringBasisValue referenceVal = aNormalizedReferenceBasisValue * normalizationValues;
+            SteerableBasisValue referenceVal = aNormalizedReferenceBasisValue * normalizationValues;
 
-            SteeringBasisValue generatedValue;
+            SteerableBasisValue generatedValue;
             generatedValue.GenerateSphHarm(aDirection);
 
             if (!generatedValue.EqualsDelta(referenceVal, 0.0001f))
@@ -217,12 +217,12 @@ public:
         {
             const char *testName = NULL;
             Vec3f direction;
-            SteeringBasisValue referenceVal;
+            SteerableBasisValue referenceVal;
 
             // Positive X direction
             testName = "Positive X";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.f);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 1.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
@@ -236,7 +236,7 @@ public:
             // Negative X direction
             testName = "Negative X";
             direction = Geom::CreateDirection(1.5f * Math::kPiF, 0.f);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -1.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 1.f /*Y_{2 2}*/
@@ -250,7 +250,7 @@ public:
             // Positive Y direction
             testName = "Positive Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.5f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
@@ -264,7 +264,7 @@ public:
             // Negative Y direction
             testName = "Negative Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.5f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 -1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
@@ -278,7 +278,7 @@ public:
             // Positive Z direction
             testName = "Positive Z";
             direction = Geom::CreateDirection(0.f, 0.f);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, 1.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
@@ -292,7 +292,7 @@ public:
             // Negative Z direction
             testName = "Negative Z";
             direction = Geom::CreateDirection(Math::kPiF, 0.f);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, -1.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 1.f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
@@ -312,12 +312,12 @@ public:
         {
             const char *testName = NULL;
             Vec3f direction;
-            SteeringBasisValue referenceVal;
+            SteerableBasisValue referenceVal;
 
             // Positive X+Y direction
             testName = "Positive X+Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.25f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
                 1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
@@ -331,7 +331,7 @@ public:
             // Negative X+Y direction
             testName = "Negative X+Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.25f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 -Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
                 1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
@@ -345,7 +345,7 @@ public:
             // Positive X-Y direction
             testName = "Positive X-Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 0.75f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
                 -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
@@ -359,7 +359,7 @@ public:
             // Negative X-Y direction
             testName = "Negative X-Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.75f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 -Math::kCosPiDiv4F /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
                 -1.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, 0.f /*Y_{2 2}*/
@@ -379,12 +379,12 @@ public:
         {
             const char *testName = NULL;
             Vec3f direction;
-            SteeringBasisValue referenceVal;
+            SteerableBasisValue referenceVal;
 
             // Positive Y+Z direction
             testName = "Positive Y+Z";
             direction = Geom::CreateDirection(0.25f * Math::kPiF, 0.5f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 Math::kCosPiDiv4F /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -399,7 +399,7 @@ public:
             // Negative Y+Z direction
             testName = "Negative Y+Z";
             direction = Geom::CreateDirection(0.75f * Math::kPiF, 1.5f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 -Math::kCosPiDiv4F /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -414,7 +414,7 @@ public:
             // Positive Y-Z direction
             testName = "Positive Y-Z";
             direction = Geom::CreateDirection(0.25f * Math::kPiF, 1.5f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 -Math::kCosPiDiv4F /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, -1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -429,7 +429,7 @@ public:
             // Negative Y-Z direction
             testName = "Negative Y-Z";
             direction = Geom::CreateDirection(0.75f * Math::kPiF, 0.5f * Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 Math::kCosPiDiv4F /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, -1.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -450,12 +450,12 @@ public:
         {
             const char *testName = NULL;
             Vec3f direction;
-            SteeringBasisValue referenceVal;
+            SteerableBasisValue referenceVal;
 
             // Positive X+Z direction
             testName = "Positive X+Z";
             direction = Geom::CreateDirection(0.25f * Math::kPiF, 0.f);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -470,7 +470,7 @@ public:
             // Negative X+Z direction
             testName = "Negative X+Z";
             direction = Geom::CreateDirection(0.75f * Math::kPiF, Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -485,7 +485,7 @@ public:
             // Positive X-Z direction
             testName = "Positive X-Z";
             direction = Geom::CreateDirection(0.25f * Math::kPiF, Math::kPiF);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, Math::kCosPiDiv4F /*Y_{1 0}*/, -Math::kCosPiDiv4F /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -500,7 +500,7 @@ public:
             // Negative X-Z direction
             testName = "Negative X-Z";
             direction = Geom::CreateDirection(0.75f * Math::kPiF, 0.f);
-            referenceVal = SteeringBasisValue({
+            referenceVal = SteerableBasisValue({
                 1.f /*Y_{0 0}*/,
                 0.f /*Y_{1-1}*/, -Math::kCosPiDiv4F /*Y_{1 0}*/, Math::kCosPiDiv4F /*Y_{1 1}*/,
                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, 0.5f * (3.f * Math::Sqr(Math::kCosPiDiv4F) - 1.0f) /*Y_{2 0}*/,
@@ -520,7 +520,7 @@ public:
             const UnitTestBlockLevel    aUtBlockPrintLevel)
         {
             PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                "SteeringBasisValue::GenerateSphHarm()");
+                "SteerableBasisValue::GenerateSphHarm()");
 
             if (!_UT_GenerateSphHarm_CanonicalDirections(
                     aMaxUtBlockPrintLevel, (UnitTestBlockLevel)(aUtBlockPrintLevel + 1)))
@@ -540,7 +540,7 @@ public:
 
             PG3_UT_PASSED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                "SteeringBasisValue::GenerateSphHarm()");
+                "SteerableBasisValue::GenerateSphHarm()");
             return true;
         }
 
@@ -548,12 +548,12 @@ public:
     };
 
 
-    class SteeringCoefficients : public SteeringValue
+    class SteerableCoefficients : public SteerableValue
     {
     public:
 
         // Generate clamped cosine spherical harmonic coefficients for the given normal
-        SteeringCoefficients& GenerateForClampedCos(
+        SteerableCoefficients& GenerateForClampedCos(
             const Vec3f         &aNormal,
             bool                 bCompensateNegativity)
         {
@@ -587,30 +587,30 @@ public:
         }
 
 
-        SteeringCoefficients operator* (const SteeringCoefficients &aValue) const
+        SteerableCoefficients operator* (const SteerableCoefficients &aValue) const
         {
-            SteeringCoefficients retVal;
+            SteerableCoefficients retVal;
             for (size_t i = 0; i < mBasisValues.size(); i++)
                 retVal.mBasisValues[i] = mBasisValues[i] * aValue.mBasisValues[i];
             return retVal;
         }
 
 
-        friend float Dot(const SteeringCoefficients &aValue1, const SteeringBasisValue &aValue2)
+        friend float Dot(const SteerableCoefficients &aValue1, const SteerableBasisValue &aValue2)
         {
-            auto val1 = static_cast<const SteeringValue*>(&aValue1);
-            auto val2 = static_cast<const SteeringValue*>(&aValue2);
+            auto val1 = static_cast<const SteerableValue*>(&aValue1);
+            auto val2 = static_cast<const SteerableValue*>(&aValue2);
             return Dot(*val1, *val2);
         }
-        friend float Dot(const SteeringBasisValue &aValue1, const SteeringCoefficients &aValue2)
+        friend float Dot(const SteerableBasisValue &aValue1, const SteerableCoefficients &aValue2)
         {
-            auto val1 = static_cast<const SteeringValue*>(&aValue1);
-            auto val2 = static_cast<const SteeringValue*>(&aValue2);
+            auto val1 = static_cast<const SteerableValue*>(&aValue1);
+            auto val2 = static_cast<const SteerableValue*>(&aValue2);
             return Dot(*val1, *val2);
         }
 
 
-        friend std::ostream &operator<< (std::ostream &aStream, const SteeringCoefficients &aBasis)
+        friend std::ostream &operator<< (std::ostream &aStream, const SteerableCoefficients &aBasis)
         {
             PG3_ERROR_CODE_NOT_TESTED("");
 
@@ -645,7 +645,7 @@ public:
                 const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
 
                 // Compute clamped cos spherical harmonic coefficients
-                SteeringCoefficients clampedCosCoeffs;
+                SteerableCoefficients clampedCosCoeffs;
                 clampedCosCoeffs.GenerateForClampedCos(normal, bCompensateNegativity);
 
                 // Test the approximation at random directions on whole sphere
@@ -655,8 +655,8 @@ public:
                     const Vec3f direction = Sampling::SampleUniformSphereW(rngDirections.GetVec2f());
 
                     // Evaluate clamped cosine through spherical harmonics
-                    const SteeringBasisValue sphHarmBasisValue =
-                        SteeringBasisValue().GenerateSphHarm(direction);
+                    const SteerableBasisValue sphHarmBasisValue =
+                        SteerableBasisValue().GenerateSphHarm(direction);
                     const float clampCosSphHarm = Dot(sphHarmBasisValue, clampedCosCoeffs);
 
                     // Evaluate clamped cosine directly
@@ -754,118 +754,118 @@ public:
 
 public:
 
-    static bool _UT_SteeringValue(
+    static bool _UT_SteerableValue(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue");
 
         // Equality operator
 
-        if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) !=
-            SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }))
+        if (SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) !=
+            SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't match itself!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't match itself!");
             return false;
         }
 
-        if (SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) !=
-            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
+        if (SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) !=
+            SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't match itself!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't match itself!");
             return false;
         }
 
-        if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) ==
-            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
+        if (SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) ==
+            SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
-                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) match!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
+                "SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) match!");
             return false;
         }
 
         // Delta equality operator
 
-        if (!SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
-             SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }), 0.001f))
+        if (!SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
+             SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }), 0.001f))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't delta-match itself!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) doesn't delta-match itself!");
             return false;
         }
 
-        if (!SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
-             SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
+        if (!SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
+             SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't delta-match itself!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) doesn't delta-match itself!");
             return false;
         }
 
-        if (SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
-            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
+        if (SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }).EqualsDelta(
+            SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }), 0.001f))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
-                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) delta-match!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f }) and "
+                "SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f }) delta-match!");
             return false;
         }
 
-        if (!SteeringValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }).EqualsDelta(
-             SteeringValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }), 0.001f))
+        if (!SteerableValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }).EqualsDelta(
+             SteerableValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }), 0.001f))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }) and "
-                "SteeringValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }) don't delta-match!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f,    0.f,     0.f, 0.f, 0.f, 0.f, 0.f, 0.f,     0.f    }) and "
+                "SteerableValue({ 0.001f, 0.0001f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.0001f, 0.001f }) don't delta-match!");
             return false;
         }
 
-        if (SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
-            SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }), 0.001f))
+        if (SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }).EqualsDelta(
+            SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }), 0.001f))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue",
-                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }) and "
-                "SteeringValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }) delta-match!");
+                aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue",
+                "SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.01f, 5.f, 6.f, 7.f, 8.f }) and "
+                "SteerableValue({ 0.f, 1.f, 2.f, 3.f, 4.f,   5.f, 6.f, 7.f, 8.f }) delta-match!");
             return false;
         }
 
-        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteeringValue");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "SteerableValue");
         return true;
     }
 
-    static bool _UT_SteeringValueStructures(
+    static bool _UT_SteerableValueStructures(
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
-            "Steering value structures");
+            "Steerable value structures");
 
-        if (!_UT_SteeringValue(aMaxUtBlockPrintLevel))
+        if (!_UT_SteerableValue(aMaxUtBlockPrintLevel))
             return false;
 
-        if (!SteeringBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel, eutblSubTestLevel1))
+        if (!SteerableBasisValue::_UT_GenerateSphHarm(aMaxUtBlockPrintLevel, eutblSubTestLevel1))
             return false;
 
-        if (!SteeringCoefficients::_UT_GenerateForClampedCos(
+        if (!SteerableCoefficients::_UT_GenerateForClampedCos(
                 aMaxUtBlockPrintLevel,
                 eutblSubTestLevel1, false))
             return false;
 
-        if (!SteeringCoefficients::_UT_GenerateForClampedCos(
+        if (!SteerableCoefficients::_UT_GenerateForClampedCos(
                 aMaxUtBlockPrintLevel,
                 eutblSubTestLevel1, true))
             return false;
 
-        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Steering value structures");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblWholeTest, "Steerable value structures");
         return true;
     }
 
@@ -930,7 +930,10 @@ public:
     class Vertex
     {
     public:
-        Vertex(const Vec3f &aDirection, const SteeringBasisValue &aWeight) : 
+        Vertex(
+            const Vec3f                 &aDirection,
+            const SteerableBasisValue   &aWeight
+            ) : 
             dir(aDirection),
             weight(aWeight)
         {};
@@ -942,7 +945,7 @@ public:
         }
 
         Vec3f               dir; // TODO: Use (2D) spherical coordinates to save memory?
-        SteeringBasisValue  weight;
+        SteerableBasisValue weight;
     };
 
 
@@ -1039,7 +1042,10 @@ public:
     {
     protected:
 
-        TreeNodeBase(bool aIsTriangleNode, const SteeringBasisValue &aWeight) :
+        TreeNodeBase(
+            bool                         aIsTriangleNode, 
+            const SteerableBasisValue   &aWeight
+            ) :
             mIsTriangleNode(aIsTriangleNode),
             mWeight(aWeight)
         {}
@@ -1051,12 +1057,12 @@ public:
             return mIsTriangleNode;
         }
 
-        SteeringBasisValue GetWeight() const
+        SteerableBasisValue GetWeight() const
         {
             return mWeight;
         }
 
-        float GetIntegral(const SteeringCoefficients &aClampedCosCoeffs) const
+        float GetIntegral(const SteerableCoefficients &aClampedCosCoeffs) const
         {
             const float result = Dot(mWeight, aClampedCosCoeffs);
 
@@ -1067,7 +1073,7 @@ public:
 
     protected:
         bool                mIsTriangleNode; // node can be either triangle (leaf) or inner node
-        SteeringBasisValue  mWeight;
+        SteerableBasisValue mWeight;
     };
 
 
@@ -1086,7 +1092,7 @@ public:
                     if ((aLeftChild != nullptr) && (aRightChild != nullptr))
                         return aLeftChild->GetWeight() + aRightChild->GetWeight();
                     else
-                        return SteeringBasisValue();
+                        return SteerableBasisValue();
                 }()),
             mLeftChild(aLeftChild),
             mRightChild(aRightChild)
@@ -1181,7 +1187,7 @@ public:
         {}
 
 
-        SteeringBasisValue ComputeTriangleWeight(
+        SteerableBasisValue ComputeTriangleWeight(
             uint32_t                 aVertexIndex0,
             uint32_t                 aVertexIndex1,
             uint32_t                 aVertexIndex2,
@@ -1192,7 +1198,7 @@ public:
             const auto vertex2 = aVertexStorage.Get(aVertexIndex2);
 
             if ((vertex0 == nullptr) || (vertex1 == nullptr) || (vertex2 == nullptr))
-                return SteeringBasisValue(0.f);
+                return SteerableBasisValue(0.f);
 
             const float area =
                 Geom::Triangle::SurfaceArea(vertex0->dir, vertex1->dir, vertex2->dir);
@@ -1231,7 +1237,7 @@ public:
             float                       &oValue0,
             float                       &oValue1,
             float                       &oValue2,
-            const SteeringCoefficients  &aClampedCosCoeffs,
+            const SteerableCoefficients &aClampedCosCoeffs,
             const VertexStorage         &aVertexStorage
             ) const
         {
@@ -1531,7 +1537,7 @@ protected:
 
     static const char * SaveLoadFileHeader11()
     {
-        return "Environment Map Steering Sampler Data, format ver. 1.1\n";
+        return "Environment Map Steerable Sampler Data, format ver. 1.1\n";
     }
 
 
@@ -1733,7 +1739,7 @@ protected:
         for (uint32_t vertexIndex = 0u; vertexIndex < count; ++vertexIndex)
         {
             Vec3f dir;
-            SteeringBasisValue weight;
+            SteerableBasisValue weight;
             if (!Utils::IO::LoadVariableFromStream(aIfs, dir))
                 return false;
             if (!Utils::IO::LoadVariableFromStream(aIfs, weight))
@@ -1934,7 +1940,7 @@ public:
         {
             // Save for future runs
             if (!SaveToDisk(aEmImage, aUseBilinearFiltering, aParams))
-                PG3_WARNING("Unable to save EM steering sampler data to disk!");
+                PG3_WARNING("Unable to save EM steerable sampler data to disk!");
             return true;
         }
 
@@ -1962,7 +1968,7 @@ public:
         PG3_ASSERT_FLOAT_IN_RANGE(aSample.y, 0.0f, 1.0f);
 
         // Clamped cosine coefficients for given normal
-        SteeringCoefficients clampedCosCoeffs;
+        SteerableCoefficients clampedCosCoeffs;
         clampedCosCoeffs.GenerateForClampedCos(aNormal, true);
 
         // Pick a triangle (descend the tree)
@@ -1988,7 +1994,7 @@ public:
     }
 
 
-    float GetWholeIntegral(const SteeringCoefficients &aClampedCosCoeffs) const
+    float GetWholeIntegral(const SteerableCoefficients &aClampedCosCoeffs) const
     {
         if (!IsBuilt())
             return 0.f;
@@ -2055,7 +2061,7 @@ public:
         float                       &oValue1,
         float                       &oValue2,
         const TriangleNode          aTriangle,
-        const SteeringCoefficients  &aClampedCosCoeffs
+        const SteerableCoefficients &aClampedCosCoeffs
         ) const
     {
         return aTriangle.GetVertexValues(oValue0, oValue1, oValue2, aClampedCosCoeffs, mVertexStorage);
@@ -2242,7 +2248,7 @@ protected:
 
         void Print()
         {
-            printf("\nSteering Sampler - Triangulation Statistics:\n");
+            printf("\nSteerable Sampler - Triangulation Statistics:\n");
             if (mLevelStats.size() > 0)
             {
                 uint32_t totalAllTriangleCount = 0u;
@@ -2288,7 +2294,7 @@ protected:
                 printf("no data!\n");
 
             //ComputeZeroSampleCountsVert(32);
-            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
+            //printf("\nSteerable Sampler - EM Sampling Empty Pixels - Vertical Histogram:\n");
             //if (!mZeroSampleCountsVert.empty())
             //{
             //    for (size_t row = 0; row < mZeroSampleCountsVert.size(); ++row)
@@ -2306,7 +2312,7 @@ protected:
             //    printf("no data!\n");
 
             //ComputeZeroSampleCountsHorz(32);
-            //printf("\nSteering Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
+            //printf("\nSteerable Sampler - EM Sampling Empty Pixels - Horizontal Histogram:\n");
             //if (!mZeroSampleCountsHorz.empty())
             //{
             //    for (size_t col = 0; col < mZeroSampleCountsHorz.size(); ++col)
@@ -2324,7 +2330,7 @@ protected:
             //    printf("no data!\n");
 
             //ComputeSamplesHist();
-            //printf("\nSteering Sampler - EM Sampling Pixel Histogram:\n");
+            //printf("\nSteerable Sampler - EM Sampling Pixel Histogram:\n");
             //if (!mSamplesHist.empty())
             //{
             //    // Print histogram
@@ -2490,7 +2496,7 @@ protected:
     };
 
 
-#if defined PG3_COMPUTE_AND_PRINT_EM_STEERING_STATISTICS && !defined PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
+#if defined PG3_COMPUTE_AND_PRINT_EM_STEERABLE_STATISTICS && !defined PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
     typedef TriangulationStats      TriangulationStatsSwitchable;
 #else
     typedef TriangulationStatsDummy TriangulationStatsSwitchable;
@@ -2635,7 +2641,7 @@ protected:
         const Vec3f                 &aVertexDir,
         const float                  aLuminance)
     {
-        SteeringBasisValue weight;
+        SteerableBasisValue weight;
         weight.GenerateSphHarm(aVertexDir, aLuminance);
 
         aVertexStorage.AddVertex(Vertex(aVertexDir, weight), oVertexIndex);
@@ -3027,7 +3033,7 @@ public:
         const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::SubdivideTriangle");
+            "EnvironmentMapSteerableSampler::SubdivideTriangle");
 
         // Dummy EM
         std::unique_ptr<EnvironmentMapImage>
@@ -3036,7 +3042,7 @@ public:
         if (!dummyImage)
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblWholeTest,
-                "EnvironmentMapSteeringSampler::SubdivideTriangle", "Unable to load image!");
+                "EnvironmentMapSteerableSampler::SubdivideTriangle", "Unable to load image!");
             return false;
         }
 
@@ -3100,7 +3106,7 @@ public:
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::SubdivideTriangle");
+            "EnvironmentMapSteerableSampler::SubdivideTriangle");
         return true;
     }
 
@@ -3352,7 +3358,7 @@ protected:
     // the piece-wise bilinear EM approximation over the triangle surface.
     bool PickTriangle(
         const TriangleNode          *&oTriangle,
-        const SteeringCoefficients   &aClampedCosCoeffs,
+        const SteerableCoefficients &aClampedCosCoeffs,
         float                        &aSample //modified and used by the triangle area sampling later on
         ) const
     {
@@ -3436,7 +3442,7 @@ protected:
         Vec2f                       &oBaryCoords,
         float                       &oSampleValue,
         const TriangleNode          &aTriangle,
-        const SteeringCoefficients  &aClampedCosCoeffs,
+        const SteerableCoefficients &aClampedCosCoeffs,
         const Vec2f                 &aSample) const
     {
         float value0, value1, value2;
@@ -3458,7 +3464,7 @@ protected:
         Vec3f                       &oDirection,
         float                       &oSampleValue,
         const TriangleNode          &aTriangle,
-        const SteeringCoefficients  &aClampedCosCoeffs,
+        const SteerableCoefficients &aClampedCosCoeffs,
         const Vec2f                 &aSample) const
     {
         Vec2f baryCoords;
@@ -3619,7 +3625,7 @@ public:
                     const auto radiance  = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
                     const auto luminance = radiance.Luminance();
                     auto referenceWeight = 
-                        SteeringBasisValue().GenerateSphHarm(vertex->dir, luminance);
+                        SteerableBasisValue().GenerateSphHarm(vertex->dir, luminance);
                     if (vertex->weight != referenceWeight)
                     {
                         std::ostringstream errorDescription;
@@ -3684,7 +3690,7 @@ public:
         // All vertices lie on unit sphere
         for (auto node : oRefinedTriangles)
         {
-            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            auto triangle = static_cast<EnvironmentMapSteerableSampler::TriangleNode*>(node);
             const auto &dir0 = aVertexStorage.Get(triangle->vertexIndices[0])->dir;
             const auto &dir1 = aVertexStorage.Get(triangle->vertexIndices[1])->dir;
             const auto &dir2 = aVertexStorage.Get(triangle->vertexIndices[2])->dir;
@@ -3703,7 +3709,7 @@ public:
         // Non-zero triangle size
         for (auto node : oRefinedTriangles)
         {
-            auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            auto triangle = static_cast<EnvironmentMapSteerableSampler::TriangleNode*>(node);
             auto surfaceArea = triangle->ComputeSurfaceArea(aVertexStorage);
             if (surfaceArea < 0.0001f)
             {
@@ -3718,7 +3724,7 @@ public:
         // Sanity check for normals
         for (auto node : oRefinedTriangles)
         {
-            const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            const auto triangle = static_cast<EnvironmentMapSteerableSampler::TriangleNode*>(node);
             const auto centroid = triangle->ComputeCentroid(aVertexStorage);
             const auto centroidDirection = Normalize(centroid);
             const auto normal = triangle->ComputeNormal(aVertexStorage);
@@ -3736,7 +3742,7 @@ public:
         // Weights
         for (auto node : oRefinedTriangles)
         {
-            const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            const auto triangle = static_cast<EnvironmentMapSteerableSampler::TriangleNode*>(node);
 
             // Vertex weights
             for (auto vertexIndex : triangle->vertexIndices)
@@ -3746,7 +3752,7 @@ public:
                 const auto radiance = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
                 const auto luminance = radiance.Luminance();
                 const auto referenceWeight =
-                    SteeringBasisValue().GenerateSphHarm(vertex->dir, luminance);
+                    SteerableBasisValue().GenerateSphHarm(vertex->dir, luminance);
                 if (vertex->weight != referenceWeight)
                 {
                     PG3_UT_FAILED(
@@ -3759,7 +3765,7 @@ public:
 
             // Triangle weight
             const auto area = triangle->ComputeSurfaceArea(aVertexStorage);
-            const SteeringBasisValue referenceWeight =
+            const SteerableBasisValue referenceWeight =
                 area * (aVertexStorage.Get(triangle->vertexIndices[0])->weight
                       + aVertexStorage.Get(triangle->vertexIndices[1])->weight
                       + aVertexStorage.Get(triangle->vertexIndices[2])->weight) / 3.0f;
@@ -4101,7 +4107,7 @@ public:
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
+            "EnvironmentMapSteerableSampler::BuildTriangleTree() - Synthetic");
 
         for (uint32_t i = 0; i < 9; i++)
             if (!_UT_BuildTriangleTree_SingleRandomList(aMaxUtBlockPrintLevel, eutblSubTestLevel1, i))
@@ -4122,7 +4128,7 @@ public:
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::BuildTriangleTree() - Synthetic");
+            "EnvironmentMapSteerableSampler::BuildTriangleTree() - Synthetic");
         return true;
     }
 
@@ -4198,7 +4204,7 @@ public:
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Init");
+            "EnvironmentMapSteerableSampler::Init");
 
         // TODO: Empty EM
         // TODO: Black constant EM (Luminance 0)
@@ -4264,7 +4270,7 @@ public:
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Init");
+            "EnvironmentMapSteerableSampler::Init");
         return true;
     }
 
@@ -4272,8 +4278,8 @@ public:
     static bool _UT_Sampling_Tree(
         const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel         aUtBlockPrintLevel,
-        const SteeringCoefficients      &aClampedCosCoeffs,
-        EnvironmentMapSteeringSampler   &aSampler)
+        const SteerableCoefficients     &aClampedCosCoeffs,
+        EnvironmentMapSteerableSampler  &aSampler)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling");
 
@@ -4623,8 +4629,8 @@ public:
     static bool _UT_Sampling_Triangles(
         const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
         const UnitTestBlockLevel         aUtBlockPrintLevel,
-        const SteeringCoefficients      &aClampedCosCoeffs,
-        EnvironmentMapSteeringSampler   &aSampler)
+        const SteerableCoefficients     &aClampedCosCoeffs,
+        EnvironmentMapSteerableSampler  &aSampler)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling");
 
@@ -4714,7 +4720,7 @@ public:
         //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Initializing sampler...", aTestName);
 
         // Init local sampler
-        EnvironmentMapSteeringSampler sampler;
+        EnvironmentMapSteerableSampler sampler;
         if (!sampler.Init(*image, aUseBilinearFiltering, params))
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
@@ -4730,7 +4736,7 @@ public:
         {
             const Vec3f normal = Sampling::SampleUniformSphereW(rngNormals.GetVec2f());
 
-            SteeringCoefficients clampedCosCoeffs;
+            SteerableCoefficients clampedCosCoeffs;
             clampedCosCoeffs.GenerateForClampedCos(normal, true);
 
             // Tree sampling
@@ -4755,7 +4761,7 @@ public:
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Sampling_EM");
+            "EnvironmentMapSteerableSampler::Sampling_EM");
 
         // TODO: Empty EM
         // TODO: Black constant EM (Luminance 0)
@@ -4821,7 +4827,7 @@ public:
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Sampling_EM");
+            "EnvironmentMapSteerableSampler::Sampling_EM");
         return true;
     }
 
@@ -4830,7 +4836,7 @@ public:
     {
         PG3_UT_BEGIN(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Sampling_Synthetic");
+            "EnvironmentMapSteerableSampler::Sampling_Synthetic");
 
         const Vec3f aVertex0(0.f, 0.f, 0.f);
         const Vec3f aVertex1(1.f, 0.f, 0.f);
@@ -4870,14 +4876,14 @@ public:
 
         PG3_UT_PASSED(
             aMaxUtBlockPrintLevel, eutblWholeTest,
-            "EnvironmentMapSteeringSampler::Sampling_Synthetic");
+            "EnvironmentMapSteerableSampler::Sampling_Synthetic");
         return true;
     }
 
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //if (!_UT_SteeringValueStructures(aMaxUtBlockPrintLevel))
+        //if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
         //    return false;
         //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
         //    return false;
