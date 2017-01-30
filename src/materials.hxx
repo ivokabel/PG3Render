@@ -30,7 +30,7 @@ enum MaterialProperties
 {
     kBsdfNone                       = 0x00000000,
 
-    // What sides of surface should lights sample
+    // Sides of surface which should be sampled by lights:
 
     kBsdfFrontSideLightSampling     = 0x00000001,
     // Only needed if the back surface is not occluded by the surrounding geometry

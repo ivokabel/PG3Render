@@ -528,7 +528,7 @@ public:
         const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
         const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
-        Vec3f wil = Sampling::SampleCosSphereParamPdfW(
+        const Vec3f wil = Sampling::SampleCosSphereParamPdfW(
             aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
 
         oSample.mWig    = aSurfFrame.ToWorld(wil);
