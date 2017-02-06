@@ -1455,16 +1455,16 @@ public:
 protected:
 
     // Builds the internal structures needed for sampling
-    bool Build(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
+    bool Build()
     {
-        Cleanup();
+        ReleaseSamplingData();
+
+        if (!mEmImage)
+            return false;
 
         std::list<TreeNodeBase*> tmpTriangles;
 
-        if (!TriangulateEm(tmpTriangles, mVertexStorage, aEmImage, aUseBilinearFiltering, aParams))
+        if (!TriangulateEm(tmpTriangles, mVertexStorage, *mEmImage, mEmUseBilinearFiltering, mParams))
             return false;
 
         if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
@@ -1678,15 +1678,12 @@ protected:
 
 
     // Save internal structures needed for sampling to disk
-    bool SaveToDisk(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams) const
+    bool SaveToDisk() const
     {
         if (!IsBuilt())
             return false;
 
-        return SaveToDisk11(mVertexStorage, mTreeRoot.get(), aEmImage, aUseBilinearFiltering, aParams);
+        return SaveToDisk11(mVertexStorage, mTreeRoot.get(), *mEmImage, mEmUseBilinearFiltering, mParams);
     }
 
 
@@ -1893,16 +1890,16 @@ protected:
 
 
     // Loads pre-built internal structures needed for sampling
-    bool LoadFromDisk(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
+    bool LoadFromDisk()
     {
-        Cleanup();
+        ReleaseSamplingData();
 
-        if (!LoadFromDisk11(mVertexStorage, mTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        if (!mEmImage)
+            return false;
+
+        if (!LoadFromDisk11(mVertexStorage, mTreeRoot, *mEmImage, mEmUseBilinearFiltering, mParams))
         {
-            Cleanup();
+            ReleaseSamplingData();
             return false;
         }
         else
@@ -1939,18 +1936,26 @@ public:
 
     // Builds the internal structures needed for sampling
     virtual bool Init(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering) override
+        std::shared_ptr<EnvironmentMapImage>    aEmImage,
+        bool                                    aUseBilinearFiltering) override
     {
+        ReleaseData();
+
+        if (!aEmImage)
+            return false;
+
+        mEmImage                = aEmImage;
+        mEmUseBilinearFiltering = aUseBilinearFiltering;
+
         // Building the tree is slow. Try to load a pre-built tree from disk first
-        if (LoadFromDisk(aEmImage, aUseBilinearFiltering, mParams))
+        if (LoadFromDisk())
             return true;
 
         // Not loaded. Build a new tree
-        if (Build(aEmImage, aUseBilinearFiltering, mParams))
+        if (Build())
         {
             // Save for future runs
-            if (!SaveToDisk(aEmImage, aUseBilinearFiltering, mParams))
+            if (!SaveToDisk())
                 PG3_WARNING("Unable to save EM steerable sampler data to disk!");
             return true;
         }
@@ -1998,6 +2003,24 @@ public:
         return true;
     }
 
+
+    // Releases the data structures used for sampling
+    void ReleaseSamplingData()
+    {
+        mTreeRoot.reset(nullptr);
+        mVertexStorage.Free();
+    }
+
+
+    // Releases all data structures
+    virtual void ReleaseData() override
+    {
+        ReleaseSamplingData();
+        mEmImage.reset();
+    }
+
+
+protected:
 
     float GetWholeIntegral(const SteerableCoefficients &aClampedCosCoeffs) const
     {
@@ -2074,13 +2097,6 @@ public:
 
 
 protected:
-
-    // Releases the current data structures
-    void Cleanup()
-    {
-        mTreeRoot.reset(nullptr);
-        mVertexStorage.Free();
-    }
 
     static void FreeNode(TreeNodeBase* aNode)
     {
@@ -3482,7 +3498,9 @@ protected:
 
 protected:
 
-    const BuildParameters           mParams;
+    std::shared_ptr<EnvironmentMapImage>    mEmImage;
+    bool                                    mEmUseBilinearFiltering;
+    const BuildParameters                   mParams;
 
     // Contains all used vertices.
     // Referenced from mTreeRoot through indices
@@ -4716,7 +4734,7 @@ public:
         //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Loading image...", aTestName);
 
         // Load image
-        std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(aImagePath));
+        std::shared_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(aImagePath));
         if (!image)
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
@@ -4728,7 +4746,7 @@ public:
 
         // Init local sampler
         EnvironmentMapSteerableSampler sampler(params);
-        if (!sampler.Init(*image, aUseBilinearFiltering))
+        if (!sampler.Init(image, aUseBilinearFiltering))
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
                 "%s", "Failed to Init() the sampler!", aTestName);

@@ -10,8 +10,8 @@ class EnvironmentMapCosineSampler : public EnvironmentMapSamplerBase
 public:
 
     virtual bool Init(
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering
+        std::shared_ptr<EnvironmentMapImage>    aEmImage,
+        bool                                    aUseBilinearFiltering
         ) override
     {
         aEmImage; aUseBilinearFiltering; // unused parameters
@@ -30,4 +30,6 @@ public:
 
         return false;
     }
+
+    virtual void ReleaseData() override {};
 };
