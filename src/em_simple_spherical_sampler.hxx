@@ -1,6 +1,6 @@
 #pragma once
 
-#include "em_sampler_base.hxx"
+#include "em_sampler.hxx"
 #include "debugging.hxx"
 
 template <typename TEmImg>

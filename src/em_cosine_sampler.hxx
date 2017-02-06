@@ -1,6 +1,6 @@
 #pragma once
 
-#include "em_sampler_base.hxx"
+#include "em_sampler.hxx"
 #include "debugging.hxx"
 
 // Samples requested (hemi)sphere(s) in a cosine-weighted fashion.
@@ -19,17 +19,16 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const override
     {
-        aSurfFrame; aSampleFrontSide; aSampleBackSide; aRng; // TODO
-        oSampleDirection, oSamplePdf, oRadianceCos; // TODO
+        const Vec3f wil =
+            Sampling::SampleCosSphereParamPdfW(
+                aRng.GetVec3f(), aSampleFrontSide, aSampleBackSide, oSamplePdf);
+        oSampleDirection = aSurfFrame.ToWorld(wil);
 
-        Vec2f sample = aRng.GetVec2f();
+        const SpectrumF radiance = mEmImage->Evaluate(oSampleDirection, mEmUseBilinearFiltering);
+        const float cosThetaIn = std::abs(wil.z);
+        oRadianceCos = radiance * cosThetaIn;
 
-        PG3_ASSERT_FLOAT_IN_RANGE(sample.x, 0.0f, 1.0f);
-        PG3_ASSERT_FLOAT_IN_RANGE(sample.y, 0.0f, 1.0f);
-
-        // TODO: ...
-
-        return false;
+        return true;
     }
 };
 
