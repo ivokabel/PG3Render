@@ -353,6 +353,7 @@ public:
         mEnvMap(nullptr)
     {
         mConstantRadiance.MakeZero();
+        mCosineSampler.Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
     }
 
     virtual ~BackgroundLight() override
@@ -364,6 +365,7 @@ public:
     virtual void SetConstantRadiance(const SpectrumF &aRadiance)
     {
         mConstantRadiance = aRadiance;
+        mCosineSampler.Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
     }
 
     virtual void LoadEnvironmentMap(const std::string filename, float rotate = 0.0f, float scale = 1.0f)
@@ -432,23 +434,8 @@ public:
             const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
             const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
-            Vec3f wil = Sampling::SampleCosSphereParamPdfW(
-                aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
-
-            oSample.mWig    = aSurfFrame.ToWorld(wil);
-            oSample.mDist   = std::numeric_limits<float>::max();
-
-            oSample.mLightProbability = 1.0f;
-
-            const float cosThetaIn = std::abs(wil.z);
-            oSample.mSample = mConstantRadiance * cosThetaIn;
-
-            //std::unique_ptr<ConstantEmSampler> cosineSampler(
-            //    static_cast<ConstantEmSampler*>(new CosineConstEmSampler()));
-
-            //cosineSampler->Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
-
-            //cosineSampler->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
+            ((ConstantEmSampler*)(&mCosineSampler))->Sample(
+                oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
         }
     }
 
@@ -572,6 +559,7 @@ public:
 
 public:
 
-    SpectrumF       mConstantRadiance;
-    EnvironmentMap *mEnvMap;
+    SpectrumF                mConstantRadiance;
+    CosineConstEmSampler     mCosineSampler;
+    EnvironmentMap          *mEnvMap;
 };
