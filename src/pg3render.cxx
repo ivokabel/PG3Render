@@ -186,7 +186,7 @@ bool RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
     if (!Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel))
         return false;
 
-    if (!EnvironmentMapSteerableSampler::_UnitTests(aMaxUtBlockPrintLevel))
+    if (!SteerableImageEmSampler::_UnitTests(aMaxUtBlockPrintLevel))
         return false;
 
     return true;

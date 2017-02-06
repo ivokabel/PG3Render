@@ -3,7 +3,8 @@
 #include "em_sampler_base.hxx"
 #include "debugging.hxx"
 
-class EnvironmentMapSimpleSphericalSampler : public EnvironmentMapSamplerBase
+template <typename TEmImg>
+class EnvironmentMapSimpleSphericalSampler : public EnvironmentMapSampler<TEmImg>
 {
 public:
 
@@ -11,7 +12,7 @@ public:
         std::shared_ptr<EnvironmentMapImage>    aEmImage,
         bool                                    aUseBilinearFiltering) override
     {
-        if (!EnvironmentMapSamplerBase::Init(aEmImage, aUseBilinearFiltering))
+        if (!EnvironmentMapSampler::Init(aEmImage, aUseBilinearFiltering))
             return false;
 
         // TODO: Distribution...
@@ -47,6 +48,9 @@ public:
     {
         // TODO: Distribution...
 
-        EnvironmentMapSamplerBase::ReleaseData();
+        EnvironmentMapSampler::ReleaseData();
     };
 };
+
+typedef EnvironmentMapSimpleSphericalSampler<EnvironmentMapImage>   SimpleSphericalImageEmSampler;
+typedef EnvironmentMapSimpleSphericalSampler<ConstEnvironmentValue> SimpleSphericalConstEmSampler;

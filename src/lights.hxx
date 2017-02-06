@@ -1,5 +1,7 @@
 #pragma once
 
+#include "em_cosine_sampler.hxx"
+
 #include "light_sample.hxx"
 #include "materials.hxx"
 #include "math.hxx"
@@ -440,6 +442,13 @@ public:
 
             const float cosThetaIn = std::abs(wil.z);
             oSample.mSample = mConstantRadiance * cosThetaIn;
+
+            //std::unique_ptr<ConstantEmSampler> cosineSampler(
+            //    static_cast<ConstantEmSampler*>(new CosineConstEmSampler()));
+
+            //cosineSampler->Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
+
+            //cosineSampler->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
         }
     }
 

@@ -233,7 +233,7 @@ private:
     //EnvironmentMap(const EnvironmentMap&) = delete;
 
     EnvironmentMapImage*            mImage;             // Environment map itself
-    EnvironmentMapSteerableSampler* mSteerableSampler;   // TODO: Describe...
+    SteerableImageEmSampler*        mSteerableSampler;   // TODO: Describe...
     Distribution2D*                 mDistribution;      // 2D distribution of the environment map
     const float                     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
 };

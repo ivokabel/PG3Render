@@ -16,7 +16,8 @@
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
 // from Kartic Subr and Jim Arvo, 2007
-class EnvironmentMapSteerableSampler : public EnvironmentMapSamplerBase
+template <typename TEmImg>
+class EnvironmentMapSteerableSampler : public EnvironmentMapSampler<TEmImg>
 {
 public:
 
@@ -1939,7 +1940,7 @@ public:
         std::shared_ptr<EnvironmentMapImage>    aEmImage,
         bool                                    aUseBilinearFiltering) override
     {
-        if (!EnvironmentMapSamplerBase::Init(aEmImage, aUseBilinearFiltering))
+        if (!EnvironmentMapSampler::Init(aEmImage, aUseBilinearFiltering))
             return false;
 
         // Building the tree is slow. Try to load a pre-built tree from disk first
@@ -2029,7 +2030,7 @@ public:
     virtual void ReleaseData() override
     {
         ReleaseSamplingData();
-        EnvironmentMapSamplerBase::ReleaseData();
+        EnvironmentMapSampler::ReleaseData();
     }
 
 
@@ -4319,10 +4320,10 @@ public:
 
 
     static bool _UT_Sampling_Tree(
-        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
-        const UnitTestBlockLevel         aUtBlockPrintLevel,
-        const SteerableCoefficients     &aClampedCosCoeffs,
-        EnvironmentMapSteerableSampler  &aSampler)
+        const UnitTestBlockLevel             aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel             aUtBlockPrintLevel,
+        const SteerableCoefficients         &aClampedCosCoeffs,
+        EnvironmentMapSteerableSampler      &aSampler)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Tree sampling");
 
@@ -4670,10 +4671,10 @@ public:
 
 
     static bool _UT_Sampling_Triangles(
-        const UnitTestBlockLevel         aMaxUtBlockPrintLevel,
-        const UnitTestBlockLevel         aUtBlockPrintLevel,
-        const SteerableCoefficients     &aClampedCosCoeffs,
-        EnvironmentMapSteerableSampler  &aSampler)
+        const UnitTestBlockLevel             aMaxUtBlockPrintLevel,
+        const UnitTestBlockLevel             aUtBlockPrintLevel,
+        const SteerableCoefficients         &aClampedCosCoeffs,
+        EnvironmentMapSteerableSampler      &aSampler)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "Triangle sampling");
 
@@ -4944,3 +4945,6 @@ public:
 
 #endif
 };
+
+typedef EnvironmentMapSteerableSampler<EnvironmentMapImage>   SteerableImageEmSampler;
+typedef EnvironmentMapSteerableSampler<ConstEnvironmentValue> SteerableConstEmSampler;

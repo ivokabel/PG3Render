@@ -8,14 +8,15 @@
 #include <memory>
 #include <limits>
 
-class EnvironmentMapSamplerBase
+template <typename TEmImg>
+class EnvironmentMapSampler
 {
 public:
 
     // ...
     virtual bool Init(
-        std::shared_ptr<EnvironmentMapImage>     aEmImage,
-        bool                                     aUseBilinearFiltering)
+        std::shared_ptr<TEmImg>     aEmImage,
+        bool                        aUseBilinearFiltering)
     {
         ReleaseData();
 
@@ -63,6 +64,9 @@ public:
 
 protected:
 
-    std::shared_ptr<EnvironmentMapImage>    mEmImage;
-    bool                                    mEmUseBilinearFiltering;
+    std::shared_ptr<TEmImg>     mEmImage;
+    bool                        mEmUseBilinearFiltering;
 };
+
+typedef EnvironmentMapSampler<EnvironmentMapImage>    ImageEmSampler;
+typedef EnvironmentMapSampler<ConstEnvironmentValue>  ConstantEmSampler;
