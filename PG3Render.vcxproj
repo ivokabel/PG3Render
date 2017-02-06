@@ -205,6 +205,7 @@
     <ClInclude Include="src\geometry.hxx" />
     <ClInclude Include="src\hard_config.hxx" />
     <ClInclude Include="src\lights.hxx" />
+    <ClInclude Include="src\light_sample.hxx" />
     <ClInclude Include="src\materials.hxx" />
     <ClInclude Include="src\math.hxx" />
     <ClInclude Include="src\microfacet.hxx" />

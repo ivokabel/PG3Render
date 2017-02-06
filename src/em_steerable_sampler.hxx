@@ -1476,7 +1476,7 @@ protected:
 
     bool IsBuilt() const
     {
-        return (mTreeRoot.get() != nullptr) && (!mVertexStorage.IsEmpty());
+        return mEmImage && (mTreeRoot.get() != nullptr) && (!mVertexStorage.IsEmpty());
     }
 
 
@@ -1969,28 +1969,37 @@ public:
     virtual bool Sample(
         Vec3f           &oSampleDirection,
         float           &oSamplePdf,
-        const Vec3f     &aNormal,
-        Vec2f            aSample
+        SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide,
+        Rng             &aRng
         ) const override
     {
-        PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
-        PG3_ASSERT_FLOAT_IN_RANGE(aSample.x, 0.0f, 1.0f);
-        PG3_ASSERT_FLOAT_IN_RANGE(aSample.y, 0.0f, 1.0f);
+        PG3_ASSERT_VEC3F_NORMALIZED(aSurfFrame.Normal());
+
+        Vec2f sample = aRng.GetVec2f();
+
+        PG3_ASSERT_FLOAT_IN_RANGE(sample.x, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(sample.y, 0.0f, 1.0f);
+
+        if (!IsBuilt())
+            return false;
 
         // Clamped cosine coefficients for given normal
         SteerableCoefficients clampedCosCoeffs;
-        clampedCosCoeffs.GenerateForClampedCos(aNormal, true);
+        clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
 
         // Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
-        PickTriangle(triangle, clampedCosCoeffs, aSample.x);
+        PickTriangle(triangle, clampedCosCoeffs, sample.x);
         if (triangle == nullptr)
             return false;
 
         // Sample triangle surface (linear approximation)
         float sampleValue = 0.f;
         if (!SampleTriangleSurface(
-                oSampleDirection, sampleValue, *triangle, clampedCosCoeffs, aSample))
+                oSampleDirection, sampleValue, *triangle, clampedCosCoeffs, sample))
             return false;
 
         // PDF can be computed efficiently...
@@ -1999,6 +2008,15 @@ public:
             oSamplePdf = 0.f;
         else
             oSamplePdf = sampleValue / wholeIntegral;
+
+        // Radiance * cos(theta)
+        const SpectrumF radiance = mEmImage->Evaluate(oSampleDirection, mEmUseBilinearFiltering);
+        const float cosThetaIn = Dot(oSampleDirection, aSurfFrame.Normal());
+        if (   (aSampleFrontSide && (cosThetaIn > 0.0f))
+            || (aSampleBackSide  && (cosThetaIn < 0.0f)))
+            oRadianceCos = radiance * std::abs(cosThetaIn);
+        else
+            oRadianceCos.MakeZero();
 
         return true;
     }
@@ -3493,7 +3511,14 @@ protected:
                 baryCoords, oSampleValue, aTriangle, aClampedCosCoeffs, aSample))
             return false;
 
-        return GetTrianglePoint(oDirection, aTriangle, baryCoords);
+        if (!GetTrianglePoint(oDirection, aTriangle, baryCoords))
+            return false;
+
+        // We assume the triangle is small enought to not contain the origin of the sphere
+        // -> interpolated point on triangle does not have zero distance from the origin
+        oDirection.Normalize();
+
+        return true;
     }
 
 protected:

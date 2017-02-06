@@ -125,6 +125,9 @@
     <ClInclude Include="src\em_simple_spherical_sampler.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\light_sample.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">
