@@ -1,9 +1,7 @@
 #pragma once
 
 #include "em_sampler_base.hxx"
-
 #include "debugging.hxx"
-//#include "spectrum.hxx"
 
 class EnvironmentMapCosineSampler : public EnvironmentMapSamplerBase
 {
