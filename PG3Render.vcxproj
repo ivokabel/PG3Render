@@ -194,7 +194,10 @@
     <ClInclude Include="src\direct_illumination.hxx" />
     <ClInclude Include="src\distribution.hxx" />
     <ClInclude Include="src\em.hxx" />
+    <ClInclude Include="src\em_cosine_sampler.hxx" />
     <ClInclude Include="src\em_image.hxx" />
+    <ClInclude Include="src\em_sampler_base.hxx" />
+    <ClInclude Include="src\em_simple_spherical_sampler.hxx" />
     <ClInclude Include="src\em_steerable_sampler.hxx" />
     <ClInclude Include="src\eye_light.hxx" />
     <ClInclude Include="src\frame_buffer.hxx" />

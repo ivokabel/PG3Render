@@ -1,5 +1,8 @@
 #pragma once
 
+#include "em_sampler_base.hxx"
+
+#include "utils.hxx"
 #include "em_image.hxx"
 #include "unit_testing.hxx"
 #include "debugging.hxx"
@@ -13,7 +16,7 @@
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
 // from Kartic Subr and Jim Arvo, 2007
-class EnvironmentMapSteerableSampler
+class EnvironmentMapSteerableSampler : public EmSamplerBase
 {
 public:
 
@@ -1468,6 +1471,12 @@ protected:
     }
 
 
+    bool IsBuilt() const
+    {
+        return (mTreeRoot.get() != nullptr) && (!mVertexStorage.IsEmpty());
+    }
+
+
     static void CountNodes(
         const TreeNodeBase      *aNode,
         uint32_t                &oNonTriangleCount,
@@ -1945,12 +1954,6 @@ public:
         }
 
         return false;
-    }
-
-
-    bool IsBuilt() const
-    {
-        return (mTreeRoot.get() != nullptr) && (!mVertexStorage.IsEmpty());
     }
 
 

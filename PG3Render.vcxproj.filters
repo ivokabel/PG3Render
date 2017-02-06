@@ -116,6 +116,15 @@
     <ClInclude Include="src\unit_testing.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\em_sampler_base.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\em_cosine_sampler.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\em_simple_spherical_sampler.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

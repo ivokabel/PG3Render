@@ -1,8 +1,13 @@
 #pragma once
 
-#include "spectrum.hxx"
 #include "renderer.hxx"
+
+#include "em_cosine_sampler.hxx"
+#include "em_simple_spherical_sampler.hxx"
+#include "em_steerable_sampler.hxx"
+
 #include "rng.hxx"
+#include "spectrum.hxx"
 #include "types.hxx"
 #include "hard_config.hxx"
 
