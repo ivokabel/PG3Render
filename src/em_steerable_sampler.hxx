@@ -1939,13 +1939,8 @@ public:
         std::shared_ptr<EnvironmentMapImage>    aEmImage,
         bool                                    aUseBilinearFiltering) override
     {
-        ReleaseData();
-
-        if (!aEmImage)
+        if (!EnvironmentMapSamplerBase::Init(aEmImage, aUseBilinearFiltering))
             return false;
-
-        mEmImage                = aEmImage;
-        mEmUseBilinearFiltering = aUseBilinearFiltering;
 
         // Building the tree is slow. Try to load a pre-built tree from disk first
         if (LoadFromDisk())
@@ -1978,17 +1973,17 @@ public:
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aSurfFrame.Normal());
 
-        Vec2f sample = aRng.GetVec2f();
-
-        PG3_ASSERT_FLOAT_IN_RANGE(sample.x, 0.0f, 1.0f);
-        PG3_ASSERT_FLOAT_IN_RANGE(sample.y, 0.0f, 1.0f);
-
         if (!IsBuilt())
             return false;
 
         // Clamped cosine coefficients for given normal
         SteerableCoefficients clampedCosCoeffs;
         clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+
+        Vec2f sample = aRng.GetVec2f();
+
+        PG3_ASSERT_FLOAT_IN_RANGE(sample.x, 0.0f, 1.0f);
+        PG3_ASSERT_FLOAT_IN_RANGE(sample.y, 0.0f, 1.0f);
 
         // Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
@@ -2034,7 +2029,7 @@ public:
     virtual void ReleaseData() override
     {
         ReleaseSamplingData();
-        mEmImage.reset();
+        EnvironmentMapSamplerBase::ReleaseData();
     }
 
 
@@ -3523,8 +3518,6 @@ protected:
 
 protected:
 
-    std::shared_ptr<EnvironmentMapImage>    mEmImage;
-    bool                                    mEmUseBilinearFiltering;
     const BuildParameters                   mParams;
 
     // Contains all used vertices.

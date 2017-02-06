@@ -11,13 +11,16 @@ public:
 
     virtual bool Init(
         std::shared_ptr<EnvironmentMapImage>    aEmImage,
-        bool                                    aUseBilinearFiltering
-        ) override
+        bool                                    aUseBilinearFiltering) override
     {
-        aEmImage; aUseBilinearFiltering; // TODO
+        if (!EnvironmentMapSamplerBase::Init(aEmImage, aUseBilinearFiltering))
+            return false;
 
-        return true;
+        // TODO: Distribution...
+
+        return false; // debug
     }
+
 
     virtual bool Sample(
         Vec3f           &oSampleDirection,
@@ -26,8 +29,7 @@ public:
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
         bool             aSampleBackSide,
-        Rng             &aRng
-        ) const override
+        Rng             &aRng) const override
     {
         aSurfFrame; // unused param
 
@@ -42,5 +44,11 @@ public:
         return false;
     }
 
-    virtual void ReleaseData() override {};
+
+    virtual void ReleaseData() override
+    {
+        // TODO: Distribution...
+
+        EnvironmentMapSamplerBase::ReleaseData();
+    };
 };

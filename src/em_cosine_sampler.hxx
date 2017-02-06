@@ -9,16 +9,6 @@ class EnvironmentMapCosineSampler : public EnvironmentMapSamplerBase
 {
 public:
 
-    virtual bool Init(
-        std::shared_ptr<EnvironmentMapImage>    aEmImage,
-        bool                                    aUseBilinearFiltering
-        ) override
-    {
-        aEmImage; aUseBilinearFiltering; // unused parameters
-
-        return true;
-    }
-
     virtual bool Sample(
         Vec3f           &oSampleDirection,
         float           &oSamplePdf,
@@ -26,8 +16,7 @@ public:
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
         bool             aSampleBackSide,
-        Rng             &aRng
-        ) const override
+        Rng             &aRng) const override
     {
         aSurfFrame; aSampleFrontSide; aSampleBackSide; aRng; // TODO
         oSampleDirection, oSamplePdf, oRadianceCos; // TODO
@@ -37,8 +26,8 @@ public:
         PG3_ASSERT_FLOAT_IN_RANGE(sample.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(sample.y, 0.0f, 1.0f);
 
+        // TODO: ...
+
         return false;
     }
-
-    virtual void ReleaseData() override {};
 };

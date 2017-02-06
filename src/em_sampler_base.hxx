@@ -15,7 +15,18 @@ public:
     // ...
     virtual bool Init(
         std::shared_ptr<EnvironmentMapImage>     aEmImage,
-        bool                                     aUseBilinearFiltering) = 0;
+        bool                                     aUseBilinearFiltering)
+    {
+        ReleaseData();
+
+        if (!aEmImage)
+            return false;
+
+        mEmImage = aEmImage;
+        mEmUseBilinearFiltering = aUseBilinearFiltering;
+
+        return true;
+    }
 
     // ...
     virtual bool Sample(
@@ -44,5 +55,14 @@ public:
     }
 
     // Releases all data structures
-    virtual void ReleaseData() = 0;
+    virtual void ReleaseData()
+    {
+        mEmImage.reset();
+    }
+
+
+protected:
+
+    std::shared_ptr<EnvironmentMapImage>    mEmImage;
+    bool                                    mEmUseBilinearFiltering;
 };
