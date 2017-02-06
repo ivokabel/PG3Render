@@ -16,11 +16,68 @@
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
 // from Kartic Subr and Jim Arvo, 2007
-class EnvironmentMapSteerableSampler : public EmSamplerBase
+class EnvironmentMapSteerableSampler : public EnvironmentMapSamplerBase
 {
 public:
 
-     EnvironmentMapSteerableSampler() {}
+    class BuildParameters
+    {
+    public:
+
+        BuildParameters(
+            float   aMaxApproxError = Math::InfinityF(),
+            float   aMinSubdivLevel = Math::InfinityF(),
+            float   aMaxSubdivLevel = Math::InfinityF(),
+            float   aOversamplingFactorDbg = Math::InfinityF(),
+            float   aMaxTriangleSpanDbg = Math::InfinityF())
+            :
+            maxApproxError(aMaxApproxError),
+            minSubdivLevel(aMinSubdivLevel),
+            maxSubdivLevel(aMaxSubdivLevel),
+            oversamplingFactorDbg(aOversamplingFactorDbg),
+            maxTriangleSpanDbg(aMaxTriangleSpanDbg)
+        {}
+
+        float GetMaxApproxError() const
+        {
+            return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
+        }
+
+        uint32_t GetMinSubdivLevel() const
+        {
+            return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 1;
+        }
+
+        uint32_t GetMaxSubdivLevel() const
+        {
+            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
+        }
+
+        float GetOversamplingFactorDbg() const
+        {
+            return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
+        }
+
+        float GetMaxTriangleSpanDbg() const
+        {
+            return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
+        }
+
+    protected:
+
+        float       maxApproxError;
+        float       minSubdivLevel; // uint32_t, float used for signaling unset value
+        float       maxSubdivLevel; // uint32_t, float used for signaling unset value
+
+        float       oversamplingFactorDbg;
+        float       maxTriangleSpanDbg;
+    };
+
+
+    EnvironmentMapSteerableSampler(const BuildParameters &aParams) :
+        mParams(aParams)
+    {}
+
     ~EnvironmentMapSteerableSampler() {}
 
 public:
@@ -873,60 +930,6 @@ public:
     }
 
 #endif
-
-    class BuildParameters
-    {
-    public:
-
-        BuildParameters(
-            float   aMaxApproxError         = Math::InfinityF(),
-            float   aMinSubdivLevel         = Math::InfinityF(),
-            float   aMaxSubdivLevel         = Math::InfinityF(),
-            float   aOversamplingFactorDbg  = Math::InfinityF(),
-            float   aMaxTriangleSpanDbg     = Math::InfinityF())
-            :
-            maxApproxError(aMaxApproxError),
-            minSubdivLevel(aMinSubdivLevel),
-            maxSubdivLevel(aMaxSubdivLevel),
-            oversamplingFactorDbg(aOversamplingFactorDbg),
-            maxTriangleSpanDbg(aMaxTriangleSpanDbg)
-        {}
-
-        float GetMaxApproxError() const
-        {
-            return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
-        }
-
-        uint32_t GetMinSubdivLevel() const
-        {
-            return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 1;
-        }
-
-        uint32_t GetMaxSubdivLevel() const
-        {
-            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
-        }
-
-        float GetOversamplingFactorDbg() const
-        {
-            return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
-        }
-
-        float GetMaxTriangleSpanDbg() const
-        {
-            return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
-        }
-
-    protected:
-
-        float       maxApproxError;
-        float       minSubdivLevel; // uint32_t, float used for signaling unset value
-        float       maxSubdivLevel; // uint32_t, float used for signaling unset value
-
-        float       oversamplingFactorDbg;
-        float       maxTriangleSpanDbg;
-    };
-
 
 public:
 
@@ -1935,20 +1938,19 @@ protected:
 public:
 
     // Builds the internal structures needed for sampling
-    bool Init(
+    virtual bool Init(
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
-        const BuildParameters       &aParams)
+        bool                         aUseBilinearFiltering) override
     {
         // Building the tree is slow. Try to load a pre-built tree from disk first
-        if (LoadFromDisk(aEmImage, aUseBilinearFiltering, aParams))
+        if (LoadFromDisk(aEmImage, aUseBilinearFiltering, mParams))
             return true;
 
         // Not loaded. Build a new tree
-        if (Build(aEmImage, aUseBilinearFiltering, aParams))
+        if (Build(aEmImage, aUseBilinearFiltering, mParams))
         {
             // Save for future runs
-            if (!SaveToDisk(aEmImage, aUseBilinearFiltering, aParams))
+            if (!SaveToDisk(aEmImage, aUseBilinearFiltering, mParams))
                 PG3_WARNING("Unable to save EM steerable sampler data to disk!");
             return true;
         }
@@ -1959,12 +1961,12 @@ public:
 
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
     // bilinear approximation of the environment map luminance.
-    bool Sample(
+    virtual bool Sample(
         Vec3f           &oSampleDirection,
         float           &oSamplePdf,
         const Vec3f     &aNormal,
-        Vec2f            aSample // non-const, modified during the sampling process
-        ) const
+        Vec2f            aSample
+        ) const override
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
         PG3_ASSERT_FLOAT_IN_RANGE(aSample.x, 0.0f, 1.0f);
@@ -3480,6 +3482,8 @@ protected:
 
 protected:
 
+    const BuildParameters           mParams;
+
     // Contains all used vertices.
     // Referenced from mTreeRoot through indices
     VertexStorage                   mVertexStorage;
@@ -4723,8 +4727,8 @@ public:
         //PG3_UT_INFO(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", "Initializing sampler...", aTestName);
 
         // Init local sampler
-        EnvironmentMapSteerableSampler sampler;
-        if (!sampler.Init(*image, aUseBilinearFiltering, params))
+        EnvironmentMapSteerableSampler sampler(params);
+        if (!sampler.Init(*image, aUseBilinearFiltering))
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
                 "%s", "Failed to Init() the sampler!", aTestName);
