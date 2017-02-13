@@ -137,10 +137,6 @@ public:
     {
         aRng; // unused param
 
-        // TODO: The result has to be cached because the estimate is computed twice 
-        //       for the same point during MIS (once when picking a light randomly and 
-        //       once when computing the probability of picking a light after BSDF sampling).
-
         // Doesn't work: 
         // Estimate the contribution using a "sample" in the centre of gravity of the triangle
         // -> This cuts off the light if the center of gravity is below the surface while some part of triangle can still be visible!
@@ -368,25 +364,37 @@ public:
         mCosineSampler.Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
     }
 
-    virtual void LoadEnvironmentMap(const std::string filename, float rotate = 0.0f, float scale = 1.0f)
+    virtual void LoadEnvironmentMap(
+        const std::string   filename,
+        float               rotate = 0.0f,
+        float               scale = 1.0f,
+        bool                doBilinFiltering = false)
     {
-        mEnvMap = new EnvironmentMap(filename, rotate, scale);
+        mEnvMap = new EnvironmentMap(filename, rotate, scale, doBilinFiltering);
     }
 
     // Returns amount of incoming radiance from the direction.
     SpectrumF GetEmmision(
-        const Vec3f &aWig,
-              bool   bDoBilinFiltering,
-              float *oPdfW = nullptr,
-        const Frame *aSurfFrame = nullptr
+        const Vec3f             &aWig,
+        const Frame             &aSurfFrame,
+        const AbstractMaterial  &aSurfMaterial,
+        float                   *oPdfW = nullptr
         ) const
     {
+        const MaterialProperties matProps = aSurfMaterial.GetProperties();
+        const bool sampleFrontSide = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
+
         if (mEnvMap != nullptr)
-            return mEnvMap->EvalRadiance(aWig, bDoBilinFiltering, oPdfW);
+        {
+            SpectrumF radiance;
+            mEnvMap->EvalRadiance(radiance, oPdfW, aWig, aSurfFrame, sampleFrontSide, sampleBackSide);
+            return radiance;
+        }
         else
         {
-            if ((oPdfW != nullptr) && (aSurfFrame != nullptr))
-                *oPdfW = Sampling::CosHemispherePdfW(aSurfFrame->Normal(), aWig);
+            if ((oPdfW != nullptr) /*&& (aSurfFrame != nullptr)*/)
+                *oPdfW = mCosineSampler.PdfW(aWig, aSurfFrame, sampleFrontSide, sampleBackSide);
             return mConstantRadiance;
         }
     };
@@ -417,30 +425,17 @@ public:
     {
         aSurfPt; // unused parameter
 
+        const MaterialProperties matProps = aSurfMaterial.GetProperties();
+        const bool sampleFrontSide = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+        const bool sampleBackSide = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
+
         if (mEnvMap != nullptr)
-        {
-            #ifdef PG3_USE_ENVMAP_IMPORTANCE_SAMPLING
-                SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, oSample);
-            #else
-                SampleEnvMapCosSphere(aRng, aSurfFrame, aSurfMaterial, oSample);
-            #endif
-        }
+            mEnvMap->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
         else
-        {
             // Constant environment illumination
             // Sample the requested (hemi)sphere(s) in a cosine-weighted fashion
-
-            const MaterialProperties matProps = aSurfMaterial.GetProperties();
-            const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
-            const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
-
-            // Calling non-virtual Sample() doesn't compile for some reason.
-            // I should learn C++ properly...
-            //mCosineSampler.Sample(
-            //    oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
-            ((ConstantEmSampler*)(&mCosineSampler))->Sample(
+            mCosineSampler.Sample(
                 oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
-        }
     }
 
     virtual float EstimateContribution(
@@ -450,48 +445,14 @@ public:
               Rng               &aRng
         ) const override
     {
-        aSurfPt; // unused param
-
-        // TODO: The result has to be cached because the estimate is computed twice 
-        //       for the same point during MIS (once when picking a light randomly and 
-        //       once when computing the probability of picking a light after BSDF sampling).
-
         if (mEnvMap != nullptr)
         {
-            // Estimate the contribution of the environment map: \int{L_e * f_r * \cos\theta}
+            const MaterialProperties matProps = aSurfMaterial.GetProperties();
+            const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+            const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
-            // TODO: This should be done using a pre-computed diffuse map!
-
-            const uint32_t count = 10;
-            float sum = 0.f;
-
-            // We need more iterations because the estimate has too high variance if there are 
-            // very bright spot lights (e.g. fully dynamic direct sun) under the surface.
-            for (uint32_t round = 0; round < count; round++)
-            {
-                // Strategy 1: Sample the sphere in the cosine-weighted fashion
-                LightSample sample1;
-                SampleEnvMapCosSphere(aRng, aSurfFrame, aSurfMaterial, sample1);
-                const float pdf1Cos = sample1.mPdfW;
-                const float pdf1EM  = EMPdfW(sample1.mWig);
-
-                // Strategy 2: Sample the environment map alone
-                LightSample sample2;
-                SampleEnvMap(aRng, aSurfFrame, aSurfMaterial, sample2);
-                const float pdf2EM  = sample2.mPdfW;
-                const float pdf2Cos = Sampling::CosHemispherePdfW(aSurfFrame.Normal(), sample2.mWig);
-
-                // Combine the two samples via MIS (balanced heuristics)
-                const float part1 =
-                      sample1.mSample.Luminance()
-                    / (pdf1Cos + pdf1EM);
-                const float part2 =
-                    sample2.mSample.Luminance()
-                    / (pdf2Cos + pdf2EM);
-                sum += part1 + part2;
-            }
-
-            return sum / count;
+            return mEnvMap->EstimateIrradiance(
+                aSurfPt, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
         }
         else
         {
@@ -500,65 +461,6 @@ public:
             // \int{f_r * L_i * \cos{theta_i} d\omega} = f_r * L_i * \int{\cos{theta_i} d\omega} = f_r * L_i * \pi
             return mConstantRadiance.Luminance() * Math::kPiF;
         }
-    }
-
-    // Sample the hemisphere in the normal direction in a cosine-weighted fashion
-    void SampleEnvMapCosSphere(
-        Rng                     &aRng,
-        const Frame             &aSurfFrame,
-        const AbstractMaterial  &aSurfMaterial,
-        LightSample             &oSample) const
-    {
-        const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
-
-        const Vec3f wil = Sampling::SampleCosSphereParamPdfW(
-            aRng.GetVec3f(), sampleFrontSide, sampleBackSide, oSample.mPdfW);
-
-        oSample.mWig    = aSurfFrame.ToWorld(wil);
-        oSample.mDist   = std::numeric_limits<float>::max();
-
-        oSample.mLightProbability = 1.0f;
-
-        const SpectrumF radiance = mEnvMap->EvalRadiance(oSample.mWig, false);
-        const float cosThetaIn   = std::abs(wil.z);
-        oSample.mSample = radiance * cosThetaIn;
-    }
-
-    // Sample the environment map with the pdf proportional to luminance of the map
-    void SampleEnvMap(
-        Rng                     &aRng,
-        const Frame             &aSurfFrame,
-        const AbstractMaterial  &aSurfMaterial,
-        LightSample             &oSample) const
-    {
-        PG3_ASSERT(mEnvMap != nullptr);
-
-        SpectrumF radiance;
-
-        // Sample the environment map with the pdf proportional to luminance of the map
-        mEnvMap->Sample(aRng.GetVec2f(), oSample.mWig, oSample.mPdfW, radiance);
-        oSample.mDist               = std::numeric_limits<float>::max();
-        oSample.mLightProbability   = 1.0f;
-
-        const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
-
-        const float cosThetaIn = Dot(oSample.mWig, aSurfFrame.Normal());
-        if ((sampleFrontSide && (cosThetaIn > 0.0f)) || (sampleBackSide && (cosThetaIn < 0.0f)))
-            oSample.mSample = radiance * std::abs(cosThetaIn);
-        else
-            oSample.mSample.MakeZero();
-    }
-
-    float EMPdfW(const Vec3f &aDirection) const
-    {
-        PG3_ASSERT(mEnvMap != nullptr);
-        PG3_ASSERT(!aDirection.IsZero());
-
-        return mEnvMap->PdfW(aDirection);
     }
 
 public:

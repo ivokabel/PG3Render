@@ -14,7 +14,13 @@ class EnvironmentMapSampler
 {
 public:
 
-    // ...
+    virtual ~EnvironmentMapSampler()
+    {
+        ReleaseData();
+    }
+
+
+    // Builds needed internal data structures
     virtual bool Init(
         std::shared_ptr<TEmValues>  aEmImage,
         bool                        aUseBilinearFiltering)
@@ -30,8 +36,9 @@ public:
         return true;
     }
 
-    // ...
-    virtual bool Sample(
+
+    // Generates random direction, PDF and EM value
+    virtual bool SampleImpl(
         Vec3f           &oDirection,
         float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
@@ -40,28 +47,59 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const = 0;
 
-    // ...
-    bool Sample(
+
+    // Generates random direction, PDF and EM value in form of a LightSample
+    virtual bool Sample(
         LightSample     &oLightSample,
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
         bool             aSampleBackSide,
         Rng             &aRng) const
     {
-        oLightSample.mLightProbability  = 1.0f;
+        PG3_ASSERT(mEmImage != nullptr);
+
+        oLightSample.mLightProbability = 1.0f;
         oLightSample.mDist              = std::numeric_limits<float>::max();
 
-        return Sample(
+        return SampleImpl(
             oLightSample.mWig, oLightSample.mPdfW, oLightSample.mSample,
             aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
 
-    // Releases all data structures
+
+    virtual float PdfW(
+        const Vec3f     &aDirection,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide) const
+    {
+        aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide; // unused params
+
+        return 0.f;
+    }
+
+
+    // Optionally estimates the incomming irradiance for the given configuration:
+    //      \int{L_e * f_r * \cos\theta}
+    virtual bool EstimateIrradiance(
+        float           &oIrradianceEstimate,
+        const Vec3f     &aSurfPt,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide,
+        Rng             &aRng) const
+    {
+        oIrradianceEstimate, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng; // unused params
+        return false;
+    }
+
+
+    // Releases all data structures.
+    // Can be called explicitly if necessary. Is called automatically in Init() and in Destructor.
     virtual void ReleaseData()
     {
         mEmImage.reset();
     }
-
 
 protected:
 

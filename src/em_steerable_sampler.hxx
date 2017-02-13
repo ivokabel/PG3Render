@@ -1962,15 +1962,14 @@ public:
 
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
     // bilinear approximation of the environment map luminance.
-    virtual bool Sample(
+    virtual bool SampleImpl(
         Vec3f           &oDirection,
         float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
         bool             aSampleBackSide,
-        Rng             &aRng
-        ) const override
+        Rng             &aRng) const override
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aSurfFrame.Normal());
 
@@ -2016,6 +2015,23 @@ public:
         return true;
     }
 
+
+    // Optionally estimates the incomming irradiance for the given configuration:
+    //      \int{L_e * f_r * \cos\theta}
+    virtual bool EstimateIrradiance(
+        float           &oIrradianceEstimate,
+        const Vec3f     &aSurfPt,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide,
+        Rng             &aRng) const
+    {
+        oIrradianceEstimate, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng; // unused params
+
+        // TODO: ...
+
+        return false;
+    }
 
     // Releases the data structures used for sampling
     void ReleaseSamplingData()

@@ -3,14 +3,14 @@
 #include "em_sampler.hxx"
 #include "debugging.hxx"
 
-// Samples requested (hemi)sphere(s) in a cosine-weighted fashion.
+// Samples requested hemi-sphere(s) in a cosine-weighted fashion.
 // Ignores the environment map completely.
 template <typename TEmValues>
 class EnvironmentMapCosineSampler : public EnvironmentMapSampler<TEmValues>
 {
 public:
 
-    virtual bool Sample(
+    virtual bool SampleImpl(
         Vec3f           &oDirection,
         float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
@@ -19,6 +19,9 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const override
     {
+        if (!mEmImage)
+            return false;
+
         const Vec3f wil =
             Sampling::SampleCosSphereParamPdfW(
                 aRng.GetVec3f(), aSampleFrontSide, aSampleBackSide, oPdfW);
@@ -29,6 +32,19 @@ public:
         oRadianceCos = radiance * cosThetaIn;
 
         return true;
+    }
+
+
+    virtual float PdfW(
+        const Vec3f     &aDirection,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide) const override
+    {
+        const Vec3f &dirLocal = aSurfFrame.ToLocal(aDirection);
+        const float pdfW = Sampling::CosSpherePdfW(aSampleFrontSide, aSampleBackSide, dirLocal);
+        
+        return pdfW;
     }
 };
 

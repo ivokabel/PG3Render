@@ -1,7 +1,9 @@
 #pragma once
 
-#include "em_image.hxx"
+#include "em_cosine_sampler.hxx"
+#include "em_simple_spherical_sampler.hxx"
 #include "em_steerable_sampler.hxx"
+#include "em_image.hxx"
 #include "spectrum.hxx"
 #include "debugging.hxx"
 #include "geom.hxx"
@@ -18,211 +20,162 @@ class EnvironmentMap
 {
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
-    EnvironmentMap(const std::string aFilename, float aRotate, float aScale) :
-        mImage(nullptr),
-        mDistribution(nullptr),
-        mSteerableSampler(nullptr),
-        mPlan2AngPdfCoeff(1.0f / (2.0f * Math::kPiF * Math::kPiF))
+    EnvironmentMap(const std::string aFilename, float aRotate, float aScale, bool aDoBilinFiltering) :
+        mDoBilinFiltering(aDoBilinFiltering),
+        mCosineSampler(new CosineImageEmSampler()),
+        mSimpleSphericalSampler(new SimpleSphericalImageEmSampler()),
+        mSteerableSampler(new SteerableImageEmSampler(SteerableImageEmSampler::BuildParameters()))
     {
         try
         {
             //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
-            mImage = EnvironmentMapImage::LoadImage(aFilename.c_str(), aRotate, aScale);
+            mImage.reset(EnvironmentMapImage::LoadImage(aFilename.c_str(), aRotate, aScale));
         }
         catch (...)
         {
             PG3_FATAL_ERROR("Environment map load failed! \"%s\"", aFilename.c_str());
         }
 
-        mDistribution = GenerateImageDistribution(mImage);
-    }
-
-    ~EnvironmentMap()
-    {
-        delete(mImage);
-        delete(mDistribution);
-        delete(mSteerableSampler);
+        if (mCosineSampler)
+            mCosineSampler->Init(mImage, mDoBilinFiltering);
+        if (mSimpleSphericalSampler)
+            mSimpleSphericalSampler->Init(mImage, mDoBilinFiltering);
+        if (mSteerableSampler)
+            mSteerableSampler->Init(mImage, mDoBilinFiltering);
     }
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
-    // Returns the sample PDF and optionally it's radiance.
     PG3_PROFILING_NOINLINE
-    void Sample(
-        const Vec2f &aUniSamples,
-        Vec3f       &oDirection,
-        float       &oPdfW,
-        SpectrumF   &oRadiance
-        ) const
+    bool Sample(
+        LightSample     &oLightSample,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide,
+        Rng             &aRng) const
     {
-        PG3_ASSERT(mImage != nullptr);
-
-        // TODO: EMSampler.Sample()
-        //[](
-        //    const Vec2f             &aUniSamples,
-        //    Vec3f                   &oDirection,
-        //    SpectrumF               &oRadiance,
-        //    float                   &oPdfW,
-        //    EnvironmentMapImage*    mImage, // TMP
-        //    Distribution2D*         mDistribution, // TMP
-        //    const float             mPlan2AngPdfCoeff // TMP
-        //    )
-        {
-            Vec2f uv;
-            Vec2ui segm;
-            float pdf;
-
-            mDistribution->SampleContinuous(aUniSamples, uv, segm, &pdf);
-            PG3_ASSERT(pdf > 0.f);
-
-            oDirection = Geom::LatLong2Dir(uv);
-
-            // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
-            // the angular PDF on the unit sphere over the appropriate trapezoid
-            //
-            // angular pdf = planar pdf * planar segment surf. area / sphere segment surf. area
-            //             = planar pdf * (1 / (width*height)) / (2*Pi*Pi*Sin(MidTheta) / (width*height))
-            //             = planar pdf / (2*Pi*Pi*Sin(MidTheta))
-            //
-            // FIXME: Uniform sampling of a segment of the 2D distribution doesn't yield 
-            //        uniform sampling of a corresponding segment on a sphere 
-            //        - the closer we are to the poles, the denser the sampling will be 
-            //        (even though the overall probability of the segment is correct).
-            // \int_a^b{1/hdh} = [ln(h)]_a^b = ln(b) - ln(a)
-            const float sinMidTheta = SinMidTheta(mImage, segm.y);
-            oPdfW = pdf * mPlan2AngPdfCoeff / sinMidTheta;
-
-            oRadiance = EvalRadiance(segm);
-        }
-        //(
-        //    aUniSamples, oDirection, oRadiance, oPdfW,
-        //    mImage, mDistribution, mPlan2AngPdfCoeff);
+        mSimpleSphericalSampler->Sample(
+            oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+        mSteerableSampler->Sample(
+            oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+        return mCosineSampler->Sample(
+            oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
     // must be non-zero but not necessarily normalized.
     PG3_PROFILING_NOINLINE
-    SpectrumF EvalRadiance(
-        const Vec3f &aDirection, 
-        bool         aDoBilinFiltering,
-        float       *oPdfW = nullptr
+    void EvalRadiance(
+        SpectrumF       &oRadiance,
+        float           &oPdfW,
+        const Vec3f     &aDirection, 
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide
         ) const
     {
-        PG3_ASSERT(mDistribution != nullptr);
         PG3_ASSERT(!aDirection.IsZero());
 
-        const auto uv       = Geom::Dir2LatLongFast(aDirection);
-        const auto radiance = EvalRadiance(uv, aDoBilinFiltering);
+        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
+        oRadiance = EvalRadiance(uv);
 
-        if (oPdfW)
-        {
-            *oPdfW = mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
+        oPdfW = PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
 
-            PG3_ASSERT((*oPdfW == 0.f) == radiance.IsZero());
+        PG3_ASSERT((oPdfW == 0.f) == radiance.IsZero());
 
-            //if (*oPdfW == 0.0f)
-            //    radiance = SpectrumF(0);
-        }
-
-        return radiance;
+        //if (oPdfW == 0.0f)
+        //    oRadiance = SpectrumF(0);
     }
 
-    float PdfW(const Vec3f &aDirection) const
+    float PdfW(
+        const Vec3f     &aDirection,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide) const
     {
-        PG3_ASSERT(mDistribution != nullptr);
+        mSimpleSphericalSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        mSteerableSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        return mCosineSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+    }
 
-        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
-        return mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mImage, uv.y);
+    // Estimate the contribution (irradiance) of the environment map: \int{L_e * f_r * \cos\theta}
+    float EstimateIrradiance(
+        const Vec3f     &aSurfPt,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide,
+        Rng             &aRng) const
+    {
+        // If the sampler can do this for us (and some can), we are done
+        float irradianceEst = 0.f;
+        if (mCosineSampler->EstimateIrradiance(
+                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
+            return irradianceEst;
+        if (mSimpleSphericalSampler->EstimateIrradiance(
+                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
+            return irradianceEst;
+        if (mSteerableSampler->EstimateIrradiance(
+                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
+            return irradianceEst;
+
+        // Estimate using MIS Monte Carlo.
+        // We need more iterations because the estimate has too high variance if there are 
+        // very bright spot lights (e.g. direct sun) under the surface.
+        // TODO: This should be done using a pre-computed diffuse map!
+        const uint32_t count = 10;
+        float sum = 0.f;
+        for (uint32_t round = 0; round < count; round++)
+        {
+            // Strategy 1: Sample the sphere in the cosine-weighted fashion
+            LightSample sample1;
+            mCosineSampler->Sample(sample1, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+            const float pdf1Cos = sample1.mPdfW;
+            const float pdf1Sph = 
+                mSimpleSphericalSampler->PdfW(sample1.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+
+            // Strategy 2: Sample the environment map alone
+            LightSample sample2;
+            mSimpleSphericalSampler->Sample(sample2, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+            const float pdf2Sph = sample2.mPdfW;
+            const float pdf2Cos =
+                mCosineSampler->PdfW(sample2.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+
+            // Combine the two samples via MIS (balanced heuristics)
+            const float part1 =
+                sample1.mSample.Luminance()
+                / (pdf1Cos + pdf1Sph);
+            const float part2 =
+                sample2.mSample.Luminance()
+                / (pdf2Cos + pdf2Sph);
+            sum += part1 + part2;
+        }
+        irradianceEst = sum / count;
+        
+        return irradianceEst;
     }
 
 private:
 
-    // Generates a 2D distribution with latitude-longitude mapping 
-    // based on the luminance of the provided environment map image
-    Distribution2D* GenerateImageDistribution(const EnvironmentMapImage* aImage) const
-    {
-        // Prepare source distribution data from the environment map image data, 
-        // i.e. convert image values so that the probability of a pixel within 
-        // the lattitute-longitude parametrization is equal to the angular probability of 
-        // the projected segment on a unit sphere.
+    //// Returns radiance for the given segment of the image
+    //SpectrumF EvalRadiance(const Vec2ui &aSegm) const
+    //{
+    //    PG3_ASSERT(mImage != nullptr);
+    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
+    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
 
-        const Vec2ui size   = aImage->Size();
-        float *srcData      = new float[size.x * size.y];
+    //    // FIXME: This interface shouldn't be used if bilinear or any smoother filtering is active!
 
-        if (srcData == nullptr)
-            return nullptr;
-
-        for (uint32_t row = 0; row < size.y; ++row)
-        {
-            // We compute the projected surface area of the current segment on the unit sphere.
-            // We can ommit the height of the segment because it only changes the result 
-            // by a multiplication constant and thus doesn't affect the shape of the resulting PDF.
-            const float sinAvgTheta = SinMidTheta(mImage, row);
-
-            const uint32_t rowOffset = row * size.x;
-
-            for (uint32_t column = 0; column < size.x; ++column)
-            {
-                const float luminance = aImage->ElementAt(column, row).Luminance();
-                srcData[rowOffset + column] = sinAvgTheta * luminance;
-            }
-        }
-
-        Distribution2D* distribution = new Distribution2D(srcData, size.x, size.y);
-
-        delete[] srcData;
-
-        return distribution;
-    }
-
-    // Returns radiance for the given segment of the image
-    SpectrumF EvalRadiance(const Vec2ui &aSegm) const
-    {
-        PG3_ASSERT(mImage != nullptr);
-        PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
-        PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
-
-        // FIXME: This interface shouldn't be used if bilinear or any smoother filtering is active!
-
-        return mImage->ElementAt(aSegm.x, aSegm.y);
-    }
+    //    return mImage->ElementAt(aSegm.x, aSegm.y);
+    //}
 
     // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
     PG3_PROFILING_NOINLINE 
-    SpectrumF EvalRadiance(const Vec2f &aUV, bool aDoBilinFiltering) const
+    SpectrumF EvalRadiance(const Vec2f &aUV) const
     {
         PG3_ASSERT(mImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.0f, 1.0f);
 
-        return mImage->Evaluate(aUV, aDoBilinFiltering);
-    }
-
-    // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
-    static float SinMidTheta(const EnvironmentMapImage* aImage, const uint32_t aSegmY)
-    {
-        PG3_ASSERT(aImage != nullptr);
-
-        const uint32_t height = aImage->Height();
-
-        PG3_ASSERT_INTEGER_LESS_THAN(aSegmY, height);
-
-        const float result = sinf(Math::kPiF * (aSegmY + 0.5f) / height);
-
-        PG3_ASSERT(result > 0.f && result <= 1.f);
-
-        return result;
-    }
-
-    // The sine of latitude of the midpoint of the map pixel defined by the given v coordinate.
-    static float SinMidTheta(const EnvironmentMapImage* aImage, const float aV)
-    {
-        PG3_ASSERT(aImage != nullptr);
-        PG3_ASSERT_FLOAT_IN_RANGE(aV, 0.0f, 1.0f);
-
-        const uint32_t height   = aImage->Height();
-        const uint32_t segment  = std::min((uint32_t)(aV * height), height - 1u);
-
-        return SinMidTheta(aImage, segment);
+        return mImage->Evaluate(aUV, mDoBilinFiltering);
     }
 
     // This class is not copyable because of a const member.
@@ -232,8 +185,13 @@ private:
     EnvironmentMap & operator=(const EnvironmentMap&) = delete;
     //EnvironmentMap(const EnvironmentMap&) = delete;
 
-    EnvironmentMapImage*            mImage;             // Environment map itself
-    SteerableImageEmSampler*        mSteerableSampler;   // TODO: Describe...
-    Distribution2D*                 mDistribution;      // 2D distribution of the environment map
-    const float                     mPlan2AngPdfCoeff;  // Coefficient for conversion from planar to angular PDF
+private:
+
+
+    std::shared_ptr<EnvironmentMapImage>            mImage;     // Environment image data
+    const bool                                      mDoBilinFiltering;
+
+    std::unique_ptr<CosineImageEmSampler>           mCosineSampler;             // TODO: Describe...
+    std::unique_ptr<SimpleSphericalImageEmSampler>  mSimpleSphericalSampler;    // TODO: Describe...
+    std::unique_ptr<SteerableImageEmSampler>        mSteerableSampler;          // TODO: Describe...
 };

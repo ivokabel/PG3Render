@@ -306,6 +306,16 @@ namespace Sampling
         return ret;
     }
 
+    float CosHemispherePdfW(const float &aZCoordLocal)
+    {
+        return std::max(0.f, aZCoordLocal) * Math::kPiInvF;
+    }
+
+    float CosHemispherePdfW(const Vec3f  &aDirectionLocal)
+    {
+        return CosHemispherePdfW(aDirectionLocal.z);
+    }
+
     float CosHemispherePdfW(
         const Vec3f  &aNormal,
         const Vec3f  &aDirection)
@@ -313,31 +323,44 @@ namespace Sampling
         return std::max(0.f, Dot(aNormal, aDirection)) * Math::kPiInvF;
     }
 
-    float CosHemispherePdfW(
-        const Vec3f  &aDirectionLocal)
-    {
-        return std::max(0.f, aDirectionLocal.z) * Math::kPiInvF;
-    }
-
     Vec3f SampleCosSphereParamPdfW(
         const Vec3f &aUniSample,
-        const bool   sampleUpperHemisphere,
-        const bool   sampleLowerHemisphere,
+        const bool   aSampleUpperHemisphere,
+        const bool   aSampleLowerHemisphere,
         float       &oPdfW)
     {
         Vec3f wil = SampleCosHemisphereW(aUniSample.GetXY(), &oPdfW);
 
-        if (sampleUpperHemisphere && sampleLowerHemisphere)
+        if (aSampleUpperHemisphere && aSampleLowerHemisphere)
         {
             // Chose one hemisphere randomly and reduce the pdf accordingly
             if (aUniSample.z < 0.5f)
                 wil *= -1.0f;
             oPdfW *= 0.5f;
         }
-        else if (sampleLowerHemisphere)
+        else if (aSampleLowerHemisphere)
             wil *= -1.0f; // Just switch to lower hemisphere
 
         return wil;
+    }
+
+    float CosSpherePdfW(
+        const bool   aSampleUpperHemisphere,
+        const bool   aSampleLowerHemisphere,
+        const Vec3f  &aDirectionLocal)
+    {
+        if (   (!aSampleUpperHemisphere && (aDirectionLocal.z > 0.f))
+            || (!aSampleLowerHemisphere && (aDirectionLocal.z < 0.f)))
+            // Forbidden area
+            return 0.f;
+
+        float pdf = CosHemispherePdfW(std::abs(aDirectionLocal.z));
+
+        if (aSampleUpperHemisphere && aSampleLowerHemisphere)
+            // The pdf is spread over both hemispheres
+            pdf *= 0.5f;
+
+        return pdf;
     }
 
     float UniformSpherePdfW()

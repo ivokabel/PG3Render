@@ -37,7 +37,7 @@
 #include <vector>
 
 // Representation of a probability density function over the interval [0,1]
-struct Distribution1D 
+class Distribution1D 
 {
 public:
     Distribution1D(const float * const aFunc, uint32_t aCount) :
@@ -147,7 +147,7 @@ public:
     //Distribution1D(const Distribution1D&) = delete;
 
 private:
-    friend struct Distribution2D;
+    friend class Distribution2D;
 
     float           *mPdf;
     float           *mCdf;
@@ -155,7 +155,7 @@ private:
     const uint32_t   mCount;
 };
 
-struct Distribution2D
+class Distribution2D
 {
 public:
     Distribution2D(const float *aFunc, int32_t sCountU, int32_t sCountV)
