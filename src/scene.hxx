@@ -456,7 +456,7 @@ public:
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
             // Original
-            //geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 8));
 
             // Visualize initial triangulation
             //Vec3f vertices[12];
@@ -470,68 +470,68 @@ public:
             //        ballCenter + ballRadius * vertices[faces[i].Get(2)], 8));
             //}
 
-            // Visualize subdivision
-            const uint32_t dbgEm = static_cast<uint32_t>(aAuxDbgParams.float1);
-            const char *emPath = [dbgEm](){
-                switch (dbgEm)
-                {
-                case 0:   return ".\\Light Probes\\Debugging\\Const white 8x4.exr";
-                case 1:   return ".\\Light Probes\\Debugging\\Const white 16x8.exr";
-                case 2:   return ".\\Light Probes\\Debugging\\Const white 32x16.exr";
-                case 3:   return ".\\Light Probes\\Debugging\\Const white 64x32.exr";
-                case 4:   return ".\\Light Probes\\Debugging\\Const white 128x64.exr";
-                case 5:   return ".\\Light Probes\\Debugging\\Const white 256x128.exr";
-                case 6:   return ".\\Light Probes\\Debugging\\Const white 512x256.exr";
-                case 7:   return ".\\Light Probes\\Debugging\\Const white 1024x512.exr";
-                case 8:   return ".\\Light Probes\\Debugging\\Const white 2048x1024.exr";
-                case 9:   return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
-                case 10:  return ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr";
-                case 11:  return ".\\Light Probes\\Debugging\\Single pixel.exr"; // 16x8
-                case 12:  return ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr"; // 4000x2000
-                default: return "";
-                }
-            }();
-            EnvironmentMapSteeringSampler::BuildParameters params(
-                aAuxDbgParams.float2,
-                Math::InfinityF(),
-                aAuxDbgParams.float3/*,
-                aAuxDbgParams.float4,
-                aAuxDbgParams.float5*/);
-            printf(
-                "Testing EM \"%s\", error threshold %.3f, min subdiv %d, max subdiv %d"
-                //", oversampling %.2f, max triangle span %.3f"
-                ":\n",
-                emPath, params.GetMaxApproxError(),
-                params.GetMinSubdivLevel(),
-                params.GetMaxSubdivLevel()
-                //params.GetOversamplingFactorDbg(), params.GetMaxTriangleSpanDbg()
-                );
-            std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
-                emPath,
-                (aAuxDbgParams.float5 != Math::InfinityF()) ? aAuxDbgParams.float5 : 0.0f));
-            if (image)
-            {
-                EnvironmentMapSteeringSampler::VertexStorage vertexStorage;
-                std::list<EnvironmentMapSteeringSampler::TreeNodeBase*> triangles;
-                if (EnvironmentMapSteeringSampler::TriangulateEm(
-                        triangles, vertexStorage, *image, false, params))
-                {
-                    for (const auto &node : triangles)
-                    {
-                        const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
-                        const auto &dir0 = vertexStorage.Get(triangle->vertexIndices[0])->dir;
-                        const auto &dir1 = vertexStorage.Get(triangle->vertexIndices[1])->dir;
-                        const auto &dir2 = vertexStorage.Get(triangle->vertexIndices[2])->dir;
-                        geometryList->mGeometry.push_back(new Triangle(
-                            ballCenter + ballRadius * dir0,
-                            ballCenter + ballRadius * dir1,
-                            ballCenter + ballRadius * dir2,
-                            8));
-                    }
-                    EnvironmentMapSteeringSampler::FreeNodesList(triangles);
-                }
-            }
-            //Debugging::Exit(); // debug
+            //// Visualize subdivision
+            //const uint32_t dbgEm = static_cast<uint32_t>(aAuxDbgParams.float1);
+            //const char *emPath = [dbgEm](){
+            //    switch (dbgEm)
+            //    {
+            //    case 0:   return ".\\Light Probes\\Debugging\\Const white 8x4.exr";
+            //    case 1:   return ".\\Light Probes\\Debugging\\Const white 16x8.exr";
+            //    case 2:   return ".\\Light Probes\\Debugging\\Const white 32x16.exr";
+            //    case 3:   return ".\\Light Probes\\Debugging\\Const white 64x32.exr";
+            //    case 4:   return ".\\Light Probes\\Debugging\\Const white 128x64.exr";
+            //    case 5:   return ".\\Light Probes\\Debugging\\Const white 256x128.exr";
+            //    case 6:   return ".\\Light Probes\\Debugging\\Const white 512x256.exr";
+            //    case 7:   return ".\\Light Probes\\Debugging\\Const white 1024x512.exr";
+            //    case 8:   return ".\\Light Probes\\Debugging\\Const white 2048x1024.exr";
+            //    case 9:   return ".\\Light Probes\\Debugging\\Const white 4096x2048.exr";
+            //    case 10:  return ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr";
+            //    case 11:  return ".\\Light Probes\\Debugging\\Single pixel.exr"; // 16x8
+            //    case 12:  return ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr"; // 4000x2000
+            //    default: return "";
+            //    }
+            //}();
+            //EnvironmentMapSteeringSampler::BuildParameters params(
+            //    aAuxDbgParams.float2,
+            //    Math::InfinityF(),
+            //    aAuxDbgParams.float3/*,
+            //    aAuxDbgParams.float4,
+            //    aAuxDbgParams.float5*/);
+            //printf(
+            //    "Testing EM \"%s\", error threshold %.3f, min subdiv %d, max subdiv %d"
+            //    //", oversampling %.2f, max triangle span %.3f"
+            //    ":\n",
+            //    emPath, params.GetMaxApproxError(),
+            //    params.GetMinSubdivLevel(),
+            //    params.GetMaxSubdivLevel()
+            //    //params.GetOversamplingFactorDbg(), params.GetMaxTriangleSpanDbg()
+            //    );
+            //std::unique_ptr<EnvironmentMapImage> image(EnvironmentMapImage::LoadImage(
+            //    emPath,
+            //    (aAuxDbgParams.float5 != Math::InfinityF()) ? aAuxDbgParams.float5 : 0.0f));
+            //if (image)
+            //{
+            //    EnvironmentMapSteeringSampler::VertexStorage vertexStorage;
+            //    std::list<EnvironmentMapSteeringSampler::TreeNodeBase*> triangles;
+            //    if (EnvironmentMapSteeringSampler::TriangulateEm(
+            //            triangles, vertexStorage, *image, false, params))
+            //    {
+            //        for (const auto &node : triangles)
+            //        {
+            //            const auto triangle = static_cast<EnvironmentMapSteeringSampler::TriangleNode*>(node);
+            //            const auto &dir0 = vertexStorage.Get(triangle->vertexIndices[0])->dir;
+            //            const auto &dir1 = vertexStorage.Get(triangle->vertexIndices[1])->dir;
+            //            const auto &dir2 = vertexStorage.Get(triangle->vertexIndices[2])->dir;
+            //            geometryList->mGeometry.push_back(new Triangle(
+            //                ballCenter + ballRadius * dir0,
+            //                ballCenter + ballRadius * dir1,
+            //                ballCenter + ballRadius * dir2,
+            //                8));
+            //        }
+            //        EnvironmentMapSteeringSampler::FreeNodesList(triangles);
+            //    }
+            //}
+            ////Debugging::Exit(); // debug
 
             // Visualize spherical triangle uniform sampling
             //const float countPerDimension = 40.f;   //30.f;   //20.f;   //
