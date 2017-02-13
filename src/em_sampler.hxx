@@ -1,8 +1,8 @@
 #pragma once
 
-#include "rng.hxx"
 #include "em_image.hxx"
 #include "light_sample.hxx"
+#include "rng.hxx"
 #include "spectrum.hxx"
 #include "types.hxx"
 
@@ -46,7 +46,7 @@ public:
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
         bool             aSampleBackSide,
-        Rng             &aRng)
+        Rng             &aRng) const
     {
         oLightSample.mLightProbability  = 1.0f;
         oLightSample.mDist              = std::numeric_limits<float>::max();
