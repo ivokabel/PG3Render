@@ -44,16 +44,16 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-render -s 20 -a el -i 8 -auxf1 12 -auxf2 1000.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError1000,00_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2  100.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0100,00_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2   20.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0020,00_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    5.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0005,00_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    2.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0002,00_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.90 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,90_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.60 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,60_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.30 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,30_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.10 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,10_Rot35
-render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.05 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,05_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2 1000.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError1000,00_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2  100.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0100,00_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2   20.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0020,00_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    5.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0005,00_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    2.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0002,00_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.90 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,90_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.60 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,60_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.30 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,30_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.10 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,10_Rot35
+#render -s 20 -a el -i 8 -auxf1 12 -auxf2    0.05 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0000,05_Rot35
 
 
 ENVIRONMENT_MAPS="1 10 12"
