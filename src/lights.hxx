@@ -434,7 +434,8 @@ public:
             const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
             const bool sampleBackSide   = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
-            // Calling non-virtual Sample don't compile for some reason. I should learn C++ properly...
+            // Calling non-virtual Sample() doesn't compile for some reason.
+            // I should learn C++ properly...
             //mCosineSampler.Sample(
             //    oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
             ((ConstantEmSampler*)(&mCosineSampler))->Sample(
