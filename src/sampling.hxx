@@ -12,12 +12,12 @@ namespace Sampling
 {
     // Disc sampling
     Vec2f SampleConcentricDisc(
-        const Vec2f &aSamples)
+        const Vec2f &aUniSample)
     {
         float phi, r;
 
-        float a = 2 * aSamples.x - 1;   /* (a,b) is now on [-1,1]^2 */
-        float b = 2 * aSamples.y - 1;
+        float a = 2 * aUniSample.x - 1;   /* (a,b) is now on [-1,1]^2 */
+        float b = 2 * aUniSample.y - 1;
 
         if (a > -b)      /* region 1 or 2 */
         {
@@ -67,9 +67,9 @@ namespace Sampling
         const Vec3f &aPoint0,
         const Vec3f &aPoint1,
         const Vec3f &aPoint2,
-        const Vec2f &aSamples)
+        const Vec2f &aUniSample)
     {
-        const Vec2f baryCoords = Geom::Triangle::MapCartToBary(aSamples);
+        const Vec2f baryCoords = Geom::Triangle::MapCartToBary(aUniSample);
         const Vec3f samplePoint = Geom::Triangle::GetPoint(aPoint0, aPoint1, aPoint2, baryCoords);
         return samplePoint;
     }
@@ -92,7 +92,7 @@ namespace Sampling
         const float  aCosC,
         const float  aAlpha,
         const float  aTriangleArea,
-        const Vec2f &aSamples)
+        const Vec2f &aUniSample)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aVertexA);
         PG3_ASSERT_VEC3F_NORMALIZED(aVertexB);
@@ -100,13 +100,13 @@ namespace Sampling
         PG3_ASSERT_FLOAT_VALID(aCosC);
         PG3_ASSERT_FLOAT_NONNEGATIVE(aAlpha);
         PG3_ASSERT_FLOAT_NONNEGATIVE(aTriangleArea);
-        PG3_ASSERT_VEC2F_NONNEGATIVE(aSamples);
+        PG3_ASSERT_VEC2F_NONNEGATIVE(aUniSample);
 
         const float cosAlpha = std::cos(aAlpha);
         const float sinAlpha = std::sin(aAlpha);
 
         // Compute surface area of the sub-triangle
-        const float areaSub = aSamples.x * aTriangleArea;
+        const float areaSub = aUniSample.x * aTriangleArea;
 
         // Compute sin & cos of phi
         const float s = std::sin(areaSub - aAlpha);
@@ -128,7 +128,7 @@ namespace Sampling
             + Math::SafeSqrt(1.f - q * q) * NormalizedOrthoComp(aVertexC, aVertexA);
 
         // Compute cos(theta)
-        const float z = 1.f - aSamples.y * (1.f - Dot(vertexCSub, aVertexB));
+        const float z = 1.f - aUniSample.y * (1.f - Dot(vertexCSub, aVertexB));
 
         // Construct new point on the sphere
         const Vec3f pointP =
@@ -144,7 +144,7 @@ namespace Sampling
         const Vec3f &aVertexA,
         const Vec3f &aVertexB,
         const Vec3f &aVertexC,
-        const Vec2f &aSamples)
+        const Vec2f &aUniSample)
     {
         float alpha, beta, gamma;
         Geom::ComputeSphericalTriangleAngles(alpha, beta, gamma, aVertexA, aVertexB, aVertexC);
@@ -156,7 +156,7 @@ namespace Sampling
         return SampleUniformSphericalTriangle(
             aVertexA, aVertexB, aVertexC,
             cosC, alpha, triangleArea,
-            aSamples);
+            aUniSample);
     }
 
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
@@ -248,12 +248,12 @@ namespace Sampling
 
     // Cosine lobe hemisphere sampling
     Vec3f SamplePowerCosHemisphereW(
-        const Vec2f  &aSamples,
+        const Vec2f  &aUniSample,
         const float   aPower,
         float        *oPdfW = nullptr)
     {
-        const float term1 = 2.f * Math::kPiF * aSamples.x;
-        const float term2 = std::pow(aSamples.y, 1.f / (aPower + 1.f));
+        const float term1 = 2.f * Math::kPiF * aUniSample.x;
+        const float term2 = std::pow(aUniSample.y, 1.f / (aPower + 1.f));
         const float term3 = std::sqrt(1.f - term2 * term2);
 
         if (oPdfW)
@@ -287,16 +287,16 @@ namespace Sampling
     // Sample direction in the upper hemisphere with cosine-proportional pdf
     // The returned PDF is with respect to solid angle measure
     Vec3f SampleCosHemisphereW(
-        const Vec2f &aSamples,
+        const Vec2f &aUniSample,
         float       *oPdfW = nullptr)
     {
-        const float term1 = 2.f * Math::kPiF * aSamples.x;
-        const float term2 = std::sqrt(1.f - aSamples.y);
+        const float term1 = 2.f * Math::kPiF * aUniSample.x;
+        const float term2 = std::sqrt(1.f - aUniSample.y);
 
         const Vec3f ret(
             std::cos(term1) * term2,
             std::sin(term1) * term2,
-            std::sqrt(aSamples.y));
+            std::sqrt(aUniSample.y));
 
         if (oPdfW)
             *oPdfW = ret.z * Math::kPiInvF;
@@ -320,17 +320,17 @@ namespace Sampling
     }
 
     Vec3f SampleCosSphereParamPdfW(
-        const Vec3f &aSamples,
+        const Vec3f &aUniSample,
         const bool   sampleUpperHemisphere,
         const bool   sampleLowerHemisphere,
         float       &oPdfW)
     {
-        Vec3f wil = SampleCosHemisphereW(aSamples.GetXY(), &oPdfW);
+        Vec3f wil = SampleCosHemisphereW(aUniSample.GetXY(), &oPdfW);
 
         if (sampleUpperHemisphere && sampleLowerHemisphere)
         {
             // Chose one hemisphere randomly and reduce the pdf accordingly
-            if (aSamples.z < 0.5f)
+            if (aUniSample.z < 0.5f)
                 wil *= -1.0f;
             oPdfW *= 0.5f;
         }
@@ -347,12 +347,12 @@ namespace Sampling
     }
 
     Vec3f SampleUniformSphereW(
-        const Vec2f  &aSamples,
+        const Vec2f  &aUniSample,
         float        *oPdfSA = nullptr)
     {
-        const float phi      = 2.f * Math::kPiF * aSamples.x;
-        const float sinTheta = 2.f * std::sqrt(aSamples.y - aSamples.y * aSamples.y);
-        const float cosTheta = 1.f - 2.f * aSamples.y;
+        const float phi      = 2.f * Math::kPiF * aUniSample.x;
+        const float sinTheta = 2.f * std::sqrt(aUniSample.y - aUniSample.y * aUniSample.y);
+        const float cosTheta = 1.f - 2.f * aUniSample.y;
 
         //PG3_ERROR_CODE_NOT_TESTED("");
 

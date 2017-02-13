@@ -11,8 +11,8 @@ class EnvironmentMapCosineSampler : public EnvironmentMapSampler<TEmValues>
 public:
 
     virtual bool Sample(
-        Vec3f           &oSampleDirection,
-        float           &oSamplePdf,
+        Vec3f           &oDirection,
+        float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
@@ -21,10 +21,10 @@ public:
     {
         const Vec3f wil =
             Sampling::SampleCosSphereParamPdfW(
-                aRng.GetVec3f(), aSampleFrontSide, aSampleBackSide, oSamplePdf);
-        oSampleDirection = aSurfFrame.ToWorld(wil);
+                aRng.GetVec3f(), aSampleFrontSide, aSampleBackSide, oPdfW);
+        oDirection = aSurfFrame.ToWorld(wil);
 
-        const SpectrumF radiance = mEmImage->Evaluate(oSampleDirection, mEmUseBilinearFiltering);
+        const SpectrumF radiance = mEmImage->Evaluate(oDirection, mEmUseBilinearFiltering);
         const float cosThetaIn = std::abs(wil.z);
         oRadianceCos = radiance * cosThetaIn;
 

@@ -32,8 +32,8 @@ public:
 
     // ...
     virtual bool Sample(
-        Vec3f           &oSampleDirection,
-        float           &oSamplePdf,
+        Vec3f           &oDirection,
+        float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,

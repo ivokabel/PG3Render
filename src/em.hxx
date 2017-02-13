@@ -48,7 +48,7 @@ public:
     // Returns the sample PDF and optionally it's radiance.
     PG3_PROFILING_NOINLINE
     void Sample(
-        const Vec2f &aSamples,
+        const Vec2f &aUniSamples,
         Vec3f       &oDirection,
         float       &oPdfW,
         SpectrumF   &oRadiance
@@ -58,7 +58,7 @@ public:
 
         // TODO: EMSampler.Sample()
         //[](
-        //    const Vec2f             &aSamples,
+        //    const Vec2f             &aUniSamples,
         //    Vec3f                   &oDirection,
         //    SpectrumF               &oRadiance,
         //    float                   &oPdfW,
@@ -71,7 +71,7 @@ public:
             Vec2ui segm;
             float pdf;
 
-            mDistribution->SampleContinuous(aSamples, uv, segm, &pdf);
+            mDistribution->SampleContinuous(aUniSamples, uv, segm, &pdf);
             PG3_ASSERT(pdf > 0.f);
 
             oDirection = Geom::LatLong2Dir(uv);
@@ -94,7 +94,7 @@ public:
             oRadiance = EvalRadiance(segm);
         }
         //(
-        //    aSamples, oDirection, oRadiance, oPdfW,
+        //    aUniSamples, oDirection, oRadiance, oPdfW,
         //    mImage, mDistribution, mPlan2AngPdfCoeff);
     }
 

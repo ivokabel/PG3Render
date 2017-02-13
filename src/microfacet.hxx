@@ -559,15 +559,15 @@ namespace Microfacet
     bool SampleGgxAllNormals(
         const Vec3f &aWol,
         const float  aRoughnessAlpha,
-        const Vec2f &aSample,
+        const Vec2f &aUniSample,
                 Vec3f &oReflectDir)
     {
         // Sample microfacet direction (D(omega_m) * cos(theta_m))
         const float tmp1 =
-                (aRoughnessAlpha * std::sqrt(aSample.x))
-            / std::sqrt(1.0f - aSample.x);
+                (aRoughnessAlpha * std::sqrt(aUniSample.x))
+            / std::sqrt(1.0f - aUniSample.x);
         const float thetaM  = std::atan(tmp1);
-        const float phiM    = 2 * Math::kPiF * aSample.y;
+        const float phiM    = 2 * Math::kPiF * aUniSample.y;
 
         const float cosThetaM   = std::cos(thetaM);
         const float sinThetaM   = std::sin(thetaM);
@@ -605,14 +605,14 @@ namespace Microfacet
     void SampleGgxP11(
                 Vec2f &aSlope,
         const float  aThetaI, 
-        const Vec2f &aSample)
+        const Vec2f &aUniSample)
     {
         if (aThetaI < 0.0001f)
         {
             // Normal incidence - avoid division by zero later
-            const float sampleXClamped  = std::min(aSample.x, 0.9999f);
+            const float sampleXClamped  = std::min(aUniSample.x, 0.9999f);
             const float radius          = Math::SafeSqrt(sampleXClamped / (1 - sampleXClamped));
-            const float phi             = 2 * Math::kPiF * aSample.y;
+            const float phi             = 2 * Math::kPiF * aUniSample.y;
             const float sinPhi          = std::sin(phi);
             const float cosPhi          = std::cos(phi);
             aSlope = Vec2f(radius * cosPhi, radius * sinPhi);
@@ -624,7 +624,7 @@ namespace Microfacet
             const float G1 = 2.0f / (1.0f + Math::SafeSqrt(1.0f + 1.0f / (tanThetaIInv * tanThetaIInv)));
 
             // Sample x dimension (marginalized PDF - can be sampled directly via CDF^-1)
-            float A = 2.0f * aSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
+            float A = 2.0f * aUniSample.x / G1 - 1.0f; // TODO: dividing by G1, which can be zero?!?
             if (std::abs(A) == 1.0f)
                 A -= Math::SignNum(A) * 1e-4f; // avoid division by zero later
             const float B = tanThetaI;
@@ -642,15 +642,15 @@ namespace Microfacet
             // We use improved fit from Mitsuba renderer rather than the original fit from the paper.
             float ySign;
             float yHalfSample;
-            if (aSample.y > 0.5f) // pick one positive/negative interval
+            if (aUniSample.y > 0.5f) // pick one positive/negative interval
             {
                 ySign       = 1.0f;
-                yHalfSample = 2.0f * (aSample.y - 0.5f);
+                yHalfSample = 2.0f * (aUniSample.y - 0.5f);
             }
             else
             {
                 ySign       = -1.0f;
-                yHalfSample = 2.0f * (0.5f - aSample.y);
+                yHalfSample = 2.0f * (0.5f - aUniSample.y);
             }
             const float z =
                     (yHalfSample * (yHalfSample * (yHalfSample *
@@ -678,7 +678,7 @@ namespace Microfacet
     Vec3f SampleGgxVisibleNormals(
         const Vec3f &aWol,
         const float  aRoughnessAlpha,
-        const Vec2f &aSample)
+        const Vec2f &aUniSample)
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aWol);
 
@@ -701,7 +701,7 @@ namespace Microfacet
 
         // Sample visible slopes for unit isotropic roughness, and given incident direction theta
         Vec2f slopeStretch;
-        SampleGgxP11(slopeStretch, thetaWolStretch, aSample);
+        SampleGgxP11(slopeStretch, thetaWolStretch, aUniSample);
 
         // Rotate
         slopeStretch = Vec2f(

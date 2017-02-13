@@ -1963,8 +1963,8 @@ public:
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
     // bilinear approximation of the environment map luminance.
     virtual bool Sample(
-        Vec3f           &oSampleDirection,
-        float           &oSamplePdf,
+        Vec3f           &oDirection,
+        float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
@@ -1994,20 +1994,19 @@ public:
 
         // Sample triangle surface (linear approximation)
         float sampleValue = 0.f;
-        if (!SampleTriangleSurface(
-                oSampleDirection, sampleValue, *triangle, clampedCosCoeffs, sample))
+        if (!SampleTriangleSurface(oDirection, sampleValue, *triangle, clampedCosCoeffs, sample))
             return false;
 
         // PDF can be computed efficiently...
         const float wholeIntegral = GetWholeIntegral(clampedCosCoeffs);
         if (Math::IsTiny(wholeIntegral))
-            oSamplePdf = 0.f;
+            oPdfW = 0.f;
         else
-            oSamplePdf = sampleValue / wholeIntegral;
+            oPdfW = sampleValue / wholeIntegral;
 
         // Radiance * cos(theta)
-        const SpectrumF radiance = mEmImage->Evaluate(oSampleDirection, mEmUseBilinearFiltering);
-        const float cosThetaIn = Dot(oSampleDirection, aSurfFrame.Normal());
+        const SpectrumF radiance = mEmImage->Evaluate(oDirection, mEmUseBilinearFiltering);
+        const float cosThetaIn = Dot(oDirection, aSurfFrame.Normal());
         if (   (aSampleFrontSide && (cosThetaIn > 0.0f))
             || (aSampleBackSide  && (cosThetaIn < 0.0f)))
             oRadianceCos = radiance * std::abs(cosThetaIn);
@@ -3297,7 +3296,7 @@ protected:
 
     template <typename T>
     static T SampleTriangleFFunction(
-        const T     aSample,
+        const T     aUniSample,
         const T     aValA,
         const T     aValB,
         const T     aValC)
@@ -3309,7 +3308,7 @@ protected:
         const T beta  = y / (x + y);
 
         return Math::FindRootNewtonRaphson<T>(
-            Math::CubicFunction<T>(alpha, beta, T(0.), -aSample),
+            Math::CubicFunction<T>(alpha, beta, T(0.), -aUniSample),
             T(0.), T(1.), T(0.5)/*debug*/, 4u/*debug*/);
     }
 
@@ -3317,7 +3316,7 @@ protected:
     template <typename T>
     static T SampleTriangleGFunction(
         const T     aS,
-        const T     aSample,
+        const T     aUniSample,
         const T     aA,
         const T     aB,
         const T     aC)
@@ -3329,8 +3328,8 @@ protected:
         const T gamma   = aS * (aC - aB) / t;
         const T rho     = T(2.) * ((T(1.) - aS) * aA + aS * aB) / t;
 
-        const T discr  = rho * rho + T(4.) * gamma * aSample;
-        const T result = (T(2.) * aSample) / (rho + Math::SafeSqrt(discr));
+        const T discr  = rho * rho + T(4.) * gamma * aUniSample;
+        const T result = (T(2.) * aUniSample) / (rho + Math::SafeSqrt(discr));
 
         return result;
     }
@@ -3394,7 +3393,7 @@ protected:
     bool PickTriangle(
         const TriangleNode          *&oTriangle,
         const SteerableCoefficients &aClampedCosCoeffs,
-        float                        &aSample //modified and used by the triangle area sampling later on
+        float                        &aUniSample //modified and used by the triangle area sampling later on
         ) const
     {
         if (!IsBuilt())
@@ -3419,19 +3418,19 @@ protected:
 
             // Choose child
             const float threshold = leftIntegral / integralSum; // TODO: What if sum is 0?
-            if (aSample < threshold)
+            if (aUniSample < threshold)
             {
                 node = leftChild;
-                aSample /= threshold;
+                aUniSample /= threshold;
 
-                PG3_ASSERT_FLOAT_IN_RANGE(aSample, 0.f, 1.f);
+                PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
             }
             else
             {
                 node = rightChild;
-                aSample = (aSample - threshold) / (1.f - threshold);
+                aUniSample = (aUniSample - threshold) / (1.f - threshold);
 
-                PG3_ASSERT_FLOAT_IN_RANGE(aSample, 0.f, 1.f);
+                PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
             }
             // TODO: Clamp random val to [0,1]?
         }
@@ -3448,7 +3447,7 @@ protected:
     // TODO: Move to namespace Sampling?
     template <typename T>
     static Vec2f SampleTriangleBilinear(
-        const Vec2f     aSample,
+        const Vec2f     aUniSample,
         const float     aValue0,
         const float     aValue1,
         const float     aValue2)
@@ -3457,8 +3456,8 @@ protected:
         PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue1, 0.f);
         PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue2, 0.f);
 
-        const T s = SampleTriangleFFunction<T>(   aSample.x, aValue0, aValue1, aValue2);
-        const T t = SampleTriangleGFunction<T>(s, aSample.y, aValue0, aValue1, aValue2);
+        const T s = SampleTriangleFFunction<T>(   aUniSample.x, aValue0, aValue1, aValue2);
+        const T t = SampleTriangleGFunction<T>(s, aUniSample.y, aValue0, aValue1, aValue2);
 
         const Vec2f baryCoords(
             float(T(1.) - s),
@@ -3475,18 +3474,18 @@ protected:
     template <typename T>
     bool SampleTriangleSurface(
         Vec2f                       &oBaryCoords,
-        float                       &oSampleValue,
+        float                       &oValue,
         const TriangleNode          &aTriangle,
         const SteerableCoefficients &aClampedCosCoeffs,
-        const Vec2f                 &aSample) const
+        const Vec2f                 &aUniSample) const
     {
         float value0, value1, value2;
         if (!aTriangle.GetVertexValues(value0, value1, value2, aClampedCosCoeffs, mVertexStorage))
             return false;
 
-        oBaryCoords = SampleTriangleBilinear<T>(aSample, value0, value1, value2);
+        oBaryCoords = SampleTriangleBilinear<T>(aUniSample, value0, value1, value2);
 
-        oSampleValue = Geom::Triangle::InterpolateValues(value0, value1, value2, oBaryCoords);
+        oValue = Geom::Triangle::InterpolateValues(value0, value1, value2, oBaryCoords);
 
         return true;
     }
@@ -3497,14 +3496,14 @@ protected:
     // Generates direction.
     bool SampleTriangleSurface(
         Vec3f                       &oDirection,
-        float                       &oSampleValue,
+        float                       &oValue,
         const TriangleNode          &aTriangle,
         const SteerableCoefficients &aClampedCosCoeffs,
-        const Vec2f                 &aSample) const
+        const Vec2f                 &aUniSample) const
     {
         Vec2f baryCoords;
         if (!SampleTriangleSurface<float>(
-                baryCoords, oSampleValue, aTriangle, aClampedCosCoeffs, aSample))
+                baryCoords, oValue, aTriangle, aClampedCosCoeffs, aUniSample))
             return false;
 
         if (!GetTrianglePoint(oDirection, aTriangle, baryCoords))
