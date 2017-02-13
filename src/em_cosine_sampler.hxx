@@ -5,8 +5,8 @@
 
 // Samples requested (hemi)sphere(s) in a cosine-weighted fashion.
 // Ignores the environment map completely.
-template <typename TEmImg>
-class EnvironmentMapCosineSampler : public EnvironmentMapSampler<TEmImg>
+template <typename TEmValues>
+class EnvironmentMapCosineSampler : public EnvironmentMapSampler<TEmValues>
 {
 public:
 

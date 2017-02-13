@@ -16,8 +16,8 @@
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
 // from Kartic Subr and Jim Arvo, 2007
-template <typename TEmImg>
-class EnvironmentMapSteerableSampler : public EnvironmentMapSampler<TEmImg>
+template <typename TEmValues>
+class EnvironmentMapSteerableSampler : public EnvironmentMapSampler<TEmValues>
 {
 public:
 

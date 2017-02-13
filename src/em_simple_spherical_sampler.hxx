@@ -3,8 +3,8 @@
 #include "em_sampler.hxx"
 #include "debugging.hxx"
 
-template <typename TEmImg>
-class EnvironmentMapSimpleSphericalSampler : public EnvironmentMapSampler<TEmImg>
+template <typename TEmValues>
+class EnvironmentMapSimpleSphericalSampler : public EnvironmentMapSampler<TEmValues>
 {
 public:
 

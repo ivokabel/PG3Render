@@ -5,17 +5,18 @@
 #include "light_sample.hxx"
 #include "spectrum.hxx"
 #include "types.hxx"
+
 #include <memory>
 #include <limits>
 
-template <typename TEmImg>
+template <typename TEmValues>
 class EnvironmentMapSampler
 {
 public:
 
     // ...
     virtual bool Init(
-        std::shared_ptr<TEmImg>     aEmImage,
+        std::shared_ptr<TEmValues>  aEmImage,
         bool                        aUseBilinearFiltering)
     {
         ReleaseData();
@@ -64,7 +65,7 @@ public:
 
 protected:
 
-    std::shared_ptr<TEmImg>     mEmImage;
+    std::shared_ptr<TEmValues>  mEmImage;
     bool                        mEmUseBilinearFiltering;
 };
 
