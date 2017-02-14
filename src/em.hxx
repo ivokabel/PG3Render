@@ -66,11 +66,11 @@ public:
     PG3_PROFILING_NOINLINE
     void EvalRadiance(
         SpectrumF       &oRadiance,
-        float           &oPdfW,
         const Vec3f     &aDirection, 
-        const Frame     &aSurfFrame,
-        bool             aSampleFrontSide,
-        bool             aSampleBackSide
+        float           *oPdfW = nullptr,
+        const Frame     *aSurfFrame = nullptr,
+        const bool      *aSampleFrontSide = nullptr,
+        const bool      *aSampleBackSide = nullptr
         ) const
     {
         PG3_ASSERT(!aDirection.IsZero());
@@ -78,7 +78,8 @@ public:
         const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
         oRadiance = EvalRadiance(uv);
 
-        oPdfW = PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        if (oPdfW && aSurfFrame && aSampleFrontSide && aSampleBackSide)
+            *oPdfW = PdfW(aDirection, *aSurfFrame, *aSampleFrontSide, *aSampleBackSide);
 
         PG3_ASSERT((oPdfW == 0.f) == radiance.IsZero());
 

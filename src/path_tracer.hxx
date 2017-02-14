@@ -153,7 +153,7 @@ protected:
                     const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
                     if (backgroundLight != nullptr)
                         oRadiance +=
-                              backgroundLight->GetEmmision(currentRay.dir, false)
+                              backgroundLight->GetEmmision(currentRay.dir)
                             * pathThroughput;
                 }
 
@@ -164,15 +164,16 @@ protected:
     }
 
     void EstimateIncomingRadiancePT(
-        const Ray       &aRay,
-        const uint32_t   aPathLength,
-        const bool       aComputeReflectedRadiance,
-        const float      aSplitBudget,
-        SpectrumF       &oEmmittedRadiance,
-        SpectrumF       &oReflectedRadianceEstimate,
-        const Frame     *aSurfFrame = nullptr, // Only needed when you to compute PDF of a const env. light source sample
-        float           *oEmmittedLightPdfW = nullptr,
-        int32_t         *oLightID = nullptr
+        const Ray               &aRay,
+        const uint32_t           aPathLength,
+        const bool               aComputeReflectedRadiance,
+        const float              aSplitBudget,
+        SpectrumF               &oEmmittedRadiance,
+        SpectrumF               &oReflectedRadianceEstimate,
+        const Frame             *aShadedSurfFrame = nullptr,    // Only needed to compute light PDF
+        const AbstractMaterial  *aShadedSurfMat = nullptr,      // Only needed to compute light PDF
+        float                   *oEmmittedLightPdfW = nullptr,
+        int32_t                 *oLightID = nullptr
         )
     {
         PG3_ASSERT((mMaxPathLength == 0) || (aPathLength <= mMaxPathLength));
@@ -200,7 +201,8 @@ protected:
                 if (light != nullptr)
                 {
                     oEmmittedRadiance +=
-                        light->GetEmmision(surfPt, wol, aRay.org, oEmmittedLightPdfW, aSurfFrame);
+                        light->GetEmmision(surfPt, wol, aRay.org,
+                                           oEmmittedLightPdfW, aShadedSurfFrame, aShadedSurfMat);
                     if (oLightID != nullptr)
                         *oLightID = isect.lightID;
                 }
@@ -316,7 +318,7 @@ protected:
                 EstimateIncomingRadiancePT(
                     bsdfRay, aPathLength + 1, !bCutIndirect, nextStepSplitBudget,
                     bsdfEmmittedRadiance, bsdfReflectedRadianceEstimate,
-                    &surfFrame, &bsdfLightPdfW, &bsdfLightId);
+                    &surfFrame, &mat, &bsdfLightPdfW, &bsdfLightId);
 
                 PG3_ASSERT(!bCutIndirect || bsdfReflectedRadianceEstimate.IsZero());
 
@@ -411,7 +413,8 @@ protected:
                 if (backgroundLight != nullptr)
                 {
                     oEmmittedRadiance +=
-                        backgroundLight->GetEmmision(aRay.dir, false, oEmmittedLightPdfW, aSurfFrame);
+                        backgroundLight->GetEmmision(
+                            aRay.dir, oEmmittedLightPdfW, aShadedSurfFrame, aShadedSurfMat);
                     if (oLightID != nullptr)
                         *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }

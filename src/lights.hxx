@@ -25,21 +25,20 @@ public:
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: outgoing radiance * geometric component
     virtual void SampleIllumination(
-        const Vec3f             &aSurfPt,
+        const Vec3f             &aSurfPt,       // TODO: Shaded point data should be wrapped in a structure
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
         Rng                     &aRng,
-        LightSample             &oSample
-        ) const = 0;
+        LightSample             &oSample) const = 0;
 
     // Returns amount of outgoing radiance from the point in the direction
     virtual SpectrumF GetEmmision(
-        const Vec3f &aLightPt,
-        const Vec3f &aWol,
-        const Vec3f &aSurfPt,
-              float *oPdfW = nullptr,
-        const Frame *aSurfFrame = nullptr
-        ) const = 0;
+        const Vec3f             &aLightPt,
+        const Vec3f             &aWol,
+        const Vec3f             &aSurfPt,
+              float             *oPdfW = nullptr,
+        const Frame             *aSurfFrame = nullptr,
+        const AbstractMaterial  *aSurfMaterial = nullptr) const = 0;
 
     // Returns an estimate of light contribution of this light-source to the given point.
     // Used for picking one of all available light sources when doing light-source sampling.
@@ -47,8 +46,7 @@ public:
         const Vec3f             &aSurfPt,
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
-              Rng               &aRng
-        ) const = 0;
+              Rng               &aRng) const = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,14 +74,14 @@ public:
 
     // Returns amount of outgoing radiance from the point in the direction
     virtual SpectrumF GetEmmision(
-        const Vec3f &aLightPt,
-        const Vec3f &aWol,
-        const Vec3f &aSurfPt,
-              float *oPdfW = nullptr,
-        const Frame *aSurfFrame = nullptr
-        ) const override
+        const Vec3f             &aLightPt,
+        const Vec3f             &aWol,
+        const Vec3f             &aSurfPt,
+              float             *oPdfW = nullptr,
+        const Frame             *aSurfFrame = nullptr,
+        const AbstractMaterial  *aSurfMaterial = nullptr) const override
     {
-        aSurfFrame; // unused param
+        aSurfFrame, aSurfMaterial; // unused params
 
         // We don't check the point since we expect it to be within the light surface
 
@@ -247,14 +245,14 @@ public:
     // Returns amount of outgoing radiance in the direction.
     // The point parameter is unused - it is a heritage of the abstract light interface
     virtual SpectrumF GetEmmision(
-        const Vec3f &aLightPt,
-        const Vec3f &aWol,
-        const Vec3f &aSurfPt,
-              float *oPdfW = nullptr,
-        const Frame *aSurfFrame = nullptr
-        ) const override
+        const Vec3f             &aLightPt,
+        const Vec3f             &aWol,
+        const Vec3f             &aSurfPt,
+              float             *oPdfW = nullptr,
+        const Frame             *aSurfFrame = nullptr,
+        const AbstractMaterial  *aSurfMaterial = nullptr) const override
     {
-        aSurfPt; aLightPt; aSurfFrame; aWol; // unused parameter
+        aSurfPt; aLightPt; aSurfFrame; aSurfMaterial; aWol; // unused parameter
 
         if (oPdfW != nullptr)
             *oPdfW = Math::InfinityF();
@@ -376,25 +374,30 @@ public:
     // Returns amount of incoming radiance from the direction.
     SpectrumF GetEmmision(
         const Vec3f             &aWig,
-        const Frame             &aSurfFrame,
-        const AbstractMaterial  &aSurfMaterial,
-        float                   *oPdfW = nullptr
+        float                   *oPdfW = nullptr,
+        const Frame             *aSurfFrame = nullptr,
+        const AbstractMaterial  *aSurfMaterial = nullptr
         ) const
     {
-        const MaterialProperties matProps = aSurfMaterial.GetProperties();
-        const bool sampleFrontSide = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
+        bool sampleFrontSide = false;
+        bool sampleBackSide  = false;
+        if (aSurfMaterial)
+        {
+            const MaterialProperties matProps = aSurfMaterial->GetProperties();
+            sampleFrontSide = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
+            sampleBackSide  = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
+        }
 
         if (mEnvMap != nullptr)
         {
             SpectrumF radiance;
-            mEnvMap->EvalRadiance(radiance, oPdfW, aWig, aSurfFrame, sampleFrontSide, sampleBackSide);
+            mEnvMap->EvalRadiance(radiance, aWig, oPdfW, aSurfFrame, &sampleFrontSide, &sampleBackSide);
             return radiance;
         }
         else
         {
-            if ((oPdfW != nullptr) /*&& (aSurfFrame != nullptr)*/)
-                *oPdfW = mCosineSampler.PdfW(aWig, aSurfFrame, sampleFrontSide, sampleBackSide);
+            if (oPdfW && aSurfFrame && aSurfMaterial)
+                *oPdfW = mCosineSampler.PdfW(aWig, *aSurfFrame, sampleFrontSide, sampleBackSide);
             return mConstantRadiance;
         }
     };
@@ -402,16 +405,16 @@ public:
     // Returns amount of outgoing radiance in the direction.
     // The point parameter is unused - it is an heritage of the abstract light interface
     virtual SpectrumF GetEmmision(
-        const Vec3f &aLightPt,
-        const Vec3f &aWol,
-        const Vec3f &aSurfPt,
-              float *oPdfW = nullptr,
-        const Frame *aSurfFrame = nullptr
-        ) const override
+        const Vec3f             &aLightPt,
+        const Vec3f             &aWol,
+        const Vec3f             &aSurfPt,
+              float             *oPdfW = nullptr,
+        const Frame             *aSurfFrame = nullptr,
+        const AbstractMaterial  *aSurfMaterial = nullptr) const override
     {
         aSurfPt;  aLightPt; // unused params
 
-        return GetEmmision(-aWol, false, oPdfW, aSurfFrame);
+        return GetEmmision(-aWol, oPdfW, aSurfFrame, aSurfMaterial);
     };
 
     PG3_PROFILING_NOINLINE
@@ -433,7 +436,7 @@ public:
             mEnvMap->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
         else
             // Constant environment illumination
-            // Sample the requested (hemi)sphere(s) in a cosine-weighted fashion
+            // Sample the requested hemisphere(s) in a cosine-weighted fashion
             mCosineSampler.Sample(
                 oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
     }

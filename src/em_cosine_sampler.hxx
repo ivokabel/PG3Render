@@ -43,7 +43,6 @@ public:
     {
         const Vec3f &dirLocal = aSurfFrame.ToLocal(aDirection);
         const float pdfW = Sampling::CosSpherePdfW(aSampleFrontSide, aSampleBackSide, dirLocal);
-        
         return pdfW;
     }
 };

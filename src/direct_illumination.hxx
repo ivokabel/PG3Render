@@ -147,7 +147,7 @@ public:
             // No intersection - get radiance from the background
             const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
             if (backgroundLight != nullptr)
-                oRadiance = backgroundLight->GetEmmision(aRay.dir, false);
+                oRadiance = backgroundLight->GetEmmision(aRay.dir);
             else
                 oRadiance.MakeZero(); // No background light
         }
