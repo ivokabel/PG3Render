@@ -29,7 +29,7 @@ public:
         try
         {
             //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
-            mImage.reset(EnvironmentMapImage::LoadImage(aFilename.c_str(), aRotate, aScale));
+            mEmImage.reset(EnvironmentMapImage::LoadImage(aFilename.c_str(), aRotate, aScale));
         }
         catch (...)
         {
@@ -37,11 +37,11 @@ public:
         }
 
         if (mCosineSampler)
-            mCosineSampler->Init(mImage, mDoBilinFiltering);
+            mCosineSampler->Init(mEmImage, mDoBilinFiltering);
         if (mSimpleSphericalSampler)
-            mSimpleSphericalSampler->Init(mImage, mDoBilinFiltering);
+            mSimpleSphericalSampler->Init(mEmImage, mDoBilinFiltering);
         if (mSteerableSampler)
-            mSteerableSampler->Init(mImage, mDoBilinFiltering);
+            mSteerableSampler->Init(mEmImage, mDoBilinFiltering);
     }
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
@@ -53,10 +53,10 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const
     {
-        mSimpleSphericalSampler->Sample(
-            oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-        mSteerableSampler->Sample(
-            oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+        //mSimpleSphericalSampler->Sample(
+        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+        //mSteerableSampler->Sample(
+        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
         return mCosineSampler->Sample(
             oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
@@ -93,8 +93,8 @@ public:
         bool             aSampleFrontSide,
         bool             aSampleBackSide) const
     {
-        mSimpleSphericalSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
-        mSteerableSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        //mSimpleSphericalSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        //mSteerableSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
         return mCosineSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
     }
 
@@ -111,12 +111,12 @@ public:
         if (mCosineSampler->EstimateIrradiance(
                 irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
             return irradianceEst;
-        if (mSimpleSphericalSampler->EstimateIrradiance(
-                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
-            return irradianceEst;
-        if (mSteerableSampler->EstimateIrradiance(
-                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
-            return irradianceEst;
+        //if (mSimpleSphericalSampler->EstimateIrradiance(
+        //        irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
+        //    return irradianceEst;
+        //if (mSteerableSampler->EstimateIrradiance(
+        //        irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
+        //    return irradianceEst;
 
         // Estimate using MIS Monte Carlo.
         // We need more iterations because the estimate has too high variance if there are 
@@ -159,24 +159,24 @@ private:
     //// Returns radiance for the given segment of the image
     //SpectrumF EvalRadiance(const Vec2ui &aSegm) const
     //{
-    //    PG3_ASSERT(mImage != nullptr);
-    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mImage->Width());
-    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mImage->Height());
+    //    PG3_ASSERT(mEmImage != nullptr);
+    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mEmImage->Width());
+    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mEmImage->Height());
 
     //    // FIXME: This interface shouldn't be used if bilinear or any smoother filtering is active!
 
-    //    return mImage->ElementAt(aSegm.x, aSegm.y);
+    //    return mEmImage->ElementAt(aSegm.x, aSegm.y);
     //}
 
     // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
     PG3_PROFILING_NOINLINE 
     SpectrumF EvalRadiance(const Vec2f &aUV) const
     {
-        PG3_ASSERT(mImage != nullptr);
+        PG3_ASSERT(mEmImage != nullptr);
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.0f, 1.0f);
 
-        return mImage->Evaluate(aUV, mDoBilinFiltering);
+        return mEmImage->Evaluate(aUV, mDoBilinFiltering);
     }
 
     // This class is not copyable because of a const member.
@@ -189,7 +189,7 @@ private:
 private:
 
 
-    std::shared_ptr<EnvironmentMapImage>            mImage;     // Environment image data
+    std::shared_ptr<EnvironmentMapImage>            mEmImage;     // Environment image data
     const bool                                      mDoBilinFiltering;
 
     std::unique_ptr<CosineImageEmSampler>           mCosineSampler;             // TODO: Describe...

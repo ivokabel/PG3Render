@@ -346,8 +346,7 @@ public:
     BackgroundLight() :
         mEnvMap(nullptr)
     {
-        mConstantRadiance.MakeZero();
-        mCosineSampler.Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
+        SetConstantRadiance(SpectrumF().MakeZero());
     }
 
     virtual ~BackgroundLight() override
@@ -430,7 +429,7 @@ public:
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
         const bool sampleFrontSide = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
-        const bool sampleBackSide = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
+        const bool sampleBackSide  = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
         if (mEnvMap != nullptr)
             mEnvMap->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
