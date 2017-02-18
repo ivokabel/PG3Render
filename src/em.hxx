@@ -24,7 +24,7 @@ public:
         mDoBilinFiltering(aDoBilinFiltering),
         mCosineSampler(new CosineImageEmSampler()),
         mSimpleSphericalSampler(new SimpleSphericalImageEmSampler()),
-        mSteerableSampler(new SteerableImageEmSampler(SteerableImageEmSampler::BuildParameters()))
+        mSteerableSampler(new SteerableImageEmSampler())
     {
         try
         {

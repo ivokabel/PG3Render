@@ -75,7 +75,7 @@ public:
     };
 
 
-    EnvironmentMapSteerableSampler(const BuildParameters &aParams) :
+    EnvironmentMapSteerableSampler(const BuildParameters &aParams = BuildParameters()) :
         mParams(aParams)
     {}
 
