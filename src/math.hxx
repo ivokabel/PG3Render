@@ -176,7 +176,7 @@ namespace Math
         >
     T Lerp(T c, T x0, T x1)
     {
-        return ((T)0. - c) * x0 + c * x1;
+        return ((T)1 - c) * x0 + c * x1;
     }
 
     template <
