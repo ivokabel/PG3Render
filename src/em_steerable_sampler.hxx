@@ -1963,7 +1963,7 @@ public:
     // Generate a random direction on a sphere proportional to an adaptive piece-wise 
     // bilinear approximation of the environment map luminance.
     virtual bool SampleImpl(
-        Vec3f           &oDirection,
+        Vec3f           &oDirGlobal,
         float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
@@ -1993,7 +1993,7 @@ public:
 
         // Sample triangle surface (linear approximation)
         float sampleValue = 0.f;
-        if (!SampleTriangleSurface(oDirection, sampleValue, *triangle, clampedCosCoeffs, sample))
+        if (!SampleTriangleSurface(oDirGlobal, sampleValue, *triangle, clampedCosCoeffs, sample))
             return false;
 
         // PDF can be computed efficiently...
@@ -2004,8 +2004,8 @@ public:
             oPdfW = sampleValue / wholeIntegral;
 
         // Radiance * cos(theta)
-        const SpectrumF radiance = mEmImage->Evaluate(oDirection, mEmUseBilinearFiltering);
-        const float cosThetaIn = Dot(oDirection, aSurfFrame.Normal());
+        const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal, mEmUseBilinearFiltering);
+        const float cosThetaIn = Dot(oDirGlobal, aSurfFrame.Normal());
         if (   (aSampleFrontSide && (cosThetaIn > 0.0f))
             || (aSampleBackSide  && (cosThetaIn < 0.0f)))
             oRadianceCos = radiance * std::abs(cosThetaIn);

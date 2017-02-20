@@ -30,7 +30,7 @@ public:
         if (!aEmImage)
             return false;
 
-        mEmImage = aEmImage;
+        mEmImage                = aEmImage;
         mEmUseBilinearFiltering = aUseBilinearFiltering;
 
         return true;
@@ -39,7 +39,7 @@ public:
 
     // Generates random direction, PDF and EM value
     virtual bool SampleImpl(
-        Vec3f           &oDirection,
+        Vec3f           &oDirGlobal,
         float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
@@ -59,7 +59,7 @@ public:
         PG3_ASSERT(mEmImage != nullptr);
 
         oLightSample.mLightProbability = 1.0f;
-        oLightSample.mDist              = std::numeric_limits<float>::max();
+        oLightSample.mDist             = std::numeric_limits<float>::max();
 
         return SampleImpl(
             oLightSample.mWig, oLightSample.mPdfW, oLightSample.mSample,

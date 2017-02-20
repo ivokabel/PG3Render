@@ -27,7 +27,7 @@ public:
 
 
     virtual bool SampleImpl(
-        Vec3f           &oDirection,
+        Vec3f           &oDirGlobal,
         float           &oPdfW,
         SpectrumF       &oRadianceCos, // radiance * abs(cos(thetaIn)
         const Frame     &aSurfFrame,
@@ -50,7 +50,7 @@ public:
 
         PG3_ASSERT(distrPdf > 0.f);
 
-        oDirection = Geom::LatLong2Dir(uv);
+        oDirGlobal = Geom::LatLong2Dir(uv);
 
         // Convert the sample's planar PDF over the rectangle [0,1]x[0,1] to 
         // the angular PDF on the unit sphere over the appropriate trapezoid
@@ -69,7 +69,7 @@ public:
 
         // Radiance multiplied by cosine
         const SpectrumF radiance = EvalRadiance(segm);
-        const float cosThetaIn = Dot(oDirection, aSurfFrame.Normal());
+        const float cosThetaIn = Dot(oDirGlobal, aSurfFrame.Normal());
         if (   (aSampleFrontSide && (cosThetaIn > 0.0f))
             || (aSampleBackSide  && (cosThetaIn < 0.0f)))
             oRadianceCos = radiance * std::abs(cosThetaIn);
