@@ -3463,7 +3463,7 @@ protected:
     // TODO: Move to namespace Sampling?
     template <typename T>
     static Vec2f SampleTriangleBilinear(
-        const Vec2f     aUniSample,
+        const Vec2f     aUniSamples,
         const float     aValue0,
         const float     aValue1,
         const float     aValue2)
@@ -3472,8 +3472,8 @@ protected:
         PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue1, 0.f);
         PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(aValue2, 0.f);
 
-        const T s = SampleTriangleFFunction<T>(   aUniSample.x, aValue0, aValue1, aValue2);
-        const T t = SampleTriangleGFunction<T>(s, aUniSample.y, aValue0, aValue1, aValue2);
+        const T s = SampleTriangleFFunction<T>(   aUniSamples.x, aValue0, aValue1, aValue2);
+        const T t = SampleTriangleGFunction<T>(s, aUniSamples.y, aValue0, aValue1, aValue2);
 
         const Vec2f baryCoords(
             float(T(1.) - s),
@@ -3493,13 +3493,13 @@ protected:
         float                       &oValue,
         const TriangleNode          &aTriangle,
         const SteerableCoefficients &aClampedCosCoeffs,
-        const Vec2f                 &aUniSample) const
+        const Vec2f                 &aUniSamples) const
     {
         float value0, value1, value2;
         if (!aTriangle.GetVertexValues(value0, value1, value2, aClampedCosCoeffs, mVertexStorage))
             return false;
 
-        oBaryCoords = SampleTriangleBilinear<T>(aUniSample, value0, value1, value2);
+        oBaryCoords = SampleTriangleBilinear<T>(aUniSamples, value0, value1, value2);
 
         oValue = Geom::Triangle::InterpolateValues(value0, value1, value2, oBaryCoords);
 
@@ -3515,11 +3515,11 @@ protected:
         float                       &oValue,
         const TriangleNode          &aTriangle,
         const SteerableCoefficients &aClampedCosCoeffs,
-        const Vec2f                 &aUniSample) const
+        const Vec2f                 &aUniSamples) const
     {
         Vec2f baryCoords;
         if (!SampleTriangleSurface<float>(
-                baryCoords, oValue, aTriangle, aClampedCosCoeffs, aUniSample))
+                baryCoords, oValue, aTriangle, aClampedCosCoeffs, aUniSamples))
             return false;
 
         if (!GetTrianglePoint(oDirection, aTriangle, baryCoords))
