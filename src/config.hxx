@@ -201,9 +201,13 @@ public:
             filename += outStream.str();
         }
 
-    #ifndef PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
+#if defined PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
+        // default: no code
+#elif defined PG3_USE_ENVMAP_STEERABLE_SAMPLER
+        filename += "_emss";
+#else
         filename += "_emcs";
-    #endif
+#endif
 
         // Sample count
         filename += "_";

@@ -46,12 +46,12 @@ public:
 
         uint32_t GetMinSubdivLevel() const
         {
-            return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 1;
+            return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 5;
         }
 
         uint32_t GetMaxSubdivLevel() const
         {
-            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 5;
+            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 7;
         }
 
         float GetOversamplingFactorDbg() const
@@ -1976,6 +1976,12 @@ public:
         if (!IsBuilt())
             return false;
 
+        if (aSampleBackSide)
+        {
+            PG3_ERROR_NOT_IMPLEMENTED("Sampling the back hemisphere is not supported yet!");
+            return false;
+        }
+
         // Clamped cosine coefficients for given normal
         SteerableCoefficients clampedCosCoeffs;
         clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
@@ -2012,7 +2018,40 @@ public:
         else
             oRadianceCos.MakeZero();
 
+        // TODO: Mirror samples below horizon
+
         return true;
+    }
+
+
+    virtual float PdfW(
+        const Vec3f     &aDirection,
+        const Frame     &aSurfFrame,
+        bool             aSampleFrontSide,
+        bool             aSampleBackSide) const
+    {
+        aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide; // unused params
+
+        if (aSampleBackSide)
+        {
+            PG3_ERROR_NOT_IMPLEMENTED("Sampling the back hemisphere is not supported yet!");
+            return false;
+        }
+
+        PG3_ERROR_NOT_IMPLEMENTED("");
+
+        // TODO: GetBasePdfW() - non-mirrored sampling PDF
+        {
+            // TODO: Find the triangle at the direction. HOW?!?
+
+            // TODO: Evaluate the approximation at the direction
+
+            // TODO: Compute the PDF using the whole integral
+        }
+
+        // TODO: Take mirrorring into account
+
+        return 0.f;
     }
 
 
@@ -2028,7 +2067,13 @@ public:
     {
         oIrradianceEstimate, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng; // unused params
 
-        // TODO: ...
+        PG3_ERROR_NOT_IMPLEMENTED("Just evaluate the whole integral from the root node");
+
+        //// Clamped cosine coefficients for given normal
+        //SteerableCoefficients clampedCosCoeffs;
+        //clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+
+        //const float wholeIntegral = GetWholeIntegral(clampedCosCoeffs);
 
         return false;
     }
@@ -2298,6 +2343,19 @@ protected:
 
         void Print()
         {
+            printf(
+                "\nSteerable Sampler - Triangulation Parameters:\n"
+                "MaxApproxError:        %.4f\n"
+                "MinSubdivLevel:        %d\n"
+                "MaxSubdivLevel:        %d\n"
+                "OversamplingFactorDbg: %.4f\n"
+                "MaxTriangleSpanDbg:    %.4f\n",
+                mBuildParams.GetMaxApproxError(),
+                mBuildParams.GetMinSubdivLevel(),
+                mBuildParams.GetMaxSubdivLevel(),
+                mBuildParams.GetOversamplingFactorDbg(),
+                mBuildParams.GetMaxTriangleSpanDbg());
+
             printf("\nSteerable Sampler - Triangulation Statistics:\n");
             if (mLevelStats.size() > 0)
             {

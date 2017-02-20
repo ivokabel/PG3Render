@@ -44,15 +44,18 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-ITERS=4
-SCENES="20 28"
+ITERS="1 4 32 128"
+SCENES="20"   #"20 28"
 EMS="3 4 10"
-ALGORITHMS="dlsa dlss dbs dmis ptn pt"
+ALGORITHMS="dlsa"   #"dlsa dlss dbs dmis ptn pt"
+OT="EmssSll5Slu7"
 
 for SCENE in $SCENES; do
     for EM in $EMS; do
         for ALG in $ALGORITHMS; do
-            render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITERS
+            for ITER in $ITERS; do
+                render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITER -ot $OT
+            done
         done
     done
 done

@@ -20,7 +20,12 @@ class EnvironmentMap
 {
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
-    EnvironmentMap(const std::string aFilename, float aRotate, float aScale, bool aDoBilinFiltering) :
+    EnvironmentMap(
+        const std::string   aFilename,
+        float               aRotate,
+        float               aScale,
+        bool                aDoBilinFiltering)
+        :
         mDoBilinFiltering(aDoBilinFiltering)
     {
         try
@@ -35,7 +40,9 @@ public:
 
         mTmpCosineSampler           = std::make_shared<CosineImageEmSampler>();
         mTmpSimpleSphericalSampler  = std::make_shared<SimpleSphericalImageEmSampler>();
-        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>();
+        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>(
+            SteerableImageEmSampler::BuildParameters(
+                Math::InfinityF(), 5, 7));
 
         if (mTmpCosineSampler)
             mTmpCosineSampler->Init(mEmImage, mDoBilinFiltering);
@@ -44,8 +51,10 @@ public:
         if (mTmpSteerableSampler)
             mTmpSteerableSampler->Init(mEmImage, mDoBilinFiltering);
 
-#ifdef PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
+#if defined PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
         mSampler = mTmpSimpleSphericalSampler;
+#elif defined PG3_USE_ENVMAP_STEERABLE_SAMPLER
+        mSampler = mTmpSteerableSampler;
 #else
         mSampler = mTmpCosineSampler;
 #endif
@@ -150,18 +159,6 @@ public:
     }
 
 private:
-
-    //// Returns radiance for the given segment of the image
-    //SpectrumF EvalRadiance(const Vec2ui &aSegm) const
-    //{
-    //    PG3_ASSERT(mEmImage != nullptr);
-    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mEmImage->Width());
-    //    PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mEmImage->Height());
-
-    //    // FIXME: This interface shouldn't be used if bilinear or any smoother filtering is active!
-
-    //    return mEmImage->ElementAt(aSegm.x, aSegm.y);
-    //}
 
     // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
     PG3_PROFILING_NOINLINE 

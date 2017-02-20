@@ -71,12 +71,7 @@ public:
         const Vec3f     &aDirection,
         const Frame     &aSurfFrame,
         bool             aSampleFrontSide,
-        bool             aSampleBackSide) const
-    {
-        aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide; // unused params
-
-        return 0.f;
-    }
+        bool             aSampleBackSide) const = 0;
 
 
     // Optionally estimates the incomming irradiance for the given configuration:
