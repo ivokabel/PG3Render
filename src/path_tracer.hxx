@@ -128,18 +128,18 @@ protected:
                 currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
                 currentRay.tmin = Geom::EpsRayCos(matRecord.ThetaInCosAbs());
 
-                if (matRecord.mPdfW != Math::InfinityF())
-                    pathThroughput *=
-                            (  matRecord.mAttenuation
-                             * matRecord.ThetaInCosAbs())
-                          / (  matRecord.mPdfW              // Monte Carlo est.
-                             * rrContinuationProb           // Russian roulette (optional)
-                             * matRecord.mCompProbability); // Discrete multi-component MC
-                else
-                    pathThroughput *=
-                            matRecord.mAttenuation
-                          / (  rrContinuationProb           // Russian roulette (optional)
-                             * matRecord.mCompProbability); // Discrete multi-component MC
+                const SpectrumF segmentThroughput =
+                    (matRecord.mPdfW != Math::InfinityF()) ?
+                        (  matRecord.mAttenuation
+                            * matRecord.ThetaInCosAbs())
+                        / (  matRecord.mPdfW                // Monte Carlo est.
+                            * rrContinuationProb            // Russian roulette (optional)
+                            * matRecord.mCompProbability)   // Discrete multi-component MC
+                    :
+                        matRecord.mAttenuation
+                        / (  rrContinuationProb             // Russian roulette (optional)
+                            * matRecord.mCompProbability);  // Discrete multi-component MC
+                pathThroughput *= segmentThroughput;
 
                 PG3_ASSERT_VEC3F_NONNEGATIVE(pathThroughput);
 
@@ -152,9 +152,10 @@ protected:
                 {
                     const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
                     if (backgroundLight != nullptr)
-                        oRadiance +=
-                              backgroundLight->GetEmmision(currentRay.dir)
-                            * pathThroughput;
+                    {
+                        const SpectrumF emmision = backgroundLight->GetEmmision(currentRay.dir);
+                        oRadiance += emmision * pathThroughput;
+                    }
                 }
 
                 // End of path
