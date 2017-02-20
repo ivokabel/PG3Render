@@ -83,15 +83,6 @@ public:
 
             SpectrumF radianceEstimate;
             EstimateIncomingRadiance(aAlgorithm, ray, radianceEstimate);
-            //debug
-            //const uint32_t dbgX = 100, dbgY = (512 - 35);
-            //SpectrumF radianceEstimate;
-            //if ((x == dbgX) && (y == dbgY))
-            //    EstimateIncomingRadiance(aAlgorithm, ray, radianceEstimate);
-            //else
-            //    EstimateIncomingRadiance(aAlgorithm, ray, radianceEstimate);
-            //if ((x == dbgX) && (y == dbgY))
-            //    radianceEstimate.SetSRGBAttenuation(1.0f, 0.f, 0.f);
             mFramebuffer.AddRadiance(x, y, radianceEstimate);
         }
 
