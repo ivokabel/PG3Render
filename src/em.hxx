@@ -53,12 +53,12 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const
     {
-        //mSimpleSphericalSampler->Sample(
-        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-        //mSteerableSampler->Sample(
-        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-        return mCosineSampler->Sample(
+        return mSimpleSphericalSampler->Sample(
             oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+        //return mSteerableSampler->Sample(
+        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+        //return mCosineSampler->Sample(
+        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
@@ -93,9 +93,9 @@ public:
         bool             aSampleFrontSide,
         bool             aSampleBackSide) const
     {
-        //mSimpleSphericalSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
-        //mSteerableSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
-        return mCosineSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        return mSimpleSphericalSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        //return mSteerableSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        //return mCosineSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
     }
 
     // Estimate the contribution (irradiance) of the environment map: \int{L_e * f_r * \cos\theta}
@@ -108,12 +108,12 @@ public:
     {
         // If the sampler can do this for us (and some can), we are done
         float irradianceEst = 0.f;
-        if (mCosineSampler->EstimateIrradiance(
-                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
-            return irradianceEst;
-        //if (mSimpleSphericalSampler->EstimateIrradiance(
+        //if (mCosineSampler->EstimateIrradiance(
         //        irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
         //    return irradianceEst;
+        if (mSimpleSphericalSampler->EstimateIrradiance(
+                irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
+            return irradianceEst;
         //if (mSteerableSampler->EstimateIrradiance(
         //        irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
         //    return irradianceEst;
