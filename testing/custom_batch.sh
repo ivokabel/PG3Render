@@ -44,6 +44,26 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+ITERS=4
+SCENES="20 28"
+EMS="3 4 10"
+ALGORITHMS="dlsa dlss dbs dmis ptn pt"
+OT="SSS"
+
+for SCENE in $SCENES; do
+    for EM in $EMS; do
+        for ALG in $ALGORITHMS; do
+            render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITERS -ot $OT
+        done
+    done
+done
+
+#for PL in `echo 1 2 3 4 5 6`; do
+#    render -s 28 -em 3 -a ptn       -i 2 -minpl $PL -maxpl $PL -ot $OT
+#    render -s 28 -em 3 -a pt -sb 1  -i 1 -minpl $PL -maxpl $PL -ot $OT
+#done
+
+
 #render -s 20 -a el -i 8 -auxf1 12 -auxf2 1000.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError1000,00_Rot35
 #render -s 20 -a el -i 8 -auxf1 12 -auxf2  100.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0100,00_Rot35
 #render -s 20 -a el -i 8 -auxf1 12 -auxf2   20.00 -auxf3 4 -auxf5 0.35 -ot SubDiv_MaxError0020,00_Rot35
