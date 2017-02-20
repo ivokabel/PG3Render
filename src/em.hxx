@@ -84,7 +84,7 @@ public:
         if (oPdfW && aSurfFrame && aSampleFrontSide && aSampleBackSide)
             *oPdfW = PdfW(aDirection, *aSurfFrame, *aSampleFrontSide, *aSampleBackSide);
 
-        PG3_ASSERT((oPdfW == 0.f) == radiance.IsZero());
+        PG3_ASSERT((oPdfW == nullptr) || ((*oPdfW == 0.f) == oRadiance.IsZero()));
 
         //if (oPdfW == 0.0f)
         //    oRadiance = SpectrumF(0);
