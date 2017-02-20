@@ -21,10 +21,7 @@ class EnvironmentMap
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
     EnvironmentMap(const std::string aFilename, float aRotate, float aScale, bool aDoBilinFiltering) :
-        mDoBilinFiltering(aDoBilinFiltering),
-        mCosineSampler(new CosineImageEmSampler()),
-        mSimpleSphericalSampler(new SimpleSphericalImageEmSampler()),
-        mSteerableSampler(new SteerableImageEmSampler())
+        mDoBilinFiltering(aDoBilinFiltering)
     {
         try
         {
@@ -36,12 +33,22 @@ public:
             PG3_FATAL_ERROR("Environment map load failed! \"%s\"", aFilename.c_str());
         }
 
-        if (mCosineSampler)
-            mCosineSampler->Init(mEmImage, mDoBilinFiltering);
-        if (mSimpleSphericalSampler)
-            mSimpleSphericalSampler->Init(mEmImage, mDoBilinFiltering);
-        if (mSteerableSampler)
-            mSteerableSampler->Init(mEmImage, mDoBilinFiltering);
+        mTmpCosineSampler           = std::make_shared<CosineImageEmSampler>();
+        mTmpSimpleSphericalSampler  = std::make_shared<SimpleSphericalImageEmSampler>();
+        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>();
+
+        if (mTmpCosineSampler)
+            mTmpCosineSampler->Init(mEmImage, mDoBilinFiltering);
+        if (mTmpSimpleSphericalSampler)
+            mTmpSimpleSphericalSampler->Init(mEmImage, mDoBilinFiltering);
+        if (mTmpSteerableSampler)
+            mTmpSteerableSampler->Init(mEmImage, mDoBilinFiltering);
+
+#ifdef PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
+        mSampler = mTmpSimpleSphericalSampler;
+#else
+        mSampler = mTmpCosineSampler;
+#endif
     }
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
@@ -53,12 +60,8 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const
     {
-        return mSimpleSphericalSampler->Sample(
+        return mSampler->Sample(
             oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-        //return mSteerableSampler->Sample(
-        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-        //return mCosineSampler->Sample(
-        //    oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
@@ -93,9 +96,7 @@ public:
         bool             aSampleFrontSide,
         bool             aSampleBackSide) const
     {
-        return mSimpleSphericalSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
-        //return mSteerableSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
-        //return mCosineSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+        return mSampler->PdfW(aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide);
     }
 
     // Estimate the contribution (irradiance) of the environment map: \int{L_e * f_r * \cos\theta}
@@ -108,15 +109,9 @@ public:
     {
         // If the sampler can do this for us (and some can), we are done
         float irradianceEst = 0.f;
-        //if (mCosineSampler->EstimateIrradiance(
-        //        irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
-        //    return irradianceEst;
-        if (mSimpleSphericalSampler->EstimateIrradiance(
+        if (mSampler->EstimateIrradiance(
                 irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
             return irradianceEst;
-        //if (mSteerableSampler->EstimateIrradiance(
-        //        irradianceEst, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng))
-        //    return irradianceEst;
 
         // Estimate using MIS Monte Carlo.
         // We need more iterations because the estimate has too high variance if there are 
@@ -128,17 +123,17 @@ public:
         {
             // Strategy 1: Sample the sphere in the cosine-weighted fashion
             LightSample sample1;
-            mCosineSampler->Sample(sample1, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+            mTmpCosineSampler->Sample(sample1, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
             const float pdf1Cos = sample1.mPdfW;
             const float pdf1Sph = 
-                mSimpleSphericalSampler->PdfW(sample1.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+                mTmpSimpleSphericalSampler->PdfW(sample1.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
 
             // Strategy 2: Sample the environment map alone
             LightSample sample2;
-            mSimpleSphericalSampler->Sample(sample2, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
+            mTmpSimpleSphericalSampler->Sample(sample2, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
             const float pdf2Sph = sample2.mPdfW;
             const float pdf2Cos =
-                mCosineSampler->PdfW(sample2.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+                mTmpCosineSampler->PdfW(sample2.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
 
             // Combine the two samples via MIS (balanced heuristics)
             const float part1 =
@@ -189,10 +184,15 @@ private:
 private:
 
 
-    std::shared_ptr<EnvironmentMapImage>            mEmImage;     // Environment image data
-    const bool                                      mDoBilinFiltering;
+    std::shared_ptr<EnvironmentMapImage>        mEmImage; // Environment image data
+    const bool                                  mDoBilinFiltering;
 
-    std::unique_ptr<CosineImageEmSampler>           mCosineSampler;             // TODO: Describe...
-    std::unique_ptr<SimpleSphericalImageEmSampler>  mSimpleSphericalSampler;    // TODO: Describe...
-    std::unique_ptr<SteerableImageEmSampler>        mSteerableSampler;          // TODO: Describe...
+    std::shared_ptr<ImageEmSampler>             mSampler; // Sampler for usual spherical sampling
+
+    // Temporary samplers for contribution estimation
+    std::shared_ptr<ImageEmSampler>             mTmpCosineSampler;
+    std::shared_ptr<ImageEmSampler>             mTmpSimpleSphericalSampler;
+
+    // Debug
+    std::shared_ptr<ImageEmSampler>             mTmpSteerableSampler;
 };

@@ -48,12 +48,11 @@ ITERS=4
 SCENES="20 28"
 EMS="3 4 10"
 ALGORITHMS="dlsa dlss dbs dmis ptn pt"
-OT="SSS"
 
 for SCENE in $SCENES; do
     for EM in $EMS; do
         for ALG in $ALGORITHMS; do
-            render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITERS -ot $OT
+            render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITERS
         done
     done
 done

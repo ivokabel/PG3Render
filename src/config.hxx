@@ -201,13 +201,8 @@ public:
             filename += outStream.str();
         }
 
-    #ifndef PG3_USE_ENVMAP_IMPORTANCE_SAMPLING
-        // Debug info
-        if (   (mAlgorithm >= kDirectIllumLightSamplingAll)
-            && (mAlgorithm <= kDirectIllumMis))
-        {
-            filename += "_emcw";
-        }
+    #ifndef PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
+        filename += "_emcs";
     #endif
 
         // Sample count
