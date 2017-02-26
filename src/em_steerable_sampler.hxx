@@ -3375,15 +3375,15 @@ protected:
         const T     aValB,
         const T     aValC)
     {
-        const T x = (aValB - aValA) / T(3.) + (aValC - aValB) / T(6.);
-        const T y = aValA / T(2.);
+        const T x = (aValB - aValA) / 3 + (aValC - aValB) / 6;
+        const T y = aValA / 2;
 
         const T alpha = x / (x + y);
         const T beta  = y / (x + y);
 
         return Math::FindRootNewtonRaphson<T>(
-            Math::CubicFunction<T>(alpha, beta, T(0.), -aUniSample),
-            T(0.), T(1.), T(0.5)/*debug*/, 4u/*debug*/);
+            Math::CubicFunction<T>(alpha, beta, 0, -aUniSample),
+            T(0), T(1), T(0.5)/*debug*/, 4u/*debug*/);
     }
 
 
@@ -3397,13 +3397,14 @@ protected:
     {
         const T t =
               (aS * (aC - aB))
-            + (T(2.) * (T(1.) - aS) * aA)
+            + (2 * (1 - aS) * aA)
             + (aS * aB);
-        const T gamma   = aS * (aC - aB) / t;
-        const T rho     = T(2.) * ((T(1.) - aS) * aA + aS * aB) / t;
 
-        const T discr  = rho * rho + T(4.) * gamma * aUniSample;
-        const T result = (T(2.) * aUniSample) / (rho + Math::SafeSqrt(discr));
+        const T gamma   = aS * (aC - aB) / t;
+        const T rho     = 2 * ((1 - aS) * aA + aS * aB) / t;
+
+        const T discr  = rho * rho + 4 * gamma * aUniSample;
+        const T result = (2 * aUniSample) / (rho + Math::SafeSqrt(discr));
 
         return result;
     }
@@ -3534,9 +3535,9 @@ protected:
         const T t = SampleTriangleGFunction<T>(s, aUniSamples.y, aValue0, aValue1, aValue2);
 
         const Vec2f baryCoords(
-            float(T(1.) - s),
-            float(s * (T(1.) - t)));
-        //const float baryZ = s * t;
+            float(1 - s),
+            float(s * (1 - t))
+            /*float((s * t))*/);
 
         return baryCoords;
     }
