@@ -174,17 +174,17 @@ float Render(
 #ifdef PG3_RUN_UNIT_TESTS_INSTEAD_OF_RENDERER
 bool RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
 {
-    if (!Utils::_UT_IntegerToHumanReadable(aMaxUtBlockPrintLevel))
-        return false;
+    //if (!Utils::_UT_IntegerToHumanReadable(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    if (!Geom::_UnitTests(aMaxUtBlockPrintLevel))
-        return false;
+    //if (!Geom::_UnitTests(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    if (!Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel))
-        return false;
+    //if (!Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel))
+    //    return false;
 
-    if (!Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel))
-        return false;
+    //if (!Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel))
+    //    return false;
 
     if (!SteerableImageEmSampler::_UnitTests(aMaxUtBlockPrintLevel))
         return false;

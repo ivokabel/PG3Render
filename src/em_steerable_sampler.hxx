@@ -4551,8 +4551,8 @@ public:
         const float                      aVertexValue1,
         const float                      aVertexValue2)
     {
-        const static uint32_t gridSizePerDimX       = 4u; // debug; TODO: 10u?
-        const static uint32_t gridSizePerDimY       = 4u; // debug; TODO: 10u?
+        const static uint32_t gridSizePerDimX       = 2u;
+        const static uint32_t gridSizePerDimY       = 2u;
         const static uint32_t gridCellCount         = gridSizePerDimX * gridSizePerDimY;
         const static uint32_t samplesPerTriangle    = 10000u * gridCellCount;
 
@@ -5000,18 +5000,18 @@ public:
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
-            return false;
-        if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
-            return false;
-        if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
-            return false;
-        if (!_UT_Init(aMaxUtBlockPrintLevel))
-            return false;
-        //if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
+        //if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
         //    return false;
-        if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+        //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_Init(aMaxUtBlockPrintLevel))
+        //    return false;
+        if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
             return false;
+        //if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+        //    return false;
 
         return true;
     }
