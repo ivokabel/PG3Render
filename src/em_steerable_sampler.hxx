@@ -7,6 +7,7 @@
 #include "unit_testing.hxx"
 #include "debugging.hxx"
 #include "spectrum.hxx"
+#include "geom.hxx"
 #include "types.hxx"
 
 #include <list>
@@ -3539,6 +3540,8 @@ protected:
             float(s * (1 - t))
             /*float((s * t))*/);
 
+        PG3_ASSERT_FLOAT_IN_RANGE(baryCoords.x + baryCoords.y + s * t, 0.99, 1.01);
+
         return baryCoords;
     }
 
@@ -4552,8 +4555,8 @@ public:
         const float                      aVertexValue1,
         const float                      aVertexValue2)
     {
-        const static uint32_t gridSizePerDimX       = 2u;
-        const static uint32_t gridSizePerDimY       = 2u;
+        const static uint32_t gridSizePerDimX       = 4u;
+        const static uint32_t gridSizePerDimY       = 4u;
         const static uint32_t gridCellCount         = gridSizePerDimX * gridSizePerDimY;
         const static uint32_t samplesPerTriangle    = 10000u * gridCellCount;
 
@@ -4576,16 +4579,48 @@ public:
         // Generate samples & accumulate them within a grid
         Rng rngSamples;
         for (uint32_t i = 0; i < samplesPerTriangle; ++i)
+        //const Vec2f binSize(1.f / gridSizePerDimX,
+        //                    1.f / gridSizePerDimY);
+        //for (float u = 0.f; u <= (1.f + 0.0001f); u += binSize.x)
+        //    for (float v = 0.f; v <= (1.f + 0.0001f); v += binSize.y)
+        //for (float u = 0.f; u < (1.f - 0.0001f); u += binSize.x)
+        //    for (float v = 0.f; v < (1.f - 0.0001f); v += binSize.y)
         {
-            const Vec2f uniformSample(rngSamples.GetVec2f());
+            const Vec2f inputSample(rngSamples.GetVec2f());
+            //const Vec2f inputSample = Vec2f(u, v);
+            //const Vec2f inputSample = Vec2f(u, v) + rngSamples.GetVec2f() * binSize;;
 
             const Vec2f baryCoords = SampleTriangleBilinear<float>(
-                uniformSample, aVertexValue0, aVertexValue1, aVertexValue2);
+                inputSample, aVertexValue0, aVertexValue1, aVertexValue2);
 
-            // Map coordinates of the sample onto cartesian grid
+            // debug
+            {
+                //const Vec3f trianglePoint = Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, baryCoords);
+
+                //if (v == 0.f)
+                //    PG3_UT_INFO(
+                //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", testName.c_str());
+
+                //std::ostringstream ossError;
+                //ossError << "Uniform grid point [";
+                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << inputSample.x;
+                //ossError << ",";
+                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << inputSample.y;
+                //ossError << "], output triangle point [";
+                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << trianglePoint.x;
+                //ossError << ",";
+                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << trianglePoint.y;
+                //ossError << "]";
+
+                //PG3_UT_INFO(
+                //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                //    ossError.str().c_str(), testName.c_str());
+            }
+
+            // Map sample onto cartesian grid
             const Vec2f gridCoordsF = Geom::Triangle::MapBaryToCart(baryCoords);
-            if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.f)
-                || !Math::IsInRange(gridCoordsF.y, 0.f, 1.f))
+            if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.0001f)
+                || !Math::IsInRange(gridCoordsF.y, 0.f, 1.0001f))
             {
                 PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
@@ -4600,6 +4635,10 @@ public:
             binCounts[gridCoordsUi.x][gridCoordsUi.y]++;
             totalCount++;
         }
+
+        // debug
+        //PG3_UT_INFO(
+        //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", testName.c_str());
 
         if (totalCount == 0)
         {
