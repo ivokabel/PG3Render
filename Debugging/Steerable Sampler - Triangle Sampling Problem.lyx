@@ -200,7 +200,7 @@ g
 \begin_inset Formula 
 \begin{eqnarray*}
 p & = & \left(1-s\right)A+s\left(1-t\right)B+stC\\
- & = & \left(1-1\right)A+0\left(1-0.5\right)B+1\times0.5C\\
+ & = & \left(1-1\right)A+1\left(1-0.5\right)B+1\times0.5C\\
  & = & 0.5B+0.5C
 \end{eqnarray*}
 
