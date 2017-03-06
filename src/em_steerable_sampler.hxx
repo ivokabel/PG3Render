@@ -2010,6 +2010,18 @@ public:
         else
             oPdfW = sampleValue / wholeIntegral;
 
+        // Some samples can point below horizon.
+        // We flip them to the upper hemisphere and adjust the PDF accordingly.
+        const Vec3f flippedDir = FlipDirection(oDirGlobal);
+        const float flippedPdf = GetBasePdf(flippedDir, clampedCosCoeffs);
+        oPdfW += flippedPdf;
+        const auto dirLocal = aSurfFrame.ToLocal(oDirGlobal);
+        if (dirLocal.z < 0.f)
+            // Below horizon - flip
+            oDirGlobal = flippedDir;
+
+        PG3_ASSERT(aSurfFrame.ToLocal(oDirGlobal).z >= -0.0001f);
+
         // Radiance * cos(theta)
         const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal, mEmUseBilinearFiltering);
         const float cosThetaIn = Dot(oDirGlobal, aSurfFrame.Normal());
@@ -2018,8 +2030,6 @@ public:
             oRadianceCos = radiance * std::abs(cosThetaIn);
         else
             oRadianceCos.MakeZero();
-
-        // TODO: Mirror samples below horizon
 
         return true;
     }
@@ -2031,7 +2041,7 @@ public:
         bool             aSampleFrontSide,
         bool             aSampleBackSide) const
     {
-        aDirection, aSurfFrame, aSampleFrontSide, aSampleBackSide; // unused params
+        aSampleFrontSide, aSampleBackSide; // unused params
 
         if (aSampleBackSide)
         {
@@ -2039,20 +2049,22 @@ public:
             return false;
         }
 
-        PG3_ERROR_NOT_IMPLEMENTED("");
+        const auto dirLocal = aSurfFrame.ToLocal(aDirection);
+        if (dirLocal.z < 0.f)
+            return 0.f; // We don't generate samples below horizon
 
-        // TODO: GetBasePdfW() - non-mirrored sampling PDF
-        {
-            // TODO: Find the triangle at the direction. HOW?!?
+        // Since we flip samples which point below horizon to the upper hemisphere,
+        // we need to count both the unflipped and flipped PDFs
 
-            // TODO: Evaluate the approximation at the direction
+        SteerableCoefficients clampedCosCoeffs;
+        clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
 
-            // TODO: Compute the PDF using the whole integral
-        }
+        const float pdf = GetBasePdf(aDirection, clampedCosCoeffs);
 
-        // TODO: Take mirrorring into account
+        const Vec3f flippedDir = FlipDirection(aDirection);
+        const float flippedPdf = GetBasePdf(flippedDir, clampedCosCoeffs);
 
-        return 0.f;
+        return pdf + flippedPdf;
     }
 
 
@@ -2096,6 +2108,42 @@ public:
 
 
 protected:
+
+    // Use to flip samples to the upper hemisphere
+    Vec3f FlipDirection(const Vec3f &aDirection) const
+    {
+        // TODO: USe mirror symmetry? It keeps high intensity areas closer together...
+        return -aDirection;
+    }
+
+
+    // PDF of the core sampling procedure without flipping samples to the upper hemisphere
+    float GetBasePdf(
+        const Vec3f             &aDirGlobal,
+        SteerableCoefficients   &aClampedCosCoeffs) const
+    {
+        PG3_ASSERT(IsBuilt());
+
+        // This is a hack implementation:
+        // We evaluate the EM directly instead of evaluating the piece-wise linear approximation 
+        // from triangulation which would require finding the intersected triangle
+        // TODO: Implement properly?
+
+        const auto emRadiance  = mEmImage->Evaluate(aDirGlobal, mEmUseBilinearFiltering);
+        const auto emLuminance = emRadiance.Luminance();
+
+        SteerableBasisValue sphHarmBasis;
+        sphHarmBasis.GenerateSphHarm(aDirGlobal);
+        const float clampedCos = Dot(sphHarmBasis, aClampedCosCoeffs);
+
+        const float wholeIntegral = GetWholeIntegral(aClampedCosCoeffs);
+
+        if (Math::IsTiny(wholeIntegral))
+            return 0.f;
+        else
+            return (emLuminance * clampedCos) / wholeIntegral;
+    }
+
 
     float GetWholeIntegral(const SteerableCoefficients &aClampedCosCoeffs) const
     {
@@ -4440,7 +4488,8 @@ public:
             const float triangleIntegral = triangle->GetIntegral(aClampedCosCoeffs);
             const float triangleProbability =
                   (Math::IsTiny(wholeIntegral))
-                ? 0.f : triangleIntegral / wholeIntegral;
+                ? 0.f
+                : triangleIntegral / wholeIntegral;
 
             if (triangleHitRecord.hitCount == 0)
                 triangleHitRecord.probability = triangleProbability;

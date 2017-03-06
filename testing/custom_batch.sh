@@ -44,10 +44,10 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-ITERS="1 4 32 128"
-SCENES="20"   #"20 28"
+SCENES="20"             #"20 28"
 EMS="3 4 10"
-ALGORITHMS="dlsa"   #"dlsa dlss dbs dmis ptn pt"
+ALGORITHMS="dlsa dlss dbs dmis ptn pt"
+ITERS="4"               #"1 4 32 128"
 OT="EmssSll5Slu7"
 
 for SCENE in $SCENES; do
