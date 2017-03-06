@@ -92,7 +92,7 @@ public:
             Vec3f wig = aLightPt - aSurfPt;
             const float distSqr = wig.LenSqr();
             wig /= sqrt(distSqr);
-            const float absCosThetaOut = abs(Dot(mFrame.mZ, wig));
+            const float absCosThetaOut = abs(Dot(mFrame.Normal(), wig));
             *oPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), Geom::kEpsDist);
         }
 
@@ -179,8 +179,8 @@ private:
         const float distSqr = oSample.mWig.LenSqr();
         oSample.mDist = sqrt(distSqr);
         oSample.mWig /= oSample.mDist;
-        const float cosThetaOut = -Dot(mFrame.mZ, oSample.mWig); // for two-sided light use absf()
-        float cosThetaIn        =  Dot(aSurfFrame.mZ, oSample.mWig);
+        const float cosThetaOut = -Dot(mFrame.Normal(), oSample.mWig); // for two-sided light use absf()
+        float cosThetaIn        =  Dot(aSurfFrame.Normal(), oSample.mWig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
         const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
@@ -300,7 +300,7 @@ private:
         oSample.mDist = sqrt(distSqr);
         oSample.mWig /= oSample.mDist;
 
-        float cosThetaIn = Dot(aSurfFrame.mZ, oSample.mWig);
+        float cosThetaIn = Dot(aSurfFrame.Normal(), oSample.mWig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
         const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);

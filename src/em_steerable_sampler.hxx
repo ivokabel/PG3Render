@@ -1961,8 +1961,7 @@ public:
     }
 
 
-    // Generate a random direction on a sphere proportional to an adaptive piece-wise 
-    // bilinear approximation of the environment map luminance.
+    // Generate a random direction on selected hemispheres
     virtual bool SampleImpl(
         Vec3f           &oDirGlobal,
         float           &oPdfW,
@@ -1972,20 +1971,89 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const override
     {
+        if (aSampleFrontSide && aSampleBackSide)
+        {
+            Frame lowerSurfFrame = aSurfFrame;
+            lowerSurfFrame.SwitchNormal();
+
+            SteerableCoefficients upperClampedCosCoeffs, lowerClampedCosCoeffs;
+            upperClampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+            lowerClampedCosCoeffs.GenerateForClampedCos(lowerSurfFrame.Normal(), true);
+
+            const float upperIntegral = GetWholeIntegral(upperClampedCosCoeffs);
+            const float lowerIntegral = GetWholeIntegral(lowerClampedCosCoeffs);
+            const float wholeIntegral = upperIntegral + lowerIntegral;
+
+            if (Math::IsTiny(wholeIntegral))
+                return false;
+
+            // Chose one hemisphere
+            const float randomVal = aRng.GetFloat() * wholeIntegral;
+            if (randomVal < upperIntegral)
+            {
+                // Sample upper hemisphere
+                if (!SampleHemisphereImpl(
+                        oDirGlobal, oPdfW, oRadianceCos, 
+                        aSurfFrame, upperClampedCosCoeffs, aRng))
+                    return false;
+
+                oPdfW *= upperIntegral / wholeIntegral;
+            }
+            else
+            {
+                // Sample lower hemisphere
+                if (!SampleHemisphereImpl(
+                        oDirGlobal, oPdfW, oRadianceCos, 
+                        lowerSurfFrame, lowerClampedCosCoeffs, aRng))
+                    return false;
+
+                oPdfW *= lowerIntegral / wholeIntegral;
+            }
+
+            return true;
+        }
+        else if (aSampleFrontSide)
+        {
+            SteerableCoefficients upperClampedCosCoeffs;
+            upperClampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+
+            return SampleHemisphereImpl(
+                oDirGlobal, oPdfW, oRadianceCos,
+                aSurfFrame, upperClampedCosCoeffs, aRng);
+        }
+        else if (aSampleBackSide)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("");
+
+            Frame lowerSurfFrame = aSurfFrame;
+            lowerSurfFrame.SwitchNormal();
+
+            SteerableCoefficients lowerClampedCosCoeffs;
+            lowerClampedCosCoeffs.GenerateForClampedCos(lowerSurfFrame.Normal(), true);
+
+            return SampleHemisphereImpl(
+                oDirGlobal, oPdfW, oRadianceCos,
+                lowerSurfFrame, lowerClampedCosCoeffs, aRng);
+        }
+        else
+            return false;
+    }
+
+
+    // Generate a random direction on a hemisphere with probability density proportional
+    // to the adaptive piece-wise bilinear approximation of the environment map luminance.
+    bool SampleHemisphereImpl(
+        Vec3f                           &oDirGlobal,
+        float                           &oPdfW,
+        SpectrumF                       &oRadianceCos, // radiance * abs(cos(thetaIn)
+        const Frame                     &aSurfFrame,
+        const SteerableCoefficients     &aClampedCosCoeffs,
+        Rng                             &aRng) const
+    {
         PG3_ASSERT_VEC3F_NORMALIZED(aSurfFrame.Normal());
 
         if (!IsBuilt())
             return false;
-
-        if (aSampleBackSide)
-        {
-            PG3_ERROR_NOT_IMPLEMENTED("Sampling the back hemisphere is not supported yet!");
-            return false;
-        }
-
-        // Clamped cosine coefficients for given normal
-        SteerableCoefficients clampedCosCoeffs;
-        clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
 
         Vec2f sample = aRng.GetVec2f();
 
@@ -1994,17 +2062,17 @@ public:
 
         // Pick a triangle (descend the tree)
         const TriangleNode *triangle = nullptr;
-        PickTriangle(triangle, clampedCosCoeffs, sample.x);
+        PickTriangle(triangle, aClampedCosCoeffs, sample.x);
         if (triangle == nullptr)
             return false;
 
         // Sample triangle surface (linear approximation)
         float sampleValue = 0.f;
-        if (!SampleTriangleSurface(oDirGlobal, sampleValue, *triangle, clampedCosCoeffs, sample))
+        if (!SampleTriangleSurface(oDirGlobal, sampleValue, *triangle, aClampedCosCoeffs, sample))
             return false;
 
         // PDF can be computed efficiently...
-        const float wholeIntegral = GetWholeIntegral(clampedCosCoeffs);
+        const float wholeIntegral = GetWholeIntegral(aClampedCosCoeffs);
         if (Math::IsTiny(wholeIntegral))
             oPdfW = 0.f;
         else
@@ -2013,23 +2081,20 @@ public:
         // Some samples can point below horizon.
         // We flip them to the upper hemisphere and adjust the PDF accordingly.
         const Vec3f flippedDir = FlipDirection(oDirGlobal);
-        const float flippedPdf = GetBasePdf(flippedDir, clampedCosCoeffs);
+        const float flippedPdf = GetBasePdf(flippedDir, aClampedCosCoeffs);
         oPdfW += flippedPdf;
-        const auto dirLocal = aSurfFrame.ToLocal(oDirGlobal);
-        if (dirLocal.z < 0.f)
-            // Below horizon - flip
-            oDirGlobal = flippedDir;
+        float cosThetaIn = Dot(oDirGlobal, aSurfFrame.Normal());
+        if (cosThetaIn < 0.f)
+        {
+            oDirGlobal = flippedDir; // Below horizon - flip
+            cosThetaIn *= -1.f;
+        }
 
-        PG3_ASSERT(aSurfFrame.ToLocal(oDirGlobal).z >= -0.0001f);
+        PG3_ASSERT(cosThetaIn >= 0.f);
 
         // Radiance * cos(theta)
         const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal, mEmUseBilinearFiltering);
-        const float cosThetaIn = Dot(oDirGlobal, aSurfFrame.Normal());
-        if (   (aSampleFrontSide && (cosThetaIn > 0.0f))
-            || (aSampleBackSide  && (cosThetaIn < 0.0f)))
-            oRadianceCos = radiance * std::abs(cosThetaIn);
-        else
-            oRadianceCos.MakeZero();
+        oRadianceCos = radiance * cosThetaIn;
 
         return true;
     }
@@ -2041,28 +2106,79 @@ public:
         bool             aSampleFrontSide,
         bool             aSampleBackSide) const
     {
-        aSampleFrontSide, aSampleBackSide; // unused params
-
-        if (aSampleBackSide)
+        if (aSampleFrontSide && aSampleBackSide)
         {
-            PG3_ERROR_NOT_IMPLEMENTED("Sampling the back hemisphere is not supported yet!");
-            return false;
-        }
+            Frame lowerSurfFrame = aSurfFrame;
+            lowerSurfFrame.SwitchNormal();
 
-        const auto dirLocal = aSurfFrame.ToLocal(aDirection);
-        if (dirLocal.z < 0.f)
+            SteerableCoefficients upperClampedCosCoeffs, lowerClampedCosCoeffs;
+            upperClampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+            lowerClampedCosCoeffs.GenerateForClampedCos(lowerSurfFrame.Normal(), true);
+
+            const float upperIntegral = GetWholeIntegral(upperClampedCosCoeffs);
+            const float lowerIntegral = GetWholeIntegral(lowerClampedCosCoeffs);
+            const float wholeIntegral = upperIntegral + lowerIntegral;
+
+            if (Math::IsTiny(wholeIntegral))
+                return 0.f;
+
+            const float cosThetaIn = Dot(aDirection, aSurfFrame.Normal());
+            float pdf = 0.f;
+            if (cosThetaIn >= 0.f)
+            {
+                // Upper hemisphere
+                pdf = PdfWHemisphere(aDirection, aSurfFrame, upperClampedCosCoeffs);
+                pdf *= upperIntegral / wholeIntegral;
+            }
+            else
+            {
+                // Lower hemisphere
+                pdf = PdfWHemisphere(aDirection, lowerSurfFrame, lowerClampedCosCoeffs);
+                pdf *= lowerIntegral / wholeIntegral;
+            }
+
+            return pdf;
+        }
+        else if (aSampleFrontSide)
+        {
+            SteerableCoefficients upperClampedCosCoeffs;
+            upperClampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+
+            return PdfWHemisphere(aDirection, aSurfFrame, upperClampedCosCoeffs);
+        }
+        else if (aSampleBackSide)
+        {
+            PG3_ERROR_CODE_NOT_TESTED("");
+
+            Frame lowerSurfFrame = aSurfFrame;
+            lowerSurfFrame.SwitchNormal();
+
+            SteerableCoefficients lowerClampedCosCoeffs;
+            lowerClampedCosCoeffs.GenerateForClampedCos(lowerSurfFrame.Normal(), true);
+
+            return PdfWHemisphere(aDirection, lowerSurfFrame, lowerClampedCosCoeffs);
+        }
+        else
+            return 0.f;
+    }
+
+
+    float PdfWHemisphere(
+        const Vec3f                     &aDirection,
+        const Frame                     &aSurfFrame,
+        const SteerableCoefficients     &aClampedCosCoeffs) const
+    {
+        const float cosThetaIn = Dot(aDirection, aSurfFrame.Normal());
+        if (cosThetaIn < 0.f)
             return 0.f; // We don't generate samples below horizon
 
         // Since we flip samples which point below horizon to the upper hemisphere,
         // we need to count both the unflipped and flipped PDFs
 
-        SteerableCoefficients clampedCosCoeffs;
-        clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
-
-        const float pdf = GetBasePdf(aDirection, clampedCosCoeffs);
+        const float pdf = GetBasePdf(aDirection, aClampedCosCoeffs);
 
         const Vec3f flippedDir = FlipDirection(aDirection);
-        const float flippedPdf = GetBasePdf(flippedDir, clampedCosCoeffs);
+        const float flippedPdf = GetBasePdf(flippedDir, aClampedCosCoeffs);
 
         return pdf + flippedPdf;
     }
@@ -2087,6 +2203,8 @@ public:
         //clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
 
         //const float wholeIntegral = GetWholeIntegral(clampedCosCoeffs);
+
+        // Take sidedness into account
 
         return false;
     }
@@ -2119,8 +2237,8 @@ protected:
 
     // PDF of the core sampling procedure without flipping samples to the upper hemisphere
     float GetBasePdf(
-        const Vec3f             &aDirGlobal,
-        SteerableCoefficients   &aClampedCosCoeffs) const
+        const Vec3f                     &aDirGlobal,
+        const SteerableCoefficients     &aClampedCosCoeffs) const
     {
         PG3_ASSERT(IsBuilt());
 
@@ -2137,6 +2255,8 @@ protected:
         const float clampedCos = Dot(sphHarmBasis, aClampedCosCoeffs);
 
         const float wholeIntegral = GetWholeIntegral(aClampedCosCoeffs);
+
+        PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(wholeIntegral, 0.f);
 
         if (Math::IsTiny(wholeIntegral))
             return 0.f;

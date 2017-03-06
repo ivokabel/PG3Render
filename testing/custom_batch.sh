@@ -44,11 +44,11 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-SCENES="20"             #"20 28"
+SCENES="20 28"
 EMS="3 4 10"
 ALGORITHMS="dlsa dlss dbs dmis ptn pt"
-ITERS="4"               #"1 4 32 128"
-OT="EmssSll5Slu7"
+ITERS="4"                   #"1 4 32 128"
+OT="SidednessAware"         #"EmssSll5Slu7"
 
 for SCENE in $SCENES; do
     for EM in $EMS; do
