@@ -357,7 +357,7 @@ namespace Sampling
         float pdf = CosHemispherePdfW(std::abs(aDirectionLocal.z));
 
         if (aSampleUpperHemisphere && aSampleLowerHemisphere)
-            // The pdf is spread over both hemispheres
+            // The pdf is spread uniformly over both hemispheres
             pdf *= 0.5f;
 
         return pdf;
