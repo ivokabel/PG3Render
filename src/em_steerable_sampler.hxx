@@ -4468,23 +4468,29 @@ public:
         // TODO: Black constant EM (Luminance 0)
         // TODO: ?
 
+        BuildParameters defaultParams;
+        const uint32_t minSubdivLevel = defaultParams.GetMinSubdivLevel();
+        const uint32_t aMinimalRefinedCount =
+              20u // we start with icosahedron
+            * (uint32_t)std::pow(4u, minSubdivLevel); // each level quadruples the minimal count
+
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 8x4", 5, 80, true,
+                "Const white 8x4", 5, aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 8x4.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 512x256", 5, 80, true,
+                "Const white 512x256", 5, aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 512x256.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 1024x512", 5, 80, true,
+                "Const white 1024x512", 5, aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 1024x512.exr"
                 ))
             return false;
