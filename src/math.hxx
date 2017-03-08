@@ -189,7 +189,7 @@ namespace Math
                 || std::is_same<float, TCoeff>::value
                 >::type
         >
-    TVal Blerp(
+    TVal Bilerp(
         TCoeff cx, TCoeff cy, 
         TVal x0y0, TVal x1y0,
         TVal x0y1, TVal x1y1)

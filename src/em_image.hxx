@@ -2,6 +2,7 @@
 
 #include <ImfRgbaFile.h>    // OpenEXR
 #include "spectrum.hxx"
+#include "geom.hxx"
 #include "debugging.hxx"
 #include "types.hxx"
 
@@ -93,23 +94,18 @@ public:
             return ElementAt(x0, y0);
         else
         {
-            PG3_ERROR_NOT_IMPLEMENTED("");
+            const uint32_t x1 = (x0 + 1u) % mWidth;
+            const uint32_t y1 = (y0 + 1u) % mHeight;
 
-            return SpectrumF();
+            const float xLocal = x - (float)x0;
+            const float yLocal = y - (float)y0;
 
-            //const uint32_t x1 = x0 + 1u;
-            //const uint32_t y1 = y0 + 1u;
-            //const float xLocal = x - (float)x0;
-            //const float yLocal = y - (float)y0;
-
-            //return Math::BLerp(
-            //    xLocal, yLocal,
-            //    ElementAt(x0, y0),
-            //    ElementAt(x1, y0),
-            //    ElementAt(x0, y1),
-            //    ElementAt(x1, y1));
-            ////return (1 - ty) * ((1 - tx) * mImage->ElementAt(xi1, yi1) + tx * mImage->ElementAt(xi2, yi1))
-            ////    + ty * ((1 - tx) * mImage->ElementAt(xi1, yi2) + tx * mImage->ElementAt(xi2, yi2));
+            return Math::Bilerp(
+                xLocal, yLocal,
+                ElementAt(x0, y0),
+                ElementAt(x1, y0),
+                ElementAt(x0, y1),
+                ElementAt(x1, y1));
         }
     }
 

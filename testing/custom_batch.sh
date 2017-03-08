@@ -44,11 +44,13 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-SCENES="20 28"
-EMS="3 4 10"
-ALGORITHMS="dlsa dlss dbs dmis ptn pt"
-ITERS="4"                   #"1 4 32 128"
-OT="SidednessAware"         #"EmssSll5Slu7"
+### EM Filtering
+
+SCENES="20"
+EMS="3 4 5 6 7 8 9 10"
+ALGORITHMS="dmis"
+ITERS="4"
+OT="TentFilter"         #"EmssSll5Slu7"
 
 for SCENE in $SCENES; do
     for EM in $EMS; do
@@ -59,6 +61,24 @@ for SCENE in $SCENES; do
         done
     done
 done
+
+### EM Samplers
+
+#SCENES="20 28"
+#EMS="3 4 10"
+#ALGORITHMS="dlsa dlss dbs dmis ptn pt"
+#ITERS="4"                   #"1 4 32 128"
+#OT="SidednessAware"         #"EmssSll5Slu7"
+
+#for SCENE in $SCENES; do
+#    for EM in $EMS; do
+#        for ALG in $ALGORITHMS; do
+#            for ITER in $ITERS; do
+#                render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITER -ot $OT
+#            done
+#        done
+#    done
+#done
 
 #for PL in `echo 1 2 3 4 5 6`; do
 #    render -s 28 -em 3 -a ptn       -i 2 -minpl $PL -maxpl $PL -ot $OT
