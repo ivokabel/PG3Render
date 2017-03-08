@@ -167,31 +167,37 @@ namespace Math
     }
 
     template <
-        typename T,
+        typename TCoeff,
+        typename TVal,
         typename = typename
             std::enable_if<
-                   std::is_same<double, T>::value
-                || std::is_same<float, T>::value
+                   std::is_same<double, TCoeff>::value
+                || std::is_same<float, TCoeff>::value
                 >::type
         >
-    T Lerp(T c, T x0, T x1)
+    TVal Lerp(TCoeff c, TVal x0, TVal x1)
     {
-        return ((T)0. - c) * x0 + c * x1;
+        return ((TCoeff)1 - c) * x0 + c * x1;
     }
 
     template <
-        typename T,
+        typename TCoeff,
+        typename TVal,
         typename = typename
             std::enable_if<
-                   std::is_same<double, T>::value
-                || std::is_same<float, T>::value
+                   std::is_same<double, TCoeff>::value
+                || std::is_same<float, TCoeff>::value
                 >::type
         >
-    T BLerp(T cx, T cy, 
-            T x0y0, T x1y0,
-            T x0y1, T x1y1)
+    TVal Blerp(
+        TCoeff cx, TCoeff cy, 
+        TVal x0y0, TVal x1y0,
+        TVal x0y1, TVal x1y1)
     {
-        return Lerp(cy, Lerp(cx, x0y0, x1y0), Lerp(cx, x0y1, x1y1));
+        return Lerp(
+            cy,
+            Lerp(cx, x0y0, x1y0),
+            Lerp(cx, x0y1, x1y1));
     }
 
     template <
