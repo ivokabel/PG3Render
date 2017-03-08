@@ -4073,7 +4073,7 @@ public:
                     errorDescription << "There is an EM row which contains more than 0.4% non-sampled pixels: ";
                     errorDescription.precision(8);
                     errorDescription << zeroCountPercent;
-                    errorDescription << "!";
+                    errorDescription << "%!";
                     PG3_UT_FAILED(
                         aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
                         errorDescription.str().c_str());
@@ -4092,7 +4092,7 @@ public:
     static bool _UT_Init_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
-        uint32_t                     aMaxSubdivLevel,
+        float                        aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
         bool                         aCheckSamplingCoverage,
         char                        *aImagePath)
@@ -4113,7 +4113,7 @@ public:
         std::list<TreeNodeBase*> refinedTriangles;
         std::unique_ptr<TreeNodeBase> treeRoot;
 
-        BuildParameters params(Math::InfinityF(), Math::InfinityF(), static_cast<float>(aMaxSubdivLevel));
+        BuildParameters params(Math::InfinityF(), Math::InfinityF(), aMaxSubdivLevel);
 
         // Initial triangulation
         if (!_UT_InitialTriangulation(
@@ -4476,21 +4476,21 @@ public:
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 8x4", 5, aMinimalRefinedCount, true,
+                "Const white 8x4", Math::InfinityF(), aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 8x4.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 512x256", 5, aMinimalRefinedCount, true,
+                "Const white 512x256", Math::InfinityF(), aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 512x256.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 1024x512", 5, aMinimalRefinedCount, true,
+                "Const white 1024x512", Math::InfinityF(), aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 1024x512.exr"
                 ))
             return false;
