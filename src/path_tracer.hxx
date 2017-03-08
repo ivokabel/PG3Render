@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pathtracerbase.hxx"
+#include "path_tracer_base.hxx"
 
 class PathTracer : public PathTracerBase
 {
@@ -128,18 +128,18 @@ protected:
                 currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
                 currentRay.tmin = Geom::EpsRayCos(matRecord.ThetaInCosAbs());
 
-                if (matRecord.mPdfW != Math::InfinityF())
-                    pathThroughput *=
-                            (  matRecord.mAttenuation
-                             * matRecord.ThetaInCosAbs())
-                          / (  matRecord.mPdfW              // Monte Carlo est.
-                             * rrContinuationProb           // Russian roulette (optional)
-                             * matRecord.mCompProbability); // Discrete multi-component MC
-                else
-                    pathThroughput *=
-                            matRecord.mAttenuation
-                          / (  rrContinuationProb           // Russian roulette (optional)
-                             * matRecord.mCompProbability); // Discrete multi-component MC
+                const SpectrumF segmentThroughput =
+                    (matRecord.mPdfW != Math::InfinityF()) ?
+                        (  matRecord.mAttenuation
+                            * matRecord.ThetaInCosAbs())
+                        / (  matRecord.mPdfW                // Monte Carlo est.
+                            * rrContinuationProb            // Russian roulette (optional)
+                            * matRecord.mCompProbability)   // Discrete multi-component MC
+                    :
+                        matRecord.mAttenuation
+                        / (  rrContinuationProb             // Russian roulette (optional)
+                            * matRecord.mCompProbability);  // Discrete multi-component MC
+                pathThroughput *= segmentThroughput;
 
                 PG3_ASSERT_VEC3F_NONNEGATIVE(pathThroughput);
 
@@ -152,9 +152,10 @@ protected:
                 {
                     const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
                     if (backgroundLight != nullptr)
-                        oRadiance +=
-                              backgroundLight->GetEmmision(currentRay.dir, false)
-                            * pathThroughput;
+                    {
+                        const SpectrumF emmision = backgroundLight->GetEmmision(currentRay.dir);
+                        oRadiance += emmision * pathThroughput;
+                    }
                 }
 
                 // End of path
@@ -164,15 +165,16 @@ protected:
     }
 
     void EstimateIncomingRadiancePT(
-        const Ray       &aRay,
-        const uint32_t   aPathLength,
-        const bool       aComputeReflectedRadiance,
-        const float      aSplitBudget,
-        SpectrumF       &oEmmittedRadiance,
-        SpectrumF       &oReflectedRadianceEstimate,
-        const Frame     *aSurfFrame = nullptr, // Only needed when you to compute PDF of a const env. light source sample
-        float           *oEmmittedLightPdfW = nullptr,
-        int32_t         *oLightID = nullptr
+        const Ray               &aRay,
+        const uint32_t           aPathLength,
+        const bool               aComputeReflectedRadiance,
+        const float              aSplitBudget,
+        SpectrumF               &oEmmittedRadiance,
+        SpectrumF               &oReflectedRadianceEstimate,
+        const Frame             *aShadedSurfFrame = nullptr,    // Only needed to compute light PDF
+        const AbstractMaterial  *aShadedSurfMat = nullptr,      // Only needed to compute light PDF
+        float                   *oEmmittedLightPdfW = nullptr,
+        int32_t                 *oLightID = nullptr
         )
     {
         PG3_ASSERT((mMaxPathLength == 0) || (aPathLength <= mMaxPathLength));
@@ -200,7 +202,8 @@ protected:
                 if (light != nullptr)
                 {
                     oEmmittedRadiance +=
-                        light->GetEmmision(surfPt, wol, aRay.org, oEmmittedLightPdfW, aSurfFrame);
+                        light->GetEmmision(surfPt, wol, aRay.org,
+                                           oEmmittedLightPdfW, aShadedSurfFrame, aShadedSurfMat);
                     if (oLightID != nullptr)
                         *oLightID = isect.lightID;
                 }
@@ -316,7 +319,7 @@ protected:
                 EstimateIncomingRadiancePT(
                     bsdfRay, aPathLength + 1, !bCutIndirect, nextStepSplitBudget,
                     bsdfEmmittedRadiance, bsdfReflectedRadianceEstimate,
-                    &surfFrame, &bsdfLightPdfW, &bsdfLightId);
+                    &surfFrame, &mat, &bsdfLightPdfW, &bsdfLightId);
 
                 PG3_ASSERT(!bCutIndirect || bsdfReflectedRadianceEstimate.IsZero());
 
@@ -411,7 +414,8 @@ protected:
                 if (backgroundLight != nullptr)
                 {
                     oEmmittedRadiance +=
-                        backgroundLight->GetEmmision(aRay.dir, false, oEmmittedLightPdfW, aSurfFrame);
+                        backgroundLight->GetEmmision(
+                            aRay.dir, oEmmittedLightPdfW, aShadedSurfFrame, aShadedSurfMat);
                     if (oLightID != nullptr)
                         *oLightID = mConfig.mScene->GetBackgroundLightId();;
                 }

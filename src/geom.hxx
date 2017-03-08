@@ -2,7 +2,7 @@
 
 #include "rng.hxx"
 #include "debugging.hxx"
-#include "unittesting.hxx"
+#include "unit_testing.hxx"
 #include "math.hxx"
 
 #include <list>
@@ -808,7 +808,7 @@ namespace Geom
 
             PG3_ASSERT_FLOAT_IN_RANGE(result.x, 0.f, 1.f);
             PG3_ASSERT_FLOAT_IN_RANGE(result.y, 0.f, 1.f);
-            PG3_ASSERT((aBaryCoords.x + aBaryCoords.y) <= 1.001f);
+            PG3_ASSERT((result.x + result.y) <= 1.001f);
 
             return result;
         }

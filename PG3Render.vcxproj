@@ -191,22 +191,26 @@
     <ClInclude Include="src\camera.hxx" />
     <ClInclude Include="src\config.hxx" />
     <ClInclude Include="src\debugging.hxx" />
-    <ClInclude Include="src\directillumination.hxx" />
+    <ClInclude Include="src\direct_illumination.hxx" />
     <ClInclude Include="src\distribution.hxx" />
-    <ClInclude Include="src\environmentmap.hxx" />
-    <ClInclude Include="src\environmentmapimage.hxx" />
-    <ClInclude Include="src\environmentmapsteeringsampler.hxx" />
-    <ClInclude Include="src\eyelight.hxx" />
-    <ClInclude Include="src\framebuffer.hxx" />
+    <ClInclude Include="src\em.hxx" />
+    <ClInclude Include="src\em_cosine_sampler.hxx" />
+    <ClInclude Include="src\em_image.hxx" />
+    <ClInclude Include="src\em_sampler.hxx" />
+    <ClInclude Include="src\em_simple_spherical_sampler.hxx" />
+    <ClInclude Include="src\em_steerable_sampler.hxx" />
+    <ClInclude Include="src\eye_light.hxx" />
+    <ClInclude Include="src\frame_buffer.hxx" />
     <ClInclude Include="src\geom.hxx" />
     <ClInclude Include="src\geometry.hxx" />
-    <ClInclude Include="src\hardconfig.hxx" />
+    <ClInclude Include="src\hard_config.hxx" />
     <ClInclude Include="src\lights.hxx" />
+    <ClInclude Include="src\light_sample.hxx" />
     <ClInclude Include="src\materials.hxx" />
     <ClInclude Include="src\math.hxx" />
     <ClInclude Include="src\microfacet.hxx" />
-    <ClInclude Include="src\pathtracer.hxx" />
-    <ClInclude Include="src\pathtracerbase.hxx" />
+    <ClInclude Include="src\path_tracer.hxx" />
+    <ClInclude Include="src\path_tracer_base.hxx" />
     <ClInclude Include="src\process.hxx" />
     <ClInclude Include="src\ray.hxx" />
     <ClInclude Include="src\renderer.hxx" />
@@ -215,7 +219,7 @@
     <ClInclude Include="src\scene.hxx" />
     <ClInclude Include="src\spectrum.hxx" />
     <ClInclude Include="src\types.hxx" />
-    <ClInclude Include="src\unittesting.hxx" />
+    <ClInclude Include="src\unit_testing.hxx" />
     <ClInclude Include="src\utils.hxx" />
   </ItemGroup>
   <ItemGroup>

@@ -892,6 +892,11 @@ public:
         mZ = Vec3f(0,0,1);
     };
 
+    Frame(const Frame& aFrame) :
+        mX(aFrame.mX),
+        mY(aFrame.mY),
+        mZ(aFrame.mZ) {}
+
     Frame(
         const Vec3f& x,
         const Vec3f& y,
@@ -922,11 +927,18 @@ public:
         return Vec3f(Dot(a, mX), Dot(a, mY), Dot(a, mZ));
     }
 
+    void SwitchNormal()
+    {
+        // Rotate the normal around the x axis by 180 degrees
+        mZ *= -1.f;
+        mY *= -1.f;
+    }
+
     const Vec3f& Binormal() const { return mX; }
     const Vec3f& Tangent () const { return mY; }
     const Vec3f& Normal  () const { return mZ; }
 
-public:
+private:
 
     Vec3f mX, mY, mZ;
 };

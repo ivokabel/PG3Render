@@ -1,0 +1,226 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 3cm
+\topmargin 2cm
+\rightmargin 3cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+Evaluation of the triangle surface sampling formulae (Figure 6) for vertex
+ weights 
+\begin_inset Formula $w^{a}=1$
+\end_inset
+
+, 
+\begin_inset Formula $w^{b}=1$
+\end_inset
+
+, 
+\begin_inset Formula $w^{c}=1$
+\end_inset
+
+ (uniform surface sampling) and input random variables 
+\begin_inset Formula $\xi_{1}=1$
+\end_inset
+
+ and 
+\begin_inset Formula $\xi_{2}=1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section*
+Function 
+\emph on
+f
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+X & = & \left(w^{b}-w^{a}\right)/3+\left(w^{c}-w^{b}\right)/6=\left(1-1\right)/3+\left(1-1\right)/6=0\\
+Y & = & w^{a}/2=1/2=0.5\\
+\alpha & = & X/\left(X+Y\right)=0/0.5=0\\
+\beta & = & Y/\left(X+Y\right)=0.5/0.5=1
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The cubic equation:
+\begin_inset Formula 
+\begin{eqnarray*}
+\alpha x^{3}+\beta x^{2}-\xi_{1} & = & 0\\
+0x^{3}+1x^{2}-1 & = & 0\\
+x^{2} & = & 1\\
+x & = & \pm1
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Therefore 
+\begin_inset Formula $s=1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section*
+Function 
+\emph on
+g
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+t & = & s\left(w^{c}-w^{b}\right)+2\left(1-s\right)w^{a}+sw^{b}=1\left(1-1\right)+2\left(1-1\right)1+1\times1=0+0+1=1\\
+\gamma & = & s\left(w^{c}-w^{b}\right)/t=1\left(1-1\right)/1=0\\
+\rho & = & 2\left(\left(1-s\right)w^{a}+sw^{b}\right)/t=2\left(\left(1-1\right)1+1\times1\right)/1=2
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The result of the function is then
+\begin_inset Formula 
+\[
+2\xi_{2}/\left(\rho+\sqrt{\rho^{2}+4\gamma\xi_{2}}\right)=2\times1/\left(2+\sqrt{2^{2}+4\times0\times1}\right)=2/\left(2+2\right)=0.5
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Function 
+\emph on
+SampleTriangle
+\end_layout
+
+\begin_layout Standard
+The function 
+\emph on
+f
+\emph default
+ returned 
+\begin_inset Formula $s=1$
+\end_inset
+
+, the function 
+\emph on
+g
+\emph default
+ returned 
+\begin_inset Formula $t=0.5$
+\end_inset
+
+.
+ This yields the point
+\begin_inset Formula 
+\begin{eqnarray*}
+p & = & \left(1-s\right)A+s\left(1-t\right)B+stC\\
+ & = & \left(1-1\right)A+1\left(1-0.5\right)B+1\times0.5C\\
+ & = & 0.5B+0.5C
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which means that the point lies exactly in the middle of vertices B and
+ C, while I would expect that the input (random) variables 
+\begin_inset Formula $\xi_{1}=1$
+\end_inset
+
+ and 
+\begin_inset Formula $\xi_{2}=1$
+\end_inset
+
+ should result in point lying exactly at position of vertex C.
+\end_layout
+
+\end_body
+\end_document

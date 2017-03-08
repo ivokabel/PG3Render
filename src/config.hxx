@@ -4,11 +4,11 @@
 #include "ray.hxx"
 #include "geometry.hxx"
 #include "camera.hxx"
-#include "framebuffer.hxx"
+#include "frame_buffer.hxx"
 #include "scene.hxx"
 #include "types.hxx"
 #include "utils.hxx"
-#include "hardconfig.hxx"
+#include "hard_config.hxx"
 
 #include <omp.h>
 #include <string>
@@ -201,14 +201,13 @@ public:
             filename += outStream.str();
         }
 
-    #ifndef PG3_USE_ENVMAP_IMPORTANCE_SAMPLING
-        // Debug info
-        if (   (mAlgorithm >= kDirectIllumLightSamplingAll)
-            && (mAlgorithm <= kDirectIllumMis))
-        {
-            filename += "_emcw";
-        }
-    #endif
+#if defined PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
+        // default: no code
+#elif defined PG3_USE_ENVMAP_STEERABLE_SAMPLER
+        filename += "_emss";
+#else
+        filename += "_emcs";
+#endif
 
         // Sample count
         filename += "_";

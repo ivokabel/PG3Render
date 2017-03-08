@@ -1,10 +1,15 @@
 #pragma once
 
-#include "spectrum.hxx"
 #include "renderer.hxx"
+
+#include "em_cosine_sampler.hxx"
+#include "em_simple_spherical_sampler.hxx"
+#include "em_steerable_sampler.hxx"
+
 #include "rng.hxx"
+#include "spectrum.hxx"
 #include "types.hxx"
-#include "hardconfig.hxx"
+#include "hard_config.hxx"
 
 #include <vector>
 #include <cmath>
@@ -111,7 +116,7 @@ public:
                 Frame frame;
                 frame.SetFromZ(bsdfIsect.normal);
                 const Vec3f ligthWol = frame.ToLocal(-bsdfRay.dir);
-                oLight = light->GetEmmision(lightPt, ligthWol, aSurfPt, oPdfW, &aSurfFrame);
+                oLight = light->GetEmmision(lightPt, ligthWol, aSurfPt, oPdfW, &aSurfFrame, &aSurfMaterial);
 
                 lightId = bsdfIsect.lightID;
             }
@@ -128,7 +133,7 @@ public:
             const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
             if (backgroundLight != nullptr)
             {
-                oLight = backgroundLight->GetEmmision(wig, false, oPdfW, &aSurfFrame);
+                oLight = backgroundLight->GetEmmision(wig, oPdfW, &aSurfFrame, &aSurfMaterial);
                 lightId = mConfig.mScene->GetBackgroundLightId();
             }
             else

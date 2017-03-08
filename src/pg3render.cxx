@@ -2,11 +2,11 @@
 #include "ray.hxx"
 #include "geometry.hxx"
 #include "camera.hxx"
-#include "framebuffer.hxx"
+#include "frame_buffer.hxx"
 #include "scene.hxx"
-#include "eyelight.hxx"
-#include "directillumination.hxx"
-#include "pathtracer.hxx"
+#include "eye_light.hxx"
+#include "direct_illumination.hxx"
+#include "path_tracer.hxx"
 #include "microfacet.hxx"
 #include "config.hxx"
 #include "process.hxx"
@@ -186,7 +186,7 @@ bool RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
     //if (!Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel))
     //    return false;
 
-    if (!EnvironmentMapSteeringSampler::_UnitTests(aMaxUtBlockPrintLevel))
+    if (!SteerableImageEmSampler::_UnitTests(aMaxUtBlockPrintLevel))
         return false;
 
     return true;
@@ -205,8 +205,8 @@ int32_t main(int32_t argc, const char *argv[])
 
     //for (uint32_t i = 0; i < 1000; i++)
         //RunUnitTests(eutblWholeTest);
-        //RunUnitTests(eutblSubTestLevel1);
-        RunUnitTests(eutblSubTestLevel2);
+        RunUnitTests(eutblSubTestLevel1);
+        //RunUnitTests(eutblSubTestLevel2);
 
     exit(0);
 

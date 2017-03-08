@@ -178,3 +178,23 @@ protected:
     const uint32_t       mHeight;
     SpectrumF           *mData;
 };
+
+// Wrapper for constant environment
+class ConstEnvironmentValue
+{
+public:
+    ConstEnvironmentValue(SpectrumF aConstantValue) : mConstantValue(aConstantValue) {}
+
+    SpectrumF Evaluate(const Vec3f &aDirection, bool aDoBilinFiltering) const
+    {
+        aDirection, aDoBilinFiltering; //unused params
+        
+        PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
+
+        return mConstantValue;
+    }
+
+protected:
+
+    SpectrumF mConstantValue;
+};
