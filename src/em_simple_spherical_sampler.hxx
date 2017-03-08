@@ -13,11 +13,9 @@ public:
         mPlan2AngPdfCoeff(1.0f / (2.0f * Math::kPiF * Math::kPiF))
     {}
 
-    virtual bool Init(
-        std::shared_ptr<EnvironmentMapImage>    aEmImage,
-        bool                                    aUseBilinearFiltering) override
+    virtual bool Init(std::shared_ptr<EnvironmentMapImage> aEmImage) override
     {
-        if (!EnvironmentMapSampler::Init(aEmImage, aUseBilinearFiltering))
+        if (!EnvironmentMapSampler::Init(aEmImage))
             return false;
 
         mDistribution.reset(GenerateImageDistribution());

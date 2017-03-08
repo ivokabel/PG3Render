@@ -358,14 +358,14 @@ public:
     virtual void SetConstantRadiance(const SpectrumF &aRadiance)
     {
         mConstantRadiance = aRadiance;
-        mCosineSampler.Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance), false);
+        mCosineSampler.Init(std::make_shared<ConstEnvironmentValue>(mConstantRadiance));
     }
 
     virtual void LoadEnvironmentMap(
         const std::string   filename,
         float               rotate = 0.0f,
         float               scale = 1.0f,
-        bool                doBilinFiltering = false)
+        bool                doBilinFiltering = true /*debug*/)
     {
         mEnvMap = new EnvironmentMap(filename, rotate, scale, doBilinFiltering);
     }

@@ -25,13 +25,13 @@ public:
         float               aRotate,
         float               aScale,
         bool                aDoBilinFiltering)
-        :
-        mDoBilinFiltering(aDoBilinFiltering)
     {
         try
         {
             //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
-            mEmImage.reset(EnvironmentMapImage::LoadImage(aFilename.c_str(), aRotate, aScale));
+            mEmImage.reset(
+                EnvironmentMapImage::LoadImage(
+                    aFilename.c_str(), aRotate, aScale, aDoBilinFiltering));
         }
         catch (...)
         {
@@ -45,11 +45,11 @@ public:
                 Math::InfinityF(), 5, 7));
 
         if (mTmpCosineSampler)
-            mTmpCosineSampler->Init(mEmImage, mDoBilinFiltering);
+            mTmpCosineSampler->Init(mEmImage);
         if (mTmpSimpleSphericalSampler)
-            mTmpSimpleSphericalSampler->Init(mEmImage, mDoBilinFiltering);
+            mTmpSimpleSphericalSampler->Init(mEmImage);
         if (mTmpSteerableSampler)
-            mTmpSteerableSampler->Init(mEmImage, mDoBilinFiltering);
+            mTmpSteerableSampler->Init(mEmImage);
 
 #if defined PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
         mSampler = mTmpSimpleSphericalSampler;
@@ -168,7 +168,7 @@ private:
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.0f, 1.0f);
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.0f, 1.0f);
 
-        return mEmImage->Evaluate(aUV, mDoBilinFiltering);
+        return mEmImage->Evaluate(aUV);
     }
 
     // This class is not copyable because of a const member.
@@ -182,7 +182,6 @@ private:
 
 
     std::shared_ptr<EnvironmentMapImage>        mEmImage; // Environment image data
-    const bool                                  mDoBilinFiltering;
 
     std::shared_ptr<ImageEmSampler>             mSampler; // Sampler for usual spherical sampling
 

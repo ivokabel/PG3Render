@@ -21,17 +21,14 @@ public:
 
 
     // Builds needed internal data structures
-    virtual bool Init(
-        std::shared_ptr<TEmValues>  aEmImage,
-        bool                        aUseBilinearFiltering)
+    virtual bool Init(std::shared_ptr<TEmValues> aEmImage)
     {
         ReleaseData();
 
         if (!aEmImage)
             return false;
 
-        mEmImage                = aEmImage;
-        mEmUseBilinearFiltering = aUseBilinearFiltering;
+        mEmImage = aEmImage;
 
         return true;
     }
@@ -99,7 +96,6 @@ public:
 protected:
 
     std::shared_ptr<TEmValues>  mEmImage;
-    bool                        mEmUseBilinearFiltering;
 };
 
 typedef EnvironmentMapSampler<EnvironmentMapImage>    ImageEmSampler;

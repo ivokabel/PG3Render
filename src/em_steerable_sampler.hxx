@@ -1331,8 +1331,7 @@ public:
         float EvaluateLuminanceApproxForDirection(
             const Vec3f                 &aDirection,
             const VertexStorage         &aVertexStorage,
-            const EnvironmentMapImage   &aEmImage,
-            bool                         aUseBilinearFiltering
+            const EnvironmentMapImage   &aEmImage
             ) const
         {
             PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
@@ -1361,9 +1360,9 @@ public:
             PG3_ASSERT_FLOAT_IN_RANGE(w, -0.0001f, 1.0001f);
 
             // TODO: Cache the luminances in the triangle
-            const auto emVal0 = aEmImage.Evaluate(dir0, aUseBilinearFiltering);
-            const auto emVal1 = aEmImage.Evaluate(dir1, aUseBilinearFiltering);
-            const auto emVal2 = aEmImage.Evaluate(dir2, aUseBilinearFiltering);
+            const auto emVal0 = aEmImage.Evaluate(dir0);
+            const auto emVal1 = aEmImage.Evaluate(dir1);
+            const auto emVal2 = aEmImage.Evaluate(dir2);
             const float luminance0 = emVal0.Luminance();
             const float luminance1 = emVal1.Luminance();
             const float luminance2 = emVal2.Luminance();
@@ -1383,8 +1382,7 @@ public:
         float EvaluateLuminanceApprox(
             const Vec2f                 &aBaryCoords,
             const VertexStorage         &aVertexStorage,
-            const EnvironmentMapImage   &aEmImage,
-            bool                         aUseBilinearFiltering
+            const EnvironmentMapImage   &aEmImage
             ) const
         {
             PG3_ASSERT_FLOAT_IN_RANGE(aBaryCoords.x, -0.0001f, 1.0001f);
@@ -1398,9 +1396,9 @@ public:
             const auto &dir0 = aVertexStorage.Get(vertexIndices[0])->dir;
             const auto &dir1 = aVertexStorage.Get(vertexIndices[1])->dir;
             const auto &dir2 = aVertexStorage.Get(vertexIndices[2])->dir;
-            const auto emVal0 = aEmImage.Evaluate(dir0, aUseBilinearFiltering);
-            const auto emVal1 = aEmImage.Evaluate(dir1, aUseBilinearFiltering);
-            const auto emVal2 = aEmImage.Evaluate(dir2, aUseBilinearFiltering);
+            const auto emVal0 = aEmImage.Evaluate(dir0);
+            const auto emVal1 = aEmImage.Evaluate(dir1);
+            const auto emVal2 = aEmImage.Evaluate(dir2);
             const float luminance0 = emVal0.Luminance();
             const float luminance1 = emVal1.Luminance();
             const float luminance2 = emVal2.Luminance();
@@ -1466,7 +1464,7 @@ protected:
 
         std::list<TreeNodeBase*> tmpTriangles;
 
-        if (!TriangulateEm(tmpTriangles, mVertexStorage, *mEmImage, mEmUseBilinearFiltering, mParams))
+        if (!TriangulateEm(tmpTriangles, mVertexStorage, *mEmImage, mParams))
             return false;
 
         if (!BuildTriangleTree(tmpTriangles, mTreeRoot))
@@ -1506,7 +1504,6 @@ protected:
     static bool GenerateSaveFilePath(
         std::string                         &oPath,
         const EnvironmentMapImage           &aEmImage,
-        bool                                 aUseBilinearFiltering,
         const BuildParameters               &aParams)
     {
         std::string emDirPath;
@@ -1524,7 +1521,7 @@ protected:
         ossPath << emFilenameWithExt;
         ossPath << ".";
 
-        ossPath << (aUseBilinearFiltering ? "bi" : "nn");
+        ossPath << (aEmImage.IsUsingBilinearFiltering() ? "bi" : "nn");
 
         ossPath << "_e";
         ossPath << std::setprecision(2) << aParams.GetMaxApproxError();
@@ -1645,7 +1642,6 @@ protected:
         const VertexStorage             &aVertexStorage,
         const TreeNodeBase              *aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
-        bool                             aUseBilinearFiltering,
         const BuildParameters           &aParams,
         const bool                       aUseDebugSave = false)
     {
@@ -1655,7 +1651,7 @@ protected:
 
         // Open file
         std::string savePath;
-        if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
+        if (!GenerateSaveFilePath(savePath, aEmImage, aParams))
             return false;
         std::ofstream ofs(savePath, std::ios::binary | std::ios::trunc);
         if (ofs.fail())
@@ -1685,7 +1681,7 @@ protected:
         if (!IsBuilt())
             return false;
 
-        return SaveToDisk11(mVertexStorage, mTreeRoot.get(), *mEmImage, mEmUseBilinearFiltering, mParams);
+        return SaveToDisk11(mVertexStorage, mTreeRoot.get(), *mEmImage, mParams);
     }
 
 
@@ -1842,7 +1838,6 @@ protected:
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
-        bool                             aUseBilinearFiltering,
         const BuildParameters           &aParams)
     {
         // Clean-up data structures
@@ -1851,7 +1846,7 @@ protected:
 
         // Open file
         std::string savePath;
-        if (!GenerateSaveFilePath(savePath, aEmImage, aUseBilinearFiltering, aParams))
+        if (!GenerateSaveFilePath(savePath, aEmImage, aParams))
             return false;
         std::ifstream ifs(savePath, std::ios::binary);
         if (ifs.fail())
@@ -1899,7 +1894,7 @@ protected:
         if (!mEmImage)
             return false;
 
-        if (!LoadFromDisk11(mVertexStorage, mTreeRoot, *mEmImage, mEmUseBilinearFiltering, mParams))
+        if (!LoadFromDisk11(mVertexStorage, mTreeRoot, *mEmImage, mParams))
         {
             ReleaseSamplingData();
             return false;
@@ -1937,11 +1932,9 @@ protected:
 public:
 
     // Builds the internal structures needed for sampling
-    virtual bool Init(
-        std::shared_ptr<EnvironmentMapImage>    aEmImage,
-        bool                                    aUseBilinearFiltering) override
+    virtual bool Init(std::shared_ptr<EnvironmentMapImage> aEmImage) override
     {
-        if (!EnvironmentMapSampler::Init(aEmImage, aUseBilinearFiltering))
+        if (!EnvironmentMapSampler::Init(aEmImage))
             return false;
 
         // Building the tree is slow. Try to load a pre-built tree from disk first
@@ -2093,7 +2086,7 @@ public:
         PG3_ASSERT(cosThetaIn >= 0.f);
 
         // Radiance * cos(theta)
-        const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal, mEmUseBilinearFiltering);
+        const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal);
         oRadianceCos = radiance * cosThetaIn;
 
         return true;
@@ -2247,7 +2240,7 @@ protected:
         // from triangulation which would require finding the intersected triangle
         // TODO: Implement properly?
 
-        const auto emRadiance  = mEmImage->Evaluate(aDirGlobal, mEmUseBilinearFiltering);
+        const auto emRadiance  = mEmImage->Evaluate(aDirGlobal);
         const auto emLuminance = emRadiance.Luminance();
 
         SteerableBasisValue sphHarmBasis;
@@ -2786,7 +2779,6 @@ public: // debug: public is for visualisation/testing purposes
         std::list<TreeNodeBase*>    &oTriangles,
         VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams)
     {
         PG3_ASSERT(oTriangles.empty());        
@@ -2795,12 +2787,11 @@ public: // debug: public is for visualisation/testing purposes
 
         TriangulationStatsSwitchable stats(aEmImage, aParams);
 
-        if (!GenerateInitialEmTriangulation(toDoTriangles, aVertexStorage, aEmImage, aUseBilinearFiltering))
+        if (!GenerateInitialEmTriangulation(toDoTriangles, aVertexStorage, aEmImage))
             return false;
 
         if (!RefineEmTriangulation(oTriangles, toDoTriangles, aVertexStorage,
-                                   aEmImage, aUseBilinearFiltering,
-                                   aParams, stats))
+                                   aEmImage, aParams, stats))
             return false;
 
         stats.Print();
@@ -2816,11 +2807,8 @@ protected:
     static bool GenerateInitialEmTriangulation(
         std::deque<TriangleNode*>   &oTriangles,
         VertexStorage               &aVertexStorage,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        const EnvironmentMapImage   &aEmImage)
     {
-        aEmImage;  aUseBilinearFiltering;
-
         // Generate the geometrical data
         Vec3f vertices[12];
         Vec3ui faces[20];
@@ -2830,7 +2818,7 @@ protected:
 
         // Allocate shared vertices for the triangles
         for (uint32_t i = 0; i < Utils::ArrayLength(vertices); i++)
-            CreateNewVertex(vertexIndices[i], aVertexStorage, vertices[i], aEmImage, aUseBilinearFiltering);
+            CreateNewVertex(vertexIndices[i], aVertexStorage, vertices[i], aEmImage);
 
         // Build triangle set
         for (uint32_t i = 0; i < Utils::ArrayLength(faces); i++)
@@ -2929,10 +2917,9 @@ protected:
         uint32_t                    &oVertexIndex,
         VertexStorage               &aVertexStorage,
         const Vec3f                 &aVertexDir,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        const EnvironmentMapImage   &aEmImage)
     {
-        const auto radiance = aEmImage.Evaluate(aVertexDir, aUseBilinearFiltering);
+        const auto radiance = aEmImage.Evaluate(aVertexDir);
         const auto luminance = radiance.Luminance();
 
         CreateNewVertex(oVertexIndex, aVertexStorage, aVertexDir, luminance);
@@ -2950,7 +2937,6 @@ protected:
         std::deque<TriangleNode*>   &aToDoTriangles,
         VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
@@ -2970,13 +2956,11 @@ protected:
                 continue;
 
             if (TriangleHasToBeSubdivided(
-                    *currentTriangle, aVertexStorage,
-                    aEmImage, aUseBilinearFiltering,
-                    aParams, aStats))
+                    *currentTriangle, aVertexStorage, aEmImage, aParams, aStats))
             {
                 // Replace the triangle with sub-division triangles
                 std::list<TriangleNode*> subdivisionTriangles;
-                SubdivideTriangle(subdivisionTriangles, *currentTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering);
+                SubdivideTriangle(subdivisionTriangles, *currentTriangle, aVertexStorage, aEmImage);
                 aStats.RemoveTriangle(*currentTriangle);
                 delete currentTriangle;
                 for (auto triangle : subdivisionTriangles)
@@ -3057,7 +3041,6 @@ protected:
         const Vec3f                 &aSubVertex2,
         uint32_t                     samplesPerDim,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
@@ -3085,9 +3068,9 @@ protected:
                     Math::Clamp(wholeTriangleSampleBary.y, 0.f, 1.f),
                 };
                 const auto approxVal = aWholeTriangle.EvaluateLuminanceApprox(
-                    wholeTriangleSampleBaryCrop, aVertexStorage, aEmImage, aUseBilinearFiltering);
+                    wholeTriangleSampleBaryCrop, aVertexStorage, aEmImage);
                 const auto sampleDir = Normalize(point);
-                const auto emRadiance = aEmImage.Evaluate(sampleDir, aUseBilinearFiltering);
+                const auto emRadiance = aEmImage.Evaluate(sampleDir);
                 const auto emVal = emRadiance.Luminance();
 
                 PG3_ASSERT_FLOAT_NONNEGATIVE(emVal);
@@ -3117,7 +3100,6 @@ protected:
         const TriangleNode          &aWholeTriangle,
         VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
@@ -3175,7 +3157,7 @@ protected:
                     aVertex0, aVertex0Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
-                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage,
                     aParams, aStats))
                 return true;
 
@@ -3184,7 +3166,7 @@ protected:
                     aVertex1, aVertex1Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre01Dir, edgeCentre01Sin,
-                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage,
                     aParams, aStats))
                 return true;
 
@@ -3193,7 +3175,7 @@ protected:
                     aVertex2, aVertex2Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
-                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage,
                     aParams, aStats))
                 return true;
 
@@ -3202,7 +3184,7 @@ protected:
                     edgeCentre01Dir, edgeCentre01Sin,
                     edgeCentre12Dir, edgeCentre12Sin,
                     edgeCentre20Dir, edgeCentre20Sin,
-                    aWholeTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
+                    aWholeTriangle, aVertexStorage, aEmImage,
                     aParams, aStats))
                 return true;
 
@@ -3213,7 +3195,7 @@ protected:
         const bool result = IsEstimationErrorTooLarge(
             aWholeTriangle, aVertexStorage, aVertex0, aVertex1, aVertex2,
             (uint32_t)std::ceil(maxSamplesPerDimF),
-            aEmImage, aUseBilinearFiltering, aParams, aStats);
+            aEmImage, aParams, aStats);
 
         return result;
     }
@@ -3224,7 +3206,6 @@ protected:
         const TriangleNode          &aTriangle,
         VertexStorage               &aVertexStorage,
         const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering,
         const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
@@ -3246,7 +3227,7 @@ protected:
             dir0, vertex0Sin,
             dir1, vertex1Sin,
             dir2, vertex2Sin,
-            aTriangle, aVertexStorage, aEmImage, aUseBilinearFiltering,
+            aTriangle, aVertexStorage, aEmImage,
             aParams, aStats);
 
         return result;
@@ -3257,8 +3238,7 @@ protected:
         std::list<TriangleNode*>    &oSubdivisionTriangles,
         const TriangleNode          &aTriangle,
         VertexStorage               &aVertexStorage,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        const EnvironmentMapImage   &aEmImage)
     {
         // For now just a full regular subdivision (each edge is subdivided by placing a new edge 
         // in the middle of the edge) resulting in 4 new triangles
@@ -3279,9 +3259,9 @@ protected:
 
         // New shared vertices
         std::array<uint32_t, 3> newIndices;
-        CreateNewVertex(newIndices[0], aVertexStorage, newVertexCoords[0], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(newIndices[1], aVertexStorage, newVertexCoords[1], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(newIndices[2], aVertexStorage, newVertexCoords[2], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(newIndices[0], aVertexStorage, newVertexCoords[0], aEmImage);
+        CreateNewVertex(newIndices[1], aVertexStorage, newVertexCoords[1], aEmImage);
+        CreateNewVertex(newIndices[2], aVertexStorage, newVertexCoords[2], aEmImage);
 
         // Central triangle
         oSubdivisionTriangles.push_back(
@@ -3329,56 +3309,56 @@ public:
                 aMaxUtBlockPrintLevel, "Octant +X+Y+Z",
                 { Vec3f(1.f, 0.f, 0.f), Vec3f(0.f, 1.f, 0.f), Vec3f(0.f, 0.f, 1.f) },
                 { Vec3f(c45, c45, 0.f), Vec3f(0.f, c45, c45), Vec3f(c45, 0.f, c45) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X-Y-Z",
                 { Vec3f(-1.f,  0.f, 0.f), Vec3f(0.f, -1.f,  0.f), Vec3f( 0.f, 0.f, -1.f) },
                 { Vec3f(-c45, -c45, 0.f), Vec3f(0.f, -c45, -c45), Vec3f(-c45, 0.f, -c45) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X-Y+Z",
                 { Vec3f(0.f, -1.f, 0.f), Vec3f(1.f, 0.f, 0.f), Vec3f(0.f,  0.f, 1.f) },
                 { Vec3f(c45, -c45, 0.f), Vec3f(c45, 0.f, c45), Vec3f(0.f, -c45, c45) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X+Y-Z",
                 { Vec3f(0.f,  1.f, 0.f), Vec3f(-1.f, 0.f,  0.f), Vec3f(0.f, 0.f, -1.f) },
                 { Vec3f(-c45, c45, 0.f), Vec3f(-c45, 0.f, -c45), Vec3f(0.f, c45, -c45) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X-Y-Z",
                 { Vec3f(0.f, -1.f, 0.f), Vec3f(0.f, 0.f, -1.f), Vec3f(1.f,  0.f, 0.f) },
                 { Vec3f(0.f, -c45, -c45), Vec3f(c45, 0.f, -c45), Vec3f(c45, -c45, 0.f) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X+Y+Z",
                 { Vec3f(0.f, 1.f, 0.f), Vec3f(0.f,  0.f, 1.f), Vec3f(-1.f, 0.f, 0.f) },
                 { Vec3f(0.f, c45, c45), Vec3f(-c45, 0.f, c45), Vec3f(-c45, c45, 0.f) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant +X+Y-Z",
                 { Vec3f(1.f, 0.f,  0.f), Vec3f(0.f, 0.f, -1.f), Vec3f(0.f, 1.f, 0.f) },
                 { Vec3f(c45, 0.f, -c45), Vec3f(0.f, c45, -c45), Vec3f(c45, c45, 0.f) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         if (!_UT_SubdivideTriangle_SingleConfiguration(
                 aMaxUtBlockPrintLevel, "Octant -X-Y+Z",
                 { Vec3f(-1.f, 0.f, 0.f), Vec3f(0.f,  0.f, 1.f), Vec3f(0.f,  -1.f, 0.f) },
                 { Vec3f(-c45, 0.f, c45), Vec3f(0.f, -c45, c45), Vec3f(-c45, -c45, 0.f) },
-                *dummyImage, false))
+                *dummyImage))
             return false;
 
         PG3_UT_PASSED(
@@ -3394,8 +3374,7 @@ protected:
         const char                  *aTestName,
         const std::array<Vec3f, 3>  &aTriangleCoords,
         const std::array<Vec3f, 3>  &aSubdivisionPoints,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        const EnvironmentMapImage   &aEmImage)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
@@ -3403,14 +3382,14 @@ protected:
 
         // Generate triangle with vertices
         std::array<uint32_t, 3> vertexIndices;
-        CreateNewVertex(vertexIndices[0], vertexStorage, aTriangleCoords[0], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(vertexIndices[1], vertexStorage, aTriangleCoords[1], aEmImage, aUseBilinearFiltering);
-        CreateNewVertex(vertexIndices[2], vertexStorage, aTriangleCoords[2], aEmImage, aUseBilinearFiltering);
+        CreateNewVertex(vertexIndices[0], vertexStorage, aTriangleCoords[0], aEmImage);
+        CreateNewVertex(vertexIndices[1], vertexStorage, aTriangleCoords[1], aEmImage);
+        CreateNewVertex(vertexIndices[2], vertexStorage, aTriangleCoords[2], aEmImage);
         TriangleNode triangle(vertexIndices[0], vertexIndices[1], vertexIndices[2], vertexStorage, 0);
 
         // Subdivide
         std::list<TriangleNode*> subdivisionTriangles;
-        SubdivideTriangle(subdivisionTriangles, triangle, vertexStorage, aEmImage, aUseBilinearFiltering);
+        SubdivideTriangle(subdivisionTriangles, triangle, vertexStorage, aEmImage);
 
         // Check subdivision count
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Sub-divisions count");
@@ -3782,12 +3761,11 @@ public:
         std::deque<TriangleNode*>   &oTriangles,
         VertexStorage               &aVertexStorage,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        const EnvironmentMapImage   &aEmImage)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation");
 
-        if (!GenerateInitialEmTriangulation(oTriangles, aVertexStorage, aEmImage, aUseBilinearFiltering))
+        if (!GenerateInitialEmTriangulation(oTriangles, aVertexStorage, aEmImage))
         {
             PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Initial triangulation",
@@ -3911,7 +3889,7 @@ public:
                     //}
 
                     // Vertex weights
-                    const auto radiance  = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
+                    const auto radiance  = aEmImage.Evaluate(vertex->dir);
                     const auto luminance = radiance.Luminance();
                     auto referenceWeight = 
                         SteerableBasisValue().GenerateSphHarm(vertex->dir, luminance);
@@ -3944,14 +3922,13 @@ public:
         uint32_t                     aExpectedRefinedCount,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         TTriangulationStats         &aStats,
-        const EnvironmentMapImage   &aEmImage,
-        bool                         aUseBilinearFiltering)
+        const EnvironmentMapImage   &aEmImage)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement");
 
         if (!RefineEmTriangulation(
                 oRefinedTriangles, aInitialTriangles, aVertexStorage,
-                aEmImage, aUseBilinearFiltering, aParams, aStats))
+                aEmImage, aParams, aStats))
         {
             PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -4038,7 +4015,7 @@ public:
             {
                 auto vertex = aVertexStorage.Get(vertexIndex);
 
-                const auto radiance = aEmImage.Evaluate(vertex->dir, aUseBilinearFiltering);
+                const auto radiance = aEmImage.Evaluate(vertex->dir);
                 const auto luminance = radiance.Luminance();
                 const auto referenceWeight =
                     SteerableBasisValue().GenerateSphHarm(vertex->dir, luminance);
@@ -4118,8 +4095,7 @@ public:
         uint32_t                     aMaxSubdivLevel,
         uint32_t                     aExpectedRefinedCount,
         bool                         aCheckSamplingCoverage,
-        char                        *aImagePath,
-        bool                         aUseBilinearFiltering)
+        char                        *aImagePath)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
@@ -4144,8 +4120,7 @@ public:
                 initialTriangles,
                 vertexStorage,
                 aMaxUtBlockPrintLevel,
-                *image.get(),
-                aUseBilinearFiltering))
+                *image.get()))
         {
             FreeTrianglesDeque(initialTriangles);
             return false;
@@ -4164,8 +4139,7 @@ public:
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
                 stats,
-                *image.get(),
-                aUseBilinearFiltering);
+                *image.get());
         }
         else
         {
@@ -4178,8 +4152,7 @@ public:
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
                 stats,
-                *image.get(),
-                aUseBilinearFiltering);
+                *image.get());
         }
         if (!refinePassed)
         {
@@ -4196,7 +4169,7 @@ public:
         // Save/Load
         if (!_UT_SaveToAndLoadFromDisk(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel2,
-                vertexStorage, treeRoot, *image.get(), aUseBilinearFiltering, params))
+                vertexStorage, treeRoot, *image.get(), params))
             return false;
 
         PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -4428,7 +4401,6 @@ public:
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
-        bool                             aUseBilinearFiltering,
         BuildParameters                 &aParams)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
@@ -4436,9 +4408,7 @@ public:
         const bool isDebugging = false; // makes the file more human readable (but machine un-readable!)
 
         // Save
-        if (!SaveToDisk11(
-                aVertexStorage, aTreeRoot.get(), aEmImage, aUseBilinearFiltering,
-                aParams, isDebugging))
+        if (!SaveToDisk11(aVertexStorage, aTreeRoot.get(), aEmImage,aParams, isDebugging))
         {
             PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
@@ -4449,8 +4419,7 @@ public:
         // Load
         VertexStorage                   loadedVertexStorage;
         std::unique_ptr<TreeNodeBase>   loadedTreeRoot;
-        if (!LoadFromDisk11(
-                loadedVertexStorage, loadedTreeRoot, aEmImage, aUseBilinearFiltering, aParams))
+        if (!LoadFromDisk11(loadedVertexStorage, loadedTreeRoot, aEmImage, aParams))
         {
             PG3_UT_FAILED(
                 aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
@@ -4502,43 +4471,43 @@ public:
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 8x4", 5, 80, true,
-                ".\\Light Probes\\Debugging\\Const white 8x4.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Const white 8x4.exr"
+                ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 512x256", 5, 80, true,
-                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Const white 512x256.exr"
+                ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 1024x512", 5, 80, true,
-                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr"
+                ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Single pixel", 5, 0, false,
-                ".\\Light Probes\\Debugging\\Single pixel.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Single pixel.exr"
+                ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Three point lighting 1024x512", 5, 0, false,
-                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr"
+                ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Satellite 4000x2000", 5, 0, false,
-                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                false))
+                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr"
+                ))
             return false;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -4546,15 +4515,15 @@ public:
         //if (!_UT_Init_SingleEm(
         //        aMaxUtBlockPrintLevel,
         //        "Doge2", 5, 0, false,
-        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-        //        false))
+        //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr"
+        //        ))
         //    return false;
 
         //if (!_UT_Init_SingleEm(
         //        aMaxUtBlockPrintLevel,
         //        "Peace Garden", 5, 0, false,
-        //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-        //        false))
+        //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr"
+        //        ))
         //    return false;
 
         PG3_UT_PASSED(
@@ -5024,8 +4993,7 @@ public:
     static bool _UT_Sampling_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         const char                  *aTestName,
-        const char                  *aImagePath,
-        bool                         aUseBilinearFiltering)
+        const char                  *aImagePath)
     {
         PG3_UT_BEGIN(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
 
@@ -5047,7 +5015,7 @@ public:
 
         // Init local sampler
         EnvironmentMapSteerableSampler sampler(params);
-        if (!sampler.Init(image, aUseBilinearFiltering))
+        if (!sampler.Init(image))
         {
             PG3_UT_FATAL_ERROR(aMaxUtBlockPrintLevel, eutblSubTestLevel1,
                 "%s", "Failed to Init() the sampler!", aTestName);
@@ -5096,50 +5064,50 @@ public:
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 8x4",
-                ".\\Light Probes\\Debugging\\Const white 8x4.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Const white 8x4.exr"
+                ))
             return false;
 
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 512x256",
-                ".\\Light Probes\\Debugging\\Const white 512x256.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Const white 512x256.exr"
+                ))
             return false;
 
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Const white 1024x512",
-                ".\\Light Probes\\Debugging\\Const white 1024x512.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Const white 1024x512.exr"
+                ))
             return false;
 
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Single pixel",
-                ".\\Light Probes\\Debugging\\Single pixel.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Single pixel.exr"
+                ))
             return false;
 
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Three point lighting 1024x512",
-                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                false))
+                ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr"
+                ))
             return false;
 
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Satellite 4000x2000",
-                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                false))
+                ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr"
+                ))
             return false;
 
         if (!_UT_Sampling_SingleEm(
                 aMaxUtBlockPrintLevel,
                 "Doge2",
-                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                false))
+                ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr"
+                ))
             return false;
 
         ///////////////////////////////////////////////////////////////////////////////////////////
@@ -5147,8 +5115,8 @@ public:
         //if (!_UT_Sampling_SingleEm(
         //        aMaxUtBlockPrintLevel,
         //        "Peace Garden",
-        //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-        //        false))
+        //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr"
+        //        ))
         //    return false;
 
         PG3_UT_PASSED(

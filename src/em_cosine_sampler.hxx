@@ -27,7 +27,7 @@ public:
                 aRng.GetVec3f(), aSampleFrontSide, aSampleBackSide, oPdfW);
         oDirGlobal = aSurfFrame.ToWorld(wil);
 
-        const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal, mEmUseBilinearFiltering);
+        const SpectrumF radiance = mEmImage->Evaluate(oDirGlobal);
         const float cosThetaIn = std::abs(wil.z);
         oRadianceCos = radiance * cosThetaIn;
 
