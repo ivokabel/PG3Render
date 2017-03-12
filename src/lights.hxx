@@ -173,8 +173,6 @@ private:
     {
         // Replicated in GetEmmision()!
 
-        aSurfMaterial; // unused parameter
-
         oSample.mWig = aSamplePt - aSurfPt;
         const float distSqr = oSample.mWig.LenSqr();
         oSample.mDist = sqrt(distSqr);

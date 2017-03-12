@@ -4699,8 +4699,8 @@ public:
         const float                      aVertexValue1,
         const float                      aVertexValue2)
     {
-        const static uint32_t gridSizePerDimX       = 4u;
-        const static uint32_t gridSizePerDimY       = 4u;
+        const static uint32_t gridSizePerDimX       = 30u;
+        const static uint32_t gridSizePerDimY       = 30u;
         const static uint32_t gridCellCount         = gridSizePerDimX * gridSizePerDimY;
         const static uint32_t samplesPerTriangle    = 10000u * gridCellCount;
 
@@ -4722,43 +4722,43 @@ public:
 
         // Generate samples & accumulate them within a grid
         Rng rngSamples;
-        for (uint32_t i = 0; i < samplesPerTriangle; ++i)
-        //const Vec2f binSize(1.f / gridSizePerDimX,
-        //                    1.f / gridSizePerDimY);
+        //for (uint32_t i = 0; i < samplesPerTriangle; ++i)
+        const Vec2f binSize(1.f / gridSizePerDimX,
+                            1.f / gridSizePerDimY);
         //for (float u = 0.f; u <= (1.f + 0.0001f); u += binSize.x)
         //    for (float v = 0.f; v <= (1.f + 0.0001f); v += binSize.y)
-        //for (float u = 0.f; u < (1.f - 0.0001f); u += binSize.x)
-        //    for (float v = 0.f; v < (1.f - 0.0001f); v += binSize.y)
+        for (float u = 0.f; u < (1.f - 0.0001f); u += binSize.x)
+            for (float v = 0.f; v < (1.f - 0.0001f); v += binSize.y)
         {
-            const Vec2f inputSample(rngSamples.GetVec2f());
+            //const Vec2f inputSample(rngSamples.GetVec2f());
             //const Vec2f inputSample = Vec2f(u, v);
-            //const Vec2f inputSample = Vec2f(u, v) + rngSamples.GetVec2f() * binSize;;
+            const Vec2f inputSample = Vec2f(u, v) + rngSamples.GetVec2f() * binSize;
 
             const Vec2f baryCoords = SampleTriangleBilinear<float>(
                 inputSample, aVertexValue0, aVertexValue1, aVertexValue2);
 
             // debug
             {
-                //const Vec3f trianglePoint = Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, baryCoords);
+                const Vec3f trianglePoint = Geom::Triangle::GetPoint(aVertex0, aVertex1, aVertex2, baryCoords);
 
                 //if (v == 0.f)
                 //    PG3_UT_INFO(
                 //        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", testName.c_str());
 
-                //std::ostringstream ossError;
-                //ossError << "Uniform grid point [";
-                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << inputSample.x;
-                //ossError << ",";
-                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << inputSample.y;
-                //ossError << "], output triangle point [";
-                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << trianglePoint.x;
-                //ossError << ",";
-                //ossError << std::fixed << std::setw(6) << std::setprecision(4) << trianglePoint.y;
-                //ossError << "]";
+                std::ostringstream ossError;
+                ossError << "Uniform grid point [";
+                ossError << std::setfill(' ') << std::fixed << std::setw(8) << std::setprecision(4) << inputSample.x;
+                ossError << ",";
+                ossError << std::setfill(' ') << std::fixed << std::setw(8) << std::setprecision(4) << inputSample.y;
+                ossError << "], output triangle point [";
+                ossError << std::setfill(' ') << std::fixed << std::setw(8) << std::setprecision(4) << trianglePoint.x;
+                ossError << ",";
+                ossError << std::setfill(' ') << std::fixed << std::setw(8) << std::setprecision(4) << trianglePoint.y;
+                ossError << "]";
 
-                //PG3_UT_INFO(
-                //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                //    ossError.str().c_str(), testName.c_str());
+                PG3_UT_INFO(
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    ossError.str().c_str(), testName.c_str());
             }
 
             // Map sample onto cartesian grid
@@ -4766,9 +4766,16 @@ public:
             if (   !Math::IsInRange(gridCoordsF.x, 0.f, 1.0001f)
                 || !Math::IsInRange(gridCoordsF.y, 0.f, 1.0001f))
             {
+                std::ostringstream ossError;
+                ossError << "Grid coords are outside range[0, 1]: (";
+                ossError << std::setfill(' ') << std::fixed << std::setw(8) << std::setprecision(4) << gridCoordsF.x;
+                ossError << ",";
+                ossError << std::setfill(' ') << std::fixed << std::setw(8) << std::setprecision(4) << gridCoordsF.y;
+                ossError << ")!";
+
                 PG3_UT_FAILED(
-                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel,
-                    "%s", "Grid coords are outside range [0,1]!", testName.c_str());
+                    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                    ossError.str().c_str(), testName.c_str());
                 return false;
             }
 
@@ -4781,8 +4788,8 @@ public:
         }
 
         // debug
-        //PG3_UT_INFO(
-        //    aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", testName.c_str());
+        PG3_UT_INFO(
+            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s", "", testName.c_str());
 
         if (totalCount == 0)
         {
@@ -5142,6 +5149,8 @@ public:
         const Vec3f aVertex1(1.f, 0.f, 0.f);
         const Vec3f aVertex2(0.f, 1.f, 0.f);
 
+        ///////// Uniform /////////
+
         if (!_UT_Sampling_SingleTriangle(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
                 1.f, 1.f, 1.f))
@@ -5152,6 +5161,8 @@ public:
         //        0.5f, 0.5f, 0.5f))
         //    return false;
 
+        ///////// Single vertex /////////
+
         //if (!_UT_Sampling_SingleTriangle(
         //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
         //        1.f, 0.0f, 0.0f))
@@ -5159,17 +5170,29 @@ public:
 
         //if (!_UT_Sampling_SingleTriangle(
         //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
-        //        0.f, 1.0f, 1.0f))
+        //        0.f, 1.0f, 0.0f))
         //    return false;
 
         //if (!_UT_Sampling_SingleTriangle(
         //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
-        //        0.f, 1.0f, 0.1f))
+        //        0.f, 0.f, 1.f))
+        //    return false;
+
+        ///////// Two vertices /////////
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        0.f, 1.f, 1.f))
         //    return false;
 
         //if (!_UT_Sampling_SingleTriangle(
         //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
-        //        0.f, 0.1f, 1.0f))
+        //        1.f, 0.f, 1.f))
+        //    return false;
+
+        //if (!_UT_Sampling_SingleTriangle(
+        //        aMaxUtBlockPrintLevel, eutblSubTestLevel1, aVertex0, aVertex1, aVertex2,
+        //        1.f, 1.f, 0.f))
         //    return false;
 
         // ...
