@@ -94,21 +94,21 @@ protected:
                 if (mMaxPathLength == 0)
                 {
                     // Const clamping
-                    //rrContinuationProb =
-                    //    // We do not allow probability 1.0 because that can lead to infinite 
-                    //    // random walk in some pathological scenarios (completely white material or 
-                    //    // light trap made of glass).
-                    //    // Probability of survival after 100 bounces:
-                    //    // local probability 98.0% -> 13% for the whole path
-                    //    // local probability 99.0% -> 37% for the whole path
-                    //    // local probability 99.3% -> 50% for the whole path
-                    //    // local probability 99.5% -> 61% for the whole path
-                    //    // local probability 99.7% -> 74% for the whole path
-                    //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
-                    //    Math::Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+                    rrContinuationProb =
+                        // We do not allow probability 1.0 because that can lead to infinite 
+                        // random walk in some pathological scenarios (completely white material or 
+                        // light trap made of glass).
+                        // Probability of survival after 100 bounces:
+                        // local probability 98.0% -> 13% for the whole path
+                        // local probability 99.0% -> 37% for the whole path
+                        // local probability 99.3% -> 50% for the whole path
+                        // local probability 99.5% -> 61% for the whole path
+                        // local probability 99.7% -> 74% for the whole path
+                        // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
+                        Math::Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                     // No clamping
-                   rrContinuationProb = Math::Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
+                    //rrContinuationProb = Math::Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
 
                     const float rnd = mRng.GetFloat();
                     if (rnd > rrContinuationProb)
@@ -268,21 +268,21 @@ protected:
             if (mMaxPathLength == 0)
             {
                 // Const clamping
-                //rrContinuationProb =
-                //    // We do not allow probability 1.0 because that can lead to infinite 
-                //    // random walk in some pathological scenarios (completely white material or 
-                //    // light trap made of glass).
-                //    // Probability of survival after 100 bounces:
-                //    // local probability 98.0% -> 13% for the whole path
-                //    // local probability 99.0% -> 37% for the whole path
-                //    // local probability 99.3% -> 50% for the whole path
-                //    // local probability 99.5% -> 61% for the whole path
-                //    // local probability 99.7% -> 74% for the whole path
-                //    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
-                //    Math::Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
+                rrContinuationProb =
+                    // We do not allow probability 1.0 because that can lead to infinite 
+                    // random walk in some pathological scenarios (completely white material or 
+                    // light trap made of glass).
+                    // Probability of survival after 100 bounces:
+                    // local probability 98.0% -> 13% for the whole path
+                    // local probability 99.0% -> 37% for the whole path
+                    // local probability 99.3% -> 50% for the whole path
+                    // local probability 99.5% -> 61% for the whole path
+                    // local probability 99.7% -> 74% for the whole path
+                    // local probability 99.9% -> 90% for the whole path - may cause stack overflows!
+                    Math::Clamp(mat.GetRRContinuationProb(wol), 0.0f, 0.997f);
 
                 // No clamping
-                rrContinuationProb = Math::Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
+                //rrContinuationProb = Math::Clamp(mat.GetRRContinuationProb(wol), 0.f, 1.f);
             }
 
             // Generate requested amount of BSDF samples for both direct and indirect illumination
@@ -459,7 +459,7 @@ protected:
 #ifdef _DEBUG
     const uint32_t kMaxPathLength = 700;     // crash at 700
 #else
-    const uint32_t kMaxPathLength = 1500;    // 1700 crashes for sure
+    const uint32_t kMaxPathLength = 1400;    // crash at 1490 @ 64 bit
 #endif
 
 };
