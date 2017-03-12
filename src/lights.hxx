@@ -363,7 +363,7 @@ public:
         const std::string   filename,
         float               rotate = 0.0f,
         float               scale = 1.0f,
-        bool                doBilinFiltering = true /*debug*/)
+        bool                doBilinFiltering = false)
     {
         mEnvMap = new EnvironmentMap(filename, rotate, scale, doBilinFiltering);
     }

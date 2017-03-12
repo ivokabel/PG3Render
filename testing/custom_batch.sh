@@ -49,8 +49,8 @@ START_TIME=`date +%s`
 SCENES="20"
 EMS="3 4 5 6 7 8 9 10"
 ALGORITHMS="dmis"
-ITERS="4"
-OT="TentFilter"         #"EmssSll5Slu7"
+ITERS="8"
+OT="BoxFilter_Emsss"
 
 for SCENE in $SCENES; do
     for EM in $EMS; do
