@@ -123,6 +123,17 @@ namespace Math
         return result;
     }
 
+    int32_t ModX(int32_t x, int32_t y)
+    {
+        int32_t result = x % y;
+        if (result < 0)
+            result += y;
+
+        PG3_ASSERT_INTEGER_IN_RANGE(result, 0, y - 1);
+
+        return result;
+    }
+
     template <typename T>
     inline T Clamp(const T& n, const T& lower, const T& upper)
     {

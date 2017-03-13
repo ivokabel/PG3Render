@@ -46,17 +46,16 @@ START_TIME=`date +%s`
 
 ### EM Filtering
 
-SCENES="20"
-EMS="3 4 5 6 7 8 9 10"
-ALGORITHMS="dmis"
-ITERS="8"
-OT="BoxFilter_Emsss"
-
+SCENES="20 22 25"
+EMS="10"            #"4"
+ALGORITHMS="dlsa dbs dmis"
+ITERS="512"
+OT="PBRT_TentFilter"
 for SCENE in $SCENES; do
     for EM in $EMS; do
         for ALG in $ALGORITHMS; do
             for ITER in $ITERS; do
-                render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITER -ot $OT
+                render -s $SCENE -em $EM -a $ALG -i $ITER -ot $OT
             done
         done
     done

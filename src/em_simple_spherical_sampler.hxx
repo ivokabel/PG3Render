@@ -66,7 +66,10 @@ public:
         oPdfW = distrPdf * mPlan2AngPdfCoeff / sinMidTheta;
 
         // Radiance multiplied by cosine
-        const SpectrumF radiance = EvalRadiance(segm);
+        const SpectrumF radiance =
+              !mEmImage->IsUsingBilinearFiltering()
+            ? EvalRadiance(segm) // Nearest neighour: using segment avoids numerical errors at pixel edges
+            : EvalRadiance(uv);
         const float cosThetaIn = Dot(oDirGlobal, aSurfFrame.Normal());
         if (   (aSampleFrontSide && (cosThetaIn > 0.0f))
             || (aSampleBackSide  && (cosThetaIn < 0.0f)))
@@ -150,17 +153,25 @@ private:
 
 
     // Returns radiance for the given segment of the image
+    // This interface must not be used if bilinear or any smoother filtering is active!
     SpectrumF EvalRadiance(const Vec2ui &aSegm) const
     {
         PG3_ASSERT(mEmImage != nullptr);
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.x, 0u, mEmImage->Width());
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm.y, 0u, mEmImage->Height());
 
-        // FIXME: This interface shouldn't be used if bilinear or any smoother filtering is active!
-
         return mEmImage->ElementAt(aSegm.x, aSegm.y);
     }
 
+    // Returns radiance for the given segment of the image
+    SpectrumF EvalRadiance(const Vec2f &aUV) const
+    {
+        PG3_ASSERT(mEmImage != nullptr);
+        PG3_ASSERT_FLOAT_IN_RANGE(aUV.x, 0.f, 1.f);
+        PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.f, 1.f);
+
+        return mEmImage->Evaluate(aUV);
+    }
 
     // The sine of latitude of the midpoint of the map pixel (a.k.a. segment)
     static float SinMidTheta(const EnvironmentMapImage* aImage, const uint32_t aSegmY)

@@ -92,16 +92,16 @@ public:
         PG3_ASSERT_FLOAT_IN_RANGE(aUV.y, 0.0f, 1.0f);
 
         // UV to image coords
-        const float x = aUV.x * (float)mWidth;
-        const float y = aUV.y * (float)mHeight;
+        const float xFull = aUV.x * (float)mWidth;
+        const float yFull = aUV.y * (float)mHeight;
 
         // Eval
         if (!mDoBilinFiltering)
         {
             // Box filter
 
-            const uint32_t x0 = Math::Clamp((uint32_t)(x + 0.5f), 0u, mWidth  - 1u);
-            const uint32_t y0 = Math::Clamp((uint32_t)(y + 0.5f), 0u, mHeight - 1u);
+            const uint32_t x0 = Math::Clamp((uint32_t)xFull, 0u, mWidth  - 1u);
+            const uint32_t y0 = Math::Clamp((uint32_t)yFull, 0u, mHeight - 1u);
             
             return ElementAt(x0, y0);
         }
@@ -109,21 +109,29 @@ public:
         {
             // Tent filter
 
-            const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mWidth  - 1u);
-            const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mHeight - 1u);
+            // Find the centre of the enclosing rectangle (vertices are middle points of EM pixels)
+            const Vec2i centre(
+                (int32_t)std::round(xFull),
+                (int32_t)std::round(yFull));
 
-            const uint32_t x1 = (x0 + 1u) % mWidth;
-            const uint32_t y1 = (y0 + 1u) % mHeight;
+            const Vec2i coords0 = centre - Vec2i(1, 1);
+            const Vec2i coords1 = centre;
 
-            const float xLocal = x - (float)x0;
-            const float yLocal = y - (float)y0;
+            const float xLocal = xFull - ((float)coords0.x + 0.5f);
+            const float yLocal = yFull - ((float)coords0.y + 0.5f);
+
+            PG3_ASSERT_FLOAT_IN_RANGE(xLocal, 0.f, 1.0f);
+            PG3_ASSERT_FLOAT_IN_RANGE(yLocal, 0.f, 1.0f);
+
+            const Vec2ui normCoords0 = NormalizeImgCoords(coords0);
+            const Vec2ui normCoords1 = NormalizeImgCoords(coords1);
 
             return Math::Bilerp(
                 xLocal, yLocal,
-                ElementAt(x0, y0),
-                ElementAt(x1, y0),
-                ElementAt(x0, y1),
-                ElementAt(x1, y1));
+                ElementAt(normCoords0.x, normCoords0.y),
+                ElementAt(normCoords1.x, normCoords0.y),
+                ElementAt(normCoords0.x, normCoords1.y),
+                ElementAt(normCoords1.x, normCoords1.y));
         }
     }
 
@@ -190,7 +198,45 @@ public:
         return mDoBilinFiltering;
     }
 
-protected:
+private:
+
+    // Wraps coordinates around the edges of the environment image
+    Vec2ui NormalizeImgCoords(const Vec2i &aCoords) const
+    {
+        // Note that this will not work properly if the y coordinate is further than one over 
+        // the edge (-2, height + 1, etc). However, since we use this function only for 
+        // handling corner cases, it doesn't matter.
+
+        int32_t resultX, resultY;
+
+        if (aCoords.y >= (int32_t)mHeight)
+        {
+            // Wrap around the south pole
+            resultX = aCoords.x + mWidth / 2;
+            resultY = mHeight - 1;
+        }
+        else if (aCoords.y < 0)
+        {
+            // Wrap around the north pole
+            resultX = aCoords.x + mWidth / 2;
+            resultY = 0;
+        }
+        else
+        {
+            resultX = aCoords.x;
+            resultY = aCoords.y;
+        }
+
+        // Wrap x around the prime meridian
+        resultX = (uint32_t)Math::ModX(resultX, (int32_t)mWidth);
+
+        PG3_ASSERT_INTEGER_IN_RANGE(resultX, 0, mWidth  - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(resultY, 0, mHeight - 1);
+
+        return Vec2ui(resultX, resultY);
+    }
+
+private:
 
     const std::string    mFilename;
     const uint32_t       mWidth;
