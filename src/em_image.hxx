@@ -94,14 +94,24 @@ public:
         // UV to image coords
         const float x = aUV.x * (float)mWidth;
         const float y = aUV.y * (float)mHeight;
-        const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mWidth  - 1u);
-        const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mHeight - 1u);
 
         // Eval
         if (!mDoBilinFiltering)
+        {
+            // Box filter
+
+            const uint32_t x0 = Math::Clamp((uint32_t)(x + 0.5f), 0u, mWidth  - 1u);
+            const uint32_t y0 = Math::Clamp((uint32_t)(y + 0.5f), 0u, mHeight - 1u);
+            
             return ElementAt(x0, y0);
+        }
         else
         {
+            // Tent filter
+
+            const uint32_t x0 = Math::Clamp((uint32_t)x, 0u, mWidth  - 1u);
+            const uint32_t y0 = Math::Clamp((uint32_t)y, 0u, mHeight - 1u);
+
             const uint32_t x1 = (x0 + 1u) % mWidth;
             const uint32_t y1 = (y0 + 1u) % mHeight;
 
