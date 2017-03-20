@@ -8,6 +8,7 @@
 #include "direct_illumination.hxx"
 #include "path_tracer.hxx"
 #include "microfacet.hxx"
+#include "filter.hxx"
 #include "config.hxx"
 #include "process.hxx"
 
@@ -180,14 +181,17 @@ bool RunUnitTests(UnitTestBlockLevel aMaxUtBlockPrintLevel)
     //if (!Geom::_UnitTests(aMaxUtBlockPrintLevel))
     //    return false;
 
+    if (!Filter::_UnitTests(aMaxUtBlockPrintLevel))
+        return false;
+
     //if (!Sampling::_UT_SampleUniformSphericalTriangle(aMaxUtBlockPrintLevel))
     //    return false;
 
     //if (!Microfacet::_UT_HalfwayVectorRefractionLocal(aMaxUtBlockPrintLevel))
     //    return false;
 
-    if (!SteerableImageEmSampler::_UnitTests(aMaxUtBlockPrintLevel))
-        return false;
+    //if (!SteerableImageEmSampler::_UnitTests(aMaxUtBlockPrintLevel))
+    //    return false;
 
     return true;
 }

@@ -128,6 +128,9 @@
     <ClInclude Include="src\em_sampler.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\filter.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

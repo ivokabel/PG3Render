@@ -186,8 +186,10 @@ namespace Math
                 || std::is_same<float, TCoeff>::value
                 >::type
         >
-    TVal Lerp(TCoeff c, TVal x0, TVal x1)
+    TVal Lerp(const TCoeff &c, const TVal &x0, const TVal &x1)
     {
+        PG3_ASSERT_FLOAT_IN_RANGE(c, 0.f, 1.f);
+
         return ((TCoeff)1 - c) * x0 + c * x1;
     }
 
@@ -201,9 +203,9 @@ namespace Math
                 >::type
         >
     TVal Bilerp(
-        TCoeff cx, TCoeff cy, 
-        TVal x0y0, TVal x1y0,
-        TVal x0y1, TVal x1y1)
+        const TCoeff &cx, const TCoeff &cy, 
+        const TVal &x0y0, const TVal &x1y0,
+        const TVal &x0y1, const TVal &x1y1)
     {
         return Lerp(
             cy,
