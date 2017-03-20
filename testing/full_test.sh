@@ -5,10 +5,10 @@
 ###################################################################################################
 
 SCENES=`seq 0 38`
-ENVIRONMENT_MAPS="1 10"                 #`seq 0 12`
-ITERATIONS_COUNT=4
+ENVIRONMENT_MAPS="1 10"                 ###`seq 0 12`
+ITERATIONS_COUNT=4                      #16                     #
 SHORT_OUTPUT=true
-COMPARISON_MODE="compare_to_reference"  #"generate_references"  #"make_references_from_currents"  #"
+COMPARISON_MODE="compare_to_reference"  #"make_references_from_currents"  #"generate_references"  #
 ARCH_MODES="32 64"
 
 SCENES_WITH_EM="6 7 8 9 10 12 13 14 15 20 21 22 23 24 25 26 27 28    36"

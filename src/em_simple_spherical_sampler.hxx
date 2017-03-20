@@ -141,8 +141,8 @@ private:
 
             for (uint32_t column = 0; column < size.x; ++column)
             {
-                const float luminance = mEmImage->ElementAt(column, row).Luminance();
-                srcData[rowOffset + column] = sinAvgTheta * luminance;
+                const float avgLuminance = mEmImage->AveragePixelLuminance(column, row);
+                srcData[rowOffset + column] = sinAvgTheta * avgLuminance;
             }
         }
 

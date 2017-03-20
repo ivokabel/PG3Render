@@ -44,13 +44,11 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-### EM Filtering
-
-SCENES="20 22 25"
-EMS="10"            #"4"
+SCENES=22           #"20 22 25"
+EMS=4               #"4 10"
 ALGORITHMS="dlsa dbs dmis"
-ITERS="512"
-OT="PBRT_TentFilter"
+ITERS="256"
+OT="AvgLuminance"
 for SCENE in $SCENES; do
     for EM in $EMS; do
         for ALG in $ALGORITHMS; do

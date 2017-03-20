@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ImfRgbaFile.h>    // OpenEXR
+#include "filter.hxx"
 #include "spectrum.hxx"
 #include "geom.hxx"
 #include "debugging.hxx"
@@ -107,7 +108,7 @@ public:
         }
         else
         {
-            // Tent filter
+            // Triangle (tent) filter
 
             // Find the centre of the enclosing rectangle (vertices are middle points of EM pixels)
             const Vec2i centre(
@@ -126,7 +127,7 @@ public:
             const Vec2ui normCoords0 = NormalizeImgCoords(coords0);
             const Vec2ui normCoords1 = NormalizeImgCoords(coords1);
 
-            return Math::Bilerp(
+            return Filter::Triangle(
                 xLocal, yLocal,
                 ElementAt(normCoords0.x, normCoords0.y),
                 ElementAt(normCoords1.x, normCoords0.y),
@@ -141,6 +142,39 @@ public:
 
         const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
         return Evaluate(uv);
+    }
+
+    float AveragePixelLuminance(uint32_t aX, uint32_t aY) const
+    {
+        PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
+        PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
+
+        if (!mDoBilinFiltering)
+        {
+            // Box filter
+            return ElementAt(aX, aY).Luminance();
+        }
+        else
+        {
+            // Triangle (tent) filter
+
+            const Vec2ui coords0 = NormalizeImgCoords(Vec2i(aX - 1, aY - 1));
+            const Vec2ui coords1 = Vec2ui(aX, aY);
+            const Vec2ui coords2 = NormalizeImgCoords(Vec2i(aX + 1, aY + 1));
+
+            const float integral = Filter::TriangleIntegral(
+                ElementAt(coords0.x, coords0.y).Luminance(),
+                ElementAt(coords1.x, coords0.y).Luminance(),
+                ElementAt(coords2.x, coords0.y).Luminance(),
+                ElementAt(coords0.x, coords1.y).Luminance(),
+                ElementAt(coords1.x, coords1.y).Luminance(),
+                ElementAt(coords2.x, coords1.y).Luminance(),
+                ElementAt(coords0.x, coords2.y).Luminance(),
+                ElementAt(coords1.x, coords2.y).Luminance(),
+                ElementAt(coords2.x, coords2.y).Luminance());
+
+            return integral;
+        }
     }
 
     SpectrumF& ElementAt(uint32_t aX, uint32_t aY)
@@ -228,12 +262,12 @@ private:
         }
 
         // Wrap x around the prime meridian
-        resultX = (uint32_t)Math::ModX(resultX, (int32_t)mWidth);
+        resultX = Math::ModX(resultX, (int32_t)mWidth);
 
-        PG3_ASSERT_INTEGER_IN_RANGE(resultX, 0, mWidth  - 1);
-        PG3_ASSERT_INTEGER_IN_RANGE(resultY, 0, mHeight - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(resultX, 0, (int32_t)mWidth - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(resultY, 0, (int32_t)mHeight - 1);
 
-        return Vec2ui(resultX, resultY);
+        return Vec2ui((uint32_t)resultX, (uint32_t)resultY);
     }
 
 private:
