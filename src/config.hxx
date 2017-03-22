@@ -103,10 +103,6 @@ const Scene::BoxMask g_SceneConfigs[] =
     Scene::BoxMask(Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightPoint   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightEnv     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
-
-    // 37-38, debug scenes, delete this
-    Scene::BoxMask(Scene::kLightBox     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse),
-    Scene::BoxMask(Scene::kLightPoint   | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric | Scene::kWallsPhongDiffuse),
 };
 
 // Renderer configuration, holds algorithm, scene, and all other settings. Provides related routines.
