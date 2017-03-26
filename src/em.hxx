@@ -40,9 +40,9 @@ public:
 
         mTmpCosineSampler           = std::make_shared<CosineImageEmSampler>();
         mTmpSimpleSphericalSampler  = std::make_shared<SimpleSphericalImageEmSampler>();
-        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>(
-            SteerableImageEmSampler::BuildParameters(
-                Math::InfinityF(), 5, 7));
+        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>();
+            //SteerableImageEmSampler::BuildParameters(
+            //    Math::InfinityF(), 5, 7));
 
         if (mTmpCosineSampler)
             mTmpCosineSampler->Init(mEmImage);

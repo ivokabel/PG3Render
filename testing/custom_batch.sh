@@ -44,34 +44,48 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-SCENES=22           #"20 22 25"
-EMS=4               #"4 10"
-ALGORITHMS="dlsa dbs dmis"
-ITERS="256"
-OT="AvgLuminance"
-for SCENE in $SCENES; do
-    for EM in $EMS; do
-        for ALG in $ALGORITHMS; do
-            for ITER in $ITERS; do
-                render -s $SCENE -em $EM -a $ALG -i $ITER -ot $OT
-            done
-        done
-    done
-done
+### Associative arrays test
+
+#declare -A map=( ["key1"]="key1_val1 key1_val2" ["key2"]="key1_val1 key1_val2" )
+#
+#for key in "${!map[@]}"; do
+#    echo "Key:    $key"
+#    echo "Values: ${map[$key]}"
+#    for value in ${map[$key]}; do
+#       echo "Value:  $value"
+#    done
+#done
+
+### EM Filtering
+
+#SCENES="20 22 25"
+#EMS=4               #"4 10"
+#ALGORITHMS="dlsa dbs dmis"
+#ITERS="256"
+#OT="AvgLuminance"
+#for SCENE in $SCENES; do
+#    for EM in $EMS; do
+#        for ALG in $ALGORITHMS; do
+#            for ITER in $ITERS; do
+#                render -s $SCENE -em $EM -a $ALG -i $ITER -ot $OT
+#            done
+#        done
+#    done
+#done
 
 ### EM Samplers
 
-#SCENES="20 28"
-#EMS="3 4 10"
-#ALGORITHMS="dlsa dlss dbs dmis ptn pt"
-#ITERS="4"                   #"1 4 32 128"
+#SCENES="22"
+#EMS="12"
+#ALGORITHMS="dlsa dbs dmis"
+#ITERS="1024"
 #OT="SidednessAware"         #"EmssSll5Slu7"
 
 #for SCENE in $SCENES; do
 #    for EM in $EMS; do
 #        for ALG in $ALGORITHMS; do
 #            for ITER in $ITERS; do
-#                render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITER -ot $OT
+#                render -s $SCENE -em $EM -a $ALG -sb 1 -i $ITER
 #            done
 #        done
 #    done

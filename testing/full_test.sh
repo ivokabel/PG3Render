@@ -4,14 +4,29 @@
 # Settings
 ###################################################################################################
 
-SCENES=`seq 0 36`
-ENVIRONMENT_MAPS="1 10"                 ###`seq 0 12`
 ITERATIONS_COUNT=4                      #16                     #
-SHORT_OUTPUT=true
 COMPARISON_MODE="compare_to_reference"  #"make_references_from_currents"  #"generate_references"  #
+SCENES="0 1 2 3 4 5 6 7 8 9   13 14   16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36"
+declare -A SCENE_EM_MAP=(
+    ["6"]=" 1    10"
+    ["7"]=" 1    10"
+    ["8"]=" 1 12 10"
+    ["9"]=" 1 12 10"
+    ["13"]="1 12 10"
+    ["14"]="1 12 10"
+    ["20"]="1 12 10"
+    ["21"]="1 12 10"
+    ["22"]="1 12 10"
+    ["23"]="1 12 10"
+    ["24"]="1 12 10"
+    ["25"]="1 12 10"
+    ["26"]="1 12 10"
+    ["27"]="1 12 10"
+    ["28"]="1 12 10"
+    ["36"]="1    10"
+)
+SHORT_OUTPUT=true
 ARCH_MODES="32 64"
-
-SCENES_WITH_EM="6 7 8 9 10   12 13 14 15   20 21 22 23 24 25 26 27 28    36"
 
 TESTING_DIR="./testing"
 TESTING_DIR_WIN=".\\testing"
@@ -174,8 +189,8 @@ do
     if [ "$COMPARISON_MODE" != "make_references_from_currents" ]; then
         for scene in $SCENES;
         do
-            if [[ $SCENES_WITH_EM =~ (^| )$scene($| ) ]]; then
-                for em in $ENVIRONMENT_MAPS;
+            if [[ "${!SCENE_EM_MAP[@]}" =~ (^| )$scene($| ) ]]; then
+                for em in ${SCENE_EM_MAP[$scene]};
                 do
                     run_rendering_set $scene $em
                 done
