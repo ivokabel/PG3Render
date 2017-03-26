@@ -3,6 +3,8 @@
 #include "unit_testing.hxx"
 #include "math.hxx"
 #include "types.hxx"
+#include <sstream>
+#include <iomanip>
 
 namespace Filter
 {

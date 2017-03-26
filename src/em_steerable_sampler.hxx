@@ -5206,18 +5206,18 @@ public:
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_Init(aMaxUtBlockPrintLevel))
-        //    return false;
-        if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
+        if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
             return false;
-        //if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+        if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_Init(aMaxUtBlockPrintLevel))
+            return false;
+        //if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
         //    return false;
+        if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
+            return false;
 
         return true;
     }
