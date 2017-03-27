@@ -6,9 +6,11 @@
 #include "camera.hxx"
 #include "frame_buffer.hxx"
 #include "scene.hxx"
-#include "types.hxx"
+#include "aux_dbg_params.hxx"
+#include "debugging.hxx"
 #include "utils.hxx"
 #include "hard_config.hxx"
+#include "types.hxx"
 
 #include <omp.h>
 #include <string>
@@ -302,11 +304,11 @@ public:
         if (!mAuxDbgParams.IsEmpty())
             printf(
                 "Debugging: "
-                "Aux float param1 %f, "
-                "aux float param2 %f, "
-                "aux float param3 %f, "
-                "aux float param4 %f, "
-                "aux float param5 %f"
+                "Aux param1 %f, "
+                "aux param2 %f, "
+                "aux param3 %f, "
+                "aux param4 %f, "
+                "aux param5 %f"
                 "\n",
                 mAuxDbgParams.float1,
                 mAuxDbgParams.float2,
@@ -975,5 +977,5 @@ public:
     float                    mDbgSplittingLightToBrdfSmplRatio;    // Number of light samples per one BSDF sample.
 
     // Auxiliary debugging ad hoc parameters
-    Scene::AuxDbgParams      mAuxDbgParams;
+    AuxDbgParams             mAuxDbgParams;
 };

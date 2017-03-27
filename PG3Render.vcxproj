@@ -188,6 +188,7 @@
     <ClCompile Include="src\process.cxx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\aux_dbg_params.hxx" />
     <ClInclude Include="src\camera.hxx" />
     <ClInclude Include="src\config.hxx" />
     <ClInclude Include="src\debugging.hxx" />

@@ -6,6 +6,7 @@
 #include "camera.hxx"
 #include "materials.hxx"
 #include "lights.hxx"
+#include "aux_dbg_params.hxx"
 #include "types.hxx"
 #include "debugging.hxx"
 #include "utils.hxx"
@@ -170,36 +171,9 @@ public:
         kEMDefault                      = kEMConstBluish,
     };
 
-    class AuxDbgParams
-    {
-    public:
-        float   float1;
-        float   float2;
-        float   float3;
-        float   float4;
-        float   float5;
-
-        AuxDbgParams() :
-            float1(Math::InfinityF()),
-            float2(Math::InfinityF()),
-            float3(Math::InfinityF()),
-            float4(Math::InfinityF()),
-            float5(Math::InfinityF()) {}
-
-        bool IsEmpty() const
-        {
-            return
-                (  (float1 == Math::InfinityF())
-                && (float2 == Math::InfinityF())
-                && (float3 == Math::InfinityF())
-                && (float4 == Math::InfinityF())
-                && (float5 == Math::InfinityF()));
-        }
-    };
-
     void LoadCornellBox(
         const Vec2i         &aResolution,
-        AuxDbgParams        &aAuxDbgParams,
+        const AuxDbgParams  &aAuxDbgParams,
         BoxMask              aBoxMask = kDefault,
         EnvironmentMapType   aEnvironmentMapType = kEMDefault
         )
@@ -801,7 +775,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\Debugging\\Single pixel.exr",
-                        0.40f, 10.0f);
+                        0.40f, 10.0f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -809,7 +784,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\pisa.exr", 
-                        0.05f, 1.0f);
+                        0.05f, 1.0f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -817,7 +793,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\glacier.exr",
-                        0.05f, 1.0f);
+                        0.05f, 1.0f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -825,7 +802,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr",
-                        0.83f, 1.5f);
+                        0.83f, 1.5f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -833,7 +811,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\hdrlabs.com\\Playa_Sunrise\\Playa_Sunrise.exr",
-                        0.1f, 2.0f);
+                        0.1f, 2.0f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -841,7 +820,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\ennis.exr",
-                        0.53f, 0.2f);
+                        0.53f, 0.2f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -849,7 +829,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr",
-                        -0.12f, 0.5f);
+                        -0.12f, 0.5f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -857,7 +838,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr",
-                        -0.12f, 3.0f);
+                        -0.12f, 3.0f,
+                        true, aAuxDbgParams);
                     break;
                 }
 
@@ -865,7 +847,8 @@ public:
                 {
                     light->LoadEnvironmentMap(
                         ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr",
-                        0.0f, 7500.0f);
+                        0.0f, 7500.0f,
+                        true, aAuxDbgParams);
                     break;
                 }
 

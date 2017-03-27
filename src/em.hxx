@@ -5,11 +5,13 @@
 #include "em_steerable_sampler.hxx"
 #include "em_image.hxx"
 #include "spectrum.hxx"
-#include "debugging.hxx"
 #include "geom.hxx"
-#include "math.hxx"
 #include "distribution.hxx"
+#include "aux_dbg_params.hxx"
 #include "types.hxx"
+#include "math.hxx"
+#include "types.hxx"
+#include "debugging.hxx"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // EnvironmentMap is adopted from SmallUPBP project and used as a reference for my own 
@@ -21,10 +23,11 @@ class EnvironmentMap
 public:
     // Loads an OpenEXR image with an environment map with latitude-longitude mapping.
     EnvironmentMap(
-        const std::string   aFilename,
-        float               aRotate,
-        float               aScale,
-        bool                aDoBilinFiltering)
+        const std::string    aFilename,
+        float                aRotate,
+        float                aScale,
+        bool                 aDoBilinFiltering,
+        const AuxDbgParams  &aAuxDbgParams = AuxDbgParams())
     {
         try
         {
@@ -40,9 +43,12 @@ public:
 
         mTmpCosineSampler           = std::make_shared<CosineImageEmSampler>();
         mTmpSimpleSphericalSampler  = std::make_shared<SimpleSphericalImageEmSampler>();
-        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>();
-            //SteerableImageEmSampler::BuildParameters(
-            //    Math::InfinityF(), 5, 7));
+        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>(
+            SteerableImageEmSampler::BuildParameters(
+                //Math::InfinityF(), 5, 7));
+                //Math::InfinityF(), 8, 10));
+                //aAuxDbgParams.float1, aAuxDbgParams.float2
+                ));
 
         if (mTmpCosineSampler)
             mTmpCosineSampler->Init(mEmImage);

@@ -8,6 +8,8 @@
 #include "spectrum.hxx"
 #include "rng.hxx"
 #include "em.hxx"
+#include "aux_dbg_params.hxx"
+#include "debugging.hxx"
 #include "types.hxx"
 #include "hard_config.hxx"
 
@@ -360,12 +362,13 @@ public:
     }
 
     virtual void LoadEnvironmentMap(
-        const std::string   filename,
-        float               rotate = 0.0f,
-        float               scale = 1.0f,
-        bool                doBilinFiltering = true)
+        const std::string    aFilename,
+        float                aRotate = 0.0f,
+        float                aScale = 1.0f,
+        bool                 aDoBilinFiltering = true,
+        const AuxDbgParams  &aAuxDbgParams = AuxDbgParams())
     {
-        mEnvMap = new EnvironmentMap(filename, rotate, scale, doBilinFiltering);
+        mEnvMap = new EnvironmentMap(aFilename, aRotate, aScale, aDoBilinFiltering, aAuxDbgParams);
     }
 
     // Returns amount of incoming radiance from the direction.
