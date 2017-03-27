@@ -44,6 +44,27 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+SCENE=22
+EMS="12 10 11""
+ITERS=256
+
+for EM in $EMS; do
+    # Min-Max 5-7
+    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 7  -auxf4 0   -ot "EmssE0.10Sll5Slu7Tms0"
+
+    # Min-Max 5-7  + Skip large triangles 40
+    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 7  -auxf4 40  -ot "EmssE0.10Sll5Slu7Tms40"
+
+    # Min-Max 5-10 + Skip large triangles 40
+    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.10Sll5Slu10Tms40"
+
+    # Min-Max 5-10 + Skip large triangles 40 + Larger error 0.20
+    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.20 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.20Sll5Slu10Tms40"
+
+    # Min-Max 5-10 + Skip large triangles 40 + Larger error 0.30
+    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.30 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.30Sll5Slu10Tms40"
+done
+
 ### Associative arrays test
 
 #declare -A map=( ["key1"]="key1_val1 key1_val2" ["key2"]="key1_val1 key1_val2" )

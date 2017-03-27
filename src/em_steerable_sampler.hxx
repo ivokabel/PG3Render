@@ -14,6 +14,7 @@
 #include <stack>
 #include <array>
 #include <memory>
+#include <time.h>
 
 // Environment map sampler based on the paper "Steerable Importance Sampling"
 // from Kartic Subr and Jim Arvo, 2007
@@ -27,49 +28,70 @@ public:
     public:
 
         BuildParameters(
-            float   aMaxApproxError = Math::InfinityF(),
-            float   aMinSubdivLevel = Math::InfinityF(),
-            float   aMaxSubdivLevel = Math::InfinityF(),
-            float   aOversamplingFactorDbg = Math::InfinityF(),
-            float   aMaxTriangleSpanDbg = Math::InfinityF())
-            :
-            maxApproxError(aMaxApproxError),
-            minSubdivLevel(aMinSubdivLevel),
-            maxSubdivLevel(aMaxSubdivLevel),
-            oversamplingFactorDbg(aOversamplingFactorDbg),
-            maxTriangleSpanDbg(aMaxTriangleSpanDbg)
-        {}
+            float   aMaxApproxError             = Math::InfinityF(),
+            float   aMinSubdivLevel             = Math::InfinityF(), // uint32_t, float for signaling unset value
+            float   aMaxSubdivLevel             = Math::InfinityF(), // uint32_t, float for signaling unset value
+            float   aMaxTriangleSamplesPerDim   = Math::InfinityF(), // uint32_t, float for signaling unset value
+            float   aOversamplingFactorDbg      = Math::InfinityF(),
+            float   aMaxTriangleSpanDbg         = Math::InfinityF())
+        {
+            maxApproxError =
+                  aMaxApproxError == Math::InfinityF()
+                ? 0.25f : aMaxApproxError;
+            minSubdivLevel =
+                  aMinSubdivLevel == Math::InfinityF()
+                ? 5u : static_cast<uint32_t>(aMinSubdivLevel);
+            maxSubdivLevel =
+                  aMaxSubdivLevel == Math::InfinityF()
+                ? 10u : static_cast<uint32_t>(aMaxSubdivLevel);
+            maxTriangleSamplesPerDim =
+                  aMaxTriangleSamplesPerDim == Math::InfinityF()
+                ? 40u : static_cast<uint32_t>(aMaxTriangleSamplesPerDim);
+
+            oversamplingFactorDbg =
+                  aOversamplingFactorDbg == Math::InfinityF()
+                ? 0.7f : aOversamplingFactorDbg;
+            maxTriangleSpanDbg =
+                  aMaxTriangleSpanDbg == Math::InfinityF()
+                ? 1.1f : aMaxTriangleSpanDbg;
+        }
 
         float GetMaxApproxError() const
         {
-            return (maxApproxError != Math::InfinityF()) ? maxApproxError : 0.1f;
+            return maxApproxError;
         }
 
         uint32_t GetMinSubdivLevel() const
         {
-            return (minSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(minSubdivLevel) : 5;
+            return minSubdivLevel;
         }
 
         uint32_t GetMaxSubdivLevel() const
         {
-            return (maxSubdivLevel != Math::InfinityF()) ? static_cast<uint32_t>(maxSubdivLevel) : 7;
+            return maxSubdivLevel;
+        }
+
+        uint32_t GetMaxTriangleSamplesPerDim() const
+        {
+            return maxTriangleSamplesPerDim;
         }
 
         float GetOversamplingFactorDbg() const
         {
-            return (oversamplingFactorDbg != Math::InfinityF()) ? oversamplingFactorDbg : 0.7f;
+            return oversamplingFactorDbg;
         }
 
         float GetMaxTriangleSpanDbg() const
         {
-            return (maxTriangleSpanDbg != Math::InfinityF()) ? maxTriangleSpanDbg : 1.1f;
+            return maxTriangleSpanDbg;
         }
 
     protected:
 
         float       maxApproxError;
-        float       minSubdivLevel; // uint32_t, float used for signaling unset value
-        float       maxSubdivLevel; // uint32_t, float used for signaling unset value
+        uint32_t    minSubdivLevel;
+        uint32_t    maxSubdivLevel;
+        uint32_t    maxTriangleSamplesPerDim;
 
         float       oversamplingFactorDbg;
         float       maxTriangleSpanDbg;
@@ -1532,6 +1554,9 @@ protected:
         ossPath << "_slu";
         ossPath << aParams.GetMaxSubdivLevel();
 
+        ossPath << "_tms";
+        ossPath << aParams.GetMaxTriangleSamplesPerDim();
+
         ossPath << "_ts";
         ossPath << std::setprecision(2) << aParams.GetMaxTriangleSpanDbg();
 
@@ -1546,32 +1571,33 @@ protected:
     }
 
 
-    static const char * SaveLoadFileHeader11()
+    static const char * SaveLoadFileHeader()
     {
-        return "Environment Map Steerable Sampler Data, format ver. 1.1\n";
+        return "Environment Map Steerable Sampler Data, format ver. 1.2\n";
     }
 
 
-    static bool SaveToDisk11_HeaderAndParams(
+    static bool SaveToDisk_HeaderAndParams(
         std::ofstream                   &aOfs,
         const BuildParameters           &aParams,
         const bool                       aUseDebugSave)
     {
         // Header
-        Utils::IO::WriteStringToStream(aOfs, SaveLoadFileHeader11(), aUseDebugSave);
+        Utils::IO::WriteStringToStream(aOfs, SaveLoadFileHeader(), aUseDebugSave);
 
         // Build parameters
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(),         aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMinSubdivLevel(),         aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(),         aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(),     aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(),  aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(),             aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMinSubdivLevel(),             aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(),             aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSamplesPerDim(),   aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(),         aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(),      aUseDebugSave);
 
         return true;
     }
 
 
-    static bool SaveToDisk11_Vertices(
+    static bool SaveToDisk_Vertices(
         std::ofstream                   &aOfs,
         const VertexStorage             &aVertexStorage,
         const bool                       aUseDebugSave)
@@ -1592,7 +1618,7 @@ protected:
     }
 
 
-    static bool SaveToDisk11_TreeNode(
+    static bool SaveToDisk_TreeNode(
         std::ofstream                   &aOfs,
         const TreeNodeBase              *aNode,
         const bool                       aUseDebugSave)
@@ -1605,8 +1631,8 @@ protected:
         if (!aNode->IsTriangleNode())
         {
             const TriangleSetNode *triangleSetNode = static_cast<const TriangleSetNode*>(aNode);
-            SaveToDisk11_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
-            SaveToDisk11_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
+            SaveToDisk_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
+            SaveToDisk_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
         }
         else
         {
@@ -1619,7 +1645,7 @@ protected:
     }
 
         
-    static bool SaveToDisk11_Tree(
+    static bool SaveToDisk_Tree(
         std::ofstream                   &aOfs,
         const TreeNodeBase              *aTreeRoot,
         const bool                       aUseDebugSave)
@@ -1631,14 +1657,14 @@ protected:
         Utils::IO::WriteVariableToStream(aOfs,    triangleCount, aUseDebugSave);
 
         // Nodes
-        SaveToDisk11_TreeNode(aOfs, aTreeRoot, aUseDebugSave);
+        SaveToDisk_TreeNode(aOfs, aTreeRoot, aUseDebugSave);
 
         return true;
     }
 
 
     // Save internal structures needed for sampling to disk
-    static bool SaveToDisk11(
+    static bool SaveToDisk(
         const VertexStorage             &aVertexStorage,
         const TreeNodeBase              *aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
@@ -1660,15 +1686,15 @@ protected:
             return false;
 
         // Header and Params
-        if (!SaveToDisk11_HeaderAndParams(ofs, aParams, aUseDebugSave))
+        if (!SaveToDisk_HeaderAndParams(ofs, aParams, aUseDebugSave))
             return false;
 
         // Vertices
-        if (!SaveToDisk11_Vertices(ofs, aVertexStorage, aUseDebugSave))
+        if (!SaveToDisk_Vertices(ofs, aVertexStorage, aUseDebugSave))
             return false;
 
         // Tree
-        if (!SaveToDisk11_Tree(ofs, aTreeRoot, aUseDebugSave))
+        if (!SaveToDisk_Tree(ofs, aTreeRoot, aUseDebugSave))
             return false;
 
         return true;
@@ -1681,16 +1707,16 @@ protected:
         if (!IsBuilt())
             return false;
 
-        return SaveToDisk11(mVertexStorage, mTreeRoot.get(), *mEmImage, mParams);
+        return SaveToDisk(mVertexStorage, mTreeRoot.get(), *mEmImage, mParams);
     }
 
 
-    static bool LoadFromDisk11_HeaderAndParams(
+    static bool LoadFromDisk_HeaderAndParams(
         std::ifstream                   &aIfs,
         const BuildParameters           &aParams)
     {
         // Header
-        const char *header = SaveLoadFileHeader11();
+        const char *header = SaveLoadFileHeader();
         const size_t buffSize = strlen(header) + 1; // with trailing zero
         std::unique_ptr<char> buff(new char[buffSize]);
         if (!Utils::IO::LoadStringFromStream(aIfs, buff.get(), buffSize))
@@ -1703,6 +1729,7 @@ protected:
         float maxApproxError;
         uint32_t minSubdivLevel;
         uint32_t maxSubdivLevel;
+        uint32_t maxTriangleSamplesPerDim;
         float maxTriangleSpanDbg;
         float oversamplingFactorDbg;
 
@@ -1711,6 +1738,8 @@ protected:
         if (!Utils::IO::LoadVariableFromStream(aIfs, minSubdivLevel))
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxSubdivLevel))
+            return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSamplesPerDim))
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSpanDbg))
             return false;
@@ -1723,6 +1752,8 @@ protected:
             return false;
         if (maxSubdivLevel != aParams.GetMaxSubdivLevel())
             return false;
+        if (maxTriangleSamplesPerDim != aParams.GetMaxTriangleSamplesPerDim())
+            return false;
         if (maxTriangleSpanDbg != aParams.GetMaxTriangleSpanDbg())
             return false;
         if (oversamplingFactorDbg != aParams.GetOversamplingFactorDbg())
@@ -1732,7 +1763,7 @@ protected:
     }
 
 
-    static bool LoadFromDisk11_Vertices(
+    static bool LoadFromDisk_Vertices(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage)
     {
@@ -1758,7 +1789,7 @@ protected:
     }
 
 
-    static bool LoadFromDisk11_TreeNode(
+    static bool LoadFromDisk_TreeNode(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &oNode)
@@ -1770,9 +1801,9 @@ protected:
         if (!isTriangleNode)
         {
             std::unique_ptr<TreeNodeBase> leftChild, rightChild;
-            if (!LoadFromDisk11_TreeNode(aIfs, aVertexStorage, leftChild))
+            if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, leftChild))
                 return false;
-            if (!LoadFromDisk11_TreeNode(aIfs, aVertexStorage, rightChild))
+            if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, rightChild))
                 return false;
 
             oNode.reset(new TriangleSetNode(leftChild.release(), rightChild.release()));
@@ -1805,7 +1836,7 @@ protected:
     }
 
 
-    static bool LoadFromDisk11_Tree(
+    static bool LoadFromDisk_Tree(
         std::ifstream                   &aIfs,
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot)
@@ -1820,7 +1851,7 @@ protected:
             return false;
 
         // Nodes
-        if (!LoadFromDisk11_TreeNode(aIfs, aVertexStorage, aTreeRoot))
+        if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, aTreeRoot))
             return false;
 
         // Sanity check: node counts
@@ -1834,7 +1865,7 @@ protected:
 
 
     // Loads pre-built internal structures needed for sampling
-    static bool LoadFromDisk11(
+    static bool LoadFromDisk(
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
@@ -1855,15 +1886,15 @@ protected:
             return false;
 
         // Header
-        if (!LoadFromDisk11_HeaderAndParams(ifs, aParams))
+        if (!LoadFromDisk_HeaderAndParams(ifs, aParams))
             return false;
 
         // Vertices
-        if (!LoadFromDisk11_Vertices(ifs, aVertexStorage))
+        if (!LoadFromDisk_Vertices(ifs, aVertexStorage))
             return false;
 
         // Tree
-        if (!LoadFromDisk11_Tree(ifs, aVertexStorage, aTreeRoot))
+        if (!LoadFromDisk_Tree(ifs, aVertexStorage, aTreeRoot))
             return false;
 
         // Sanity tests on stream
@@ -1894,7 +1925,7 @@ protected:
         if (!mEmImage)
             return false;
 
-        if (!LoadFromDisk11(mVertexStorage, mTreeRoot, *mEmImage, mParams))
+        if (!LoadFromDisk(mVertexStorage, mTreeRoot, *mEmImage, mParams))
         {
             ReleaseSamplingData();
             return false;
@@ -2429,17 +2460,36 @@ protected:
 
         TriangulationStats(
             const EnvironmentMapImage   &aEmImage,
-            const BuildParameters       &aBuildParams
-            ) :
+            const BuildParameters       &aBuildParams,
+            bool                         aQuiet)
+            :
+            mQuiet(aQuiet),
             mEmWidth(aEmImage.Width()),
             mEmHeight(aEmImage.Height()),
             mBuildParams(aBuildParams),
-            mEmSampleCounts(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
+            mEmSampleCounts(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0)),
 #ifdef _DEBUG
-            //,mEmHasSampleFlags(aEmImage.Height(), std::vector<std::string>(aEmImage.Width(), "*"))
-            , mEmHasSampleFrom(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0))
+            //mEmHasSampleFlags(aEmImage.Height(), std::vector<std::string>(aEmImage.Width(), "*"))
+            mEmHasSampleFrom(aEmImage.Height(), std::vector<uint32_t>(aEmImage.Width(), 0)),
 #endif
-        {}
+            mStartTime(clock())
+        {
+            if (!mQuiet)
+                printf(
+                    "\nSteerable Sampler - Triangulation Parameters:\n"
+                    "MaxApproxError:            %.4f\n"
+                    "MinSubdivLevel:            %d\n"
+                    "MaxSubdivLevel:            %d\n"
+                    "MaxTriangleSamplesPerDim:  %d\n"
+                    "OversamplingFactorDbg:     %.4f\n"
+                    "MaxTriangleSpanDbg:        %.4f\n",
+                    mBuildParams.GetMaxApproxError(),
+                    mBuildParams.GetMinSubdivLevel(),
+                    mBuildParams.GetMaxSubdivLevel(),
+                    mBuildParams.GetMaxTriangleSamplesPerDim(),
+                    mBuildParams.GetOversamplingFactorDbg(),
+                    mBuildParams.GetMaxTriangleSpanDbg());
+        }
 
         // This class is not copyable because of a const member.
         // If we don't delete the assignment operator
@@ -2501,18 +2551,14 @@ protected:
 
         void Print()
         {
-            printf(
-                "\nSteerable Sampler - Triangulation Parameters:\n"
-                "MaxApproxError:        %.4f\n"
-                "MinSubdivLevel:        %d\n"
-                "MaxSubdivLevel:        %d\n"
-                "OversamplingFactorDbg: %.4f\n"
-                "MaxTriangleSpanDbg:    %.4f\n",
-                mBuildParams.GetMaxApproxError(),
-                mBuildParams.GetMinSubdivLevel(),
-                mBuildParams.GetMaxSubdivLevel(),
-                mBuildParams.GetOversamplingFactorDbg(),
-                mBuildParams.GetMaxTriangleSpanDbg());
+            if (mQuiet)
+                return;
+
+            const time_t endTime = clock();
+            const float timeSeconds = float(endTime - mStartTime) / CLOCKS_PER_SEC;
+            std::string timeHumanReadable;
+            Utils::SecondsToHumanReadable(timeSeconds, timeHumanReadable);
+            printf("Steerable Sampler - Triangulation Time: %s\n", timeHumanReadable.c_str());
 
             printf("\nSteerable Sampler - Triangulation Statistics:\n");
             if (mLevelStats.size() > 0)
@@ -2680,6 +2726,8 @@ protected:
         }
     protected:
 
+        bool                                        mQuiet;
+
         std::vector<SingleLevelTriangulationStats>  mLevelStats;
         uint32_t                                    mEmWidth;
         uint32_t                                    mEmHeight;
@@ -2697,6 +2745,8 @@ protected:
         //std::vector<std::vector<std::string>>       mEmHasSampleFlags; // to be inspected within debugger
         std::vector<std::vector<uint32_t>>          mEmHasSampleFrom; // to be inspected within debugger
 #endif
+
+        const clock_t                               mStartTime;
     };
 
 
@@ -2707,9 +2757,10 @@ protected:
 
         TriangulationStatsDummy(
             const EnvironmentMapImage   &aEmImage,
-            const BuildParameters       &aBuildParams)
+            const BuildParameters       &aBuildParams,
+            bool                         aQuiet)
         {
-            aEmImage, aBuildParams; // unused params
+            aEmImage, aBuildParams, aQuiet; // unused params
         }
 
         bool IsActive()
@@ -2781,7 +2832,7 @@ public: // debug: public is for visualisation/testing purposes
 
         std::deque<TriangleNode*> toDoTriangles;
 
-        TriangulationStatsSwitchable stats(aEmImage, aParams);
+        TriangulationStatsSwitchable stats(aEmImage, aParams, false);
 
         if (!GenerateInitialEmTriangulation(toDoTriangles, aVertexStorage, aEmImage))
             return false;
@@ -3142,6 +3193,11 @@ protected:
                                 minSinClamped, maxSinClamped,
                                 minSamplesPerDimF, maxSamplesPerDimF,
                                 aParams);
+        const uint32_t maxSamplesPerDim = (uint32_t)std::ceil(maxSamplesPerDimF);
+
+        if (   (aParams.GetMaxTriangleSamplesPerDim() != 0)
+            && (aParams.GetMaxTriangleSamplesPerDim() < maxSamplesPerDim))
+            return true;
 
         // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
         const auto triangleSpan = maxSamplesPerDimF / minSamplesPerDimF;
@@ -3190,7 +3246,7 @@ protected:
         // Sample and check error
         const bool result = IsEstimationErrorTooLarge(
             aWholeTriangle, aVertexStorage, aVertex0, aVertex1, aVertex2,
-            (uint32_t)std::ceil(maxSamplesPerDimF),
+            maxSamplesPerDim,
             aEmImage, aParams, aStats);
 
         return result;
@@ -3205,7 +3261,6 @@ protected:
         const BuildParameters       &aParams,
         TTriangulationStats         &aStats)
     {
-        // TODO: Build triangle count/size limit into the sub-division criterion (if too small, stop)
         if (aTriangle.subdivLevel < aParams.GetMinSubdivLevel())
             return true;
         if (aTriangle.subdivLevel >= aParams.GetMaxSubdivLevel())
@@ -3914,7 +3969,7 @@ public:
         std::list<TreeNodeBase*>    &oRefinedTriangles,
         std::deque<TriangleNode*>   &aInitialTriangles,
         VertexStorage               &aVertexStorage,
-        BuildParameters             &aParams,
+        const BuildParameters       &aParams,
         uint32_t                     aExpectedRefinedCount,
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         TTriangulationStats         &aStats,
@@ -4088,7 +4143,7 @@ public:
     static bool _UT_Init_SingleEm(
         const UnitTestBlockLevel     aMaxUtBlockPrintLevel,
         char                        *aTestName,
-        float                        aMaxSubdivLevel,
+        const BuildParameters       &aParams,
         uint32_t                     aExpectedRefinedCount,
         bool                         aCheckSamplingCoverage,
         char                        *aImagePath)
@@ -4109,8 +4164,6 @@ public:
         std::list<TreeNodeBase*> refinedTriangles;
         std::unique_ptr<TreeNodeBase> treeRoot;
 
-        BuildParameters params(Math::InfinityF(), Math::InfinityF(), aMaxSubdivLevel);
-
         // Initial triangulation
         if (!_UT_InitialTriangulation(
                 initialTriangles,
@@ -4126,12 +4179,12 @@ public:
         bool refinePassed;
         if (aCheckSamplingCoverage)
         {
-            TriangulationStats stats(*image.get(), params);
+            TriangulationStats stats(*image.get(), aParams, true);
             refinePassed = _UT_RefineTriangulation(
                 refinedTriangles,
                 initialTriangles,
                 vertexStorage,
-                params,
+                aParams,
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
                 stats,
@@ -4139,12 +4192,12 @@ public:
         }
         else
         {
-            TriangulationStatsDummy stats(*image.get(), params);
+            TriangulationStatsDummy stats(*image.get(), aParams, true);
             refinePassed = _UT_RefineTriangulation(
                 refinedTriangles,
                 initialTriangles,
                 vertexStorage,
-                params,
+                aParams,
                 aExpectedRefinedCount,
                 aMaxUtBlockPrintLevel,
                 stats,
@@ -4165,7 +4218,7 @@ public:
         // Save/Load
         if (!_UT_SaveToAndLoadFromDisk(
                 aMaxUtBlockPrintLevel, eutblSubTestLevel2,
-                vertexStorage, treeRoot, *image.get(), params))
+                vertexStorage, treeRoot, *image.get(), aParams))
             return false;
 
         PG3_UT_PASSED(aMaxUtBlockPrintLevel, eutblSubTestLevel1, "%s", aTestName);
@@ -4397,29 +4450,29 @@ public:
         VertexStorage                   &aVertexStorage,
         std::unique_ptr<TreeNodeBase>   &aTreeRoot,
         const EnvironmentMapImage       &aEmImage,
-        BuildParameters                 &aParams)
+        const BuildParameters           &aParams)
     {
-        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
+        PG3_UT_BEGIN(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
 
         const bool isDebugging = false; // makes the file more human readable (but machine un-readable!)
 
         // Save
-        if (!SaveToDisk11(aVertexStorage, aTreeRoot.get(), aEmImage,aParams, isDebugging))
+        if (!SaveToDisk(aVertexStorage, aTreeRoot.get(), aEmImage, aParams, isDebugging))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
-                "SaveToDisk11() failed!");
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
+                "SaveToDisk() failed!");
             return false;
         }
 
         // Load
         VertexStorage                   loadedVertexStorage;
         std::unique_ptr<TreeNodeBase>   loadedTreeRoot;
-        if (!LoadFromDisk11(loadedVertexStorage, loadedTreeRoot, aEmImage, aParams))
+        if (!LoadFromDisk(loadedVertexStorage, loadedTreeRoot, aEmImage, aParams))
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
-                "LoadFromDisk11() failed!");
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
+                "LoadFromDisk() failed!");
             return false;
         }
 
@@ -4427,7 +4480,7 @@ public:
         if (aVertexStorage != loadedVertexStorage)
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
                 "Loaded vertex storage differs from the saved one!");
             return false;
         }
@@ -4435,7 +4488,7 @@ public:
         if (!loadedTreeRoot)
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
                 "Loaded tree is empty!");
             return false;
         }
@@ -4444,12 +4497,12 @@ public:
         if (*aTreeRoot != *loadedTreeRoot)
         {
             PG3_UT_FAILED(
-                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11",
+                aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk",
                 "Loaded tree differs from the saved one!");
             return false;
         }
 
-        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk11 and LoadFromDisk11");
+        PG3_UT_PASSED(aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "SaveToDisk and LoadFromDisk");
         return true;
     }
 
@@ -4470,44 +4523,47 @@ public:
               20u // we start with icosahedron
             * (uint32_t)std::pow(4u, minSubdivLevel); // each level quadruples the minimal count
 
+        BuildParameters paramsNoMaxTriangleSamples(Math::InfinityF(), Math::InfinityF(), Math::InfinityF(), 0);
+        BuildParameters paramsMinSubdiv(Math::InfinityF(), Math::InfinityF(), 5);
+
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 8x4", Math::InfinityF(), aMinimalRefinedCount, true,
+                "Const white 8x4", paramsNoMaxTriangleSamples, aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 8x4.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 512x256", Math::InfinityF(), aMinimalRefinedCount, true,
+                "Const white 512x256", paramsNoMaxTriangleSamples, aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 512x256.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Const white 1024x512", Math::InfinityF(), aMinimalRefinedCount, true,
+                "Const white 1024x512", paramsNoMaxTriangleSamples, aMinimalRefinedCount, true,
                 ".\\Light Probes\\Debugging\\Const white 1024x512.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Single pixel", 5, 0, false,
+                "Single pixel", paramsMinSubdiv, 0, false,
                 ".\\Light Probes\\Debugging\\Single pixel.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Three point lighting 1024x512", 5, 0, false,
+                "Three point lighting 1024x512", paramsMinSubdiv, 0, false,
                 ".\\Light Probes\\Debugging\\Three point lighting 1024x512.exr"
                 ))
             return false;
 
         if (!_UT_Init_SingleEm(
                 aMaxUtBlockPrintLevel,
-                "Satellite 4000x2000", 5, 0, false,
+                "Satellite 4000x2000", paramsMinSubdiv, 0, false,
                 ".\\Light Probes\\hdr-sets.com\\HDR_SETS_SATELLITE_01_FREE\\107_ENV_DOMELIGHT.exr"
                 ))
             return false;
@@ -4516,14 +4572,14 @@ public:
 
         //if (!_UT_Init_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Doge2", 5, 0, false,
+        //        "Doge2", paramsMinSubdiv, 0, false,
         //        ".\\Light Probes\\High-Resolution Light Probe Image Gallery\\doge2.exr"
         //        ))
         //    return false;
 
         //if (!_UT_Init_SingleEm(
         //        aMaxUtBlockPrintLevel,
-        //        "Peace Garden", 5, 0, false,
+        //        "Peace Garden", paramsMinSubdiv, 0, false,
         //        ".\\Light Probes\\panocapture.com\\PeaceGardens_Dusk.exr"
         //        ))
         //    return false;
