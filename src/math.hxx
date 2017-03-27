@@ -320,7 +320,7 @@ namespace Math
 
         // debug
         function = aFunction.Evaluate(x);
-        if (function > T(0.001))
+        if (function > T(0.002))
             return x;
 
         return x;

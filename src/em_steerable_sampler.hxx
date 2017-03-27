@@ -2016,8 +2016,6 @@ public:
         }
         else if (aSampleBackSide)
         {
-            PG3_ERROR_CODE_NOT_TESTED("");
-
             Frame lowerSurfFrame = aSurfFrame;
             lowerSurfFrame.SwitchNormal();
 
@@ -2141,8 +2139,6 @@ public:
         }
         else if (aSampleBackSide)
         {
-            PG3_ERROR_CODE_NOT_TESTED("");
-
             Frame lowerSurfFrame = aSurfFrame;
             lowerSurfFrame.SwitchNormal();
 
