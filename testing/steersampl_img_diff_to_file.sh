@@ -28,7 +28,7 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OUT_FILE_BASE="$IMAGES_BASE_DIR/splitting/img_diff_0"
+OUT_FILE_BASE="$IMAGES_BASE_DIR/steersampl/img_diff_0"
 OUT_GNUPLOT_FILE="$OUT_FILE_BASE.gnuplot"
 OUT_IMAGE_FILE="${OUT_FILE_BASE}.png"
 
@@ -39,13 +39,13 @@ DO_COMPARE=true
 export DO_COMPARE
 
 if [ "$DO_COMPARE" != "true" ]; then
-    ./img_diff.sh
+    ./steersampl_img_diff.sh
 else
     export CVS_OUTPUT=true
     export CVS_SEPAR=" "
     export CVS_DATASETS_IN_COLUMNS=true         # Transpose the dataset
 
-    ./img_diff.sh > "$OUT_GNUPLOT_FILE"
+    ./steersampl_img_diff.sh > "$OUT_GNUPLOT_FILE"
 
     # Gnuplot
     echo " 

@@ -44,11 +44,11 @@ public:
         mTmpCosineSampler           = std::make_shared<CosineImageEmSampler>();
         mTmpSimpleSphericalSampler  = std::make_shared<SimpleSphericalImageEmSampler>();
         mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>(
-            SteerableImageEmSampler::BuildParameters());
-                //aAuxDbgParams.float1,
-                //aAuxDbgParams.float2,
-                //aAuxDbgParams.float3,
-                //aAuxDbgParams.float4));
+            SteerableImageEmSampler::BuildParameters(
+                aAuxDbgParams.float1,
+                aAuxDbgParams.float2,
+                aAuxDbgParams.float3,
+                aAuxDbgParams.float4));
 
         if (mTmpCosineSampler)
             mTmpCosineSampler->Init(mEmImage);

@@ -145,10 +145,16 @@
     <None Include="testing\custom_batch.sh">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="testing\img_diff.sh">
+    <None Include="testing\splitting_img_diff.sh">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="testing\img_diff_to_file.sh">
+    <None Include="testing\splitting_img_diff_to_file.sh">
+      <Filter>Scripts</Filter>
+    </None>
+    <None Include="testing\steersampl_img_diff.sh">
+      <Filter>Scripts</Filter>
+    </None>
+    <None Include="testing\steersampl_img_diff_to_file.sh">
       <Filter>Scripts</Filter>
     </None>
   </ItemGroup>

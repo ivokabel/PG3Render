@@ -44,26 +44,34 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-SCENE=22
-EMS="12 10 11""
-ITERS=256
+### SS params tuning - reference images
 
-for EM in $EMS; do
-    # Min-Max 5-7
-    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 7  -auxf4 0   -ot "EmssE0.10Sll5Slu7Tms0"
+BASE_ITERS=12000           #200=10min   #1200=1h   
 
-    # Min-Max 5-7  + Skip large triangles 40
-    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 7  -auxf4 40  -ot "EmssE0.10Sll5Slu7Tms40"
+render -s 20 -a dlsa -i `expr $BASE_ITERS \* 7`  -em 12
+render -s 20 -a dlsa -i `expr $BASE_ITERS \* 5`  -em 10
+render -s 20 -a dlsa -i `expr $BASE_ITERS \* 2`  -em 11
 
-    # Min-Max 5-10 + Skip large triangles 40
-    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.10Sll5Slu10Tms40"
+render -s 22 -a dmis -i `expr $BASE_ITERS \* 7`  -em 12
+render -s 22 -a dmis -i `expr $BASE_ITERS \* 2`  -em 10
+render -s 22 -a dmis -i `expr $BASE_ITERS \* 13` -em 11
 
-    # Min-Max 5-10 + Skip large triangles 40 + Larger error 0.20
-    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.20 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.20Sll5Slu10Tms40"
 
-    # Min-Max 5-10 + Skip large triangles 40 + Larger error 0.30
-    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.30 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.30Sll5Slu10Tms40"
-done
+### Steerable sampler tuning
+
+#SCENE=22
+#EMS="12 10 11"
+#ITERS=1024
+#
+#for EM in $EMS; do
+#    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 7  -auxf4 0   -ot "EmssE0.10Sll5Slu7Tms0"
+#    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 7  -auxf4 40  -ot "EmssE0.10Sll5Slu7Tms40"
+#    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.10 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.10Sll5Slu10Tms40"
+#    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.25 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.25Sll5Slu10Tms40"
+#    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.50 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.50Sll5Slu10Tms40"
+#    render -s $SCENE -em $EM -a dmis -i $ITERS -auxf1 0.75 -auxf2 5 -auxf3 10 -auxf4 40  -ot "EmssE0.75Sll5Slu10Tms40"
+#done
+
 
 ### Associative arrays test
 
@@ -76,6 +84,7 @@ done
 #       echo "Value:  $value"
 #    done
 #done
+
 
 ### EM Filtering
 
@@ -93,6 +102,7 @@ done
 #        done
 #    done
 #done
+
 
 ### EM Samplers
 
