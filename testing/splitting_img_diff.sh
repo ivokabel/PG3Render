@@ -17,7 +17,7 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 
 ###################################################################################################
 
-# Debug. Usually set by parent script with eventual redirection to a file
+# Debug. Usually set by parent script with optional redirection to a file
 #CVS_OUTPUT=true
 #CVS_SEPAR=" "
 #CVS_DATASETS_IN_COLUMNS=true    # Transpose the dataset
@@ -54,7 +54,7 @@ compare_images () {
 # $5 ... rendering time
 # $6 ... rendering output directory
 # $7 ... reference image path
-render_and_compare () {
+render_or_compare () {
     if [ "$DO_COMPARE" != "true" ]; then
         mkdir -p "$6"
         "$PG3RENDER" -od "$6" -e hdr -a pt -s $1 -t $5 -sb $2 -slbr $3 -sl $4
@@ -112,7 +112,8 @@ setup_out_dir_and_img () {
         #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
         #    ;;
         * )
-            exit
+            echo "Unsupported scene!"
+            exit 2
             ;;
     esac
 }
@@ -141,12 +142,12 @@ if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
             for SLBR in $SLB_RATIOS; do
                 if [ "$CVS_OUTPUT" != "true" ]; then
                     for SL in $SPLIT_LEVELS; do
-                        render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
+                        render_or_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
                     done
                 else
                     OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME{CVS_SEPAR}$SBDGT${CVS_SEPAR}$SLBR$"
                     for SL in $SPLIT_LEVELS; do
-                        COMPARE_STR=`render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
+                        COMPARE_STR=`render_or_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
                         OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
                     done
                     echo "$OUT_STR"
@@ -184,7 +185,7 @@ elif [ "$CVS_OUTPUT" == "true" ]; then
 
                     #OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$SLBR${CVS_SEPAR}$SBDGT"
 
-                    COMPARE_STR=`render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
+                    COMPARE_STR=`render_or_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
                     OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
                 done
             done

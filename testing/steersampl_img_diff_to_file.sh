@@ -28,32 +28,44 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OUT_FILE_BASE="$IMAGES_BASE_DIR/steersampl/img_diff_0"
-OUT_GNUPLOT_FILE="$OUT_FILE_BASE.gnuplot"
-OUT_IMAGE_FILE="${OUT_FILE_BASE}.png"
+export OPERATION_MODE="render compare plot"     #"render compare plot"
 
-DO_COMPARE=true
+export RENDERING_TIME=15                        #300?
+export SCENES=20
+export EMS="12 10 11"
+export MAX_SUBDIV_LEVEL="7 8 9 10"
+export MAX_ERRORS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"   # The only parameter which changes in a graph (1D slice)
+
+TEST_NAME="Scene 20, EMs 12 10"
+
+export CVS_OUTPUT=true                          # false for debugging; ignored if rendering
+export CVS_SEPAR=" "
+export CVS_DATASETS_IN_COLUMNS=true             # Transpose for Gnuplot; ignored if rendering
 
 ###################################################################################################
 
-export DO_COMPARE
+OUT_FILE_BASE="$IMAGES_BASE_DIR/steer_sampl_tuning/${TEST_NAME}"
+OUT_GNUPLOT_FILE="${OUT_FILE_BASE}.gnuplot"
+OUT_IMAGE_FILE="${OUT_FILE_BASE}.png"
 
-if [ "$DO_COMPARE" != "true" ]; then
+###################################################################################################
+
+if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
     ./steersampl_img_diff.sh
-else
-    export CVS_OUTPUT=true
-    export CVS_SEPAR=" "
-    export CVS_DATASETS_IN_COLUMNS=true         # Transpose the dataset
+fi
 
-    ./steersampl_img_diff.sh > "$OUT_GNUPLOT_FILE"
+if [[ "$OPERATION_MODE" =~ (^| )"compare"($| ) ]]; then
+    ./steersampl_img_diff.sh | tee "$OUT_GNUPLOT_FILE"
+fi
 
+if [[ "$OPERATION_MODE" =~ (^| )"plot"($| ) ]]; then
     # Gnuplot
     echo " 
-    set terminal pngcairo size 900,900 enhanced font 'Verdana,10'
+    set terminal pngcairo size 1200,1080 enhanced font 'Verdana,10'
     set output '$OUT_IMAGE_FILE'
-    set title \"Gnuplot test\" 
+    set title \"${TEST_NAME}\" 
     unset border 
     set yrange [0:]
-    plot for [IDX=2:5] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
+    plot for [IDX=2:13] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
     " | gnuplot
 fi

@@ -1,7 +1,6 @@
 #! /bin/sh
 
 QT4IMAGE="/cygdrive/c/Program Files/Cornell PCG/HDRITools/bin/qt4Image.exe"
-
 PG3_TRAINING_DIR="/cygdrive/c/Users/Ivo/Creativity/Programming/05 PG3 Training"
 PG3_TRAINING_DIR_WIN="C:\\Users\\Ivo\\Creativity\\Programming\\05 PG3 Training"
 PG3RENDER_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render"
@@ -9,30 +8,50 @@ PG3RENDER32="$PG3RENDER_BASE_DIR/Win32/Release/PG3Render.exe"
 PG3RENDER64="$PG3RENDER_BASE_DIR/x64/Release/PG3Render.exe"
 PG3RENDER=$PG3RENDER64
 
-DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
+DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/BinCMake/Release"
 PATH="$DIFF_TOOL_BASE_DIR:$PATH"
-DIFF_TOOL=PerceptualDiff.exe
+DIFF_TOOL=perceptualdiff.exe
 
-IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
+IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images\\steer_sampl_tuning"
 
 ###################################################################################################
 
-# Debug. Usually set by parent script with eventual redirection to a file
-#CVS_OUTPUT=true
+# Debug, normally set by the parent script with optional redirection to a file
+
+#OPERATION_MODE="compare"        #"render compare plot"
+#CVS_OUTPUT=true                 # false for debugging; ignored if rendering
 #CVS_SEPAR=" "
-#CVS_DATASETS_IN_COLUMNS=true    # Transpose the dataset
-#DO_COMPARE=true
+#CVS_DATASETS_IN_COLUMNS=true    # Transpose for Gnuplot; ignored if rendering
 
-RENDERING_TIME=600
-SCENES="0" #"2 3 6 7"                    #`seq 0 7`
-SPLIT_BUDGETS="1 4 8 16"           # 16"
-SLB_RATIOS="1.0"
-SPLIT_LEVELS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"
+#RENDERING_TIME=15
+#SCENES=20
+#EMS="12 10"                         #"12 10 11"
+#MAX_SUBDIV_LEVEL="7 8 9 10"
+#MAX_ERRORS="0.10 0.20 0.30 0.40 0.50"  # The only parameter which changes in a graph (1D slice)
+
+if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
+    # Rendering...
+    CVS_OUTPUT=false
+    CVS_DATASETS_IN_COLUMNS=false
+fi
 
 ###################################################################################################
 
-# $1 ... image 1
-# $2 ... image 2
+#PATH="$DIFF_TOOL_BASE_DIR:$PATH"
+#echo $PATH
+#echo
+
+#echo
+#pwd
+cd "$PG3RENDER_BASE_DIR"
+#pwd
+#echo
+
+###################################################################################################
+
+# $1 ... Reference image
+# $2 ... Compared image
+# $3 ... Difference image
 compare_images () {
     if [ "$CVS_OUTPUT" != "true" ]; then
         echo "Comparing:"
@@ -40,7 +59,7 @@ compare_images () {
         echo "   $2"
     fi
 
-    "$DIFF_TOOL" -mode rmse -gamma 1.0 "$1" "$2"
+    "$DIFF_TOOL" -mode rmse -gamma 1.0 -verbosity onlydiff -output "$3" "$1" "$2"
 
     if [ "$CVS_OUTPUT" != "true" ]; then
         echo
@@ -48,76 +67,78 @@ compare_images () {
 }
 
 # $1 ... scene id
-# $2 ... splitting budget
-# $3 ... light-to-brdf splitting ratio
-# $4 ... splitting level
+# $2 ... EM
+# $3 ... max subdiv level
+# $4 ... max error
 # $5 ... rendering time
 # $6 ... rendering output directory
 # $7 ... reference image path
-render_and_compare () {
-    if [ "$DO_COMPARE" != "true" ]; then
+render_or_compare () {
+    if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
+        # Rendering...
         mkdir -p "$6"
-        "$PG3RENDER" -od "$6" -e hdr -a pt -s $1 -t $5 -sb $2 -slbr $3 -sl $4
+        "$PG3RENDER" -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40"
+        echo
     else
-        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a pt -s $1 -t $5 -sb $2 -slbr $3 -sl $4`
-        compare_images "$7" "$RENDERED_IMG"
+        # Comparing...
+        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40"`
+        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40_Diff"`
+        compare_images "$7" "$RENDERED_IMG" "$DIFF_IMG"
     fi
 }
 
 # $1 ... scene ID
+# $2 ... EM
 setup_out_dir_and_img () {
     case $1 in
-        0 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_p_sdwd_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_p_sdwd_pt_rr_70000s_WholeBrdfSampling.hdr"
+        20 )
+            case $2 in
+                10 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spd_dlsa"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e10_Spd_dlsa_60000s_Reference.hdr"
+                    ;;
+                11 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e11_Spd_dlsa"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e11_Spd_dlsa_24000s_Reference.hdr"
+                    ;;
+                12 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e12_Spd_dlsa"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e12_Spd_dlsa_84000s_Reference.hdr"
+                    ;;
+                * )
+                    echo "Unsupported EM!"
+                    exit 2
+                    ;;
+            esac
             ;;
-        1 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_p_sdsgwdwg_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_p_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
+        22 )
+            case $2 in
+                10 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spdg_dmis"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e10_Spdg_dmis_24000s_Reference.hdr"
+                    ;;
+                11 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e11_Spdg_dmis"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e11_Spdg_dmis_156000s_Reference.hdr"
+                    ;;
+                12 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e12_Spdg_dmis"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e12_Spdg_dmis_84000s_Reference.hdr"
+                    ;;
+                * )
+                    echo "Unsupported EM!"
+                    exit 2
+                    ;;
+            esac
             ;;
-        2 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_c_sdwd_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_c_sdwd_pt_rr_80000s_WholeBrdfSampling.hdr"
-            ;;
-        3 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_c_sdsgwdwg_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_c_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
-            ;;
-        4 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_b_sdwd_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_b_sdwd_pt_rr_80000s_WholeBrdfSampling.hdr"
-            ;;
-        5 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_b_sdsgwdwg_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_b_sdsgwdwg_pt_rr_150000s_WholeBrdfSampling.hdr"
-            ;;
-        6 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
-            ;;
-        7 )
-            OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdsgwdwg_pt_rr_splt"
-            REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdsgwdwg_pt_rr_50000s_WholeBrdfSampling.hdr"
-            ;;
-        #10 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
-        #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
-        #    ;;
-        #11 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
-        #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
-        #    ;;
-        #12 )
-        #    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\splitting\\w2s_e0_sdwd_pt_rr_splt"
-        #    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e0_sdwd_pt_rr_20000s_WholeBrdfSampling.hdr"
-        #    ;;
         * )
-            exit
+            echo "Unsupported scene!"
+            exit 2
             ;;
     esac
 }
 
-###################################################################################################
+### Main ##########################################################################################
 
 if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
 
@@ -127,26 +148,26 @@ if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
 
     # CSV header
     if [ "$CVS_OUTPUT" == "true" ]; then
-        OUT_STR="\"Scene ID\"${CVS_SEPAR}\"Rendering Time\"${CVS_SEPAR}\"Light-to-BRDF Samples Ratio\"${CVS_SEPAR}\"Splitting Budget\""
-        for SL in $SPLIT_LEVELS; do
-            OUT_STR="$OUT_STR${CVS_SEPAR}$SL"
+        OUT_STR="\"Scene ID\"${CVS_SEPAR}\"Rendering Time\"${CVS_SEPAR}\"Maximal Triangle Sub-division Level\""
+        for ME in $MAX_ERRORS; do
+            OUT_STR="$OUT_STR${CVS_SEPAR}$ME"
         done
         echo "$OUT_STR"
     fi
 
     # Rendering, evaluation
     for SCENE in $SCENES; do
-        setup_out_dir_and_img $SCENE
-        for SBDGT in $SPLIT_BUDGETS; do
-            for SLBR in $SLB_RATIOS; do
+        for EM in $EMS; do
+            setup_out_dir_and_img $SCENE $EM
+            for MSL in $MAX_SUBDIV_LEVEL; do
                 if [ "$CVS_OUTPUT" != "true" ]; then
-                    for SL in $SPLIT_LEVELS; do
-                        render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
+                    for ME in $MAX_ERRORS; do
+                        render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
                     done
                 else
-                    OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME{CVS_SEPAR}$SBDGT${CVS_SEPAR}$SLBR$"
-                    for SL in $SPLIT_LEVELS; do
-                        COMPARE_STR=`render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
+                    OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$MSL${CVS_SEPAR}"
+                    for ME in $MAX_ERRORS; do
+                        COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
                         OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
                     done
                     echo "$OUT_STR"
@@ -155,51 +176,51 @@ if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
         done
     done
 
-elif [ "$CVS_OUTPUT" == "true" ]; then
+else
 
     ################################################
-    # Datasets are organized in rows
+    # Datasets are organized in columns
     ################################################
 
     # CSV header
-    OUT_STR="\"Configuration\""
-    for SCENE in $SCENES; do
-        setup_out_dir_and_img $SCENE
-        for SBDGT in $SPLIT_BUDGETS; do
-            for SLBR in $SLB_RATIOS; do
-                CONFIG_NAME="\"Scene $SCENE: $SBDGT, $SLBR at ${RENDERING_TIME}sec\""
-                OUT_STR="$OUT_STR${CVS_SEPAR}$CONFIG_NAME"
+    if [ "$CVS_OUTPUT" == "true" ]; then
+        OUT_STR="\"Configuration\""
+        for SCENE in $SCENES; do
+            for EM in $EMS; do
+                setup_out_dir_and_img $SCENE $EM
+                for MSL in $MAX_SUBDIV_LEVEL; do
+                    CONFIG_NAME="\"Scene $SCENE, EM $EM: $MSL at ${RENDERING_TIME}sec\""
+                    OUT_STR="$OUT_STR${CVS_SEPAR}$CONFIG_NAME"
+                done
             done
         done
-    done
-    echo "$OUT_STR"
+        echo "$OUT_STR"
+    fi
 
     # Rendering, evaluation
-    for SL in $SPLIT_LEVELS; do
-        OUT_STR="$SL"
+    for ME in $MAX_ERRORS; do
+        OUT_STR="$ME"
         for SCENE in $SCENES; do
-            setup_out_dir_and_img $SCENE
-            for SBDGT in $SPLIT_BUDGETS; do
-                for SLBR in $SLB_RATIOS; do
+            for EM in $EMS; do
+                setup_out_dir_and_img $SCENE $EM
+                for MSL in $MAX_SUBDIV_LEVEL; do
+                    #OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}${CVS_SEPAR}$MSL"
 
-                    #OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$SLBR${CVS_SEPAR}$SBDGT"
-
-                    COMPARE_STR=`render_and_compare $SCENE $SBDGT $SLBR $SL $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
+                    COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
                     OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
                 done
             done
         done
         echo "$OUT_STR"
     done
-else
-    echo "Wrong combination of script settings!"
-    exit 1
+
 fi
 
 
 ###################################################################################################
 
-if [ "$DO_COMPARE" != "true" ]; then
+if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
+    # Rendering...
     echo
     echo "The script has finished."
     read
