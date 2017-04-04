@@ -28,15 +28,13 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-export OPERATION_MODE="render compare plot"     #"render compare plot"
+OPERATION_MODES=plot        #"render compare plot"
 
-export RENDERING_TIME=15                        #300?
+export RENDERING_TIME=300
 export SCENES=20
 export EMS="12 10 11"
-export MAX_SUBDIV_LEVEL="7 8 9 10"
-export MAX_ERRORS="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0"   # The only parameter which changes in a graph (1D slice)
-
-TEST_NAME="Scene 20, EMs 12 10"
+export MAX_SUBDIV_LEVEL="6 7 8 9 10"
+export MAX_ERRORS="0.05 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00"   # The only parameter which changes in a graph (1D slice)
 
 export CVS_OUTPUT=true                          # false for debugging; ignored if rendering
 export CVS_SEPAR=" "
@@ -44,28 +42,48 @@ export CVS_DATASETS_IN_COLUMNS=true             # Transpose for Gnuplot; ignored
 
 ###################################################################################################
 
+TEST_NAME="Scene $SCENES, EMs $EMS"
 OUT_FILE_BASE="$IMAGES_BASE_DIR/steer_sampl_tuning/${TEST_NAME}"
 OUT_GNUPLOT_FILE="${OUT_FILE_BASE}.gnuplot"
 OUT_IMAGE_FILE="${OUT_FILE_BASE}.png"
 
+list_items_count() {
+    echo $#;
+}
+
+SCENE_COUNT=`list_items_count $SCENES`
+EM_COUNT=`list_items_count $EMS`
+MAX_SUBDIV_LEVEL_COUNT=`list_items_count $MAX_SUBDIV_LEVEL`
+SERIES_COUNT=`expr $SCENE_COUNT \* $EM_COUNT \* $MAX_SUBDIV_LEVEL_COUNT`
+
 ###################################################################################################
 
-if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
+if [[ "$OPERATION_MODES" =~ (^| )"render"($| ) ]]; then
+    export OPERATION_MODE=render
     ./steersampl_img_diff.sh
+
+    echo
+    echo "Rendering has finished."
 fi
 
-if [[ "$OPERATION_MODE" =~ (^| )"compare"($| ) ]]; then
+if [[ "$OPERATION_MODES" =~ (^| )"compare"($| ) ]]; then
+    export OPERATION_MODE=compare
     ./steersampl_img_diff.sh | tee "$OUT_GNUPLOT_FILE"
+
+    echo
+    echo "Comparing has finished."
 fi
 
-if [[ "$OPERATION_MODE" =~ (^| )"plot"($| ) ]]; then
-    # Gnuplot
+if [[ "$OPERATION_MODES" =~ (^| )"plot"($| ) ]]; then
     echo " 
-    set terminal pngcairo size 1200,1080 enhanced font 'Verdana,10'
-    set output '$OUT_IMAGE_FILE'
-    set title \"${TEST_NAME}\" 
-    unset border 
-    set yrange [0:]
-    plot for [IDX=2:13] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
+        set terminal pngcairo size 1200,1080 enhanced font 'Verdana,10'
+        set output '$OUT_IMAGE_FILE'
+        set title \"${TEST_NAME}\"
+        unset border
+        set yrange [0:]
+        plot for [IDX=2:`expr 1 + $SERIES_COUNT`] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
     " | gnuplot
+
+    echo
+    echo "Generating graph has finished."
 fi

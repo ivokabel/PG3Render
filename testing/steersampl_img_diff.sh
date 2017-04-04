@@ -18,7 +18,7 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 
 # Debug, normally set by the parent script with optional redirection to a file
 
-#OPERATION_MODE="compare"        #"render compare plot"
+#OPERATION_MODE=compare          #render compare plot
 #CVS_OUTPUT=true                 # false for debugging; ignored if rendering
 #CVS_SEPAR=" "
 #CVS_DATASETS_IN_COLUMNS=true    # Transpose for Gnuplot; ignored if rendering
@@ -29,7 +29,7 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #MAX_SUBDIV_LEVEL="7 8 9 10"
 #MAX_ERRORS="0.10 0.20 0.30 0.40 0.50"  # The only parameter which changes in a graph (1D slice)
 
-if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
+if [ "$OPERATION_MODE" == render ]; then
     # Rendering...
     CVS_OUTPUT=false
     CVS_DATASETS_IN_COLUMNS=false
@@ -74,7 +74,7 @@ compare_images () {
 # $6 ... rendering output directory
 # $7 ... reference image path
 render_or_compare () {
-    if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
+    if [ "$OPERATION_MODE" == render ]; then
         # Rendering...
         mkdir -p "$6"
         "$PG3RENDER" -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40"
@@ -214,14 +214,4 @@ else
         echo "$OUT_STR"
     done
 
-fi
-
-
-###################################################################################################
-
-if [[ "$OPERATION_MODE" =~ (^| )"render"($| ) ]]; then
-    # Rendering...
-    echo
-    echo "The script has finished."
-    read
 fi
