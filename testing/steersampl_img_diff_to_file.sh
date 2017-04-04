@@ -28,13 +28,14 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OPERATION_MODES=plot        #"render compare plot"
+OPERATION_MODES="render compare plot"
 
 export RENDERING_TIME=300
 export SCENES=20
 export EMS="12 10 11"
-export MAX_SUBDIV_LEVEL="6 7 8 9 10"
-export MAX_ERRORS="0.05 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00"   # The only parameter which changes in a graph (1D slice)
+export MIN_SUBDIV_LEVEL=4
+export MAX_SUBDIV_LEVELS="07 08 09 10 11"
+export MAX_ERRORS="0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.10 1.20"   # The only parameter which changes in a graph (1D slice)
 
 export CVS_OUTPUT=true                          # false for debugging; ignored if rendering
 export CVS_SEPAR=" "
@@ -51,15 +52,11 @@ list_items_count() {
     echo $#;
 }
 
-SCENE_COUNT=`list_items_count $SCENES`
-EM_COUNT=`list_items_count $EMS`
-MAX_SUBDIV_LEVEL_COUNT=`list_items_count $MAX_SUBDIV_LEVEL`
-SERIES_COUNT=`expr $SCENE_COUNT \* $EM_COUNT \* $MAX_SUBDIV_LEVEL_COUNT`
-
 ###################################################################################################
 
 if [[ "$OPERATION_MODES" =~ (^| )"render"($| ) ]]; then
     export OPERATION_MODE=render
+
     ./steersampl_img_diff.sh
 
     echo
@@ -68,6 +65,7 @@ fi
 
 if [[ "$OPERATION_MODES" =~ (^| )"compare"($| ) ]]; then
     export OPERATION_MODE=compare
+
     ./steersampl_img_diff.sh | tee "$OUT_GNUPLOT_FILE"
 
     echo
@@ -75,6 +73,11 @@ if [[ "$OPERATION_MODES" =~ (^| )"compare"($| ) ]]; then
 fi
 
 if [[ "$OPERATION_MODES" =~ (^| )"plot"($| ) ]]; then
+    SCENE_COUNT=`list_items_count $SCENES`
+    EM_COUNT=`list_items_count $EMS`
+    MAX_SUBDIV_LEVEL_COUNT=`list_items_count $MAX_SUBDIV_LEVELS`
+    SERIES_COUNT=`expr $SCENE_COUNT \* $EM_COUNT \* $MAX_SUBDIV_LEVEL_COUNT`
+
     echo " 
         set terminal pngcairo size 1200,1080 enhanced font 'Verdana,10'
         set output '$OUT_IMAGE_FILE'
@@ -83,6 +86,15 @@ if [[ "$OPERATION_MODES" =~ (^| )"plot"($| ) ]]; then
         set yrange [0:]
         plot for [IDX=2:`expr 1 + $SERIES_COUNT`] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
     " | gnuplot
+
+    #echo " 
+    #    set terminal pngcairo size 1200,1080 enhanced font 'Verdana,10'
+    #    set output '$IMAGES_BASE_DIR/steer_sampl_tuning/Scene 20, EMs 12.png'
+    #    set title \"Scene 20, EMs 12\"
+    #    unset border
+    #    set yrange [0:]
+    #    plot for [IDX=2:6] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
+    #" | gnuplot
 
     echo
     echo "Generating graph has finished."

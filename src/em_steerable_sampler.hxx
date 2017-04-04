@@ -46,7 +46,7 @@ public:
                 ? 10u : static_cast<uint32_t>(aMaxSubdivLevel);
             maxTriangleSamplesPerDim =
                   aMaxTriangleSamplesPerDim == Math::InfinityF()
-                ? 40u : static_cast<uint32_t>(aMaxTriangleSamplesPerDim);
+                ? 50u : static_cast<uint32_t>(aMaxTriangleSamplesPerDim);
 
             oversamplingFactorDbg =
                   aOversamplingFactorDbg == Math::InfinityF()

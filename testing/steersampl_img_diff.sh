@@ -26,7 +26,8 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #RENDERING_TIME=15
 #SCENES=20
 #EMS="12 10"                         #"12 10 11"
-#MAX_SUBDIV_LEVEL="7 8 9 10"
+#MIN_SUBDIV_LEVEL=4
+#MAX_SUBDIV_LEVELS="7 8 9 10"
 #MAX_ERRORS="0.10 0.20 0.30 0.40 0.50"  # The only parameter which changes in a graph (1D slice)
 
 if [ "$OPERATION_MODE" == render ]; then
@@ -77,12 +78,12 @@ render_or_compare () {
     if [ "$OPERATION_MODE" == render ]; then
         # Rendering...
         mkdir -p "$6"
-        "$PG3RENDER" -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40"
+        "$PG3RENDER" -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"
         echo
     else
         # Comparing...
-        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40"`
-        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf1 $4 -ot "EmssE${4}Sll5Slu${3}Tms40_Diff"`
+        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"`
+        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40_Diff"`
         compare_images "$7" "$RENDERED_IMG" "$DIFF_IMG"
     fi
 }
@@ -159,7 +160,7 @@ if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
     for SCENE in $SCENES; do
         for EM in $EMS; do
             setup_out_dir_and_img $SCENE $EM
-            for MSL in $MAX_SUBDIV_LEVEL; do
+            for MSL in $MAX_SUBDIV_LEVELS; do
                 if [ "$CVS_OUTPUT" != "true" ]; then
                     for ME in $MAX_ERRORS; do
                         render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
@@ -188,7 +189,7 @@ else
         for SCENE in $SCENES; do
             for EM in $EMS; do
                 setup_out_dir_and_img $SCENE $EM
-                for MSL in $MAX_SUBDIV_LEVEL; do
+                for MSL in $MAX_SUBDIV_LEVELS; do
                     CONFIG_NAME="\"Scene $SCENE, EM $EM: $MSL at ${RENDERING_TIME}sec\""
                     OUT_STR="$OUT_STR${CVS_SEPAR}$CONFIG_NAME"
                 done
@@ -203,7 +204,7 @@ else
         for SCENE in $SCENES; do
             for EM in $EMS; do
                 setup_out_dir_and_img $SCENE $EM
-                for MSL in $MAX_SUBDIV_LEVEL; do
+                for MSL in $MAX_SUBDIV_LEVELS; do
                     #OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}${CVS_SEPAR}$MSL"
 
                     COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
