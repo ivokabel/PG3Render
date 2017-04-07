@@ -23,9 +23,9 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #CVS_SEPAR=" "
 #CVS_DATASETS_IN_COLUMNS=true    # Transpose for Gnuplot; ignored if rendering
 
+#SCENE=20
+#EM=12                         #12 10 11
 #RENDERING_TIME=15
-#SCENES=20
-#EMS="12 10"                         #"12 10 11"
 #MIN_SUBDIV_LEVEL=4
 #MAX_SUBDIV_LEVELS="7 8 9 10"
 #MAX_ERRORS="0.10 0.20 0.30 0.40 0.50"  # The only parameter which changes in a graph (1D slice)
@@ -157,24 +157,20 @@ if [ "$CVS_DATASETS_IN_COLUMNS" != "true" ]; then
     fi
 
     # Rendering, evaluation
-    for SCENE in $SCENES; do
-        for EM in $EMS; do
-            setup_out_dir_and_img $SCENE $EM
-            for MSL in $MAX_SUBDIV_LEVELS; do
-                if [ "$CVS_OUTPUT" != "true" ]; then
-                    for ME in $MAX_ERRORS; do
-                        render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
-                    done
-                else
-                    OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$MSL${CVS_SEPAR}"
-                    for ME in $MAX_ERRORS; do
-                        COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
-                        OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
-                    done
-                    echo "$OUT_STR"
-                fi
+    setup_out_dir_and_img $SCENE $EM
+    for MSL in $MAX_SUBDIV_LEVELS; do
+        if [ "$CVS_OUTPUT" != "true" ]; then
+            for ME in $MAX_ERRORS; do
+                render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"
             done
-        done
+        else
+            OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}$MSL${CVS_SEPAR}"
+            for ME in $MAX_ERRORS; do
+                COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
+                OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
+            done
+            echo "$OUT_STR"
+        fi
     done
 
 else
@@ -186,14 +182,10 @@ else
     # CSV header
     if [ "$CVS_OUTPUT" == "true" ]; then
         OUT_STR="\"Configuration\""
-        for SCENE in $SCENES; do
-            for EM in $EMS; do
-                setup_out_dir_and_img $SCENE $EM
-                for MSL in $MAX_SUBDIV_LEVELS; do
-                    CONFIG_NAME="\"Scene $SCENE, EM $EM: $MSL at ${RENDERING_TIME}sec\""
-                    OUT_STR="$OUT_STR${CVS_SEPAR}$CONFIG_NAME"
-                done
-            done
+        setup_out_dir_and_img $SCENE $EM
+        for MSL in $MAX_SUBDIV_LEVELS; do
+            SERIES_NAME="\"Max subdiv level $MSL\""
+            OUT_STR="$OUT_STR${CVS_SEPAR}$SERIES_NAME"
         done
         echo "$OUT_STR"
     fi
@@ -201,16 +193,10 @@ else
     # Rendering, evaluation
     for ME in $MAX_ERRORS; do
         OUT_STR="$ME"
-        for SCENE in $SCENES; do
-            for EM in $EMS; do
-                setup_out_dir_and_img $SCENE $EM
-                for MSL in $MAX_SUBDIV_LEVELS; do
-                    #OUT_STR="$SCENE${CVS_SEPAR}$RENDERING_TIME${CVS_SEPAR}${CVS_SEPAR}$MSL"
-
-                    COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
-                    OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
-                done
-            done
+        setup_out_dir_and_img $SCENE $EM
+        for MSL in $MAX_SUBDIV_LEVELS; do
+            COMPARE_STR=`render_or_compare $SCENE $EM $MSL $ME $RENDERING_TIME "$OUT_IMG_DIR_WIN" "$REFERENCE_IMG"`
+            OUT_STR="$OUT_STR${CVS_SEPAR}$COMPARE_STR"
         done
         echo "$OUT_STR"
     done
