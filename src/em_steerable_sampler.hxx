@@ -1284,9 +1284,9 @@ public:
             oValue1 = Dot(vertex1->weight, aClampedCosCoeffs);
             oValue2 = Dot(vertex2->weight, aClampedCosCoeffs);
 
-            PG3_ASSERT_FLOAT_POSITIVE(oValue0);
-            PG3_ASSERT_FLOAT_POSITIVE(oValue1);
-            PG3_ASSERT_FLOAT_POSITIVE(oValue2);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(oValue0);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(oValue1);
+            PG3_ASSERT_FLOAT_NONNEGATIVE(oValue2);
 
             return true;
         }
@@ -3691,27 +3691,37 @@ protected:
             PG3_ASSERT_FLOAT_EQUAL(integralSum, triangleSet->GetIntegral(aClampedCosCoeffs), 0.001f);
 
             // Choose child
-            const float threshold = leftIntegral / integralSum; // TODO: What if sum is 0?
-            if (aUniSample < threshold)
+
+            const float threshold =
+                  (integralSum > 1E-10f)
+                ? (leftIntegral / integralSum)
+                : 0.5f;
+
+            PG3_ASSERT_FLOAT_VALID(threshold);
+
+            if ((aUniSample < threshold) || (threshold == 1.f))
             {
                 node = leftChild;
-                aUniSample /= threshold;
+                aUniSample /= std::max(threshold, 0.00001f);
 
                 PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
             }
             else
             {
                 node = rightChild;
-                aUniSample = (aUniSample - threshold) / (1.f - threshold);
+                aUniSample =
+                      (aUniSample - threshold)
+                    / std::max(1.f - threshold, 0.00001f);
 
                 PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
             }
             // TODO: Clamp random val to [0,1]?
         }
+
         if (node == nullptr)
             return false; // corrupted data?
-        oTriangle = static_cast<const TriangleNode*>(node);
 
+        oTriangle = static_cast<const TriangleNode*>(node);
         return true;
     }
 

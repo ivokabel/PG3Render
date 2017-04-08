@@ -46,15 +46,15 @@ START_TIME=`date +%s`
 
 ### SS params tuning - reference images
 
-BASE_ITERS=12000           #200=10min   #1200=1h   
-
-render -s 20 -a dlsa -i `expr $BASE_ITERS \* 7`  -em 12
-render -s 20 -a dlsa -i `expr $BASE_ITERS \* 5`  -em 10
-render -s 20 -a dlsa -i `expr $BASE_ITERS \* 2`  -em 11
-
-render -s 22 -a dmis -i `expr $BASE_ITERS \* 7`  -em 12
-render -s 22 -a dmis -i `expr $BASE_ITERS \* 2`  -em 10
-render -s 22 -a dmis -i `expr $BASE_ITERS \* 13` -em 11
+#BASE_ITERS=12000           #200=10min   #1200=1h   
+#
+#render -s 20 -a dlsa -i `expr $BASE_ITERS \* 7`  -em 12
+#render -s 20 -a dlsa -i `expr $BASE_ITERS \* 5`  -em 10
+#render -s 20 -a dlsa -i `expr $BASE_ITERS \* 2`  -em 11
+#
+#render -s 22 -a dmis -i `expr $BASE_ITERS \* 7`  -em 12
+#render -s 22 -a dmis -i `expr $BASE_ITERS \* 2`  -em 10
+#render -s 22 -a dmis -i `expr $BASE_ITERS \* 13` -em 11
 
 
 ### Steerable sampler tuning
