@@ -66,7 +66,7 @@ for SCENE in $SCENES; do
             echo
 
             export OPERATION_MODE=render
-            ./steersampl_img_diff.sh
+            ./steersampl_tuning.sh
 
             echo "Rendering has finished."
         fi
@@ -75,7 +75,7 @@ for SCENE in $SCENES; do
             echo
 
             export OPERATION_MODE=compare
-            ./steersampl_img_diff.sh | tee "$OUT_GNUPLOT_FILE"
+            ./steersampl_tuning.sh | tee "$OUT_GNUPLOT_FILE"
 
             echo
             echo "Comparing has finished."

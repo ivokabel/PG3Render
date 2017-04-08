@@ -151,10 +151,10 @@
     <None Include="testing\splitting_img_diff_to_file.sh">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="testing\steersampl_img_diff.sh">
+    <None Include="testing\steersampl_tuning.sh">
       <Filter>Scripts</Filter>
     </None>
-    <None Include="testing\steersampl_img_diff_to_file.sh">
+    <None Include="testing\steersampl_tuning_to_file.sh">
       <Filter>Scripts</Filter>
     </None>
   </ItemGroup>

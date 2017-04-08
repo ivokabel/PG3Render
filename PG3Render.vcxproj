@@ -230,8 +230,8 @@
     <None Include="testing\splitting_img_diff.sh" />
     <None Include="testing\splitting_img_diff_to_file.sh" />
     <None Include="testing\launcher.bat" />
-    <None Include="testing\steersampl_img_diff.sh" />
-    <None Include="testing\steersampl_img_diff_to_file.sh" />
+    <None Include="testing\steersampl_tuning.sh" />
+    <None Include="testing\steersampl_tuning_to_file.sh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
