@@ -26,7 +26,7 @@ public:
 
     // Used in MC estimator of the planar version of the rendering equation. For a randomly sampled 
     // point on the light source surface it computes: outgoing radiance * geometric component
-    virtual void SampleIllumination(
+    virtual bool SampleIllumination(
         const Vec3f             &aSurfPt,       // TODO: Shaded point data should be wrapped in a structure
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
@@ -111,7 +111,7 @@ public:
         mRadiance = aPower * (mInvArea / Math::kPiF);
     }
 
-    virtual void SampleIllumination(
+    virtual bool SampleIllumination(
         const Vec3f             &aSurfPt,
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
@@ -126,6 +126,8 @@ public:
         const Vec3f samplePoint = Sampling::SampleUniformTriangle(mP0, P1, P2, rnd);
 
         ComputeSample(aSurfPt, samplePoint, aSurfFrame, aSurfMaterial, oSample);
+
+        return true;
     }
 
     virtual float EstimateContribution(
@@ -260,7 +262,7 @@ public:
         return SpectrumF().MakeZero();
     };
 
-    virtual void SampleIllumination(
+    virtual bool SampleIllumination(
         const Vec3f             &aSurfPt,
         const Frame             &aSurfFrame,
         const AbstractMaterial  &aSurfMaterial,
@@ -271,6 +273,8 @@ public:
         aRng; // unused param
 
         ComputeIllumination(aSurfPt, aSurfFrame, aSurfMaterial, oSample);
+
+        return true;
     }
 
     virtual float EstimateContribution(
@@ -418,7 +422,7 @@ public:
     };
 
     PG3_PROFILING_NOINLINE
-    virtual void SampleIllumination(
+    virtual bool SampleIllumination(
         const Vec3f             &aSurfPt, 
         const Frame             &aSurfFrame, 
         const AbstractMaterial  &aSurfMaterial,
@@ -433,11 +437,11 @@ public:
         const bool sampleBackSide  = Utils::IsMasked(matProps, kBsdfBackSideLightSampling);
 
         if (mEnvMap != nullptr)
-            mEnvMap->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
+            return mEnvMap->Sample(oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
         else
             // Constant environment illumination
             // Sample the requested hemisphere(s) in a cosine-weighted fashion
-            mCosineSampler.Sample(
+            return mCosineSampler.Sample(
                 oSample, aSurfFrame, sampleFrontSide, sampleBackSide, aRng);
     }
 

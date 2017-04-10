@@ -47,13 +47,11 @@ public:
                     const AbstractLight* light = mConfig.mScene->GetLightPtr(i);
                     PG3_ASSERT(light != 0);
 
-                    // Choose a random sample on the light
                     LightSample lightSample;
-                    light->SampleIllumination(surfPt, surfFrame, mat, mRng, lightSample);
-
-                    AddSingleLightSampleContribution(
-                        lightSample, surfPt, surfFrame, mat, wol,
-                        LoDirect);
+                    if (light->SampleIllumination(surfPt, surfFrame, mat, mRng, lightSample))
+                        AddSingleLightSampleContribution(
+                            lightSample, surfPt, surfFrame, mat, wol,
+                            LoDirect);
                 }
             }
             else if (aAlgorithm == kDirectIllumLightSamplingSingle)
@@ -105,11 +103,9 @@ public:
                 // Generate one sample by sampling the lights
                 LightSample lightSample;
                 if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
-                {
                     AddMISLightSampleContribution(
                         lightSample, 1, 1, surfPt, surfFrame, wol, mat, mRng,
                         LoDirect);
-                }
 
                 // Generate one sample by sampling the BSDF
                 MaterialRecord matRecord(wol);

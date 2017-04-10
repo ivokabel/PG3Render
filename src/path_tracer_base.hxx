@@ -173,13 +173,15 @@ public:
         // Sample the chosen light
         if (chosenLightId >= 0)
         {
-            // Choose a random sample on the light
             const AbstractLight* light = mConfig.mScene->GetLightPtr(chosenLightId);
+
             PG3_ASSERT(light != 0);
-            light->SampleIllumination(aSurfPt, aSurfFrame, aSurfMaterial, mRng, oLightSample);
+
+            bool success =
+                light->SampleIllumination(aSurfPt, aSurfFrame, aSurfMaterial, mRng, oLightSample);
             oLightSample.mLightProbability = lightProbability;
 
-            return true;
+            return success;
         }
         else
             return false;
