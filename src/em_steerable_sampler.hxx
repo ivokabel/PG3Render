@@ -28,26 +28,26 @@ public:
     public:
 
         BuildParameters(
-            float   aMaxApproxError             = Math::InfinityF(),
-            float   aMinSubdivLevel             = Math::InfinityF(), // uint32_t, float for signaling unset value
-            float   aMaxSubdivLevel             = Math::InfinityF(), // uint32_t, float for signaling unset value
-            float   aMaxTriangleSamplesPerDim   = Math::InfinityF(), // uint32_t, float for signaling unset value
-            float   aOversamplingFactorDbg      = Math::InfinityF(),
-            float   aMaxTriangleSpanDbg         = Math::InfinityF())
+            float   aMaxApproxError                 = Math::InfinityF(),
+            float   aMinSubdivLevel                 = Math::InfinityF(), // uint32_t, float for signaling unset value
+            float   aMaxSubdivLevel                 = Math::InfinityF(), // uint32_t, float for signaling unset value
+            float   aMaxTriangleSamplesPerDimDbg    = Math::InfinityF(), // uint32_t, float for signaling unset value
+            float   aOversamplingFactorDbg          = Math::InfinityF(),
+            float   aMaxTriangleSpanDbg             = Math::InfinityF())
         {
             maxApproxError =
                   aMaxApproxError == Math::InfinityF()
-                ? 0.25f : aMaxApproxError;
+                ? 2.0f : aMaxApproxError;
             minSubdivLevel =
                   aMinSubdivLevel == Math::InfinityF()
-                ? 5u : static_cast<uint32_t>(aMinSubdivLevel);
+                ? 4u : static_cast<uint32_t>(aMinSubdivLevel);
             maxSubdivLevel =
                   aMaxSubdivLevel == Math::InfinityF()
-                ? 10u : static_cast<uint32_t>(aMaxSubdivLevel);
-            maxTriangleSamplesPerDim =
-                  aMaxTriangleSamplesPerDim == Math::InfinityF()
-                ? 50u : static_cast<uint32_t>(aMaxTriangleSamplesPerDim);
+                ? 9u : static_cast<uint32_t>(aMaxSubdivLevel);
 
+            maxTriangleSamplesPerDimDbg =
+                  aMaxTriangleSamplesPerDimDbg == Math::InfinityF()
+                ? 50u : static_cast<uint32_t>(aMaxTriangleSamplesPerDimDbg);
             oversamplingFactorDbg =
                   aOversamplingFactorDbg == Math::InfinityF()
                 ? 0.7f : aOversamplingFactorDbg;
@@ -71,9 +71,9 @@ public:
             return maxSubdivLevel;
         }
 
-        uint32_t GetMaxTriangleSamplesPerDim() const
+        uint32_t GetMaxTriangleSamplesPerDimDbg() const
         {
-            return maxTriangleSamplesPerDim;
+            return maxTriangleSamplesPerDimDbg;
         }
 
         float GetOversamplingFactorDbg() const
@@ -91,7 +91,7 @@ public:
         float       maxApproxError;
         uint32_t    minSubdivLevel;
         uint32_t    maxSubdivLevel;
-        uint32_t    maxTriangleSamplesPerDim;
+        uint32_t    maxTriangleSamplesPerDimDbg;
 
         float       oversamplingFactorDbg;
         float       maxTriangleSpanDbg;
@@ -1555,7 +1555,7 @@ protected:
         ossPath << aParams.GetMaxSubdivLevel();
 
         ossPath << "_tms";
-        ossPath << aParams.GetMaxTriangleSamplesPerDim();
+        ossPath << aParams.GetMaxTriangleSamplesPerDimDbg();
 
         ossPath << "_ts";
         ossPath << std::setprecision(2) << aParams.GetMaxTriangleSpanDbg();
@@ -1589,7 +1589,7 @@ protected:
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxApproxError(),             aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMinSubdivLevel(),             aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxSubdivLevel(),             aUseDebugSave);
-        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSamplesPerDim(),   aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSamplesPerDimDbg(),aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(),         aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(),      aUseDebugSave);
 
@@ -1729,7 +1729,7 @@ protected:
         float maxApproxError;
         uint32_t minSubdivLevel;
         uint32_t maxSubdivLevel;
-        uint32_t maxTriangleSamplesPerDim;
+        uint32_t maxTriangleSamplesPerDimDbg;
         float maxTriangleSpanDbg;
         float oversamplingFactorDbg;
 
@@ -1739,7 +1739,7 @@ protected:
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxSubdivLevel))
             return false;
-        if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSamplesPerDim))
+        if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSamplesPerDimDbg))
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSpanDbg))
             return false;
@@ -1752,7 +1752,7 @@ protected:
             return false;
         if (maxSubdivLevel != aParams.GetMaxSubdivLevel())
             return false;
-        if (maxTriangleSamplesPerDim != aParams.GetMaxTriangleSamplesPerDim())
+        if (maxTriangleSamplesPerDimDbg != aParams.GetMaxTriangleSamplesPerDimDbg())
             return false;
         if (maxTriangleSpanDbg != aParams.GetMaxTriangleSpanDbg())
             return false;
@@ -2477,16 +2477,16 @@ protected:
             if (!mQuiet)
                 printf(
                     "\nSteerable Sampler - Triangulation Parameters:\n"
-                    "MaxApproxError:            %.4f\n"
-                    "MinSubdivLevel:            %d\n"
-                    "MaxSubdivLevel:            %d\n"
-                    "MaxTriangleSamplesPerDim:  %d\n"
-                    "OversamplingFactorDbg:     %.4f\n"
-                    "MaxTriangleSpanDbg:        %.4f\n",
+                    "MaxApproxError:               %.4f\n"
+                    "MinSubdivLevel:               %d\n"
+                    "MaxSubdivLevel:               %d\n"
+                    "MaxTriangleSamplesPerDimDbg:  %d\n"
+                    "OversamplingFactorDbg:        %.4f\n"
+                    "MaxTriangleSpanDbg:           %.4f\n",
                     mBuildParams.GetMaxApproxError(),
                     mBuildParams.GetMinSubdivLevel(),
                     mBuildParams.GetMaxSubdivLevel(),
-                    mBuildParams.GetMaxTriangleSamplesPerDim(),
+                    mBuildParams.GetMaxTriangleSamplesPerDimDbg(),
                     mBuildParams.GetOversamplingFactorDbg(),
                     mBuildParams.GetMaxTriangleSpanDbg());
         }
@@ -3197,8 +3197,8 @@ protected:
                                 aParams);
         const uint32_t maxSamplesPerDim = (uint32_t)std::ceil(maxSamplesPerDimF);
 
-        if (   (aParams.GetMaxTriangleSamplesPerDim() != 0)
-            && (aParams.GetMaxTriangleSamplesPerDim() < maxSamplesPerDim))
+        if (   (aParams.GetMaxTriangleSamplesPerDimDbg() != 0)
+            && (aParams.GetMaxTriangleSamplesPerDimDbg() < maxSamplesPerDim))
             return true;
 
         // Sample sub-triangles independently if sines differ too much (to avoid unnecessary oversampling)
