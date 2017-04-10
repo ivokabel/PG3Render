@@ -1573,7 +1573,7 @@ protected:
 
     static const char * SaveLoadFileHeader()
     {
-        return "Environment Map Steerable Sampler Data, format ver. 1.2\n";
+        return "Environment Map Steerable Sampler Data, format ver. 1.3\n";
     }
 
 
@@ -3125,9 +3125,11 @@ protected:
                 aStats.AddSample(aWholeTriangle, sampleDir);
 
                 // Analyze error
-                const auto diffAbs = std::abs(emVal - approxVal);
-                const auto threshold = std::max(aParams.GetMaxApproxError() * emVal, 0.001f);
-                if (diffAbs > threshold)
+                const auto min      = std::min(emVal, approxVal);
+                const auto max      = std::max(emVal, approxVal);
+                const auto maxError = 1.f + aParams.GetMaxApproxError();
+                const auto numEps   = 0.0001f; // solves numerical problems for small values
+                if ((max + numEps) > ((min + numEps) * maxError))
                     return true; // The approximation is too far from the original function
             }
         }

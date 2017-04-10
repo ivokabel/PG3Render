@@ -8,17 +8,14 @@ PG3RENDER32="$PG3RENDER_BASE_DIR/Win32/Release/PG3Render.exe"
 PG3RENDER64="$PG3RENDER_BASE_DIR/x64/Release/PG3Render.exe"
 PG3RENDER=$PG3RENDER64
 
-DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
-DIFF_TOOL=PerceptualDiff.exe
+DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/BinCMake/Release"
+PATH="$DIFF_TOOL_BASE_DIR:$PATH"
+DIFF_TOOL=perceptualdiff.exe
 
 IMAGES_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render/output images"
 IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
 
 ###################################################################################################
-
-PATH="$DIFF_TOOL_BASE_DIR:$PATH"
-#echo $PATH
-#echo
 
 #echo
 #pwd
@@ -28,20 +25,23 @@ PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 
 ###################################################################################################
 
-OPERATION_MODES="compare plot"          #"render compare plot"
+OPERATION_MODES="compare plot"           #"render compare plot"
 
 SCENES=20
-EMS="12 10 11"
-export RENDERING_TIME=300
+EMS="04 12 11 10"
+export RENDERING_TIME=30
 export MIN_SUBDIV_LEVEL=4
 export MAX_SUBDIV_LEVELS="07 08 09 10 11"
-export MAX_ERRORS="0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.10 1.20"   # The only parameter which changes in a graph (1D slice)
+export MAX_ERRORS="0.10 1.00 2.00 3.00 5.00"   # The only parameter which changes in a graph (1D slice)
+
+#NAME_TRAIL="01 - RMSDERel, ErrorEval 2.0"
+ NAME_TRAIL="02 - MSDERel,  ErrorEval 2.0"
+
+###################################################################################################
 
 export CVS_OUTPUT=true                          # false for debugging; ignored if rendering
 export CVS_SEPAR=" "
 export CVS_DATASETS_IN_COLUMNS=true             # Transpose for Gnuplot; ignored if rendering
-
-###################################################################################################
 
 list_items_count() {
     echo $#;
@@ -55,12 +55,16 @@ export EM
 for SCENE in $SCENES; do
     for EM in $EMS; do
         TEST_NAME="Scene $SCENE, EM $EM at ${RENDERING_TIME}sec"
+        if [ "$NAME_TRAIL" != "" ]; then
+            TEST_NAME="${TEST_NAME} - $NAME_TRAIL"
+        fi
+        
         OUT_FILE_BASE="$IMAGES_BASE_DIR/steer_sampl_tuning/${TEST_NAME}"
         OUT_GNUPLOT_FILE="${OUT_FILE_BASE}.gnuplot"
         OUT_IMAGE_FILE="${OUT_FILE_BASE}.png"
 
         echo
-        echo " === Running iteration \"$TEST_NAME\" ==="
+        echo "=====  Running iteration \"$TEST_NAME\"  ====="
 
         if [[ "$OPERATION_MODES" =~ (^| )"render"($| ) ]]; then
             echo

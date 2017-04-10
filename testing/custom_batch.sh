@@ -6,11 +6,11 @@ PG3_TRAINING_DIR_WIN="C:\\Users\\Ivo\\Creativity\\Programming\\05 PG3 Training"
 PG3RENDER_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render"
 PG3RENDER32="$PG3RENDER_BASE_DIR/Win32/Release/PG3Render.exe"
 PG3RENDER64="$PG3RENDER_BASE_DIR/x64/Release/PG3Render.exe"
-PG3RENDER=$PG3RENDER64 #$PG3RENDER32 #
+PG3RENDER=$PG3RENDER64
 
-DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/Bin/Win32"
+DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/BinCMake/Release"
 PATH="$DIFF_TOOL_BASE_DIR:$PATH"
-DIFF_TOOL=PerceptualDiff.exe
+DIFF_TOOL=perceptualdiff.exe
 
 IMAGES_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render/output images"
 IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
@@ -44,17 +44,33 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+### Diff tool comparison modes
+
+#IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images\\steer_sampl_tuning"
+#
+#OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spd_dlsa"
+#REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_72000s_Reference.hdr"
+#COMPARED_IMG="$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_emss_6s.hdr"
+#
+#"$DIFF_TOOL" -mode rmsde          -verbose -gamma 1.0 -output "$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_Rmsde.hdr"         "$REFERENCE_IMG" "$COMPARED_IMG"; echo
+#"$DIFF_TOOL" -mode msde           -verbose -gamma 1.0 -output "$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_Msde.hdr"          "$REFERENCE_IMG" "$COMPARED_IMG"; echo
+#"$DIFF_TOOL" -mode rmsde_relative -verbose -gamma 1.0 -output "$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_RmsdeRelative.hdr" "$REFERENCE_IMG" "$COMPARED_IMG"; echo
+#"$DIFF_TOOL" -mode msde_relative  -verbose -gamma 1.0 -output "$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_MsdeRelative.hdr"  "$REFERENCE_IMG" "$COMPARED_IMG"; echo
+
+
 ### SS params tuning - reference images
 
-#BASE_ITERS=12000           #200=10min   #1200=1h   
-#
+#BASE_ITERS=1      #12000           #200=10min   #1200=1h   
+
 #render -s 20 -a dlsa -i `expr $BASE_ITERS \* 7`  -em 12
 #render -s 20 -a dlsa -i `expr $BASE_ITERS \* 5`  -em 10
 #render -s 20 -a dlsa -i `expr $BASE_ITERS \* 2`  -em 11
-#
+#render -s 20 -a dlsa -i `expr $BASE_ITERS \* 6`  -em 4
+
 #render -s 22 -a dmis -i `expr $BASE_ITERS \* 7`  -em 12
 #render -s 22 -a dmis -i `expr $BASE_ITERS \* 2`  -em 10
 #render -s 22 -a dmis -i `expr $BASE_ITERS \* 13` -em 11
+#render -s 22 -a dmis -i `expr $BASE_ITERS \* 6`  -em 4
 
 
 ### Steerable sampler tuning
@@ -168,12 +184,12 @@ IIC=18
 
 
 #REFERENCE_IMG="$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_82800sec_RR99.7.hdr"
-#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt1,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
-#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt1,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
-#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt4,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
-#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
-#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt8,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
-#echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt8,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt1,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt1,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt4,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt4,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_pl1-100_splt8,1.0,1.0_180sec.hdr"   "$REFERENCE_IMG"`
+#echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$IMAGES_BASE_DIR_WIN\\1s_e5_SffdRpd_pt_rr_splt8,1.0,1.0_180sec_RR99.7.hdr" "$REFERENCE_IMG"`
 
 #for ITERS in `echo 1 5 10 50 100 500`; do
 #    "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr -s 24 -a pt -em 10 -i $ITERS -sb 1
@@ -220,9 +236,9 @@ IIC=18
 #    echo $PATH1
 #    echo $PATH2
 #    echo $PATH3
-#    echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$PATH1" "$REFERENCE_IMG"`
-#    echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$PATH2" "$REFERENCE_IMG"`
-#    echo `"$DIFF_TOOL" -mode rmse -gamma 1.0 "$PATH3" "$REFERENCE_IMG"`
+#    echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$PATH1" "$REFERENCE_IMG"`
+#    echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$PATH2" "$REFERENCE_IMG"`
+#    echo `"$DIFF_TOOL" -mode rmsde -gamma 1.0 "$PATH3" "$REFERENCE_IMG"`
 #
 #    echo
 #done

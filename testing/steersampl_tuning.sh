@@ -95,6 +95,10 @@ setup_out_dir_and_img () {
     case $1 in
         20 )
             case $2 in
+                04 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spd_dlsa"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_72000s_Reference.hdr"
+                    ;;
                 10 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spd_dlsa"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e10_Spd_dlsa_60000s_Reference.hdr"
@@ -115,6 +119,10 @@ setup_out_dir_and_img () {
             ;;
         22 )
             case $2 in
+                04 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spdg_dmis"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e4_Spdg_dmis_72000s_Reference.hdr"
+                    ;;
                 10 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spdg_dmis"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e10_Spdg_dmis_24000s_Reference.hdr"
