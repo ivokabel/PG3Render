@@ -40,7 +40,7 @@ compare_images () {
         echo "   $2"
     fi
 
-    "$DIFF_TOOL" -mode rmse -gamma 1.0 "$1" "$2"
+    "$DIFF_TOOL" -mode rmsde -gamma 1.0 "$1" "$2"
 
     if [ "$CVS_OUTPUT" != "true" ]; then
         echo

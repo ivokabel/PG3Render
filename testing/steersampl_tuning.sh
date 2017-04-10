@@ -60,7 +60,8 @@ compare_images () {
         echo "   $2"
     fi
 
-    "$DIFF_TOOL" -mode rmse -gamma 1.0 -verbosity onlydiff -output "$3" "$1" "$2"
+    #"$DIFF_TOOL" -mode rmsde_relative -gamma 1.0 -verbosity onlydiff -deltaethreshold 0.5 -output "$3" "$1" "$2"
+     "$DIFF_TOOL" -mode  msde_relative -gamma 1.0 -verbosity onlydiff -deltaethreshold 0.5 -output "$3" "$1" "$2"
 
     if [ "$CVS_OUTPUT" != "true" ]; then
         echo
