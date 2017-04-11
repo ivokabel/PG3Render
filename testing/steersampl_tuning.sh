@@ -25,6 +25,7 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 
 #SCENE=20
 #EM=12                         #12 10 11
+#ALG=dlsa
 #RENDERING_TIME=15
 #MIN_SUBDIV_LEVEL=4
 #MAX_SUBDIV_LEVELS="7 8 9 10"
@@ -60,8 +61,7 @@ compare_images () {
         echo "   $2"
     fi
 
-    #"$DIFF_TOOL" -mode rmsde_relative -gamma 1.0 -verbosity onlydiff -deltaethreshold 0.5 -output "$3" "$1" "$2"
-     "$DIFF_TOOL" -mode  msde_relative -gamma 1.0 -verbosity onlydiff -deltaethreshold 0.5 -output "$3" "$1" "$2"
+    "$DIFF_TOOL" -mode  msde_relative -gamma 1.0 -verbosity onlydiff -deltaethreshold 0.5 -output "$3" "$1" "$2"
 
     if [ "$CVS_OUTPUT" != "true" ]; then
         echo
@@ -79,12 +79,12 @@ render_or_compare () {
     if [ "$OPERATION_MODE" == render ]; then
         # Rendering...
         mkdir -p "$6"
-        "$PG3RENDER" -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"
+        "$PG3RENDER" -od "$6" -e hdr -a $ALG -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"
         echo
     else
         # Comparing...
-        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"`
-        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a dlsa -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40_Diff"`
+        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a $ALG -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"`
+        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a $ALG -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40_Diff"`
         compare_images "$7" "$RENDERED_IMG" "$DIFF_IMG"
     fi
 }
@@ -96,19 +96,19 @@ setup_out_dir_and_img () {
         20 )
             case $2 in
                 04 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spd_dlsa"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spd"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e4_Spd_dlsa_72000s_Reference.hdr"
                     ;;
                 10 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spd_dlsa"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spd"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e10_Spd_dlsa_60000s_Reference.hdr"
                     ;;
                 11 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e11_Spd_dlsa"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e11_Spd"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e11_Spd_dlsa_24000s_Reference.hdr"
                     ;;
                 12 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e12_Spd_dlsa"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e12_Spd"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e12_Spd_dlsa_84000s_Reference.hdr"
                     ;;
                 * )
@@ -120,19 +120,19 @@ setup_out_dir_and_img () {
         22 )
             case $2 in
                 04 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spdg_dmis"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e4_Spdg"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e4_Spdg_dmis_72000s_Reference.hdr"
                     ;;
                 10 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spdg_dmis"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e10_Spdg"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e10_Spdg_dmis_24000s_Reference.hdr"
                     ;;
                 11 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e11_Spdg_dmis"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e11_Spdg"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e11_Spdg_dmis_156000s_Reference.hdr"
                     ;;
                 12 )
-                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e12_Spdg_dmis"
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\1s_e12_Spdg"
                     REFERENCE_IMG="$OUT_IMG_DIR_WIN\\1s_e12_Spdg_dmis_84000s_Reference.hdr"
                     ;;
                 * )
