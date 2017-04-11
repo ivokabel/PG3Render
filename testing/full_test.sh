@@ -27,6 +27,7 @@ declare -A SCENE_EM_MAP=(
 )
 SHORT_OUTPUT=true
 ARCH_MODES="32 64"
+ERROR_THRESHOLD=5.0
 
 TESTING_DIR="./testing"
 TESTING_DIR_WIN=".\\testing"
@@ -90,7 +91,7 @@ run_single_render () {
     # Compare to reference
     if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
         if [ $RENDERING_RESULT = 0 ]; then
-            "$DIFF_TOOL" -mode rmsde_relative -gamma 1.0 -deltaethreshold 3.00 -output "$DIFF_IMG" "$RENDERED_IMG" "$REFERENCE_IMG"
+            "$DIFF_TOOL" -mode rmsde_relative -gamma 1.0 -deltaethreshold $ERROR_THRESHOLD -output "$DIFF_IMG" "$RENDERED_IMG" "$REFERENCE_IMG"
             DIFF_RESULT=$?
             if [ "$DIFF_RESULT" = "0" ]; then
                 ((TEST_COUNT_SUCCESSFUL+=1))
