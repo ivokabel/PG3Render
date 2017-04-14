@@ -2221,19 +2221,52 @@ public:
         bool             aSampleBackSide,
         Rng             &aRng) const
     {
-        oIrradianceEstimate, aSurfPt, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng; // unused params
+        aSurfPt, aRng; // unused params
 
-        PG3_ERROR_NOT_IMPLEMENTED("Just evaluate the whole integral from the root node");
+        // TODO: Compensate "negativity compensation" and distortion caused by non-spherical approximation
 
-        //// Clamped cosine coefficients for given normal
-        //SteerableCoefficients clampedCosCoeffs;
-        //clampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+        // Compute integrals over the requested hemispheres
+        if (aSampleFrontSide && aSampleBackSide)
+        {
+            Frame lowerSurfFrame = aSurfFrame;
+            lowerSurfFrame.SwitchNormal();
 
-        //const float wholeIntegral = GetWholeIntegral(clampedCosCoeffs);
+            SteerableCoefficients upperClampedCosCoeffs, lowerClampedCosCoeffs;
+            upperClampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+            lowerClampedCosCoeffs.GenerateForClampedCos(lowerSurfFrame.Normal(), true);
 
-        // Take sidedness into account
+            const float upperIntegral = GetWholeIntegral(upperClampedCosCoeffs);
+            const float lowerIntegral = GetWholeIntegral(lowerClampedCosCoeffs);
+            const float wholeIntegral = upperIntegral + lowerIntegral;
 
-        return false;
+            oIrradianceEstimate = wholeIntegral;
+            return true;
+        }
+        else if (aSampleFrontSide)
+        {
+            SteerableCoefficients upperClampedCosCoeffs;
+            upperClampedCosCoeffs.GenerateForClampedCos(aSurfFrame.Normal(), true);
+
+            const float upperIntegral = GetWholeIntegral(upperClampedCosCoeffs);
+
+            oIrradianceEstimate = upperIntegral;
+            return true;
+        }
+        else if (aSampleBackSide)
+        {
+            Frame lowerSurfFrame = aSurfFrame;
+            lowerSurfFrame.SwitchNormal();
+
+            SteerableCoefficients lowerClampedCosCoeffs;
+            lowerClampedCosCoeffs.GenerateForClampedCos(lowerSurfFrame.Normal(), true);
+
+            const float lowerIntegral = GetWholeIntegral(lowerClampedCosCoeffs);
+
+            oIrradianceEstimate = lowerIntegral;
+            return true;
+        }
+        else
+            return false;
     }
 
     // Releases the data structures used for sampling
