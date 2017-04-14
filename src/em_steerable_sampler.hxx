@@ -1546,7 +1546,7 @@ protected:
         ossPath << (aEmImage.IsUsingBilinearFiltering() ? "bi" : "nn");
 
         ossPath << "_e";
-        ossPath << std::setprecision(2) << aParams.GetMaxApproxError();
+        ossPath << std::fixed << std::setprecision(2) << aParams.GetMaxApproxError();
 
         ossPath << "_sll";
         ossPath << aParams.GetMinSubdivLevel();
