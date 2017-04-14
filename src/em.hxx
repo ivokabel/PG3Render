@@ -67,7 +67,6 @@ public:
     }
 
     // Samples direction on unit sphere proportionally to the luminance of the map. 
-    PG3_PROFILING_NOINLINE
     bool Sample(
         LightSample     &oLightSample,
         const Frame     &aSurfFrame,
@@ -81,7 +80,6 @@ public:
 
     // Gets radiance stored for the given direction and optionally its PDF. The direction
     // must be non-zero but not necessarily normalized.
-    PG3_PROFILING_NOINLINE
     void EvalRadiance(
         SpectrumF       &oRadiance,
         const Vec3f     &aDirection, 
@@ -167,7 +165,6 @@ public:
 private:
 
     // Returns radiance for the given lat long coordinates. Optionally does bilinear filtering.
-    PG3_PROFILING_NOINLINE 
     SpectrumF EvalRadiance(const Vec2f &aUV) const
     {
         PG3_ASSERT(mEmImage != nullptr);

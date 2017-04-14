@@ -123,7 +123,6 @@ public:
         oX = (oSegm + offset) / mCount;
     }
 
-    //PG3_PROFILING_NOINLINE
     //int32_t SampleDiscrete(float aRndSample, float *oProbability) const
     //{
     //    // Find surrounding CDF segments and _offset_
@@ -194,7 +193,6 @@ public:
             *oPdf = margPdf * condPdf;
     }
 
-    PG3_PROFILING_NOINLINE
     float Pdf(const Vec2f &aUV) const
     {
         // Find u and v segments

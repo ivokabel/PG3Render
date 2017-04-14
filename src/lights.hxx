@@ -421,7 +421,6 @@ public:
         return GetEmmision(-aWol, oPdfW, aSurfFrame, aSurfMaterial);
     };
 
-    PG3_PROFILING_NOINLINE
     virtual bool SampleIllumination(
         const Vec3f             &aSurfPt, 
         const Frame             &aSurfFrame, 

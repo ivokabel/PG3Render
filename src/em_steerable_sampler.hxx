@@ -37,7 +37,7 @@ public:
         {
             maxApproxError =
                   aMaxApproxError == Math::InfinityF()
-                ? 2.0f : aMaxApproxError;
+                ? 2.00f : aMaxApproxError;
             minSubdivLevel =
                   aMinSubdivLevel == Math::InfinityF()
                 ? 4u : static_cast<uint32_t>(aMinSubdivLevel);
@@ -106,13 +106,15 @@ public:
 
 public:
 
+    typedef std::array<float, 9> SteerableBasisData;
+
     class SteerableValue
     {
     public:
 
         SteerableValue() {}
 
-        SteerableValue(const std::array<float, 9> &aBasisValues) :
+        SteerableValue(const SteerableBasisData &aBasisValues) :
             mBasisValues(aBasisValues)
         {}
 
@@ -121,13 +123,16 @@ public:
             mBasisValues.fill(aValue);
         }
 
+        PG3_PROFILING_NOINLINE
         friend float Dot(const SteerableValue &aValue1, const SteerableValue &aValue2)
         {
             PG3_ASSERT_INTEGER_EQUAL(aValue1.mBasisValues.size(), aValue2.mBasisValues.size());
 
             float retval = 0.0f;
-            for (size_t i = 0; i < aValue1.mBasisValues.size(); i++)
+            const auto size = aValue1.mBasisValues.size();
+            for (size_t i = 0; i < size; i++)
                 retval += aValue1.mBasisValues[i] * aValue2.mBasisValues[i];
+
             return retval;
         }
 
@@ -152,7 +157,7 @@ public:
         }
 
     protected:
-        std::array<float, 9> mBasisValues;
+        SteerableBasisData mBasisValues;
     };
 
 
@@ -162,7 +167,7 @@ public:
 
         SteerableBasisValue() {}
 
-        SteerableBasisValue(const std::array<float, 9> &aBasisValues) :
+        SteerableBasisValue(const SteerableBasisData &aBasisValues) :
             SteerableValue(aBasisValues)
         {}
 
@@ -686,6 +691,8 @@ public:
             auto val2 = static_cast<const SteerableValue*>(&aValue2);
             return Dot(*val1, *val2);
         }
+
+
         friend float Dot(const SteerableBasisValue &aValue1, const SteerableCoefficients &aValue2)
         {
             auto val1 = static_cast<const SteerableValue*>(&aValue1);
