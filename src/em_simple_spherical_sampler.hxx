@@ -77,7 +77,7 @@ public:
         else
             oRadianceCos.MakeZero();
 
-        return false;
+        return true;
     }
 
 
