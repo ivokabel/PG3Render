@@ -112,8 +112,8 @@ public:
 
             // Find the centre of the enclosing rectangle (vertices are middle points of EM pixels)
             const Vec2i centre(
-                (int32_t)std::round(xFull),
-                (int32_t)std::round(yFull));
+                (int32_t)(xFull + 0.5f),
+                (int32_t)(yFull + 0.5f));
 
             const Vec2i coords0 = centre - Vec2i(1, 1);
             const Vec2i coords1 = centre;
