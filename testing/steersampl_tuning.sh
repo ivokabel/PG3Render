@@ -28,7 +28,7 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 #ALG=dlsa
 #RENDERING_TIME=15
 #MIN_SUBDIV_LEVEL=4
-#MAX_SUBDIV_LEVELS="7 8 9 10"
+#MAX_SUBDIV_LEVELS="07 08 09 10"
 #MAX_ERRORS="0.10 0.20 0.30 0.40 0.50"  # The only parameter which changes in a graph (1D slice)
 
 if [ "$OPERATION_MODE" == render ]; then
@@ -193,7 +193,7 @@ else
         OUT_STR="\"Configuration\""
         setup_out_dir_and_img $SCENE $EM
         for MSL in $MAX_SUBDIV_LEVELS; do
-            SERIES_NAME="\"Max subdiv level $MSL\""
+            SERIES_NAME="\"Subdiv levels $MIN_SUBDIV_LEVEL-$MSL\""
             OUT_STR="$OUT_STR${CVS_SEPAR}$SERIES_NAME"
         done
         echo "$OUT_STR"

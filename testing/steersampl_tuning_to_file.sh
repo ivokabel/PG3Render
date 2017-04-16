@@ -25,18 +25,18 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 
 ###################################################################################################
 
-OPERATION_MODES="render compare plot"           #"render compare plot"
+OPERATION_MODES="render compare plot"            #"render compare plot"
 
 SCENES="20 22"
-EMS="04 12 11 10"
+EMS="12 10 11"
 declare -A SCENE_ALG_MAP=(
     ["20"]="dlsa dmis"
-    ["22"]="     dmis"
+    ["22"]="           pt"          #"     dmis"
 )
 export RENDERING_TIME=120
-export MIN_SUBDIV_LEVEL=4
-export MAX_SUBDIV_LEVELS="07 08 09 10"
-export MAX_ERRORS="0.10 0.20 0.50 1.00 1.50 2.00 2.50 3.00 3.50 4.00 5.00"   # The only parameter which changes in a graph (1D slice)
+export MIN_SUBDIV_LEVEL=04
+export MAX_SUBDIV_LEVELS="08 09 10"
+export MAX_ERRORS="0.10 0.20 0.30 0.40 0.50 0.75 1.00"      #"0.10 0.20 0.30 0.40 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.50 3.00 3.50 4.00 5.00"   # The only parameter which changes in a graph (1D slice)
 
 #NAME_TRAIL="Debug"
 
@@ -71,7 +71,7 @@ for SCENE in $SCENES; do
 
             echo
             echo "========================================"
-            echo "  \"$TEST_NAME\""
+            echo "   \"$TEST_NAME\""
             echo "========================================"
 
             if [[ "$OPERATION_MODES" =~ (^| )"render"($| ) ]]; then
