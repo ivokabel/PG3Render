@@ -3828,6 +3828,7 @@ protected:
         while ((node != nullptr) && (!node->IsTriangleNode()))
         {
             auto triangleSet = static_cast<const TriangleSetNode*>(node);
+            const size_t childCount = triangleSet->GetChildrenCount();
             //auto leftChild  = triangleSet->GetLeftChild();
             //auto rightChild = triangleSet->GetRightChild();
 
@@ -3838,73 +3839,83 @@ protected:
             //const float rightIntegral = rightChild->GetIntegral(aClampedCosCoeffs);
             //const float wholeIntegral = leftIntegral + rightIntegral;
 
-            std::array<float, MAX_TRIANGLE_SET_CHILDREN + 1> childrenIntegralSums;
-            const size_t childCount = triangleSet->GetChildrenCount();
-            childrenIntegralSums[0] = 0.f;
+            // Get integrals
+            std::array<float, MAX_TRIANGLE_SET_CHILDREN> childrenIntegrals;
+            float wholeIntegral = 0.f;
             for (size_t i = 0; i < childCount; ++i)
             {
                 auto child = triangleSet->GetChild(i);
 
                 PG3_ASSERT(child != nullptr);
 
+                childrenIntegrals[i] = (child ? child->GetIntegral(aClampedCosCoeffs) : 0.f);
+                wholeIntegral += childrenIntegrals[i];
+            }
+
+            //const float threshold =
+            //      (wholeIntegral > 1E-10f)
+            //    ? (leftIntegral / wholeIntegral)
+            //    : 0.5f;
+
+            // Compute sums
+            std::array<float, MAX_TRIANGLE_SET_CHILDREN + 1> childrenIntegralSums;
+            childrenIntegralSums[0] = 0.f;
+            for (size_t i = 0; i < childCount; ++i)
                 childrenIntegralSums[i + 1] =
                       childrenIntegralSums[i]
-                    + (child ? child->GetIntegral(aClampedCosCoeffs) : 0.f);
-            }
-            const float wholeIntegral = childrenIntegralSums[MAX_TRIANGLE_SET_CHILDREN];
+                    + childrenIntegrals[i];
+
+            // Normalize sums
+            if (wholeIntegral > 1E-10f)
+                for (size_t i = 0; i < childCount; ++i)
+                {
+                    childrenIntegralSums[i + 1] /= wholeIntegral;
+
+                    PG3_ASSERT_FLOAT_VALID(childrenIntegralSums[i + 1]);
+                }
+            else
+                for (size_t i = 0; i < childCount; ++i)
+                    childrenIntegrals[i] = 1.f / MAX_TRIANGLE_SET_CHILDREN;
 
             PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(wholeIntegral, 0.f);
             PG3_ASSERT_FLOAT_EQUAL(wholeIntegral, triangleSet->GetIntegral(aClampedCosCoeffs), 0.001f);
 
             // Choose child
 
-            {
-                //const float threshold =
-                //      (wholeIntegral > 1E-10f)
-                //    ? (leftIntegral / wholeIntegral)
-                //    : 0.5f;
-
-                //PG3_ASSERT_FLOAT_VALID(threshold);
-
-                //if ((aUniSample < threshold) || (threshold == 1.f))
-                //{
-                //    node = leftChild;
-                //    aUniSample /= std::max(threshold, 0.00001f);
-
-                //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
-                //}
-                //else
-                //{
-                //    node = rightChild;
-                //    aUniSample =
-                //          (aUniSample - threshold)
-                //        / std::max(1.f - threshold, 0.00001f);
-
-                //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
-                //}
-                //// TODO: Clamp random val to [0,1]?
-            }
-
             auto itUpBound = std::upper_bound(
                 childrenIntegralSums.begin(),
                 childrenIntegralSums.end(),
-                  aUniSample
-                * wholeIntegral
-                * 0.9999f /*solves zero ending problem*/);
+                aUniSample
+                );// *0.999999f /*solves zero ending problem*/);
             if (itUpBound == childrenIntegralSums.end())
                 --itUpBound; // = childrenIntegralSums.rbegin(); // last element
+
+            //if ((aUniSample < threshold) || (threshold == 1.f))
+            //{
+            //    node = leftChild;
+            //    aUniSample /= std::max(threshold, 0.00001f);
+
+            //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
+            //}
+            //else
+            //{
+            //    node = rightChild;
+            //    aUniSample =
+            //          (aUniSample - threshold)
+            //        / std::max(1.f - threshold, 0.00001f);
+
+            //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
+            //}
+            //// TODO: Clamp random val to [0,1]?
 
             const auto childIdx = itUpBound - childrenIntegralSums.begin() - 1u;
             node = triangleSet->GetChild(childIdx);
 
             const float lowBound = *(itUpBound - 1);
             const float integral = *itUpBound - lowBound;
-            const float normFactor = 1.f / std::max(wholeIntegral, 0.00001f);
-            const float lowBoundNorm = lowBound * normFactor;
-            const float integralNorm = integral * normFactor;
             aUniSample =
-                  (aUniSample - lowBoundNorm)
-                / std::max(integralNorm, 0.00001f);
+                  (aUniSample - lowBound)
+                / std::max(integral, 0.00001f);
 
             PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, -0.001f, 1.001f);
 
@@ -5487,16 +5498,16 @@ public:
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        //if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
+        if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
+            return false;
+        if (!_UT_Init(aMaxUtBlockPrintLevel))
+            return false;
+        //if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
         //    return false;
-        //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
-        //    return false;
-        //if (!_UT_Init(aMaxUtBlockPrintLevel))
-        //    return false;
-        ////if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
-        ////    return false;
         if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
             return false;
 
