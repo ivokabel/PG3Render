@@ -175,6 +175,7 @@ public:
             SteerableValue(aValue)
         {}
 
+
         // Sets the value of spherical harmonic base at given direction multiplied by the factor
         SteerableBasisValue& GenerateSphHarm(const Vec3f &aDir, float aMulFactor = 1.f)
         {
@@ -199,6 +200,7 @@ public:
             return *this;
         }
 
+
         bool IsValid() const
         {
             for (size_t i = 0; i < mBasisValues.size(); i++)
@@ -207,6 +209,15 @@ public:
             // TODO: What else?
             return true;
         }
+
+
+        SteerableBasisValue& operator += (const SteerableBasisValue &aValue)
+        {
+            for (size_t i = 0; i < mBasisValues.size(); i++)
+                mBasisValues[i] += aValue.mBasisValues[i];
+            return *this;
+        }
+
 
         SteerableBasisValue operator* (const SteerableBasisValue &aValue) const
         {
@@ -1114,52 +1125,107 @@ public:
     };
 
 
-    class TriangleSetNode : public TreeNodeBase
+    template <uint32_t maxChildrenCount>
+    class TriangleSetNodeBase : public TreeNodeBase
     {
     public:
 
         // The node becomes the owner of the children and is responsible for releasing them
-        TriangleSetNode(
-            TreeNodeBase* aLeftChild,
-            TreeNodeBase* aRightChild)
-            :
+        //TriangleSetNodeBase(
+        //    TreeNodeBase* aLeftChild,
+        //    TreeNodeBase* aRightChild)
+        //    :
+        //    TreeNodeBase(
+        //        false,
+        //        [aLeftChild, aRightChild](){
+        //            if ((aLeftChild != nullptr) && (aRightChild != nullptr))
+        //                return aLeftChild->GetWeight() + aRightChild->GetWeight();
+        //            else
+        //                return SteerableBasisValue();
+        //        }()),
+        //    mLeftChild(aLeftChild),
+        //    mRightChild(aRightChild)
+        //{}
+
+
+        TriangleSetNodeBase(std::list<TreeNodeBase*> &aNodes) :
             TreeNodeBase(
                 false,
-                [aLeftChild, aRightChild](){
-                    if ((aLeftChild != nullptr) && (aRightChild != nullptr))
-                        return aLeftChild->GetWeight() + aRightChild->GetWeight();
-                    else
-                        return SteerableBasisValue();
-                }()),
-            mLeftChild(aLeftChild),
-            mRightChild(aRightChild)
-        {}
-
-
-        ~TriangleSetNode() {}
-
-
-        bool operator == (const TriangleSetNode &aTriangleSet) const
+                [&aNodes](){
+                    SteerableBasisValue weightSum(0.f);
+                    auto it = aNodes.begin();
+                    size_t idx = 0u;
+                    for (; (it != aNodes.end()) && (idx < maxChildrenCount); ++it)
+                    {
+                        if (*it == nullptr)
+                            continue;
+                        weightSum = weightSum + (*it)->GetWeight();
+                        ++idx;
+                    }
+                    return weightSum;
+                }())
         {
-            return (*GetLeftChild()  == *aTriangleSet.GetLeftChild())
-                && (*GetRightChild() == *aTriangleSet.GetRightChild());
+            mChildrenCount = 0;
+            while (!aNodes.empty() && (mChildrenCount < maxChildrenCount))
+            {
+                auto node = aNodes.front(); aNodes.pop_front();
+                if (node == nullptr)
+                    continue;
+                mChildren[mChildrenCount++].reset(node);
+            }
         }
 
 
-        bool operator != (const TriangleSetNode &aTriangleSet)
+        ~TriangleSetNodeBase() {}
+
+
+        bool operator == (const TriangleSetNodeBase &aTriangleSet) const
+        {
+            //return (*GetLeftChild() == *aTriangleSet.GetLeftChild())
+            //    && (*GetRightChild() == *aTriangleSet.GetRightChild());
+            if (mChildrenCount != aTriangleSet.GetChildrenCount())
+                return false;
+            for (size_t i = 0; i < mChildrenCount; ++i)
+                if (*GetChild(i) != *aTriangleSet.GetChild(i))
+                    return false;
+            return true;
+        }
+
+
+        bool operator != (const TriangleSetNodeBase &aTriangleSet)
         {
             return !(*this == aTriangleSet);
         }
 
 
-        const TreeNodeBase* GetLeftChild()  const { return mLeftChild.get(); }
-        const TreeNodeBase* GetRightChild() const { return mRightChild.get(); }
+        //const TreeNodeBase* GetLeftChild()  const { return mLeftChild.get(); }
+        //const TreeNodeBase* GetRightChild() const { return mRightChild.get(); }
+
+        size_t GetChildrenCount() const
+        {
+            return mChildrenCount;
+        }
+
+        const TreeNodeBase* GetChild(const size_t idx) const
+        {
+            PG3_ASSERT(idx < mChildrenCount);
+
+            return (idx < mChildrenCount) ? mChildren[idx].get() : nullptr;
+        }
 
     protected:
+        // OBSOLETE: Children - owned by the node
+        //std::unique_ptr<TreeNodeBase> mLeftChild;
+        //std::unique_ptr<TreeNodeBase> mRightChild;
+
         // Children - owned by the node
-        std::unique_ptr<TreeNodeBase> mLeftChild;
-        std::unique_ptr<TreeNodeBase> mRightChild;
+        std::array<std::unique_ptr<TreeNodeBase>, maxChildrenCount> mChildren;
+        size_t                                                      mChildrenCount;
     };
+
+#define MAX_TRIANGLE_SET_CHILDREN (2u)
+
+    typedef TriangleSetNodeBase<MAX_TRIANGLE_SET_CHILDREN> TriangleSetNode;
 
 
     class TriangleNode : public TreeNodeBase
@@ -1522,8 +1588,11 @@ protected:
             oNonTriangleCount++;
 
             const TriangleSetNode *triangleSetNode = static_cast<const TriangleSetNode*>(aNode);
-            CountNodes(triangleSetNode->GetLeftChild(),  oNonTriangleCount, oTriangleCount);
-            CountNodes(triangleSetNode->GetRightChild(), oNonTriangleCount, oTriangleCount);
+            //CountNodes(triangleSetNode->GetLeftChild(),  oNonTriangleCount, oTriangleCount);
+            //CountNodes(triangleSetNode->GetRightChild(), oNonTriangleCount, oTriangleCount);
+            const size_t childCount = triangleSetNode->GetChildrenCount();
+            for (size_t i = 0; i < childCount; ++i)
+                CountNodes(triangleSetNode->GetChild(i), oNonTriangleCount, oTriangleCount);
         }
         else
             oTriangleCount++;
@@ -1570,6 +1639,10 @@ protected:
         ossPath << "_os";
         ossPath << std::setprecision(2) << aParams.GetOversamplingFactorDbg();
 
+        ossPath << "_mch" << MAX_TRIANGLE_SET_CHILDREN;
+
+        ossPath << ".v" << SaveLoadFileVersion();
+
         ossPath << ".emssd";
 
         oPath = ossPath.str();
@@ -1578,9 +1651,14 @@ protected:
     }
 
 
+    static const char * SaveLoadFileVersion()
+    {
+        return "2.0.debug";
+    }
+
     static const char * SaveLoadFileHeader()
     {
-        return "Environment Map Steerable Sampler Data, format ver. 1.3\n";
+        return "Environment Map Steerable Sampler Data, format ver. 2.0.debug\n";
     }
 
 
@@ -1599,6 +1677,7 @@ protected:
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSamplesPerDimDbg(),aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetMaxTriangleSpanDbg(),         aUseDebugSave);
         Utils::IO::WriteVariableToStream(aOfs, aParams.GetOversamplingFactorDbg(),      aUseDebugSave);
+        Utils::IO::WriteVariableToStream(aOfs, uint32_t(MAX_TRIANGLE_SET_CHILDREN),     aUseDebugSave);
 
         return true;
     }
@@ -1638,8 +1717,12 @@ protected:
         if (!aNode->IsTriangleNode())
         {
             const TriangleSetNode *triangleSetNode = static_cast<const TriangleSetNode*>(aNode);
-            SaveToDisk_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
-            SaveToDisk_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
+            //SaveToDisk_TreeNode(aOfs, triangleSetNode->GetLeftChild(),  aUseDebugSave);
+            //SaveToDisk_TreeNode(aOfs, triangleSetNode->GetRightChild(), aUseDebugSave);
+            const uint32_t childCount = (uint32_t)triangleSetNode->GetChildrenCount();
+            Utils::IO::WriteVariableToStream(aOfs, childCount, aUseDebugSave);
+            for (size_t i = 0; i < childCount; ++i)
+                SaveToDisk_TreeNode(aOfs, triangleSetNode->GetChild(i), aUseDebugSave);
         }
         else
         {
@@ -1739,6 +1822,7 @@ protected:
         uint32_t maxTriangleSamplesPerDimDbg;
         float maxTriangleSpanDbg;
         float oversamplingFactorDbg;
+        uint32_t maxTriangleSetChildren;
 
         if (!Utils::IO::LoadVariableFromStream(aIfs, maxApproxError))
             return false;
@@ -1752,6 +1836,8 @@ protected:
             return false;
         if (!Utils::IO::LoadVariableFromStream(aIfs, oversamplingFactorDbg))
             return false;
+        if (!Utils::IO::LoadVariableFromStream(aIfs, maxTriangleSetChildren))
+            return false;
 
         if (maxApproxError != aParams.GetMaxApproxError())
             return false;
@@ -1764,6 +1850,8 @@ protected:
         if (maxTriangleSpanDbg != aParams.GetMaxTriangleSpanDbg())
             return false;
         if (oversamplingFactorDbg != aParams.GetOversamplingFactorDbg())
+            return false;
+        if (maxTriangleSetChildren != MAX_TRIANGLE_SET_CHILDREN)
             return false;
 
         return true;
@@ -1807,13 +1895,29 @@ protected:
 
         if (!isTriangleNode)
         {
-            std::unique_ptr<TreeNodeBase> leftChild, rightChild;
-            if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, leftChild))
-                return false;
-            if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, rightChild))
+            //std::unique_ptr<TreeNodeBase> leftChild, rightChild;
+            //if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, leftChild))
+            //    return false;
+            //if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, rightChild))
+            //    return false;
+
+            uint32_t childCount;
+            if (!Utils::IO::LoadVariableFromStream(aIfs, childCount))
                 return false;
 
-            oNode.reset(new TriangleSetNode(leftChild.release(), rightChild.release()));
+            PG3_ASSERT(childCount <= MAX_TRIANGLE_SET_CHILDREN);
+
+            std::list<TreeNodeBase*> nodes;
+            for (size_t i = 0; i < childCount; ++i)
+            {
+                std::unique_ptr<TreeNodeBase> child;
+                if (!LoadFromDisk_TreeNode(aIfs, aVertexStorage, child))
+                    return false;
+                nodes.push_back(child.release());
+            }
+
+            //oNode.reset(new TriangleSetNode(leftChild.release(), rightChild.release()));
+            oNode.reset(new TriangleSetNode(nodes));
         }
         else
         {
@@ -1951,10 +2055,14 @@ protected:
         {
             auto triangleSet = static_cast<const TriangleSetNode*>(aNode);
 
-            if (!ForEachTriangleImpl(triangleSet->GetLeftChild(), worker))
-                return false;
-            if (!ForEachTriangleImpl(triangleSet->GetRightChild(), worker))
-                return false;
+            //if (!ForEachTriangleImpl(triangleSet->GetLeftChild(), worker))
+            //    return false;
+            //if (!ForEachTriangleImpl(triangleSet->GetRightChild(), worker))
+            //    return false;
+            const size_t childCount = triangleSet->GetChildrenCount();
+            for (size_t i = 0; i < childCount; ++i)
+                if (!ForEachTriangleImpl(triangleSet->GetChild(i), worker))
+                    return false;
         }
         else
         {
@@ -3672,17 +3780,18 @@ protected:
         // TODO: Move the last element of an odd list to the end of the next layer?
         while (aNodes.size() >= 2)
         {
-            const auto node1 = aNodes.front(); aNodes.pop_front();
-            const auto node2 = aNodes.front(); aNodes.pop_front();
+            //auto node1 = aNodes.front(); aNodes.pop_front();
+            //auto node2 = aNodes.front(); aNodes.pop_front();
 
-            PG3_ASSERT(node1 != nullptr);
-            PG3_ASSERT(node2 != nullptr);
+            //PG3_ASSERT(node1 != nullptr);
+            //PG3_ASSERT(node2 != nullptr);
 
-            auto newNode = new TriangleSetNode(node1, node2);
+            //auto newNode = new TriangleSetNode(node1, node2);
+            auto newNode = new TriangleSetNode(aNodes);
             if (newNode == nullptr)
             {
-                delete node1;
-                delete node2;
+                //delete node1;
+                //delete node2;
                 FreeNodesList(aNodes);
                 return false;
             }
@@ -3719,45 +3828,87 @@ protected:
         while ((node != nullptr) && (!node->IsTriangleNode()))
         {
             auto triangleSet = static_cast<const TriangleSetNode*>(node);
-            auto leftChild  = triangleSet->GetLeftChild();
-            auto rightChild = triangleSet->GetRightChild();
+            //auto leftChild  = triangleSet->GetLeftChild();
+            //auto rightChild = triangleSet->GetRightChild();
 
-            PG3_ASSERT(leftChild  != nullptr);
-            PG3_ASSERT(rightChild != nullptr);
+            //PG3_ASSERT(leftChild  != nullptr);
+            //PG3_ASSERT(rightChild != nullptr);
 
-            const float  leftIntegral =  leftChild->GetIntegral(aClampedCosCoeffs);
-            const float rightIntegral = rightChild->GetIntegral(aClampedCosCoeffs);
-            const float integralSum = leftIntegral + rightIntegral;
+            //const float  leftIntegral =  leftChild->GetIntegral(aClampedCosCoeffs);
+            //const float rightIntegral = rightChild->GetIntegral(aClampedCosCoeffs);
+            //const float wholeIntegral = leftIntegral + rightIntegral;
 
-            PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(integralSum, 0.f);
-            PG3_ASSERT_FLOAT_EQUAL(integralSum, triangleSet->GetIntegral(aClampedCosCoeffs), 0.001f);
+            std::array<float, MAX_TRIANGLE_SET_CHILDREN + 1> childrenIntegralSums;
+            const size_t childCount = triangleSet->GetChildrenCount();
+            childrenIntegralSums[0] = 0.f;
+            for (size_t i = 0; i < childCount; ++i)
+            {
+                auto child = triangleSet->GetChild(i);
+
+                PG3_ASSERT(child != nullptr);
+
+                childrenIntegralSums[i + 1] =
+                      childrenIntegralSums[i]
+                    + (child ? child->GetIntegral(aClampedCosCoeffs) : 0.f);
+            }
+            const float wholeIntegral = childrenIntegralSums[MAX_TRIANGLE_SET_CHILDREN];
+
+            PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(wholeIntegral, 0.f);
+            PG3_ASSERT_FLOAT_EQUAL(wholeIntegral, triangleSet->GetIntegral(aClampedCosCoeffs), 0.001f);
 
             // Choose child
 
-            const float threshold =
-                  (integralSum > 1E-10f)
-                ? (leftIntegral / integralSum)
-                : 0.5f;
-
-            PG3_ASSERT_FLOAT_VALID(threshold);
-
-            if ((aUniSample < threshold) || (threshold == 1.f))
             {
-                node = leftChild;
-                aUniSample /= std::max(threshold, 0.00001f);
+                //const float threshold =
+                //      (wholeIntegral > 1E-10f)
+                //    ? (leftIntegral / wholeIntegral)
+                //    : 0.5f;
 
-                PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
-            }
-            else
-            {
-                node = rightChild;
-                aUniSample =
-                      (aUniSample - threshold)
-                    / std::max(1.f - threshold, 0.00001f);
+                //PG3_ASSERT_FLOAT_VALID(threshold);
 
-                PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
+                //if ((aUniSample < threshold) || (threshold == 1.f))
+                //{
+                //    node = leftChild;
+                //    aUniSample /= std::max(threshold, 0.00001f);
+
+                //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
+                //}
+                //else
+                //{
+                //    node = rightChild;
+                //    aUniSample =
+                //          (aUniSample - threshold)
+                //        / std::max(1.f - threshold, 0.00001f);
+
+                //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
+                //}
+                //// TODO: Clamp random val to [0,1]?
             }
-            // TODO: Clamp random val to [0,1]?
+
+            auto itUpBound = std::upper_bound(
+                childrenIntegralSums.begin(),
+                childrenIntegralSums.end(),
+                  aUniSample
+                * wholeIntegral
+                * 0.9999f /*solves zero ending problem*/);
+            if (itUpBound == childrenIntegralSums.end())
+                --itUpBound; // = childrenIntegralSums.rbegin(); // last element
+
+            const auto childIdx = itUpBound - childrenIntegralSums.begin() - 1u;
+            node = triangleSet->GetChild(childIdx);
+
+            const float lowBound = *(itUpBound - 1);
+            const float integral = *itUpBound - lowBound;
+            const float normFactor = 1.f / std::max(wholeIntegral, 0.00001f);
+            const float lowBoundNorm = lowBound * normFactor;
+            const float integralNorm = integral * normFactor;
+            aUniSample =
+                  (aUniSample - lowBoundNorm)
+                / std::max(integralNorm, 0.00001f);
+
+            PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, -0.001f, 1.001f);
+
+            aUniSample = Math::Clamp(aUniSample, 0.f, 1.f);
         }
 
         if (node == nullptr)
@@ -4295,27 +4446,50 @@ public:
         if (!aCurrentNode->IsTriangleNode()) // Inner node
         {
             auto innerNode  = static_cast<const TriangleSetNode*>(aCurrentNode);
-            auto leftChild  = innerNode->GetLeftChild();
-            auto rightChild = innerNode->GetRightChild();
+            //auto leftChild  = innerNode->GetLeftChild();
+            //auto rightChild = innerNode->GetRightChild();
 
-            // Null pointers
-            if ((leftChild == nullptr) || (rightChild == nullptr))
+            const size_t childCount = innerNode->GetChildrenCount();
+            if ((childCount == 0u) || (childCount > MAX_TRIANGLE_SET_CHILDREN))
             {
+                std::ostringstream errorDescription;
+                errorDescription << "Children count ";
+                errorDescription << childCount;
+                errorDescription << " ouside range (0, ";
+                errorDescription << MAX_TRIANGLE_SET_CHILDREN;
+                errorDescription << ")!";
+
                 PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
-                    "Found null child node!", aTestName);
+                    errorDescription.str().c_str(), aTestName);
                 return false;
             }
 
+            // Null pointers
+            //if ((leftChild == nullptr) || (rightChild == nullptr))
+            for (size_t i = 0; i < childCount; ++i)
+                if (innerNode->GetChild(i) == nullptr)
+                {
+                    PG3_UT_FAILED(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
+                        "Found null child node!", aTestName);
+                    return false;
+                }
+
             // Check children recursively
-            if (   !_UT_InspectTree(
-                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
-                        leftChild, aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1)
-                || !_UT_InspectTree(
-                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
-                        rightChild, aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1))
+            //if (   !_UT_InspectTree(
+            //            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
+            //            leftChild, aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1)
+            //    || !_UT_InspectTree(
+            //            aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName,
+            //            rightChild, aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1))
+            for (size_t i = 0; i < childCount; ++i)
             {
-                return false;
+                auto child = innerNode->GetChild(i);
+                if (!_UT_InspectTree(
+                        aMaxUtBlockPrintLevel, aUtBlockPrintLevel, aTestName, child,
+                        aVertexStorage, oLeafCount, oMaxDepth, aCurrentDepth + 1))
+                    return false;
             }
 
             // Weight validity
@@ -4329,9 +4503,12 @@ public:
             }
 
             // Weight consistency
-            const auto leftChildWeight   = leftChild->GetWeight();
-            const auto rightChildWeight  = rightChild->GetWeight();
-            const auto summedChildWeight = leftChildWeight + rightChildWeight;
+            //const auto leftChildWeight   = leftChild->GetWeight();
+            //const auto rightChildWeight  = rightChild->GetWeight();
+            //const auto summedChildWeight = leftChildWeight + rightChildWeight;
+            SteerableBasisValue summedChildWeight(0.f);
+            for (size_t i = 0; i < childCount; ++i)
+                summedChildWeight += innerNode->GetChild(i)->GetWeight();
             if (innerNodeWeight != summedChildWeight)
             {
                 std::ostringstream errorDescription;
@@ -5310,16 +5487,16 @@ public:
 
     static bool _UnitTests(const UnitTestBlockLevel aMaxUtBlockPrintLevel)
     {
-        if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
-            return false;
-        if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
-            return false;
-        if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
-            return false;
-        if (!_UT_Init(aMaxUtBlockPrintLevel))
-            return false;
-        //if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
+        //if (!_UT_SteerableValueStructures(aMaxUtBlockPrintLevel))
         //    return false;
+        //if (!_UT_SubdivideTriangle(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_BuildTriangleTreeSynthetic(aMaxUtBlockPrintLevel))
+        //    return false;
+        //if (!_UT_Init(aMaxUtBlockPrintLevel))
+        //    return false;
+        ////if (!_UT_Sampling_Synthetic(aMaxUtBlockPrintLevel))
+        ////    return false;
         if (!_UT_Sampling_EM(aMaxUtBlockPrintLevel))
             return false;
 
