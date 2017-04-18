@@ -31,7 +31,7 @@ SCENES="20 22"
 EMS="12 10 11"
 declare -A SCENE_ALG_MAP=(
     ["20"]="dlsa dmis"
-    ["22"]="           pt"          #"     dmis"
+    ["22"]="           pt"                      #"     dmis"
 )
 export RENDERING_TIME=120
 export MIN_SUBDIV_LEVEL=04
