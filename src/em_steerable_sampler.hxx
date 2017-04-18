@@ -365,9 +365,9 @@ public:
             testName = "Negative Y";
             direction = Geom::CreateDirection(0.5f * Math::kPiF, 1.5f * Math::kPiF);
             referenceVal = SteerableBasisValue({
-                1.f /*Y_{0 0}*/,
+                 1.f /*Y_{0 0}*/,
                 -1.f /*Y_{1-1}*/, 0.f /*Y_{1 0}*/, 0.f /*Y_{1 1}*/,
-                0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
+                 0.f /*Y_{2-2}*/, 0.f /*Y_{2-1}*/, -0.5f /*Y_{2 0}*/, 0.f /*Y_{2 1}*/, -1.f /*Y_{2 2}*/
             });
             if (!_UT_GenerateSphHarm_SingleDirection(
                     aMaxUtBlockPrintLevel,
@@ -1090,11 +1090,8 @@ public:
     {
     protected:
 
-        TreeNodeBase(bool aIsTriangleNode
-            //const SteerableBasisValue   &aWeight
-            ) :
+        TreeNodeBase(bool aIsTriangleNode) :
             mIsTriangleNode(aIsTriangleNode)
-            //mWeight(aWeight)
         {}
 
     public:
@@ -1104,23 +1101,8 @@ public:
             return mIsTriangleNode;
         }
 
-        //SteerableBasisValue GetWeight() const
-        //{
-        //    return mWeight;
-        //}
-
-        //float ComputeIntegral(const SteerableCoefficients &aClampedCosCoeffs) const
-        //{
-        //    const float result = Dot(mWeight, aClampedCosCoeffs);
-
-        //    PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(result, 0.f);
-
-        //    return result;
-        //}
-
     protected:
-        bool                mIsTriangleNode; // node can be either triangle (leaf) or inner node
-        //SteerableBasisValue mWeight;
+        bool mIsTriangleNode; // node can be either triangle (leaf) or inner node
     };
 
 
@@ -1135,19 +1117,6 @@ public:
             const VertexStorage         &aVertexStorage)
             :
             TreeNodeBase(false),
-                //[&aNodes](){
-                //    SteerableBasisValue weightSum(0.f);
-                //    auto it = aNodes.begin();
-                //    size_t idx = 0u;
-                //    for (; (it != aNodes.end()) && (idx < maxChildrenCount); ++it)
-                //    {
-                //        if (*it == nullptr)
-                //            continue;
-                //        weightSum = weightSum + (*it)->GetWeight();
-                //        ++idx;
-                //    }
-                //    return weightSum;
-                //}())
             mChildrenCount(0)
         {
             while (!aNodes.empty() && (mChildrenCount < maxChildrenCount))
@@ -1237,7 +1206,7 @@ public:
         size_t                                                      mChildrenCount;
     };
 
-#define MAX_TRIANGLE_SET_CHILDREN (2u)
+#define MAX_TRIANGLE_SET_CHILDREN (6u)
 
     typedef TriangleSetNodeBase<MAX_TRIANGLE_SET_CHILDREN> TriangleSetNode;
 
@@ -1259,13 +1228,10 @@ public:
             uint32_t                 aVertexIndex0,
             uint32_t                 aVertexIndex1,
             uint32_t                 aVertexIndex2,
-            //const VertexStorage     &aVertexStorage,
             uint32_t                 aIndex,
             uint32_t                 aSubdivLevel)
             :
-            TreeNodeBase(
-                true),
-                //ComputeWeight(aVertexIndex0, aVertexIndex1, aVertexIndex2, aVertexStorage)),
+            TreeNodeBase(true),
             subdivLevel(aSubdivLevel)
 #ifdef _DEBUG
             //, index([aParentTriangle, aIndex](){
@@ -1290,7 +1256,6 @@ public:
             uint32_t                 aVertexIndex0,
             uint32_t                 aVertexIndex1,
             uint32_t                 aVertexIndex2,
-            //const VertexStorage     &aVertexStorage,
             uint32_t                 aIndex,
             const TriangleNode      *aParentTriangle = nullptr) // only for the subdivision process
             :
@@ -1298,7 +1263,6 @@ public:
                 aVertexIndex0,
                 aVertexIndex1,
                 aVertexIndex2,
-                //aVertexStorage,
                 aIndex,
                 (aParentTriangle == nullptr) ? 0 : (aParentTriangle->subdivLevel + 1))
         {}
@@ -1399,8 +1363,7 @@ public:
 
         bool operator == (const TriangleNode &aTriangle) const
         {
-            return /*(mWeight == aTriangle.mWeight) &&*/
-                   (vertexIndices[0] == aTriangle.vertexIndices[0])
+            return (vertexIndices[0] == aTriangle.vertexIndices[0])
                 && (vertexIndices[1] == aTriangle.vertexIndices[1])
                 && (vertexIndices[2] == aTriangle.vertexIndices[2]);
         }
@@ -1669,7 +1632,7 @@ protected:
         ossPath << "_os";
         ossPath << std::setprecision(2) << aParams.GetOversamplingFactorDbg();
 
-        ossPath << "_mch" << MAX_TRIANGLE_SET_CHILDREN;
+        ossPath << "_mc" << MAX_TRIANGLE_SET_CHILDREN;
 
         ossPath << ".v" << SaveLoadFileVersion();
 
@@ -1959,7 +1922,6 @@ protected:
                     vertexIndices[0],
                     vertexIndices[1],
                     vertexIndices[2],
-                    //aVertexStorage,
                     0, // Ignoring index - it is used only for debugging triangle sub-division
                     subdivLevel));
         }
@@ -3055,7 +3017,6 @@ protected:
                 vertexIndices[faceVertices.Get(0)],
                 vertexIndices[faceVertices.Get(1)],
                 vertexIndices[faceVertices.Get(2)],
-                //aVertexStorage,
                 i+1));
         }
 
@@ -3115,7 +3076,6 @@ protected:
                 vertexIndices[0],
                 vertexIndices[1],
                 vertexIndices[2],
-                //aVertexStorage,
                 triangleIdx);
             aTriangles.push_back(triangle);
         }
@@ -3493,16 +3453,16 @@ protected:
 
         // Central triangle
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newIndices[0], newIndices[1], newIndices[2], /*aVertexStorage,*/ 1, &aTriangle));
+            new TriangleNode(newIndices[0], newIndices[1], newIndices[2], 1, &aTriangle));
 
         // 3 corner triangles
         const auto &oldIndices = aTriangle.vertexIndices;
         oSubdivisionTriangles.push_back(
-            new TriangleNode(oldIndices[0], newIndices[0], newIndices[2], /*aVertexStorage,*/ 2, &aTriangle));
+            new TriangleNode(oldIndices[0], newIndices[0], newIndices[2], 2, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newIndices[0], oldIndices[1], newIndices[1], /*aVertexStorage,*/ 3, &aTriangle));
+            new TriangleNode(newIndices[0], oldIndices[1], newIndices[1], 3, &aTriangle));
         oSubdivisionTriangles.push_back(
-            new TriangleNode(newIndices[1], oldIndices[2], newIndices[2], /*aVertexStorage,*/ 4, &aTriangle));
+            new TriangleNode(newIndices[1], oldIndices[2], newIndices[2], 4, &aTriangle));
 
         PG3_ASSERT_INTEGER_EQUAL(oSubdivisionTriangles.size(), 4);
 
@@ -3836,7 +3796,7 @@ protected:
     // the piece-wise bilinear EM approximation over the triangle surface.
     bool PickTriangle(
         const TriangleNode          *&oTriangle,
-        const SteerableCoefficients &aClampedCosCoeffs,
+        const SteerableCoefficients  &aClampedCosCoeffs,
         float                        &aUniSample //modified and used by the triangle area sampling later on
         ) const
     {
@@ -3857,11 +3817,6 @@ protected:
             float wholeIntegral = 0.f;
             for (size_t i = 0; i < childCount; ++i)
             {
-                //auto child = triangleSet->GetChild(i);
-
-                //PG3_ASSERT(child != nullptr);
-
-                //childrenIntegrals[i] = (child ? child->ComputeIntegral(aClampedCosCoeffs) : 0.f);
                 childrenIntegrals[i] = triangleSet->ComputeChildIntegral(i, aClampedCosCoeffs);
                 wholeIntegral += childrenIntegrals[i];
             }
