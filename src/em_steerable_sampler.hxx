@@ -1090,8 +1090,7 @@ public:
     {
     protected:
 
-        TreeNodeBase(
-            bool                         aIsTriangleNode
+        TreeNodeBase(bool aIsTriangleNode
             //const SteerableBasisValue   &aWeight
             ) :
             mIsTriangleNode(aIsTriangleNode)
@@ -1135,8 +1134,7 @@ public:
             std::list<TreeNodeBase*>    &aNodes,
             const VertexStorage         &aVertexStorage)
             :
-            TreeNodeBase(
-                false),
+            TreeNodeBase(false),
                 //[&aNodes](){
                 //    SteerableBasisValue weightSum(0.f);
                 //    auto it = aNodes.begin();
@@ -1161,11 +1159,17 @@ public:
 
                 auto &weight = mChildrenWeights[mChildrenCount];
                 if (node->IsTriangleNode())
-                    weight = static_cast<const TriangleNode*>(node)->ComputeWeight(aVertexStorage);
+                {
+                    auto triangle = static_cast<const TriangleNode*>(node);
+                    weight = triangle->ComputeWeight(aVertexStorage);
+                }
                 else
-                    weight = static_cast<const TriangleSetNode*>(node)->ComputeWeight();
+                {
+                    auto set = static_cast<const TriangleSetNode*>(node);
+                    weight = set->ComputeWeight();
+                }
 
-                mChildren[mChildrenCount].reset(node);
+                mChildrenPtrs[mChildrenCount].reset(node);
 
                 ++mChildrenCount;
             }
@@ -1223,13 +1227,13 @@ public:
         {
             PG3_ASSERT(idx < mChildrenCount);
 
-            return (idx < mChildrenCount) ? mChildren[idx].get() : nullptr;
+            return (idx < mChildrenCount) ? mChildrenPtrs[idx].get() : nullptr;
         }
 
     protected:
         // Children - owned by the node
         std::array<SteerableBasisValue, maxChildrenCount>           mChildrenWeights;
-        std::array<std::unique_ptr<TreeNodeBase>, maxChildrenCount> mChildren;
+        std::array<std::unique_ptr<TreeNodeBase>, maxChildrenCount> mChildrenPtrs;
         size_t                                                      mChildrenCount;
     };
 
@@ -1395,8 +1399,8 @@ public:
 
         bool operator == (const TriangleNode &aTriangle) const
         {
-            return (mWeight == aTriangle.mWeight)
-                && (vertexIndices[0] == aTriangle.vertexIndices[0])
+            return /*(mWeight == aTriangle.mWeight) &&*/
+                   (vertexIndices[0] == aTriangle.vertexIndices[0])
                 && (vertexIndices[1] == aTriangle.vertexIndices[1])
                 && (vertexIndices[2] == aTriangle.vertexIndices[2]);
         }
@@ -3883,7 +3887,10 @@ protected:
                     childrenIntegrals[i] = 1.f / childCount;
 
             PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(wholeIntegral, 0.f);
-            PG3_ASSERT_FLOAT_EQUAL(wholeIntegral, triangleSet->ComputeIntegral(aClampedCosCoeffs), 0.001f);
+            PG3_ASSERT_FLOAT_EQUAL(
+                wholeIntegral,
+                triangleSet->ComputeIntegral(mVertexStorage, aClampedCosCoeffs),
+                0.001f);
 
             // Choose child
 
@@ -4287,7 +4294,8 @@ public:
                 area * (aVertexStorage.Get(triangle->vertexIndices[0])->weight
                       + aVertexStorage.Get(triangle->vertexIndices[1])->weight
                       + aVertexStorage.Get(triangle->vertexIndices[2])->weight) / 3.0f;
-            if (!referenceWeight.EqualsDelta(triangle->GetWeight(), 0.0001f))
+            const auto triangleWeight = triangle->ComputeWeight(aVertexStorage);
+            if (!referenceWeight.EqualsDelta(triangleWeight, 0.0001f))
             {
                 PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, eutblSubTestLevel2, "Triangulation refinement",
@@ -4482,7 +4490,7 @@ public:
             }
 
             // Weight validity
-            const auto innerNodeWeight = innerNode->GetWeight();
+            const auto innerNodeWeight = innerNode->ComputeWeight();
             if (!innerNodeWeight.IsValid())
             {
                 PG3_UT_FAILED(
@@ -4492,13 +4500,25 @@ public:
             }
 
             // Weight consistency
-            SteerableBasisValue summedChildWeight(0.f);
+            SteerableBasisValue childrenWeightSum(0.f);
             for (size_t i = 0; i < childCount; ++i)
-                summedChildWeight += innerNode->GetChild(i)->GetWeight();
-            if (innerNodeWeight != summedChildWeight)
+            {
+                auto child = innerNode->GetChild(i);
+                if (child->IsTriangleNode())
+                {
+                    const auto triangle = static_cast<const TriangleNode*>(child);
+                    childrenWeightSum += triangle->ComputeWeight(aVertexStorage);
+                }
+                else
+                {
+                    const auto set = static_cast<const TriangleSetNode*>(child);
+                    childrenWeightSum += set->ComputeWeight();
+                }
+            }
+            if (innerNodeWeight != childrenWeightSum)
             {
                 std::ostringstream errorDescription;
-                errorDescription << "Node weight is not equal to the sum of child weights";
+                errorDescription << "Node weight is not equal to the sum of children weights";
                 PG3_UT_FAILED(
                     aMaxUtBlockPrintLevel, aUtBlockPrintLevel, "%s",
                     errorDescription.str().c_str(), aTestName);
@@ -4848,10 +4868,10 @@ public:
 
             auto &triangleHitRecord = triangleHitMap[triangle];
 
-            const float wholeIntegral = aSampler.ComputeWholeIntegral(aClampedCosCoeffs);
+            const float wholeIntegral    = aSampler.ComputeWholeIntegral(aClampedCosCoeffs);
             const float triangleIntegral = triangle->ComputeIntegral(aSampler.mVertexStorage, aClampedCosCoeffs);
             const float triangleProbability =
-                  (Math::IsTiny(wholeIntegral))
+                  Math::IsTiny(wholeIntegral)
                 ? 0.f
                 : triangleIntegral / wholeIntegral;
 
@@ -4891,7 +4911,7 @@ public:
         const float wholeIntegral = aSampler.ComputeWholeIntegral(aClampedCosCoeffs);
         bool forEachReturn = aSampler.ForEachTriangle([&](const TriangleNode* aTriangle)
         {
-            // This works also for unhit triangles - defaults to hit count 0
+            // This works also for nonhit triangles - defaults to hit count 0
             auto triangleHitRecord = triangleHitMap[aTriangle];
 
             const float relativeHitCount =
