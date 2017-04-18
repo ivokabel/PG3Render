@@ -1223,7 +1223,7 @@ public:
         size_t                                                      mChildrenCount;
     };
 
-#define MAX_TRIANGLE_SET_CHILDREN (2u)
+#define MAX_TRIANGLE_SET_CHILDREN (3u)
 
     typedef TriangleSetNodeBase<MAX_TRIANGLE_SET_CHILDREN> TriangleSetNode;
 
@@ -3765,49 +3765,68 @@ protected:
     // The tree is built from bottom to top, accumulating the children data into their parents.
     // The triangles are either moved into the tree or deleted on error.
     static bool BuildTriangleTree(
-        std::list<TreeNodeBase*>        &aNodes,
+        std::list<TreeNodeBase*>        &aNodesToProcess,
         std::unique_ptr<TreeNodeBase>   &oTreeRoot)
     {
         oTreeRoot.reset(nullptr);
 
+        //// Process in layers from bottom to top.
+        //// If the current layer has odd element count, the last element can be merged with 
+        //// the first element of the next layer. This does not increase the height of the tree,
+        //// but can lead to worse memory access pattern (a triangle subset from the one end 
+        //// is merged with a subset from the other end of list).
+        //// TODO: Move the last element of an odd list to the end of the next layer?
+        //while (aNodesToProcess.size() >= 2)
+        //{
+        //    auto node1 = aNodesToProcess.front(); aNodesToProcess.pop_front();
+        //    auto node2 = aNodesToProcess.front(); aNodesToProcess.pop_front();
+        //
+        //    PG3_ASSERT(node1 != nullptr);
+        //    PG3_ASSERT(node2 != nullptr);
+        //
+        //    auto newNode = new TriangleSetNode(node1, node2);
+        //    if (newNode == nullptr)
+        //    {
+        //        delete node1;
+        //        delete node2;
+        //        FreeNodesList(aNodesToProcess);
+        //        return false;
+        //    }
+        //    aNodesToProcess.push_back(newNode);
+        //}
+        //
+        //PG3_ASSERT(aNodesToProcess.size() <= 1u);
+
         // TODO: Switch to a more efficient container? (e.g. deque - less allocations?)
 
         // Process in layers from bottom to top.
-        // If the current layer has odd element count, the last element can be merged with 
-        // the first element of the next layer. This does not increase the height of the tree,
-        // but can lead to worse memory access pattern (a triangle subset from the one end 
-        // is merged with a subset from the other end of list).
-        // TODO: Move the last element of an odd list to the end of the next layer?
-        while (aNodes.size() >= 2)
+        while (aNodesToProcess.size() > 1)
         {
-            //auto node1 = aNodes.front(); aNodes.pop_front();
-            //auto node2 = aNodes.front(); aNodes.pop_front();
-
-            //PG3_ASSERT(node1 != nullptr);
-            //PG3_ASSERT(node2 != nullptr);
-
-            //auto newNode = new TriangleSetNode(node1, node2);
-            auto newNode = new TriangleSetNode(aNodes);
-            if (newNode == nullptr)
+            std::list<TreeNodeBase*> nextLayerNodes;
+            while (!aNodesToProcess.empty())
             {
-                //delete node1;
-                //delete node2;
-                FreeNodesList(aNodes);
-                return false;
+                auto newNode = new TriangleSetNode(aNodesToProcess); // takes as many nodes as possible
+                if (newNode == nullptr)
+                {
+                    FreeNodesList(aNodesToProcess);
+                    FreeNodesList(nextLayerNodes);
+                    return false;
+                }
+                nextLayerNodes.push_back(newNode);
             }
-            aNodes.push_back(newNode);
+            std::swap(nextLayerNodes, aNodesToProcess);
         }
-
-        PG3_ASSERT(aNodes.size() <= 1u);
 
         // Fill tree root
-        if (aNodes.size() == 1u)
+        if (aNodesToProcess.size() == 1u)
         {
-            oTreeRoot.reset(aNodes.front());
-            aNodes.pop_front();
+            oTreeRoot.reset(aNodesToProcess.front());
+            aNodesToProcess.pop_front();
         }
+        else
+            oTreeRoot.reset();
 
-        PG3_ASSERT(aNodes.empty());
+        PG3_ASSERT(aNodesToProcess.empty());
 
         return true;
     }
@@ -3829,12 +3848,16 @@ protected:
         {
             auto triangleSet = static_cast<const TriangleSetNode*>(node);
             const size_t childCount = triangleSet->GetChildrenCount();
+
+            if (childCount == 0u)
+                return false;
+
             //auto leftChild  = triangleSet->GetLeftChild();
             //auto rightChild = triangleSet->GetRightChild();
-
+            //
             //PG3_ASSERT(leftChild  != nullptr);
             //PG3_ASSERT(rightChild != nullptr);
-
+            //
             //const float  leftIntegral =  leftChild->GetIntegral(aClampedCosCoeffs);
             //const float rightIntegral = rightChild->GetIntegral(aClampedCosCoeffs);
             //const float wholeIntegral = leftIntegral + rightIntegral;
@@ -3875,26 +3898,26 @@ protected:
                 }
             else
                 for (size_t i = 0; i < childCount; ++i)
-                    childrenIntegrals[i] = 1.f / MAX_TRIANGLE_SET_CHILDREN;
+                    childrenIntegrals[i] = 1.f / childCount;
 
             PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(wholeIntegral, 0.f);
             PG3_ASSERT_FLOAT_EQUAL(wholeIntegral, triangleSet->GetIntegral(aClampedCosCoeffs), 0.001f);
 
             // Choose child
 
+            auto itEnd = childrenIntegralSums.begin() + childCount + 1;
             auto itUpBound = std::upper_bound(
                 childrenIntegralSums.begin(),
-                childrenIntegralSums.end(),
-                aUniSample
-                );// *0.999999f /*solves zero ending problem*/);
-            if (itUpBound == childrenIntegralSums.end())
+                itEnd,
+                aUniSample * 0.999999f /*solves zero ending problem*/);
+            if (itUpBound == itEnd)
                 --itUpBound; // = childrenIntegralSums.rbegin(); // last element
 
             //if ((aUniSample < threshold) || (threshold == 1.f))
             //{
             //    node = leftChild;
             //    aUniSample /= std::max(threshold, 0.00001f);
-
+            //
             //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
             //}
             //else
@@ -3903,7 +3926,7 @@ protected:
             //    aUniSample =
             //          (aUniSample - threshold)
             //        / std::max(1.f - threshold, 0.00001f);
-
+            //
             //    PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
             //}
             //// TODO: Clamp random val to [0,1]?
@@ -4610,9 +4633,11 @@ public:
         }
 
         // Max depth
+        const auto logn = // log_children(size)
+              std::log((float)initialListSize)
+            / std::log((float)MAX_TRIANGLE_SET_CHILDREN);
         const auto expectedMaxDepth =
-            (initialListSize == 0) ?
-            0 : static_cast<uint32_t>(std::ceil(std::log2((float)initialListSize))) + 1u;
+            (initialListSize == 0) ? 0 : static_cast<uint32_t>(std::ceil(logn)) + 1u;
         if (maxDepth != expectedMaxDepth)
         {
             std::ostringstream errorDescription;
