@@ -3831,12 +3831,15 @@ protected:
 
             // Normalize sums
             if (wholeIntegral > 1E-10f)
-                for (size_t i = 0; i < childCount; ++i)
+            {
+                const float wholeIntegralInv = 1.f / wholeIntegral;
+                for (size_t i = 1; i <= childCount; ++i)
                 {
-                    childrenIntegralSums[i + 1] /= wholeIntegral;
+                    childrenIntegralSums[i] *= wholeIntegralInv;
 
-                    PG3_ASSERT_FLOAT_VALID(childrenIntegralSums[i + 1]);
+                    PG3_ASSERT_FLOAT_VALID(childrenIntegralSums[i]);
                 }
+            }
             else
                 for (size_t i = 0; i < childCount; ++i)
                     childrenIntegrals[i] = 1.f / childCount;
