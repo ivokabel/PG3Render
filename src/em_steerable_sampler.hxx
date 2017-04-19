@@ -1206,7 +1206,7 @@ public:
         size_t                                                      mChildrenCount;
     };
 
-#define MAX_TRIANGLE_SET_CHILDREN (6u)
+#define MAX_TRIANGLE_SET_CHILDREN (8u)
 
     typedef TriangleSetNodeBase<MAX_TRIANGLE_SET_CHILDREN> TriangleSetNode;
 
