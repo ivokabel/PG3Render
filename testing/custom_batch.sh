@@ -44,9 +44,31 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-render -s 9 -em 10 -a pt -i 64 -iic 4
-render -s 9 -em 10 -a pt -i 64 -iic 4
-render -s 9 -em 10 -a pt -i 64 -iic 4
+SCENES=20           #"20 7 9"
+EMS="10"
+declare -A SCENE_ALG_MAP=(
+    ["20"]="dlsa"
+    ["7"]="pt"
+    ["9"]="pt"
+)
+ITERS=256   #64
+
+for SCENE in $SCENES; do
+    for EM in $EMS; do
+        for ALG in ${SCENE_ALG_MAP[$SCENE]}; do
+
+            render -s $SCENE -em $EM -a $ALG -i $ITERS
+            render -s $SCENE -em $EM -a $ALG -i $ITERS
+            render -s $SCENE -em $EM -a $ALG -i $ITERS
+
+            echo
+            echo
+            echo
+
+        done
+    done
+done
+
 
 ### Diff tool comparison modes
 
@@ -75,7 +97,7 @@ render -s 9 -em 10 -a pt -i 64 -iic 4
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 2`  -em 10
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 13` -em 11
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 6`  -em 4
-
+#
 #BASE_ITERS=800            #1=5m5s
 #IIC=1 # Reduce indirect noise as much as possible
 #
