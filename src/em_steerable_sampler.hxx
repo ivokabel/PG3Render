@@ -128,8 +128,9 @@ public:
         {
             PG3_ASSERT_INTEGER_EQUAL(aValue1.mBasisValues.size(), aValue2.mBasisValues.size());
 
-            float retval = 0.0f;
             const auto size = aValue1.mBasisValues.size();
+
+            float retval = 0.0f;
             for (size_t i = 0; i < size; i++)
                 retval += aValue1.mBasisValues[i] * aValue2.mBasisValues[i];
 
@@ -3809,17 +3810,10 @@ protected:
             auto triangleSet = static_cast<const TriangleSetNode*>(node);
             const size_t childCount = triangleSet->GetChildrenCount();
 
-            if (childCount == 0u)
-                return false;
-
             // Get integrals
             std::array<float, MAX_TRIANGLE_SET_CHILDREN> childrenIntegrals;
-            float wholeIntegral = 0.f;
             for (size_t i = 0; i < childCount; ++i)
-            {
                 childrenIntegrals[i] = triangleSet->ComputeChildIntegral(i, aClampedCosCoeffs);
-                wholeIntegral += childrenIntegrals[i];
-            }
 
             // Compute sums
             std::array<float, MAX_TRIANGLE_SET_CHILDREN + 1> childrenIntegralSums;
@@ -3830,6 +3824,7 @@ protected:
                     + childrenIntegrals[i];
 
             // Normalize sums
+            const float wholeIntegral = childrenIntegralSums[childCount];
             if (wholeIntegral > 1E-10f)
             {
                 const float wholeIntegralInv = 1.f / wholeIntegral;
@@ -3852,7 +3847,7 @@ protected:
 
             // Choose child
 
-            auto itEnd = childrenIntegralSums.begin() + childCount + 1;
+            const auto itEnd = childrenIntegralSums.begin() + childCount + 1;
             auto itUpBound = std::upper_bound(
                 childrenIntegralSums.begin(),
                 itEnd,
@@ -3869,9 +3864,9 @@ protected:
                   (aUniSample - lowBound)
                 / std::max(integral, 0.00001f);
 
-            PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, -0.001f, 1.001f);
+            PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.001f);
 
-            aUniSample = Math::Clamp(aUniSample, 0.f, 1.f);
+            aUniSample = std::min(aUniSample, 1.f); // Larger values can invoke "zero ending problem"
         }
 
         if (node == nullptr)
