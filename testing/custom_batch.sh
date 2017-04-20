@@ -44,30 +44,42 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-SCENES=20           #"20 7 9"
-EMS="10"
-declare -A SCENE_ALG_MAP=(
-    ["20"]="dlsa"
-    ["7"]="pt"
-    ["9"]="pt"
-)
-ITERS=256   #64
+render -s 20 -em 10 -a dlsa -i 256
+render -s 20 -em 10 -a dlsa -i 256
+render -s 20 -em 10 -a dlsa -i 256
+echo; echo; echo
 
-for SCENE in $SCENES; do
-    for EM in $EMS; do
-        for ALG in ${SCENE_ALG_MAP[$SCENE]}; do
+render -s 9 -em 10 -a pt -iic 2 -i 36
+render -s 9 -em 10 -a pt -iic 2 -i 36
+render -s 9 -em 10 -a pt -iic 2 -i 36
+echo; echo; echo
 
-            render -s $SCENE -em $EM -a $ALG -i $ITERS
-            render -s $SCENE -em $EM -a $ALG -i $ITERS
-            render -s $SCENE -em $EM -a $ALG -i $ITERS
+render -s 7 -em 10 -a pt -iic 2 -i 10
+render -s 7 -em 10 -a pt -iic 2 -i 10
+render -s 7 -em 10 -a pt -iic 2 -i 10
+echo; echo; echo
 
-            echo
-            echo
-            echo
-
-        done
-    done
-done
+#SCENES=20           #"20 7 9"
+#EMS="10"
+#declare -A SCENE_ALG_MAP=(
+#    ["20"]="dlsa"
+#    ["7"]="pt"
+#    ["9"]="pt"
+#)
+#ITERS=256   #64
+#
+#for SCENE in $SCENES; do
+#    for EM in $EMS; do
+#        for ALG in ${SCENE_ALG_MAP[$SCENE]}; do
+#            render -s $SCENE -em $EM -a $ALG -i $ITERS
+#            render -s $SCENE -em $EM -a $ALG -i $ITERS
+#            render -s $SCENE -em $EM -a $ALG -i $ITERS
+#            echo
+#            echo
+#            echo
+#        done
+#    done
+#done
 
 
 ### Diff tool comparison modes
