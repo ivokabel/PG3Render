@@ -29,9 +29,10 @@ public:
         bool                 aDoBilinFiltering,
         const AuxDbgParams  &aAuxDbgParams = AuxDbgParams())
     {
+        aAuxDbgParams; // sometimes unused param
+
         try
         {
-            //std::cout << "Loading:   Environment map '" << aFilename << "'" << std::endl;
             mEmImage.reset(
                 EnvironmentMapImage::LoadImage(
                     aFilename.c_str(), aRotate, aScale, aDoBilinFiltering));
@@ -43,24 +44,25 @@ public:
 
         mTmpCosineSampler           = std::make_shared<CosineImageEmSampler>();
         mTmpSimpleSphericalSampler  = std::make_shared<SimpleSphericalImageEmSampler>();
-        mTmpSteerableSampler        = std::make_shared<SteerableImageEmSampler>(
-            SteerableImageEmSampler::BuildParameters(
-                aAuxDbgParams.float1,
-                aAuxDbgParams.float2,
-                aAuxDbgParams.float3,
-                aAuxDbgParams.float4));
 
         if (mTmpCosineSampler)
             mTmpCosineSampler->Init(mEmImage);
         if (mTmpSimpleSphericalSampler)
             mTmpSimpleSphericalSampler->Init(mEmImage);
-        if (mTmpSteerableSampler)
-            mTmpSteerableSampler->Init(mEmImage);
 
 #if defined PG3_USE_ENVMAP_SIMPLE_SPHERICAL_SAMPLER
         mSampler = mTmpSimpleSphericalSampler;
 #elif defined PG3_USE_ENVMAP_STEERABLE_SAMPLER
-        mSampler = mTmpSteerableSampler;
+        auto steerableSampler =
+            std::make_shared<SteerableImageEmSampler>(
+                SteerableImageEmSampler::BuildParameters(
+                    aAuxDbgParams.float1,
+                    aAuxDbgParams.float2,
+                    aAuxDbgParams.float3,
+                    aAuxDbgParams.float4));
+        if (steerableSampler)
+            steerableSampler->Init(mEmImage);
+        mSampler = steerableSampler;
 #else
         mSampler = mTmpCosineSampler;
 #endif
@@ -191,7 +193,4 @@ private:
     // Temporary samplers for contribution estimation
     std::shared_ptr<ImageEmSampler>             mTmpCosineSampler;
     std::shared_ptr<ImageEmSampler>             mTmpSimpleSphericalSampler;
-
-    // Debug
-    std::shared_ptr<ImageEmSampler>             mTmpSteerableSampler;
 };
