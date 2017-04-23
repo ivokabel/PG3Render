@@ -870,15 +870,16 @@ public:
                     return false;
                 }
 
-                outputNameTrail = argv[i];
-
-                if (outputNameTrail.length() == 0)
+                std::string currentTrail = argv[i];
+                if (currentTrail.length() == 0)
                 {
                     printf(
                         "Error: Invalid <output_trail> argument \"%s\", please see help (-h)\n",
                         argv[i]);
                     return false;
                 }
+
+                outputNameTrail += currentTrail;
             }
             else if ((arg == "-auxf1"))
             {
