@@ -79,12 +79,12 @@ render_or_compare () {
     if [ "$OPERATION_MODE" == render ]; then
         # Rendering...
         mkdir -p "$6"
-        "$PG3RENDER" -od "$6" -e hdr -a $ALG -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"
+        "$PG3RENDER" -od "$6" -e hdr -a $ALG $ALG_PARAMS -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"
         echo
     else
         # Comparing...
-        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a $ALG -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"`
-        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a $ALG -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40_Diff"`
+        RENDERED_IMG=`"$PG3RENDER" -opop -od "$6" -e hdr -a $ALG $ALG_PARAMS -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40"`
+        DIFF_IMG=`    "$PG3RENDER" -opop -od "$6" -e hdr -a $ALG $ALG_PARAMS -s $1 -em $2 -t $5 -auxf3 $3 -auxf2 $MIN_SUBDIV_LEVEL -auxf1 $4 -ot "EmssE${4}Sll${MIN_SUBDIV_LEVEL}Slu${3}Tms40_Diff"`
         compare_images "$7" "$RENDERED_IMG" "$DIFF_IMG"
     fi
 }
@@ -93,6 +93,46 @@ render_or_compare () {
 # $2 ... EM
 setup_out_dir_and_img () {
     case $1 in
+        07 )
+            case $2 in
+                10 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e10_SpdgWpdg"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e10_SpdgWpdg_28000s_Reference.hdr"
+                    ;;
+                11 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e11_SpdgWpdg"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e11_SpdgWpdg_24000s_Reference.hdr"
+                    ;;
+                12 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e12_SpdgWpdg"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e12_SpdgWpdg_28000s_Reference.hdr"
+                    ;;
+                * )
+                    echo "Unsupported EM!"
+                    exit 2
+                    ;;
+            esac
+            ;;
+        09 )
+            case $2 in
+                10 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\2s_e10_SpdgWpdg"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e10_SpdgWpdg_12800s_Reference.hdr"
+                    ;;
+                11 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\2s_e11_SpdgWpdg"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e11_SpdgWpdg_12000s_Reference.hdr"
+                    ;;
+                12 )
+                    OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\2s_e12_SpdgWpdg"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e12_SpdgWpdg_24000s_Reference.hdr"
+                    ;;
+                * )
+                    echo "Unsupported EM!"
+                    exit 2
+                    ;;
+            esac
+            ;;
         20 )
             case $2 in
                 04 )
