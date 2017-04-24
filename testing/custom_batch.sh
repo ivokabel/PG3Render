@@ -44,21 +44,6 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-render -s 20 -em 10 -a dlsa -i 256
-render -s 20 -em 10 -a dlsa -i 256
-render -s 20 -em 10 -a dlsa -i 256
-echo; echo; echo
-
-render -s 9 -em 10 -a pt -iic 2 -i 36
-render -s 9 -em 10 -a pt -iic 2 -i 36
-render -s 9 -em 10 -a pt -iic 2 -i 36
-echo; echo; echo
-
-render -s 7 -em 10 -a pt -iic 2 -i 10
-render -s 7 -em 10 -a pt -iic 2 -i 10
-render -s 7 -em 10 -a pt -iic 2 -i 10
-echo; echo; echo
-
 #SCENES=20           #"20 7 9"
 #EMS="10"
 #declare -A SCENE_ALG_MAP=(
