@@ -17,18 +17,18 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 
 ###################################################################################################
 
-OPERATION_MODES="plot"           #"render compare plot"
+OPERATION_MODES="render compare plot"           #"render compare plot"
 
-SCENES="07 09"          #"07 09 20 22"
-declare -A SCENE_ALG_MAP=(
-    ["07"]="           pt"
-    ["09"]="           pt"
-    ["20"]="dlsa dmis    "
-    ["22"]="     dmis  pt"
-)
+SCENES="07 09 20 22"
 EMS="12 10 11"
+declare -A SCENE_ALG_MAP=(
+    ["07"]="     pt"
+    ["09"]="     pt"
+    ["20"]="dmis   "
+    ["22"]="dmis   "
+)
+PT_PARAMS="-iic 1"
 
-export ALG_PARAMS="-iic 1"
 export RENDERING_TIME=120
 export MIN_SUBDIV_LEVEL=04
 export MAX_SUBDIV_LEVELS="08 09 10"
@@ -36,7 +36,7 @@ export MAX_ERRORS="0.10 0.20 0.30 0.40 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.50 3
 
 #NAME_TRAIL="00 - SSS Reference"
 #NAME_TRAIL="01 - Binary"
- NAME_TRAIL="02 - 6 Weights in Parent"
+ NAME_TRAIL="02 - Weights in Parent"
 
 ###################################################################################################
 
@@ -53,10 +53,17 @@ list_items_count() {
 export SCENE
 export EM
 export ALG
+export ALG_PARAMS
 
 for SCENE in $SCENES; do
     for EM in $EMS; do
         for ALG in ${SCENE_ALG_MAP[$SCENE]}; do
+
+            if [ "$ALG" == "pt" ]; then
+                ALG_PARAMS=$PT_PARAMS
+            else
+                ALG_PARAMS=""
+            fi
 
             TEST_NAME_BASE="Scn$SCENE em$EM ${ALG}${RENDERING_TIME}sec"
             TEST_NAME=$TEST_NAME_BASE
