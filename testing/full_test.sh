@@ -4,8 +4,8 @@
 # Settings
 ###################################################################################################
 
-ITERATIONS_COUNT=4                      #16                     #
-COMPARISON_MODE="compare_to_reference"  #"make_references_from_currents"  #"generate_references"  #
+COMPARISON_MODE="compare_to_reference"  #make_references_from_currents"  #"generate_references"  #"
+ITERATIONS_COUNTS="4 16"
 SCENES="0 1 2 3 4 5 6 7 8 9   13 14   16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36"
 declare -A SCENE_EM_MAP=(
     ["6"]=" 1    10"
@@ -27,12 +27,10 @@ declare -A SCENE_EM_MAP=(
 )
 SHORT_OUTPUT=true
 ARCH_MODES="32 64"
-ERROR_THRESHOLD=5.0
+ERROR_THRESHOLD=4.0
 
 TESTING_DIR="./testing"
 TESTING_DIR_WIN=".\\testing"
-FULL_TEST_OUTPUT_DIR="${TESTING_DIR}/full_test_output_${ITERATIONS_COUNT}s"
-FULL_TEST_OUTPUT_DIR_WIN="${TESTING_DIR_WIN}\\full_test_output_${ITERATIONS_COUNT}s"
 
 ###################################################################################################
 
@@ -58,9 +56,9 @@ TEST_COUNT_SUCCESSFUL=0
 run_single_render () {
     if [ "$SHORT_OUTPUT" = "true" ]; then
         if [ "$3" = "" ]; then
-            printf '[%s] Scene %d, %-4s, %d iteration(s)... ' $arch_mode $2 $1 $ITERATIONS_COUNT 
+            printf '[%s] Scene %d, %-4s, %d iteration(s)... ' $arch_mode $2 $1 $iterations_count 
         else
-            printf '[%s] Scene %d, em %2d, %-4s, %d iteration(s)... ' $arch_mode $2 $3 $1 $ITERATIONS_COUNT 
+            printf '[%s] Scene %d, em %2d, %-4s, %d iteration(s)... ' $arch_mode $2 $3 $1 $iterations_count 
         fi
         QUIET_SWITCH="-q"
     else
@@ -76,15 +74,15 @@ run_single_render () {
 
     # Generate image names and render
     if [ "$3" = "" ]; then
-        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -opop`
-        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -opop`
-        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
-                        "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -opop`
+        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -opop`
+        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
+                        "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
     else
-        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -em $3 -opop`
-        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -em $3 -opop`
-        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
-                        "$PG3RENDER" -a $1 -s $2 -i $ITERATIONS_COUNT -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -em $3 -opop`
+        DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -em $3 -opop`
+        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
+                        "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
     fi
     RENDERING_RESULT=$?
 
@@ -153,53 +151,57 @@ cd "$PG3RENDER_BASE_DIR"
 #pwd
 #echo
 
-for arch_mode in $ARCH_MODES;
-do
-    if [ "$arch_mode" = "32" ]; then
-        PG3RENDER=$PG3RENDER32
-    else if [ "$arch_mode" = "64" ]; then
-        PG3RENDER=$PG3RENDER64
-    else
-        echo "Unknown architecture was specified!"
-        exit
-    fi fi
+for iterations_count in $ITERATIONS_COUNTS; do
+    FULL_TEST_OUTPUT_DIR="${TESTING_DIR}/full_test_output_${iterations_count}s"
+    FULL_TEST_OUTPUT_DIR_WIN="${TESTING_DIR_WIN}\\full_test_output_${iterations_count}s"
 
-    FULL_TEST_OUTPUT_DIR_ARCH="${FULL_TEST_OUTPUT_DIR}/${arch_mode}"
-    FULL_TEST_OUTPUT_DIR_ARCH_WIN="${FULL_TEST_OUTPUT_DIR_WIN}\\${arch_mode}"
+    for arch_mode in $ARCH_MODES; do
+        if [ "$arch_mode" = "32" ]; then
+            PG3RENDER=$PG3RENDER32
+        else if [ "$arch_mode" = "64" ]; then
+            PG3RENDER=$PG3RENDER64
+        else
+            echo "Unknown architecture was specified!"
+            exit
+        fi fi
 
-    echo "============================="
-    echo "Running for architecture: $arch_mode"
-    echo "============================="
-    echo
+        FULL_TEST_OUTPUT_DIR_ARCH="${FULL_TEST_OUTPUT_DIR}/${arch_mode}"
+        FULL_TEST_OUTPUT_DIR_ARCH_WIN="${FULL_TEST_OUTPUT_DIR_WIN}\\${arch_mode}"
 
-    mkdir -p "$FULL_TEST_OUTPUT_DIR_ARCH"
+        echo "==============================================="
+        echo "Running for architecture: $arch_mode, $iterations_count iterations"
+        echo "==============================================="
+        echo
 
-    if [ "$COMPARISON_MODE" = "generate_references" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr     "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr       "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
-    else if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr       "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
-    else if [ "$COMPARISON_MODE" = "make_references_from_currents" ]; then
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr     "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
-        rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
-        rename '2Current' '1Reference' "$FULL_TEST_OUTPUT_DIR_ARCH/"*_2Current.*
-    fi fi fi
+        mkdir -p "$FULL_TEST_OUTPUT_DIR_ARCH"
 
-    if [ "$COMPARISON_MODE" != "make_references_from_currents" ]; then
-        for scene in $SCENES;
-        do
-            if [[ "${!SCENE_EM_MAP[@]}" =~ (^| )$scene($| ) ]]; then
-                for em in ${SCENE_EM_MAP[$scene]};
-                do
-                    run_rendering_set $scene $em
-                done
-            else
-                run_rendering_set $scene
-            fi
-        done
-    fi
+        if [ "$COMPARISON_MODE" = "generate_references" ]; then
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr     "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr       "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
+        else if [ "$COMPARISON_MODE" = "compare_to_reference" ]; then
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.hdr       "$FULL_TEST_OUTPUT_DIR_ARCH"/*_2Current.bmp
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
+        else if [ "$COMPARISON_MODE" = "make_references_from_currents" ]; then
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.hdr     "$FULL_TEST_OUTPUT_DIR_ARCH"/*_1Reference.bmp
+            rm -f "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.hdr    "$FULL_TEST_OUTPUT_DIR_ARCH"/*_3Difference.bmp
+            rename '2Current' '1Reference' "$FULL_TEST_OUTPUT_DIR_ARCH/"*_2Current.*
+        fi fi fi
+
+        if [ "$COMPARISON_MODE" != "make_references_from_currents" ]; then
+            for scene in $SCENES;
+            do
+                if [[ "${!SCENE_EM_MAP[@]}" =~ (^| )$scene($| ) ]]; then
+                    for em in ${SCENE_EM_MAP[$scene]};
+                    do
+                        run_rendering_set $scene $em
+                    done
+                else
+                    run_rendering_set $scene
+                fi
+            done
+        fi
+    done
 done
 
 echo
