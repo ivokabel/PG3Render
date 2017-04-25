@@ -75,15 +75,12 @@ namespace Geom
 
     // Returns vector [u,v] in [0,1]x[0,1]. The direction must be non-zero and normalized.
     PG3_PROFILING_NOINLINE
-    inline Vec2f Dir2LatLongFast(const Vec3f &aDirection)
+    inline Vec2f Dir2LatLong(const Vec3f &aDirection)
     {
         PG3_ASSERT(!aDirection.IsZero() /*(aDirection.Length() == 1.0f)*/);
 
         // minus sign because we rotate in the opposite direction
-        // Math::FastAtan2 is 50 times faster than atan2f at the price of slightly horizontally 
-        // distorted mapping with 4 thin "dead" vertical stripes
-        const float phi = -Math::FastAtan2(aDirection.y, aDirection.x);
-        //const float phi = -std::atan2(aDirection.y, aDirection.x); //debug
+        const float phi   = -std::atan2(aDirection.y, aDirection.x);
         const float theta = acosf(aDirection.z);
 
         // Convert from [-Pi,Pi] to [0,1]

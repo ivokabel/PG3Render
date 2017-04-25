@@ -93,7 +93,7 @@ public:
     {
         PG3_ASSERT(!aDirection.IsZero());
 
-        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
+        const Vec2f uv = Geom::Dir2LatLong(aDirection);
         oRadiance = EvalRadiance(uv);
 
         if (oPdfW && aSurfFrame && aSampleFrontSide && aSampleBackSide)

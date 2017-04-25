@@ -91,7 +91,7 @@ public:
 
         PG3_ASSERT(IsBuilt());
 
-        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
+        const Vec2f uv = Geom::Dir2LatLong(aDirection);
         float pdf = mDistribution->Pdf(uv) * mPlan2AngPdfCoeff / SinMidTheta(mEmImage.get(), uv.y);
 
         return pdf;

@@ -140,7 +140,7 @@ public:
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
 
-        const Vec2f uv = Geom::Dir2LatLongFast(aDirection);
+        const Vec2f uv = Geom::Dir2LatLong(aDirection);
         return Evaluate(uv);
     }
 

@@ -2671,7 +2671,7 @@ protected:
             // (some levels can be subdivided automatically without sample-based checking)
             if (aTriangle.subdivLevel == mBuildParams.GetMinSubdivLevel())
             {
-                const Vec2f uv = Geom::Dir2LatLongFast(aSampleDir);
+                const Vec2f uv = Geom::Dir2LatLong(aSampleDir);
 
                 // UV to image coords
                 const float x = uv.x * (float)mEmWidth;
@@ -4277,10 +4277,7 @@ public:
                 const auto zeroCount = bin.first;
                 const auto total = bin.second;
                 const auto zeroCountPercent = ((zeroCount != 0) && (total != 0)) ? ((100.f * zeroCount) / total) : 0;
-                // We should test against 0.0, but since there is a horizontal mapping problem caused by 
-                // Math::FastAtan2, we need to be a little bit tolerant. When the problem is solved,
-                // this should be switched to 0.0.
-                if (zeroCountPercent >= 0.4)
+                if (zeroCountPercent > 0.0)
                 {
                     std::ostringstream errorDescription;
                     errorDescription << "There is an EM row which contains more than 0.4% non-sampled pixels: ";
