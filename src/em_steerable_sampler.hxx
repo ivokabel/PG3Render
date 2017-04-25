@@ -1647,12 +1647,12 @@ protected:
 
     static const char * SaveLoadFileVersion()
     {
-        return "2.0";
+        return "2.1";
     }
 
     static const char * SaveLoadFileHeader()
     {
-        return "Environment Map Steerable Sampler Data, format ver. 2.0\n";
+        return "Environment Map Steerable Sampler Data, format ver. 2.1\n";
     }
 
 
