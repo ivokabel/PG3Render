@@ -97,15 +97,15 @@ setup_out_dir_and_img () {
             case $2 in
                 10 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e10_SpdgWpdg"
-                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e10_SpdgWpdg_28000s_Reference.hdr"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e10_SpdgWpdg_pt_iic1.0_28000s_Reference.hdr"
                     ;;
                 11 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e11_SpdgWpdg"
-                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e11_SpdgWpdg_24000s_Reference.hdr"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e11_SpdgWpdg_pt_iic1.0_24000s_Reference.hdr"
                     ;;
                 12 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\w2s_e12_SpdgWpdg"
-                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e12_SpdgWpdg_28000s_Reference.hdr"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\w2s_e12_SpdgWpdg_pt_iic1.0_28000s_Reference.hdr"
                     ;;
                 * )
                     echo "Unsupported EM!"
@@ -117,15 +117,15 @@ setup_out_dir_and_img () {
             case $2 in
                 10 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\2s_e10_SpdgWpdg"
-                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e10_SpdgWpdg_12800s_Reference.hdr"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e10_SpdgWpdg_pt_iic1.0_12800s_Reference.hdr"
                     ;;
                 11 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\2s_e11_SpdgWpdg"
-                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e11_SpdgWpdg_12000s_Reference.hdr"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e11_SpdgWpdg_pt_iic1.0_12000s_Reference.hdr"
                     ;;
                 12 )
                     OUT_IMG_DIR_WIN="$IMAGES_BASE_DIR_WIN\\2s_e12_SpdgWpdg"
-                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e12_SpdgWpdg_24000s_Reference.hdr"
+                    REFERENCE_IMG="$OUT_IMG_DIR_WIN\\2s_e12_SpdgWpdg_pt_iic1.0_24000s_Reference.hdr"
                     ;;
                 * )
                     echo "Unsupported EM!"

@@ -96,7 +96,7 @@ START_TIME=`date +%s`
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 6`  -em 4
 #
 #BASE_ITERS=800            #1=5m5s
-#IIC=1 # Reduce indirect noise as much as possible
+#IIC=1 # reduce indirect noise as much as possible
 #
 #render -s 7  -a pt -iic $IIC -i `expr $BASE_ITERS \* 35` -em 10
 #render -s 7  -a pt -iic $IIC -i `expr $BASE_ITERS \* 35` -em 12

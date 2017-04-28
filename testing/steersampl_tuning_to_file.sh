@@ -29,14 +29,15 @@ declare -A SCENE_ALG_MAP=(
 )
 PT_PARAMS="-iic 1"
 
-export RENDERING_TIME=120
+export RENDERING_TIME=100
 export MIN_SUBDIV_LEVEL=04
 export MAX_SUBDIV_LEVELS="08 09 10"
 export MAX_ERRORS="0.10 0.20 0.30 0.40 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.50 3.00 3.50 4.00 5.00"   # The only parameter which changes in a graph (1D slice)
 
 #NAME_TRAIL="00 - SSS Reference"
 #NAME_TRAIL="01 - Binary"
- NAME_TRAIL="02 - Weights in Parent"
+#NAME_TRAIL="02 - Weights in Parent"
+ NAME_TRAIL="03 - Full atan2"
 
 ###################################################################################################
 
