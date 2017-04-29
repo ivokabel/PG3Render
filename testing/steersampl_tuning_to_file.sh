@@ -17,7 +17,7 @@ IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output imag
 
 ###################################################################################################
 
-OPERATION_MODES="render compare plot"           #"render compare plot"
+OPERATION_MODES="plot"           #"render compare plot"
 
 SCENES="07 09 20 22"
 EMS="12 10 11"
@@ -32,7 +32,8 @@ PT_PARAMS="-iic 1"
 export RENDERING_TIME=100
 export MIN_SUBDIV_LEVEL=04
 export MAX_SUBDIV_LEVELS="08 09 10"
-export MAX_ERRORS="0.10 0.20 0.30 0.40 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.50 3.00 3.50 4.00 5.00"   # The only parameter which changes in a graph (1D slice)
+#export MAX_ERRORS="0.10 0.20 0.30 0.40 0.50 0.75 1.00 1.25 1.50 1.75 2.00 2.50 3.00 3.50 4.00 5.00"   # The only parameter which changes in a graph (1D slice)
+ export MAX_ERRORS="0.30 0.50 1.00 1.50 2.00 2.50 3.00 4.00 5.00 10.0"   # The only parameter which changes in a graph (1D slice)
 
 #NAME_TRAIL="00 - SSS Reference"
 #NAME_TRAIL="01 - Binary"
@@ -111,14 +112,15 @@ for SCENE in $SCENES; do
                     set output '$OUT_IMAGE_FILE'
                     set title \"${TEST_NAME}\"
                     unset border
-                    set yrange [0:]
 
                     # Simple spherical sampler performance for reference
                     stats '$OUT_GNUPLOT_FILE_SSS' every ::1::1 using 2 nooutput
                     sssRefVal = STATS_min
 
                     # Whole graph
-                    plot sssRefVal title \"Simple Spherical Sampler\" dashtype 2 lc rgb \"red\" lw 2, \
+                    maxYVal = 2*sssRefVal
+                    set yrange [0:maxYVal]
+                    plot sssRefVal title \"Simple Spherical Sampler\" dashtype 1 lc rgb \"red\" lw 2, \
                          for [IDX=2:`expr 1 + $SERIES_COUNT`] '$OUT_GNUPLOT_FILE' using 1:IDX title columnheader with lines
                 " | gnuplot
 
