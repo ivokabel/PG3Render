@@ -25,9 +25,14 @@ public:
         mFilename(aFilename),
         mWidth(aWidth),
         mHeight(aHeight),
-        mDoBilinFiltering(aDoBilinFiltering)
+        mDoBilinFiltering(aDoBilinFiltering),
+#ifdef PG3_USE_EM_MORTON_MAPPING
+        mImgDataSize(Math::MortonCode2D(aWidth - 1, aHeight - 1) + 1) // based on the last element 
+#else
+        mImgDataSize(mWidth * mHeight)
+#endif
     {
-        mImgData = new SpectrumF[mWidth * mHeight];
+        mImgData = new SpectrumF[mImgDataSize];
     }
 
     ~EnvironmentMapImage()
@@ -182,7 +187,15 @@ public:
         PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
         PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
 
-        return mImgData[mWidth*aY + aX];
+#ifdef PG3_USE_EM_MORTON_MAPPING
+        const uint32_t offset = Math::MortonCode2D(aX, aY);
+#else
+        const uint32_t offset = mWidth*aY + aX;
+#endif
+
+        PG3_ASSERT(offset < mImgDataSize);
+
+        return mImgData[offset];
     }
 
     const SpectrumF& ElementAt(uint32_t aX, uint32_t aY) const
@@ -190,7 +203,15 @@ public:
         PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
         PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
 
-        return mImgData[mWidth*aY + aX];
+#ifdef PG3_USE_EM_MORTON_MAPPING
+        const uint32_t offset = Math::MortonCode2D(aX, aY);
+#else
+        const uint32_t offset = mWidth*aY + aX;
+#endif
+
+        PG3_ASSERT(offset < mImgDataSize);
+
+        return mImgData[offset];
     }
 
     Vec2ui Size() const
@@ -263,6 +284,7 @@ private:
     const uint32_t       mHeight;
     const bool           mDoBilinFiltering;
     SpectrumF           *mImgData;
+    const uint32_t       mImgDataSize;
 };
 
 // Wrapper for constant environment
