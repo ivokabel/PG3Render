@@ -20,19 +20,19 @@ public:
         const char *aFilename,
         uint32_t    aWidth,
         uint32_t    aHeight,
-        bool        aDoBilinFiltering
-        ) :
+        bool        aDoBilinFiltering)
+        :
         mFilename(aFilename),
         mWidth(aWidth),
         mHeight(aHeight),
         mDoBilinFiltering(aDoBilinFiltering)
     {
-        mData = new SpectrumF[mWidth * mHeight];
+        mImgData = new SpectrumF[mWidth * mHeight];
     }
 
     ~EnvironmentMapImage()
     {
-        delete mData;
+        delete mImgData;
     }
 
     // This class is not copyable because of a const member.
@@ -182,7 +182,7 @@ public:
         PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
         PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
 
-        return mData[mWidth*aY + aX];
+        return mImgData[mWidth*aY + aX];
     }
 
     const SpectrumF& ElementAt(uint32_t aX, uint32_t aY) const
@@ -190,21 +190,7 @@ public:
         PG3_ASSERT_INTEGER_IN_RANGE(aX, 0, mWidth);
         PG3_ASSERT_INTEGER_IN_RANGE(aY, 0, mHeight);
 
-        return mData[mWidth*aY + aX];
-    }
-
-    SpectrumF& ElementAt(uint32_t aIdx)
-    {
-        PG3_ASSERT_INTEGER_IN_RANGE(aIdx, 0, mWidth*mHeight);
-
-        return mData[aIdx];
-    }
-
-    const SpectrumF& ElementAt(uint32_t aIdx) const
-    {
-        PG3_ASSERT_INTEGER_IN_RANGE(aIdx, 0, mWidth*mHeight);
-
-        return mData[aIdx];
+        return mImgData[mWidth*aY + aX];
     }
 
     Vec2ui Size() const
@@ -276,7 +262,7 @@ private:
     const uint32_t       mWidth;
     const uint32_t       mHeight;
     const bool           mDoBilinFiltering;
-    SpectrumF           *mData;
+    SpectrumF           *mImgData;
 };
 
 // Wrapper for constant environment
