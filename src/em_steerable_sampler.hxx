@@ -37,7 +37,7 @@ public:
         {
             maxApproxError =
                   aMaxApproxError == Math::InfinityF()
-                ? 2.00f : aMaxApproxError;
+                ? 5.00f : aMaxApproxError;
             minSubdivLevel =
                   aMinSubdivLevel == Math::InfinityF()
                 ? 4u : static_cast<uint32_t>(aMinSubdivLevel);
