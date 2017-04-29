@@ -326,6 +326,39 @@ namespace Math
         return x;
     }
 
+    // Adapted from Asger Hoedt (http://asgerhoedt.dk/?p=276)
+    inline uint32_t SeparateBy1Bit(uint32_t aVal) {
+        aVal &= 0x0000ffff;                       // aVal = ---- ---- ---- ---- fedc ba98 7654 3210
+        aVal = (aVal ^ (aVal << 8)) & 0x00ff00ff; // aVal = ---- ---- fedc ba98 ---- ---- 7654 3210
+        aVal = (aVal ^ (aVal << 4)) & 0x0f0f0f0f; // aVal = ---- fedc ---- ba98 ---- 7654 ---- 3210
+        aVal = (aVal ^ (aVal << 2)) & 0x33333333; // aVal = --fe --dc --ba --98 --76 --54 --32 --10
+        aVal = (aVal ^ (aVal << 1)) & 0x55555555; // aVal = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
+        return aVal;
+    }
+
+    // Adapted from Asger Hoedt (http://asgerhoedt.dk/?p=276)
+    inline uint32_t CompactBy1Bit(uint32_t aVal) {
+        aVal &= 0x55555555;                       // aVal = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
+        aVal = (aVal ^ (aVal >> 1)) & 0x33333333; // aVal = --fe --dc --ba --98 --76 --54 --32 --10
+        aVal = (aVal ^ (aVal >> 2)) & 0x0f0f0f0f; // aVal = ---- fedc ---- ba98 ---- 7654 ---- 3210
+        aVal = (aVal ^ (aVal >> 4)) & 0x00ff00ff; // aVal = ---- ---- fedc ba98 ---- ---- 7654 3210
+        aVal = (aVal ^ (aVal >> 8)) & 0x0000ffff; // aVal = ---- ---- ---- ---- fedc ba98 7654 3210
+        return aVal;
+    }
+
+    // Adapted from Asger Hoedt (http://asgerhoedt.dk/?p=276)
+    inline uint32_t MortonCode2D(uint32_t aX, uint32_t aY)
+    {
+        return SeparateBy1Bit(aX) | (SeparateBy1Bit(aY) << 1);
+    }
+
+    // Adapted from Asger Hoedt (http://asgerhoedt.dk/?p=276)
+    inline void MortonDecode2D(const uint32_t aCode, uint32_t &oX, uint32_t &oY)
+    {
+        oX = CompactBy1Bit(aCode);
+        oY = CompactBy1Bit(aCode >> 1);
+    }
+
 } // namespace Math
 
 template<typename T>
