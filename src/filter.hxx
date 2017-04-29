@@ -1,5 +1,6 @@
 #pragma once 
 
+#include "debugging.hxx"
 #include "unit_testing.hxx"
 #include "math.hxx"
 #include "types.hxx"

@@ -246,15 +246,15 @@ private:
     PG3_ASSERT_FLOAT_EQUAL((_vec3).LenSqr(), 1.0f, 0.001f); \
 }
 
+#define PG3_NOINLINE __declspec(noinline)
+
 // noinline for profiling purposes - it helps to better visualise low-level code in the profiler
 //#define PG3_USE_PROFILING_NOINLINE
 #ifdef PG3_USE_PROFILING_NOINLINE
-#define PG3_PROFILING_NOINLINE __declspec(noinline)
+#define PG3_PROFILING_NOINLINE PG3_NOINLINE
 #else
 #define PG3_PROFILING_NOINLINE
 #endif
-
-#define PG3_NOINLINE __declspec(noinline)
 
 // Code markers
 #define PG3_ERROR_NOT_IMPLEMENTED(_msg) \

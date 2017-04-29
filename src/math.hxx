@@ -591,7 +591,6 @@ public:
         return res;
     }
 
-    //PG3_NOINLINE
     friend Vec3Base Normalize(const Vec3Base& a)
     {
         const T lenSqr = Dot(a, a);
