@@ -44,6 +44,11 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+### SS convergence test
+
+#render -s 20 -a pt -i 1024 -em 3
+#render -s 22 -a pt -i 2048 -em 3
+
 ### Diff tool comparison modes
 
 #IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images\\steer_sampl_tuning"
