@@ -80,8 +80,7 @@ public:
             oLightSample, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
 
-    // Gets radiance stored for the given direction and optionally its PDF. The direction
-    // must be non-zero but not necessarily normalized.
+    // Gets radiance stored for the given direction and optionally its PDF.
     void EvalRadiance(
         SpectrumF       &oRadiance,
         const Vec3f     &aDirection, 
@@ -91,7 +90,7 @@ public:
         const bool      *aSampleBackSide = nullptr
         ) const
     {
-        PG3_ASSERT(!aDirection.IsZero());
+        PG3_ASSERT_VEC3F_NORMALIZED(aDirection);
 
         const Vec2f uv = Geom::Dir2LatLong(aDirection);
         oRadiance = EvalRadiance(uv);
@@ -99,9 +98,16 @@ public:
         if (oPdfW && aSurfFrame && aSampleFrontSide && aSampleBackSide)
             *oPdfW = PdfW(aDirection, *aSurfFrame, *aSampleFrontSide, *aSampleBackSide);
 
-        PG3_ASSERT(
-               (oPdfW == nullptr)
-            || (oRadiance.IsZero() || (*oPdfW > 0.f)));
+        PG3_ASSERT_MSG(
+               (oPdfW == nullptr) || (aSampleFrontSide == nullptr) || (aSampleBackSide == nullptr)
+            || (!*aSampleFrontSide && !*aSampleBackSide)                             // no light sampling needed
+            || (!*aSampleFrontSide && (Dot(aDirection, aSurfFrame->Normal()) > 0.f)) // samples in upper not needed
+            || (!*aSampleBackSide  && (Dot(aDirection, aSurfFrame->Normal()) < 0.f)) // samples in lower not needed
+            || (oRadiance.IsZero() || (*oPdfW > 0.f)),
+            "oRadiance.Luminance() %.12f, "
+            "oPdfW %.12f",
+            oRadiance.Luminance(),
+            (oPdfW != nullptr) ? *oPdfW : -1.f);
     }
 
     float PdfW(
