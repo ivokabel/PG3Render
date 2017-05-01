@@ -3842,16 +3842,14 @@ protected:
             PG3_ASSERT_FLOAT_LARGER_THAN_OR_EQUAL_TO(wholeIntegral, 0.f);
             PG3_ASSERT_FLOAT_EQUAL(
                 wholeIntegral,
-                triangleSet->ComputeIntegral(mVertexStorage, aClampedCosCoeffs),
+                triangleSet->ComputeIntegral(aClampedCosCoeffs),
                 0.001f);
 
             // Choose child
 
+            const float uniSampleTrim = aUniSample * 0.999999f /*solves zero ending problem*/;
             const auto itEnd = childrenIntegralSums.begin() + childCount + 1;
-            auto itUpBound = std::upper_bound(
-                childrenIntegralSums.begin(),
-                itEnd,
-                aUniSample * 0.999999f /*solves zero ending problem*/);
+            auto itUpBound = std::upper_bound(childrenIntegralSums.begin(), itEnd, uniSampleTrim);
             if (itUpBound == itEnd)
                 --itUpBound; // last element
 
@@ -3860,13 +3858,13 @@ protected:
 
             const float lowBound = *(itUpBound - 1);
             const float integral = *itUpBound - lowBound;
-            aUniSample =
-                  (aUniSample - lowBound)
+            const float newUniSample =
+                  (uniSampleTrim - lowBound)
                 / std::max(integral, 0.00001f);
 
             PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.001f);
 
-            aUniSample = std::min(aUniSample, 1.f); // Larger values can invoke "zero ending problem"
+            aUniSample = std::min(newUniSample, 1.f); // Larger values can invoke "zero ending problem"
         }
 
         if (node == nullptr)
