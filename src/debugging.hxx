@@ -134,7 +134,10 @@ private:
     PG3_ASSERT_FLOAT_VALID(_val); \
     PG3_ASSERT_FLOAT_VALID(_low); \
     PG3_ASSERT_FLOAT_VALID(_up); \
-    PG3_ASSERT_MSG(((_val) >= (_low)) && ((_val) <= (_up)), "%.12f <= %.12f <= %.12f", (_low), (_val), (_up)); \
+    PG3_ASSERT_MSG( \
+        ((_val) >= (_low)) && ((_val) <= (_up)), \
+        "%.12f <= %.12f <= %.12f", \
+        (_low), (_val), (_up)); \
 }
 
 #ifdef PG3_ASSERT_ENABLED

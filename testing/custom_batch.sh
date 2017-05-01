@@ -44,29 +44,6 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-#SCENES=20           #"20 7 9"
-#EMS="10"
-#declare -A SCENE_ALG_MAP=(
-#    ["20"]="dlsa"
-#    ["7"]="pt"
-#    ["9"]="pt"
-#)
-#ITERS=256   #64
-#
-#for SCENE in $SCENES; do
-#    for EM in $EMS; do
-#        for ALG in ${SCENE_ALG_MAP[$SCENE]}; do
-#            render -s $SCENE -em $EM -a $ALG -i $ITERS
-#            render -s $SCENE -em $EM -a $ALG -i $ITERS
-#            render -s $SCENE -em $EM -a $ALG -i $ITERS
-#            echo
-#            echo
-#            echo
-#        done
-#    done
-#done
-
-
 ### Diff tool comparison modes
 
 #IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images\\steer_sampl_tuning"
@@ -83,19 +60,19 @@ START_TIME=`date +%s`
 
 ### SS params tuning - reference images
 
-#BASE_ITERS=12000           #200=10min   #1200=1h   
-#
-#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 7`  -em 12
-#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 5`  -em 10
-#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 2`  -em 11
-#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 6`  -em 4
+#BASE_ITERS=20     #12000           #1200=1h   
 #
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 7`  -em 12
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 2`  -em 10
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 13` -em 11
 #render -s 22 -a dmis       -i `expr $BASE_ITERS \* 6`  -em 4
 #
-#BASE_ITERS=800            #1=5m5s
+#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 7`  -em 12
+#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 5`  -em 10
+#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 2`  -em 11
+#render -s 20 -a dlsa       -i `expr $BASE_ITERS \* 6`  -em 4
+
+#BASE_ITERS=10     #800            #1=5m5s
 #IIC=1 # reduce indirect noise as much as possible
 #
 #render -s 7  -a pt -iic $IIC -i `expr $BASE_ITERS \* 35` -em 10

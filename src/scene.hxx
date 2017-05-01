@@ -1055,7 +1055,7 @@ public:
             if (aEnvironmentMapType != kEMInvalid)
             {
                 std::string envMapAcronym;
-                name    += " (" + GetEnvMapName(aEnvironmentMapType, &envMapAcronym) + ")";
+                name    += ": " + GetEnvMapName(aEnvironmentMapType, &envMapAcronym);
                 acronym += envMapAcronym;
             }
         }
