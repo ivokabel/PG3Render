@@ -208,8 +208,8 @@ int32_t main(int32_t argc, const char *argv[])
     argc; argv; // unused params
 
     //for (uint32_t i = 0; i < 1000; i++)
-        //RunUnitTests(eutblWholeTest);
-        RunUnitTests(eutblSubTestLevel1);
+        RunUnitTests(eutblWholeTest);
+        //RunUnitTests(eutblSubTestLevel1);
         //RunUnitTests(eutblSubTestLevel2);
 
     exit(0);
