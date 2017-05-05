@@ -45,7 +45,6 @@ public:
     {
         PG3_ASSERT(aCount > 0);
 
-        mPdf = new float[mCount];
         mCdf = new float[mCount+1];
         
         // Compute integral of step function at $x_i$.
@@ -63,25 +62,18 @@ public:
         {
             // The function is zero; use uniform PDF as a fallback
             for (uint32_t i = 1; i < mCount + 1; ++i)
-            {
-                mPdf[i-1] = 1.0f / mCount;
-                mCdf[i]   = (float)i / mCount;
-            }
+                mCdf[i] = (float)i / mCount;
         }
         else 
         {
             for (uint32_t i = 1; i < mCount + 1; ++i)
-            {
-                mPdf[i - 1]  = aFunc[i - 1] / mFuncIntegral;
-                mCdf[i]     /= mFuncIntegral;
-            }
+                mCdf[i] /= mFuncIntegral;
         }
         PG3_ASSERT_FLOAT_EQUAL(mCdf[mCount], 1.0f, 1e-7F);
     }
 
     ~Distribution1D()
     {
-        delete[] mPdf;
         delete[] mCdf;
     }
 
@@ -108,7 +100,8 @@ public:
         }
 
         // Compute offset within CDF segment
-        const float offset = (aRndSample - mCdf[oSegm]) / (mCdf[oSegm+1] - mCdf[oSegm]);
+        const float segmProbability = mCdf[oSegm + 1] - mCdf[oSegm];
+        const float offset = (aRndSample - mCdf[oSegm]) / segmProbability;
         PG3_ASSERT_FLOAT_VALID(offset);
         PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
 
@@ -116,27 +109,20 @@ public:
         //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
         // Get the segment's constant PDF
-        oPdf = mPdf[oSegm]; // TODO: Use cdf for pdf computations? May save non-local memory accesses
-        PG3_ASSERT(mPdf[oSegm] > 0);
+        oPdf = segmProbability * mCount;
+        PG3_ASSERT(oPdf > 0.f);
 
-        // Return $x\in{}[0,1]$ corresponding to sample
+        // Return $x\in{}[0,1]$
         oX = (oSegm + offset) / mCount;
     }
 
-    //int32_t SampleDiscrete(float aRndSample, float *oProbability) const
-    //{
-    //    // Find surrounding CDF segments and _offset_
-    //    float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
-    //    int32_t segment = std::max(0, int32_t(ptr-mCdf-1));
+    float Pdf(const uint32_t aSegm) const
+    {
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCount - 1);
 
-    //    PG3_ASSERT(segment < mCount);
-    //    PG3_ASSERT(aRndSample >= mCdf[segment] && aRndSample < mCdf[segment+1]);
-
-    //    if (oProbability)
-    //        // pdf * size of segment
-    //        *oProbability = mPdf[segment] / mCount;
-    //    return segment;
-    //}
+        const float segmProbability = mCdf[aSegm + 1] - mCdf[aSegm];
+        return segmProbability * mCount;
+    }
 
     // This class is not copyable because of a const member.
     // If we don't delete the assignment operator
@@ -148,7 +134,6 @@ public:
 private:
     friend class Distribution2D;
 
-    float           *mPdf;
     float           *mCdf;
     float            mFuncIntegral;
     const uint32_t   mCount;
@@ -161,10 +146,8 @@ public:
     {
         mConditionalV.reserve(sCountV);
         for (int32_t v = 0; v < sCountV; ++v) 
-        {
             // Compute conditional sampling distribution for $\tilde{v}$
             mConditionalV.push_back(new Distribution1D(&aFunc[v*sCountU], sCountU));
-        }
 
         // Compute marginal sampling distribution $p[\tilde{v}]$
         std::vector<float> marginalFunc;
@@ -202,7 +185,7 @@ public:
             Math::Clamp((uint32_t)(aUV.y * mMarginal->mCount), 0u, mMarginal->mCount - 1);
 
         // Compute probabilities
-        return mConditionalV[iv]->mPdf[iu] * mMarginal->mPdf[iv];
+        return mConditionalV[iv]->Pdf(iu) * mMarginal->Pdf(iv);
     }
 
 private:
