@@ -17,7 +17,6 @@
 #include <set>
 #include <vector>
 #include <cmath>
-#include <cstdlib>
 #include <time.h>
 
 // Renderer factory
