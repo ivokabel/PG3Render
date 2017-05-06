@@ -32,6 +32,7 @@
 
 #include "math.hxx"
 #include "types.hxx"
+#include "memory.hxx"
 
 #include <algorithm>
 #include <vector>
@@ -40,6 +41,14 @@
 class Distribution1D 
 {
 public:
+
+    // This class is not copyable because of a const member.
+    // If we don't delete the assignment operator
+    // explicitly, the compiler may complain about not being able 
+    // to create its default implementation.
+    Distribution1D & operator=(const Distribution1D&) = delete;
+    //Distribution1D(const Distribution1D&) = delete;
+
     Distribution1D(const float * const aFunc, uint32_t aCount) :
         mCount(aCount)
     {
@@ -108,7 +117,7 @@ public:
         // since the float random generator generates 1.0 from time to time, we need to ignore this one
         //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
-        // Get the segment's constant PDF
+        // Get the segment's constant PDF = P / Width
         oPdf = segmProbability * mCount;
         PG3_ASSERT(oPdf > 0.f);
 
@@ -120,18 +129,13 @@ public:
     {
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCount - 1);
 
+        // Segment's constant PDF = P / Width
         const float segmProbability = mCdf[aSegm + 1] - mCdf[aSegm];
         return segmProbability * mCount;
     }
 
-    // This class is not copyable because of a const member.
-    // If we don't delete the assignment operator
-    // explicitly, the compiler may complain about not being able 
-    // to create its default implementation.
-    Distribution1D & operator=(const Distribution1D&) = delete;
-    //Distribution1D(const Distribution1D&) = delete;
-
 private:
+
     friend class Distribution2D;
 
     float           *mCdf;
@@ -139,9 +143,165 @@ private:
     const uint32_t   mCount;
 };
 
+
+// Representation of a probability density function over the interval [0,1]
+// An attempt to make the simple version more cache friendly.
+class Distribution1DHierachical 
+{
+public:
+
+    // This class is not copyable because of a const member.
+    // If we don't delete the assignment operator
+    // explicitly, the compiler may complain about not being able 
+    // to create its default implementation.
+    Distribution1DHierachical & operator=(const Distribution1DHierachical&) = delete;
+    //Distribution1DHierachical(const Distribution1DHierachical&) = delete;
+
+    Distribution1DHierachical(const float * const aFunc, uint32_t aCount) :
+        mCount(aCount)
+    {
+        PG3_ASSERT(aCount > 0);
+
+        mCdf = new float[mCount+1];
+        
+        // Compute integral of step function at $x_i$.
+        // Note that the whole integral spans over the interval [0,1].
+        mCdf[0] = 0.;
+        for (uint32_t i = 1; i < mCount + 1; ++i)
+        {
+            PG3_ASSERT_FLOAT_NONNEGATIVE(aFunc[i - 1]);
+            mCdf[i] = mCdf[i - 1] + aFunc[i - 1] / mCount; // 1/mCount = size of a segment
+        }
+
+        // Transform step function integral into CDF
+        mFuncIntegral = mCdf[mCount];
+        if (mFuncIntegral == 0.f) 
+        {
+            // The function is zero; use uniform PDF as a fallback
+            for (uint32_t i = 1; i < mCount + 1; ++i)
+                mCdf[i] = (float)i / mCount;
+        }
+        else 
+        {
+            for (uint32_t i = 1; i < mCount + 1; ++i)
+                mCdf[i] /= mFuncIntegral;
+        }
+        PG3_ASSERT_FLOAT_EQUAL(mCdf[mCount], 1.0f, 1e-7F);
+    }
+
+    ~Distribution1DHierachical()
+    {
+        delete[] mCdf;
+    }
+
+    bool IsInitialized() const
+    {
+        return mCdfLevels.empty();
+    }
+
+    PG3_PROFILING_NOINLINE
+    void SampleContinuous(const float aRndSample, float &oX, uint32_t &oSegm, float &oPdf) const 
+    {
+        // Find surrounding CDF segments and _offset_
+        float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
+        oSegm = Math::Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
+
+        PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mCount - 1);
+        PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
+
+        // Fix the case when func ends with zeros
+        if (mCdf[oSegm] == mCdf[oSegm + 1])
+        {
+            PG3_ASSERT(aRndSample == 1.0f);
+
+            do { 
+                oSegm--; 
+            } while (mCdf[oSegm] == mCdf[oSegm + 1] && oSegm > 0);
+
+            PG3_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
+        }
+
+        // Compute offset within CDF segment
+        const float segmProbability = mCdf[oSegm + 1] - mCdf[oSegm];
+        const float offset = (aRndSample - mCdf[oSegm]) / segmProbability;
+        PG3_ASSERT_FLOAT_VALID(offset);
+        PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
+
+        // since the float random generator generates 1.0 from time to time, we need to ignore this one
+        //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
+
+        // Get the segment's constant PDF = P / Width
+        oPdf = segmProbability * mCount;
+        PG3_ASSERT(oPdf > 0.f);
+
+        // Return $x\in{}[0,1]$
+        oX = (oSegm + offset) / mCount;
+    }
+
+    float Pdf(const uint32_t aSegm) const
+    {
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCount - 1);
+
+        //// Segment's constant PDF = P / Width
+        //const float segmProbability = mCdf[aSegm + 1] - mCdf[aSegm];
+        //return segmProbability * mCount;
+
+        return 0.f; aSegm; // debug
+    }
+
+private:
+
+    class CdfLevel
+    {
+    public:
+
+        CdfLevel() :
+            cdf(nullptr),
+            count(0),
+            blockCount(0)
+        {}
+
+        ~CdfLevel() { Free(); }
+
+        bool Alloc(const uint32_t aCount, const uint32_t aBlockCount, const std::size_t aAlignment)
+        {
+            Free();
+
+            cdf = static_cast<float*>(Memory::AlignedMalloc(aAlignment, sizeof(float) * aCount));
+            if (cdf == nullptr)
+                return false;
+
+            count      = aCount;
+            blockCount = aBlockCount;
+            return true;
+        }
+
+        void Free()
+        {
+            Memory::AlignedFree(cdf);
+        }
+
+        float      *cdf;
+        uint32_t    count;
+        uint32_t    blockCount;
+    };
+
+private:
+
+    friend class Distribution2D;
+
+    // deprecated!!!
+    float           *mCdf;
+    const uint32_t   mCount;
+
+    std::vector<float>  mCdfLevels;
+    float               mFuncIntegral;
+};
+
 class Distribution2D
 {
 public:
+
     Distribution2D(const float *aFunc, int32_t sCountU, int32_t sCountV)
     {
         mConditionalV.reserve(sCountV);
@@ -189,6 +349,7 @@ public:
     }
 
 private:
+
     std::vector<Distribution1D*>     mConditionalV;
     Distribution1D                  *mMarginal;
 };
