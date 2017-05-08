@@ -6,6 +6,8 @@
 
 namespace Memory
 {
+    static const std::size_t kCacheLine = 64u;
+
     void* AlignedMalloc(std::size_t aAlignment, std::size_t aSize, bool aZeroMemory)
     {
         // TODO: Aligned allocation: platform-dependent

@@ -37,8 +37,46 @@
 #include <algorithm>
 #include <vector>
 
+// Representation of a probability density function over the interval [0,1] - common ancestor class
+class Distribution1DBase
+{
+protected:
+    // Function does not have to be normalized
+    static void ComputeCdf(
+        float           *const oCdf,  // 0..count
+        const float     *const aFunc, // 0..count-1
+        std::size_t      const aSegmCount)
+    {
+        PG3_ASSERT(aSegmCount > 0);
+
+        // Compute integral of step function at $x_i$.
+        // Note that the whole integral spans over the interval [0,1].
+        oCdf[0] = 0.;
+        for (std::size_t i = 1; i < aSegmCount + 1; ++i)
+        {
+            PG3_ASSERT_FLOAT_NONNEGATIVE(aFunc[i - 1]);
+            oCdf[i] = oCdf[i - 1] + aFunc[i - 1] / aSegmCount; // 1/aSegmCount = size of a segment
+        }
+
+        // Transform step function integral into CDF
+        const auto funcIntegral = oCdf[aSegmCount];
+        if (funcIntegral == 0.f)
+        {
+            // The function is zero; use uniform PDF as a fallback
+            for (std::size_t i = 1; i < aSegmCount + 1; ++i)
+                oCdf[i] = (float)i / aSegmCount;
+        }
+        else
+        {
+            for (std::size_t i = 1; i < aSegmCount + 1; ++i)
+                oCdf[i] /= funcIntegral;
+        }
+        PG3_ASSERT_FLOAT_EQUAL(oCdf[aSegmCount], 1.0f, 1e-7F);
+    }
+};
+
 // Representation of a probability density function over the interval [0,1]
-class Distribution1D 
+class Distribution1DSimple : public Distribution1DBase
 {
 public:
 
@@ -46,54 +84,40 @@ public:
     // If we don't delete the assignment operator
     // explicitly, the compiler may complain about not being able 
     // to create its default implementation.
-    Distribution1D & operator=(const Distribution1D&) = delete;
-    //Distribution1D(const Distribution1D&) = delete;
+    Distribution1DSimple & operator=(const Distribution1DSimple&) = delete;
+    //Distribution1DSimple(const Distribution1DSimple&) = delete;
 
-    Distribution1D(const float * const aFunc, uint32_t aCount) :
-        mCount(aCount)
+    Distribution1DSimple(const float * const aFunc, std::size_t aCount) :
+        mSegmCount(aCount)
     {
         PG3_ASSERT(aCount > 0);
 
-        mCdf = new float[mCount+1];
-        
-        // Compute integral of step function at $x_i$.
-        // Note that the whole integral spans over the interval [0,1].
-        mCdf[0] = 0.;
-        for (uint32_t i = 1; i < mCount + 1; ++i)
+        mCdf = new float[mSegmCount+1];
+        if (mCdf != nullptr)
         {
-            PG3_ASSERT_FLOAT_NONNEGATIVE(aFunc[i - 1]);
-            mCdf[i] = mCdf[i - 1] + aFunc[i - 1] / mCount; // 1/mCount = size of a segment
+            ComputeCdf(mCdf, aFunc, mSegmCount);
+            mFuncIntegral = mCdf[mSegmCount];
         }
-
-        // Transform step function integral into CDF
-        mFuncIntegral = mCdf[mCount];
-        if (mFuncIntegral == 0.f) 
-        {
-            // The function is zero; use uniform PDF as a fallback
-            for (uint32_t i = 1; i < mCount + 1; ++i)
-                mCdf[i] = (float)i / mCount;
-        }
-        else 
-        {
-            for (uint32_t i = 1; i < mCount + 1; ++i)
-                mCdf[i] /= mFuncIntegral;
-        }
-        PG3_ASSERT_FLOAT_EQUAL(mCdf[mCount], 1.0f, 1e-7F);
     }
 
-    ~Distribution1D()
+    ~Distribution1DSimple()
     {
         delete[] mCdf;
     }
 
+    std::size_t SegmCount() const
+    {
+        return mSegmCount;
+    }
+
     PG3_PROFILING_NOINLINE
-    void SampleContinuous(const float aRndSample, float &oX, uint32_t &oSegm, float &oPdf) const 
+    void SampleContinuous(const float aRndSample, float &oX, std::size_t &oSegm, float &oPdf) const 
     {
         // Find surrounding CDF segments and _offset_
-        float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
-        oSegm = Math::Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
+        float *ptr = std::upper_bound(mCdf, mCdf+mSegmCount+1, aRndSample);
+        oSegm = Math::Clamp<std::size_t>(ptr - mCdf - 1, 0u, mSegmCount - 1u);
 
-        PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mCount - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mSegmCount - 1);
         PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
 
         // Fix the case when func ends with zeros
@@ -118,35 +142,35 @@ public:
         //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
         // Get the segment's constant PDF = P / Width
-        oPdf = segmProbability * mCount;
+        oPdf = segmProbability * mSegmCount;
         PG3_ASSERT(oPdf > 0.f);
 
         // Return $x\in{}[0,1]$
-        oX = (oSegm + offset) / mCount;
+        oX = (oSegm + offset) / mSegmCount;
     }
 
-    float Pdf(const uint32_t aSegm) const
+    float Pdf(const std::size_t aSegm) const
     {
-        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCount - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mSegmCount - 1);
 
         // Segment's constant PDF = P / Width
         const float segmProbability = mCdf[aSegm + 1] - mCdf[aSegm];
-        return segmProbability * mCount;
+        return segmProbability * mSegmCount;
     }
 
 private:
 
     friend class Distribution2D;
 
-    float           *mCdf;
-    float            mFuncIntegral;
-    const uint32_t   mCount;
+    float              *mCdf;
+    float               mFuncIntegral;
+    const std::size_t   mSegmCount;
 };
 
 
 // Representation of a probability density function over the interval [0,1]
 // An attempt to make the simple version more cache friendly.
-class Distribution1DHierachical 
+class Distribution1DHierachical : public Distribution1DBase
 {
 public:
 
@@ -157,41 +181,104 @@ public:
     Distribution1DHierachical & operator=(const Distribution1DHierachical&) = delete;
     //Distribution1DHierachical(const Distribution1DHierachical&) = delete;
 
-    Distribution1DHierachical(const float * const aFunc, uint32_t aCount) :
-        mCount(aCount)
+    Distribution1DHierachical(const float * const aFunc, std::size_t aCount)
     {
-        PG3_ASSERT(aCount > 0);
-
-        mCdf = new float[mCount+1];
-        
-        // Compute integral of step function at $x_i$.
-        // Note that the whole integral spans over the interval [0,1].
-        mCdf[0] = 0.;
-        for (uint32_t i = 1; i < mCount + 1; ++i)
-        {
-            PG3_ASSERT_FLOAT_NONNEGATIVE(aFunc[i - 1]);
-            mCdf[i] = mCdf[i - 1] + aFunc[i - 1] / mCount; // 1/mCount = size of a segment
-        }
-
-        // Transform step function integral into CDF
-        mFuncIntegral = mCdf[mCount];
-        if (mFuncIntegral == 0.f) 
-        {
-            // The function is zero; use uniform PDF as a fallback
-            for (uint32_t i = 1; i < mCount + 1; ++i)
-                mCdf[i] = (float)i / mCount;
-        }
-        else 
-        {
-            for (uint32_t i = 1; i < mCount + 1; ++i)
-                mCdf[i] /= mFuncIntegral;
-        }
-        PG3_ASSERT_FLOAT_EQUAL(mCdf[mCount], 1.0f, 1e-7F);
+        BuildHierachy(aFunc, aCount);
     }
 
-    ~Distribution1DHierachical()
+    ~Distribution1DHierachical() {}
+
+    static std::size_t GetCdfSize(std::size_t aSegmCount)
     {
-        delete[] mCdf;
+        return aSegmCount + 1u;
+    }
+
+    std::size_t SegmCount() const
+    {
+        PG3_ASSERT(!IsInitialized());
+
+        return mCdfLevels.back().count - 1u;
+    }
+
+    static std::size_t ComputeLevelsCount(std::size_t aFullSegmCount)
+    {
+        const auto fullCdfSize = GetCdfSize(aFullSegmCount);
+        const float logn = Math::LogN((float)CdfLevel::GetBlockSize(), (float)fullCdfSize);
+
+        const std::size_t levelCount = (fullCdfSize == 0) ? 0u : static_cast<std::size_t>(std::ceil(logn));
+
+        return levelCount;
+    }
+
+    static void ComputeLevelCounts(
+        std::size_t         &oLevelSize,
+        std::size_t         &oLevelBlockCount,
+        const std::size_t    aLevel,
+        const std::size_t    aFullSegmCount)
+    {
+        PG3_ASSERT_INTEGER_LARGER_THAN(aFullSegmCount, 0);
+
+        const auto fullCdfSize = GetCdfSize(aFullSegmCount);
+        const auto blockSize = CdfLevel::GetBlockSize();
+
+        auto currentLevel     = aLevel;
+        auto currentLevelSize = fullCdfSize;
+        while (currentLevel > aLevel)
+        {
+            currentLevelSize = (std::size_t)std::ceil((float)currentLevelSize / blockSize);
+            --currentLevel;
+        }
+        oLevelSize = currentLevelSize;
+
+        oLevelBlockCount = (std::size_t)std::ceil((float)oLevelSize / blockSize);
+
+        PG3_ASSERT_INTEGER_LARGER_THAN(oLevelSize, 0);
+        PG3_ASSERT_INTEGER_LARGER_THAN(oLevelBlockCount, 0);
+    }
+
+    bool BuildHierachy(const float * const aFunc, std::size_t aFullSegmCount)
+    {
+        const auto levelCount = ComputeLevelsCount(aFullSegmCount);
+        if (levelCount == 0)
+            return false;
+
+        // Allocate all levels
+        mCdfLevels.resize(levelCount);
+        for (std::size_t level = levelCount - 1u; level < levelCount/*unsigned counter!*/; --level)
+        {
+            std::size_t levelSize, levelBlockCount;
+            ComputeLevelCounts(levelSize, levelBlockCount, level, aFullSegmCount);
+            if (!mCdfLevels[level].Alloc(levelSize, levelBlockCount))
+                return false;
+        }
+
+        PG3_ASSERT(mCdfLevels.back().count == (aFullSegmCount + 1));
+
+        // Compute last level
+        auto &lastLevel = mCdfLevels.back();
+        ComputeCdf(lastLevel.cdf, aFunc, lastLevel.count);
+
+        // Build hierarchy
+        for (auto level = levelCount - 1u; level > 0u; --level)
+        {
+            auto &currentLevel = mCdfLevels[level];
+            auto &higherLevel  = mCdfLevels[level - 1];
+
+            PG3_ASSERT(higherLevel.count == currentLevel.blockCount);
+
+            for (std::size_t block = 0u; block < currentLevel.blockCount; ++block)
+            {
+                auto blockBegin = currentLevel.GetBlockBegin(block);
+                auto blockEnd   = currentLevel.GetBlockEnd(block);
+
+                PG3_ASSERT(blockBegin != blockEnd); blockBegin; // empty block
+
+                auto lastBlockValue = blockEnd - 1;
+                higherLevel.cdf[block] = *lastBlockValue;
+            }
+        }
+
+        return true;
     }
 
     bool IsInitialized() const
@@ -200,53 +287,60 @@ public:
     }
 
     PG3_PROFILING_NOINLINE
-    void SampleContinuous(const float aRndSample, float &oX, uint32_t &oSegm, float &oPdf) const 
+    void SampleContinuous(const float aRndSample, float &oX, std::size_t &oSegm, float &oPdf) const 
     {
-        // Find surrounding CDF segments and _offset_
-        float *ptr = std::upper_bound(mCdf, mCdf+mCount+1, aRndSample);
-        oSegm = Math::Clamp(uint32_t(ptr-mCdf-1), 0u, mCount - 1u);
+        PG3_ASSERT(!IsInitialized());
 
-        PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mCount - 1);
-        PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
+        //// Find surrounding CDF segments and _offset_
+        //float *ptr = std::upper_bound(mCdf, mCdf+mSegmCount+1, aRndSample);
+        //oSegm = Math::Clamp(std::size_t(ptr-mCdf-1), 0u, mSegmCount - 1u);
 
-        // Fix the case when func ends with zeros
-        if (mCdf[oSegm] == mCdf[oSegm + 1])
-        {
-            PG3_ASSERT(aRndSample == 1.0f);
+        //PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mSegmCount - 1);
+        //PG3_ASSERT(aRndSample >= mCdf[oSegm] && (aRndSample < mCdf[oSegm+1] || aRndSample == 1.0f));
 
-            do { 
-                oSegm--; 
-            } while (mCdf[oSegm] == mCdf[oSegm + 1] && oSegm > 0);
+        //// Fix the case when func ends with zeros
+        //if (mCdf[oSegm] == mCdf[oSegm + 1])
+        //{
+        //    PG3_ASSERT(aRndSample == 1.0f);
 
-            PG3_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
-        }
+        //    do { 
+        //        oSegm--; 
+        //    } while (mCdf[oSegm] == mCdf[oSegm + 1] && oSegm > 0);
 
-        // Compute offset within CDF segment
-        const float segmProbability = mCdf[oSegm + 1] - mCdf[oSegm];
-        const float offset = (aRndSample - mCdf[oSegm]) / segmProbability;
-        PG3_ASSERT_FLOAT_VALID(offset);
-        PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
+        //    PG3_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
+        //}
 
-        // since the float random generator generates 1.0 from time to time, we need to ignore this one
-        //PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
+        //// Compute offset within CDF segment
+        //const float segmProbability = mCdf[oSegm + 1] - mCdf[oSegm];
+        //const float offset = (aRndSample - mCdf[oSegm]) / segmProbability;
+        //PG3_ASSERT_FLOAT_VALID(offset);
+        //PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
 
-        // Get the segment's constant PDF = P / Width
-        oPdf = segmProbability * mCount;
-        PG3_ASSERT(oPdf > 0.f);
+        //// since the float random generator generates 1.0 from time to time, we need to ignore this one
+        ////PG3_ASSERT_FLOAT_LESS_THAN(offset, 1.0f);
 
-        // Return $x\in{}[0,1]$
-        oX = (oSegm + offset) / mCount;
+        //// Get the segment's constant PDF = P / Width
+        //oPdf = segmProbability * mSegmCount;
+        //PG3_ASSERT(oPdf > 0.f);
+
+        //// Return $x\in{}[0,1]$
+        //oX = (oSegm + offset) / mSegmCount;
+
+
+        // debug
+        aRndSample, oX, oSegm, oPdf;
     }
 
-    float Pdf(const uint32_t aSegm) const
+    float Pdf(const std::size_t aSegm) const
     {
-        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCount - 1);
+        PG3_ASSERT(!IsInitialized());
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCdfLevels.back().count - 1);
 
-        //// Segment's constant PDF = P / Width
-        //const float segmProbability = mCdf[aSegm + 1] - mCdf[aSegm];
-        //return segmProbability * mCount;
+        auto &lastLevel = mCdfLevels.back();
 
-        return 0.f; aSegm; // debug
+        // Segment's constant PDF = P / Width
+        const float segmProbability = lastLevel.cdf[aSegm + 1] - lastLevel.cdf[aSegm];
+        return segmProbability * lastLevel.count;
     }
 
 private:
@@ -263,15 +357,43 @@ private:
 
         ~CdfLevel() { Free(); }
 
-        bool Alloc(const uint32_t aCount, const uint32_t aBlockCount, const std::size_t aAlignment)
+        static std::size_t GetBlockSize()
+        {
+            return Memory::kCacheLine / sizeof(float);
+        }
+
+        float* GetBlockBegin(std::size_t aBlockIdx)
+        {
+            PG3_ASSERT(cdf != nullptr);
+
+            const auto offset = aBlockIdx * GetBlockSize();
+
+            PG3_ASSERT(offset < count);
+
+            return cdf + offset;
+        }
+
+        float* GetBlockEnd(std::size_t aBlockIdx)
+        {
+            PG3_ASSERT(cdf != nullptr);
+
+            const auto offset = (aBlockIdx + 1) * GetBlockSize();
+
+            return cdf + std::min(offset, count);
+        }
+
+        bool Alloc(
+            const std::size_t aSize,
+            const std::size_t aBlockCount)
         {
             Free();
 
-            cdf = static_cast<float*>(Memory::AlignedMalloc(aAlignment, sizeof(float) * aCount));
+            cdf = static_cast<float*>(
+                Memory::AlignedMalloc(GetBlockSize(), sizeof(float) * aSize, true));
             if (cdf == nullptr)
                 return false;
 
-            count      = aCount;
+            count      = aSize;
             blockCount = aBlockCount;
             return true;
         }
@@ -279,24 +401,27 @@ private:
         void Free()
         {
             Memory::AlignedFree(cdf);
+            cdf = nullptr;
+            count = 0;
+            blockCount = 0;
         }
 
-        float      *cdf;
-        uint32_t    count;
-        uint32_t    blockCount;
+        float       *cdf;
+        std::size_t  count;
+        std::size_t  blockCount;
     };
 
 private:
 
     friend class Distribution2D;
 
-    // deprecated!!!
-    float           *mCdf;
-    const uint32_t   mCount;
-
-    std::vector<float>  mCdfLevels;
-    float               mFuncIntegral;
+    std::vector<CdfLevel>   mCdfLevels; // Last level is the full one
+    float                   mFuncIntegral;
 };
+
+// Debug
+//typedef Distribution1DSimple Distribution1D;
+typedef Distribution1DHierachical Distribution1D;
 
 class Distribution2D
 {
@@ -326,12 +451,14 @@ public:
 
     void SampleContinuous(const Vec2f &rndSamples, Vec2f &oUV, Vec2ui &oSegm, float *oPdf) const
     {
-        float margPdf;
-        float condPdf;
+        float margPdf, condPdf;
+        std::size_t segmX, segmY;
 
-        mMarginal->SampleContinuous(rndSamples.x, oUV.y, oSegm.y, margPdf);
-        mConditionalV[oSegm.y]->SampleContinuous(rndSamples.y, oUV.x, oSegm.x, condPdf);
+        mMarginal->SampleContinuous(rndSamples.x, oUV.y, segmY, margPdf);
+        mConditionalV[oSegm.y]->SampleContinuous(rndSamples.y, oUV.x, segmX, condPdf);
 
+        oSegm.x = (uint32_t)segmX;
+        oSegm.y = (uint32_t)segmY;
         if (oPdf != nullptr)
             *oPdf = margPdf * condPdf;
     }
@@ -339,10 +466,10 @@ public:
     float Pdf(const Vec2f &aUV) const
     {
         // Find u and v segments
-        uint32_t iu = 
-            Math::Clamp((uint32_t)(aUV.x * mConditionalV[0]->mCount), 0u, mConditionalV[0]->mCount - 1);
-        uint32_t iv = 
-            Math::Clamp((uint32_t)(aUV.y * mMarginal->mCount), 0u, mMarginal->mCount - 1);
+        std::size_t iu = Math::Clamp<std::size_t>(
+            (std::size_t)(aUV.x * mConditionalV[0]->SegmCount()), 0u, mConditionalV[0]->SegmCount() - 1);
+        std::size_t iv = Math::Clamp<std::size_t>(
+            (std::size_t)(aUV.y * mMarginal->SegmCount()), 0u, mMarginal->SegmCount() - 1);
 
         // Compute probabilities
         return mConditionalV[iv]->Pdf(iu) * mMarginal->Pdf(iv);
