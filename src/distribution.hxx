@@ -44,6 +44,7 @@ protected:
     // Function does not have to be normalized
     static void ComputeCdf(
         float           *const oCdf,  // 0..count
+        float           &oFuncIntegral,
         const float     *const aFunc, // 0..count-1
         std::size_t      const aSegmCount)
     {
@@ -55,22 +56,20 @@ protected:
         for (std::size_t i = 1; i < aSegmCount + 1; ++i)
         {
             PG3_ASSERT_FLOAT_NONNEGATIVE(aFunc[i - 1]);
+
             oCdf[i] = oCdf[i - 1] + aFunc[i - 1] / aSegmCount; // 1/aSegmCount = size of a segment
         }
 
         // Transform step function integral into CDF
-        const auto funcIntegral = oCdf[aSegmCount];
-        if (funcIntegral == 0.f)
-        {
+        oFuncIntegral = oCdf[aSegmCount];
+        if (oFuncIntegral == 0.f)
             // The function is zero; use uniform PDF as a fallback
             for (std::size_t i = 1; i < aSegmCount + 1; ++i)
                 oCdf[i] = (float)i / aSegmCount;
-        }
         else
-        {
             for (std::size_t i = 1; i < aSegmCount + 1; ++i)
-                oCdf[i] /= funcIntegral;
-        }
+                oCdf[i] /= oFuncIntegral;
+
         PG3_ASSERT_FLOAT_EQUAL(oCdf[aSegmCount], 1.0f, 1e-7F);
     }
 };
@@ -94,10 +93,7 @@ public:
 
         mCdf = new float[mSegmCount+1];
         if (mCdf != nullptr)
-        {
-            ComputeCdf(mCdf, aFunc, mSegmCount);
-            mFuncIntegral = mCdf[mSegmCount];
-        }
+            ComputeCdf(mCdf, mFuncIntegral, aFunc, mSegmCount);
     }
 
     ~Distribution1DSimple()
@@ -210,8 +206,7 @@ public:
     {
         PG3_ASSERT(!IsInitialized());
 
-        auto &fullLevel = mCdfLevels.back();
-        return fullLevel.cdf[fullLevel.count - 1u];
+        return mFuncIntegral;
     }
 
     static std::size_t ComputeLevelsCount(std::size_t aFullSegmCount)
@@ -275,7 +270,7 @@ public:
 
         // Compute last level
         auto &lastLevel = mCdfLevels.back();
-        ComputeCdf(lastLevel.cdf, aFunc, aFullSegmCount);
+        ComputeCdf(lastLevel.cdf, mFuncIntegral, aFunc, aFullSegmCount);
 
         // Build hierarchy
         for (auto level = levelCount - 1u; level > 0u; --level)
@@ -461,6 +456,7 @@ private:
     friend class Distribution2D;
 
     std::vector<CdfLevel>   mCdfLevels; // The last level is the full one
+    float                   mFuncIntegral;
 };
 
 // Debug
