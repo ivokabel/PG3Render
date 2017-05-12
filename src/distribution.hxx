@@ -114,28 +114,20 @@ public:
     PG3_PROFILING_NOINLINE
     void SampleContinuous(const float aUniSample, float &oX, std::size_t &oSegm, float &oPdf) const 
     {
+        const float uniSampleTrim = aUniSample * 0.999999f/*solves the zero ending problem*/;
+
         // Find surrounding CDF segment
-        float *itSegm = std::upper_bound(mCdf, mCdf+mSegmCount+1, aUniSample);
+        float *itSegm = std::upper_bound(mCdf, mCdf + mSegmCount + 1, uniSampleTrim);
         oSegm = Math::Clamp<std::size_t>(itSegm - mCdf - 1, 0u, mSegmCount - 1u);
 
         PG3_ASSERT_INTEGER_IN_RANGE(oSegm, 0, mSegmCount - 1);
-        PG3_ASSERT(aUniSample >= mCdf[oSegm] && (aUniSample < mCdf[oSegm+1] || aUniSample == 1.0f));
-
-        // Fix the case when func ends with zeros
-        if (mCdf[oSegm] == mCdf[oSegm + 1])
-        {
-            PG3_ASSERT(aUniSample == 1.0f);
-
-            do { 
-                oSegm--; 
-            } while (mCdf[oSegm] == mCdf[oSegm + 1] && oSegm > 0);
-
-            PG3_ASSERT(mCdf[oSegm] != mCdf[oSegm + 1]);
-        }
+        PG3_ASSERT(
+               uniSampleTrim >= mCdf[oSegm]
+            && uniSampleTrim <  mCdf[oSegm + 1]);
 
         // Compute offset within CDF segment
         const float segmProbability = mCdf[oSegm + 1] - mCdf[oSegm];
-        const float offset = (aUniSample - mCdf[oSegm]) / segmProbability;
+        const float offset = (uniSampleTrim - mCdf[oSegm]) / segmProbability;
 
         PG3_ASSERT_FLOAT_VALID(offset);
         PG3_ASSERT_FLOAT_IN_RANGE(offset, 0.0f, 1.0f);
