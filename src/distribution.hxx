@@ -308,7 +308,7 @@ public:
         PG3_ASSERT(!IsInitialized());
         PG3_ASSERT_FLOAT_IN_RANGE(aUniSample, 0.f, 1.f);
 
-        const float uniSampleTrim = aUniSample * 0.999999f /*solves the zero ending problem*/;
+        const float uniSampleTrim = aUniSample * 0.999999f/*solves the zero ending problem*/;
 
         // Find surrounding CDF segment using the CDF hierarchy
         std::size_t segPos = 0u;
