@@ -454,8 +454,8 @@ private:
 };
 
 // Debug
-typedef Distribution1DSimple Distribution1D;
-//typedef Distribution1DHierachical Distribution1D;
+//typedef Distribution1DSimple Distribution1D;
+typedef Distribution1DHierachical Distribution1D;
 
 class Distribution2D
 {
