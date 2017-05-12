@@ -102,6 +102,7 @@
       </StructMemberAlignment>
       <EnableEnhancedInstructionSet>
       </EnableEnhancedInstructionSet>
+      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -121,6 +122,7 @@
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StructMemberAlignment>
       </StructMemberAlignment>
+      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,6 +149,7 @@
       </StructMemberAlignment>
       <EnableEnhancedInstructionSet>
       </EnableEnhancedInstructionSet>
+      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -173,6 +176,7 @@
       <StructMemberAlignment>
       </StructMemberAlignment>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
+      <DisableSpecificWarnings>4505</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
