@@ -367,11 +367,12 @@ public:
         PG3_ASSERT(!IsInitialized());
         PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCdfLevels.back().count - 1);
 
-        auto &lastLevel = mCdfLevels.back();
+        const auto &lastLevel = mCdfLevels.back();
+        const auto segmCount = lastLevel.count - 1u;
 
         // Segment's constant PDF = P / Width
         const float segmProbability = lastLevel.cdf[aSegm + 1] - lastLevel.cdf[aSegm];
-        return segmProbability * lastLevel.count;
+        return segmProbability * segmCount;
     }
 
 private:
