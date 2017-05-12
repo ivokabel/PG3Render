@@ -4,19 +4,27 @@
 
 #include <cstdlib>
 
+#ifdef _MSC_VER 
+#include <malloc.h>
+#endif
+
 namespace Memory
 {
     static const std::size_t kCacheLine = 64u;
 
-    void* AlignedMalloc(std::size_t aAlignment, std::size_t aSize, bool aZeroMemory)
+    void* AlignedMalloc(std::size_t aSize, std::size_t aAlignment, bool aZeroMemory)
     {
-        // TODO: Aligned allocation: platform-dependent
-        aAlignment; // unused so far
-        void * result = std::malloc(aSize);
+        // Platform-dependent aligned allocation
+        // TODO: In C++17 use std::aligned_alloc()
+        void * result =
+#ifdef _MSC_VER 
+        _aligned_malloc(aSize, aAlignment);
+#else 
+        #error Aligned memory allocator is not implemented!
+        std::malloc(aSize);
+#endif
         if (result == nullptr)
             return nullptr;
-
-        // TODO: Later C++17 std::aligned_alloc()
 
         if (aZeroMemory)
             std::memset(result, 0, aSize);
@@ -26,6 +34,11 @@ namespace Memory
     
     void AlignedFree(void* aData)
     {
+#ifdef _MSC_VER 
+        _aligned_free(aData);
+#else 
+        #error Aligned memory allocator is not implemented!
         std::free(aData);
+#endif
     }
 }
