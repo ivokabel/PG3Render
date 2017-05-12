@@ -389,6 +389,7 @@ private:
 
         ~CdfLevel() { Free(); }
 
+        // Maximum number of elements in a block
         static std::size_t GetBlockSize()
         {
             return Memory::kCacheLine / sizeof(float);
@@ -422,7 +423,7 @@ private:
             Free();
 
             cdf = static_cast<float*>(
-                Memory::AlignedMalloc(GetBlockSize(), sizeof(float) * aSize, true));
+                Memory::AlignedMalloc(sizeof(float) * aSize, Memory::kCacheLine, true));
             if (cdf == nullptr)
                 return false;
 
