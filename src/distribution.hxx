@@ -473,23 +473,23 @@ public:
 
     Distribution2D(const float *aFunc, int32_t sCountU, int32_t sCountV)
     {
-        mConditionalV.reserve(sCountV);
+        mConditionals.reserve(sCountV);
         for (int32_t v = 0; v < sCountV; ++v) 
-            // Compute conditional sampling distribution for $\tilde{v}$
-            mConditionalV.push_back(new Distribution1D(&aFunc[v*sCountU], sCountU));
+            // Compute conditional sampling distributions for $\tilde{v}$
+            mConditionals.push_back(new Distribution1D(&aFunc[v*sCountU], sCountU));
 
         // Compute marginal sampling distribution $p[\tilde{v}]$
         std::vector<float> marginalFunc;
         marginalFunc.reserve(sCountV);
         for (int32_t v = 0; v < sCountV; ++v)
-            marginalFunc.push_back(mConditionalV[v]->FuncIntegral());
+            marginalFunc.push_back(mConditionals[v]->FuncIntegral());
         mMarginal = new Distribution1D(&marginalFunc[0], sCountV);
     }
 
     ~Distribution2D()
     {
         delete mMarginal;
-        for (auto& conditional : mConditionalV)
+        for (auto& conditional : mConditionals)
             delete conditional;
     }
 
@@ -499,10 +499,11 @@ public:
         std::size_t segmX, segmY;
 
         mMarginal->SampleContinuous(rndSamples.x, oUV.y, segmY, margPdf);
-        mConditionalV[segmY]->SampleContinuous(rndSamples.y, oUV.x, segmX, condPdf);
+        mConditionals[segmY]->SampleContinuous(rndSamples.y, oUV.x, segmX, condPdf);
 
         oSegm.x = (uint32_t)segmX;
         oSegm.y = (uint32_t)segmY;
+
         if (oPdf != nullptr)
             *oPdf = margPdf * condPdf;
     }
@@ -511,16 +512,16 @@ public:
     {
         // Find u and v segments
         std::size_t iu = Math::Clamp<std::size_t>(
-            (std::size_t)(aUV.x * mConditionalV[0]->SegmCount()), 0u, mConditionalV[0]->SegmCount() - 1);
+            (std::size_t)(aUV.x * mConditionals[0]->SegmCount()), 0u, mConditionals[0]->SegmCount() - 1);
         std::size_t iv = Math::Clamp<std::size_t>(
             (std::size_t)(aUV.y * mMarginal->SegmCount()), 0u, mMarginal->SegmCount() - 1);
 
         // Compute probabilities
-        return mConditionalV[iv]->Pdf(iu) * mMarginal->Pdf(iv);
+        return mConditionals[iv]->Pdf(iu) * mMarginal->Pdf(iv);
     }
 
 private:
 
-    std::vector<Distribution1D*>     mConditionalV;
+    std::vector<Distribution1D*>     mConditionals;
     Distribution1D                  *mMarginal;
 };
