@@ -475,9 +475,11 @@ private:
     float                   mFuncIntegral;
 };
 
-// Debug
-//typedef Distribution1DSimple Distribution1D;
+#ifndef PG3_USE_HIERARCHICAL_1D_DISTRIBUTION
+typedef Distribution1DSimple Distribution1D;
+#else
 typedef Distribution1DHierachical Distribution1D;
+#endif
 
 class Distribution2D
 {
