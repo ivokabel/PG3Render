@@ -4554,8 +4554,7 @@ public:
 
         // Max depth
         const auto logn = // log_children(size)
-              std::log((float)initialListSize)
-            / std::log((float)MAX_TRIANGLE_SET_CHILDREN);
+            Math::LogN((float)MAX_TRIANGLE_SET_CHILDREN, (float)initialListSize);
         const auto expectedMaxDepth =
             (initialListSize == 0) ? 0 : static_cast<uint32_t>(std::ceil(logn)) + 1u;
         if (maxDepth != expectedMaxDepth)

@@ -100,6 +100,21 @@ namespace Math
         return a*a;
     }
 
+    template <
+        typename T,
+        typename = typename
+            std::enable_if<
+                   std::is_same<double, T>::value
+                || std::is_same<float,  T>::value
+                >::type
+        >
+    inline T LogN(const T& aBase, const T& aParam)
+    {
+        return
+              std::log(aParam)
+            / std::log(aBase);
+    }
+
     template<typename T>
     T SafeSqrt(const T& a)
     {

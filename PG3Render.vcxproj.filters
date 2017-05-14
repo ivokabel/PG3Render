@@ -134,6 +134,9 @@
     <ClInclude Include="src\aux_dbg_params.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\memory.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\full_test.sh">

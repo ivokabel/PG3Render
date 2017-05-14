@@ -891,7 +891,7 @@ public:
             break;
 
         case kEMImgDebugSinglePixel:
-            oName = "debug, single pixel, 18x6";
+            oName = "debug, single pixel, 16x8";
             break;
 
         case kEMImgPisa:
