@@ -182,7 +182,7 @@ public:
 
     ~Distribution1DHierachical() {}
 
-    static std::size_t GetCdfSize(std::size_t aSegmCount)
+    static std::size_t GetFullCdfSize(std::size_t aSegmCount)
     {
         return aSegmCount + 1u;
     }
@@ -191,7 +191,7 @@ public:
     {
         PG3_ASSERT(!IsInitialized());
 
-        return mCdfLevels.back().count - 1u;
+        return mCdfLevels.back().valuesCount - 1u;
     }
 
     float FuncIntegral() const
@@ -201,45 +201,136 @@ public:
         return mFuncIntegral;
     }
 
+private:
+
+    class CdfLevel
+    {
+    public:
+
+        CdfLevel() :
+            cdf(nullptr),
+            valuesCount(0),
+            blockCount(0)
+        {}
+
+        ~CdfLevel() { Free(); }
+
+        // Maximum number of elements in a block
+        static std::size_t GetBlockMaxCount()
+        {
+            return Memory::kCacheLine / sizeof(float);
+        }
+
+        const float* GetLevelBegin() const
+        {
+            PG3_ASSERT(cdf != nullptr);
+
+            return cdf;
+        }
+
+        void GetBlockBeginEnd(
+            std::size_t      aBlockIdx,
+            const float*    &oBegin,
+            const float*    &oEnd) const
+        {
+            PG3_ASSERT(cdf != nullptr);
+            PG3_ASSERT_INTEGER_LESS_THAN(aBlockIdx, blockCount);
+
+            const auto blockMaxCount = CdfLevel::GetBlockMaxCount();
+
+            oBegin = cdf + aBlockIdx * blockMaxCount;
+            oEnd = oBegin + blockMaxCount; // blocks are guaranteed to be full
+        }
+
+        bool Alloc(const std::size_t aValuesCount)
+        {
+            Free();
+
+            const auto blockMaxCount = CdfLevel::GetBlockMaxCount();
+
+            const auto tmpBlockCount = (std::size_t)std::ceil((float)aValuesCount / blockMaxCount);
+            const auto tmpAllocatedCount = tmpBlockCount * blockMaxCount;
+
+            PG3_ASSERT_INTEGER_LARGER_THAN_OR_EQUAL_TO(tmpAllocatedCount, aValuesCount);
+
+            cdf = static_cast<float*>(
+                Memory::AlignedMalloc(sizeof(float) * tmpAllocatedCount, Memory::kCacheLine, true));
+            if (cdf == nullptr)
+                return false;
+
+            valuesCount = aValuesCount;
+            allocatedCount = tmpAllocatedCount;
+            blockCount = tmpBlockCount;
+
+            return true;
+        }
+
+        void Free()
+        {
+            Memory::AlignedFree(cdf);
+            cdf = nullptr;
+            valuesCount = 0u;
+            allocatedCount = 0u;
+            blockCount = 0u;
+        }
+
+        // Some levels can be finished with incomplete blocks.
+        // Extend the values with the last value (presumably 1.0).
+        // This helps avoiding clamping values when computing the "end" iterator
+        void FillLastIncompleteBlock()
+        {
+            const auto lastVal = cdf[valuesCount - 1];
+            for (auto idx = valuesCount; idx < allocatedCount; ++idx)
+                cdf[idx] = lastVal;
+
+            PG3_ASSERT_FLOAT_EQUAL(lastVal, 1.f, 0.f);
+        }
+
+    public:
+
+        float       *cdf;
+        std::size_t  valuesCount;
+        std::size_t  allocatedCount;
+        std::size_t  blockCount;
+    };
+
+private:
+
     static std::size_t ComputeLevelsCount(std::size_t aFullSegmCount)
     {
-        const auto fullCdfSize = GetCdfSize(aFullSegmCount);
-        const auto blockSize   = CdfLevel::GetBlockSize();
+        const auto fullCdfSize      = GetFullCdfSize(aFullSegmCount);
+        const auto blockMaxCount    = CdfLevel::GetBlockMaxCount();
 
-        if ((fullCdfSize == 0u) || (blockSize == 0u))
+        if ((fullCdfSize == 0u) || (blockMaxCount == 0u))
             return 0u;
         
-        const auto logn = Math::LogN((float)blockSize, (float)fullCdfSize);
+        const auto logn = Math::LogN((float)blockMaxCount, (float)fullCdfSize);
         const auto levelCount = static_cast<std::size_t>(std::ceil(logn));
 
         return levelCount;
     }
 
-    static void ComputeLevelCounts(
-        std::size_t         &oLevelSize,
-        std::size_t         &oLevelBlockCount,
+    static std::size_t ComputeLevelValuesCount(
         const std::size_t    aLevel,
         const std::size_t    aFullSegmCount)
     {
         PG3_ASSERT_INTEGER_LARGER_THAN(aFullSegmCount, 0);
 
-        const auto levelCount  = ComputeLevelsCount(aFullSegmCount);
-        const auto fullCdfSize = GetCdfSize(aFullSegmCount);
-        const auto blockSize   = CdfLevel::GetBlockSize();
+        const auto levelCount       = ComputeLevelsCount(aFullSegmCount);
+        const auto fullCdfSize      = GetFullCdfSize(aFullSegmCount);
+        const auto blockMaxCount    = CdfLevel::GetBlockMaxCount();
 
-        auto currentLevel     = levelCount - 1u;
-        auto currentLevelSize = fullCdfSize;
+        auto currentLevel       = levelCount - 1u;
+        auto currentValuesCount = fullCdfSize;
         while (currentLevel > aLevel)
         {
-            currentLevelSize = (std::size_t)std::ceil((float)currentLevelSize / blockSize);
+            currentValuesCount = (std::size_t)std::ceil((float)currentValuesCount / blockMaxCount);
             --currentLevel;
         }
-        oLevelSize = currentLevelSize;
 
-        oLevelBlockCount = (std::size_t)std::ceil((float)oLevelSize / blockSize);
+        PG3_ASSERT_INTEGER_LARGER_THAN(currentValuesCount, 0);
 
-        PG3_ASSERT_INTEGER_LARGER_THAN(oLevelSize, 0);
-        PG3_ASSERT_INTEGER_LARGER_THAN(oLevelBlockCount, 0);
+        return currentValuesCount;
     }
 
     bool BuildHierachy(const float * const aFunc, std::size_t aFullSegmCount)
@@ -252,17 +343,17 @@ public:
         mCdfLevels.resize(levelCount);
         for (std::size_t level = levelCount - 1u; level < levelCount/*unsigned counter!*/; --level)
         {
-            std::size_t levelSize, levelBlockCount;
-            ComputeLevelCounts(levelSize, levelBlockCount, level, aFullSegmCount);
-            if (!mCdfLevels[level].Alloc(levelSize, levelBlockCount))
+            const std::size_t valuesCount = ComputeLevelValuesCount(level, aFullSegmCount);
+            if (!mCdfLevels[level].Alloc(valuesCount))
                 return false;
         }
 
-        PG3_ASSERT(mCdfLevels.back().count == (aFullSegmCount + 1));
+        PG3_ASSERT(mCdfLevels.back().valuesCount == (aFullSegmCount + 1));
 
         // Compute last level
         auto &lastLevel = mCdfLevels.back();
         ComputeCdf(lastLevel.cdf, mFuncIntegral, aFunc, aFullSegmCount);
+        lastLevel.FillLastIncompleteBlock();
 
         // Build hierarchy
         for (auto level = levelCount - 1u; level > 0u; --level)
@@ -270,18 +361,20 @@ public:
             auto &currentLevel = mCdfLevels[level];
             auto &higherLevel  = mCdfLevels[level - 1];
 
-            PG3_ASSERT(higherLevel.count == currentLevel.blockCount);
+            PG3_ASSERT(higherLevel.valuesCount == currentLevel.blockCount);
 
             for (std::size_t block = 0u; block < currentLevel.blockCount; ++block)
             {
-                auto blockBegin = currentLevel.GetBlockBegin(block);
-                auto blockEnd   = currentLevel.GetBlockEnd(block);
+                const float *blockBegin, *blockEnd;
+                currentLevel.GetBlockBeginEnd(block, blockBegin, blockEnd);
 
                 PG3_ASSERT(blockBegin < blockEnd); blockBegin; // empty block
 
                 auto lastBlockValue = blockEnd - 1;
                 higherLevel.cdf[block] = *lastBlockValue;
             }
+
+            higherLevel.FillLastIncompleteBlock();
         }
 
         PG3_ASSERT(mCdfLevels[0u].blockCount == 1u);
@@ -308,18 +401,17 @@ public:
         for (std::size_t levelIdx = 0u, block = 0u; levelIdx < levelsCount; ++levelIdx)
         {
             auto &currentLevel = mCdfLevels[levelIdx];
-            auto levelBegin = currentLevel.GetBlockBegin(0u);
-            auto blockBegin = currentLevel.GetBlockBegin(block);
-            auto blockEnd   = currentLevel.GetBlockEnd(block);
+            const float *levelBegin = currentLevel.GetLevelBegin();
+            const float *blockBegin, *blockEnd;
+            currentLevel.GetBlockBeginEnd(block, blockBegin, blockEnd);
 
             PG3_ASSERT(block < currentLevel.blockCount);
 
             const auto itSegm = std::upper_bound(blockBegin, blockEnd, uniSampleTrim);
             
-            //segPos = std::min<std::size_t>(itSegm - levelBegin, currentLevel.count - 1u);
             segPos = itSegm - levelBegin;
 
-            PG3_ASSERT(segPos < currentLevel.count);
+            PG3_ASSERT(segPos < currentLevel.valuesCount);
 
             auto nextBlock = segPos;
 
@@ -329,9 +421,9 @@ public:
         }
 
         PG3_ASSERT(segPos > 0u);
-        PG3_ASSERT(segPos < mCdfLevels.back().count);
+        PG3_ASSERT(segPos < mCdfLevels.back().valuesCount);
 
-        //oSegm = Math::Clamp<std::size_t>(segPos - 1u, 0u, mCdfLevels.back().count - 1u);
+        //oSegm = Math::Clamp<std::size_t>(segPos - 1u, 0u, mCdfLevels.back().valuesCount - 1u);
         oSegm = segPos - 1u; // Full CDF is shifted by 1 (starts with 0)
 
         PG3_ASSERT(
@@ -339,7 +431,7 @@ public:
             && uniSampleTrim <  mCdfLevels.back().cdf[oSegm + 1]);
 
         auto fullCdf   = mCdfLevels.back().cdf;
-        auto segmCount = mCdfLevels.back().count - 1u;
+        auto segmCount = mCdfLevels.back().valuesCount - 1u;
 
         // Compute offset within CDF segment
         const float segmProbability = fullCdf[oSegm + 1] - fullCdf[oSegm];
@@ -365,87 +457,15 @@ public:
     float Pdf(const std::size_t aSegm) const
     {
         PG3_ASSERT(!IsInitialized());
-        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCdfLevels.back().count - 1);
+        PG3_ASSERT_INTEGER_IN_RANGE(aSegm, 0, mCdfLevels.back().valuesCount - 1);
 
         const auto &lastLevel = mCdfLevels.back();
-        const auto segmCount = lastLevel.count - 1u;
+        const auto segmCount = lastLevel.valuesCount - 1u;
 
         // Segment's constant PDF = P / Width
         const float segmProbability = lastLevel.cdf[aSegm + 1] - lastLevel.cdf[aSegm];
         return segmProbability * segmCount;
     }
-
-private:
-
-    class CdfLevel
-    {
-    public:
-
-        CdfLevel() :
-            cdf(nullptr),
-            count(0),
-            blockCount(0)
-        {}
-
-        ~CdfLevel() { Free(); }
-
-        // Maximum number of elements in a block
-        static std::size_t GetBlockSize()
-        {
-            return Memory::kCacheLine / sizeof(float);
-        }
-
-        const float* GetBlockBegin(std::size_t aBlockIdx) const
-        {
-            PG3_ASSERT(cdf != nullptr);
-
-            const auto offset = aBlockIdx * GetBlockSize();
-
-            PG3_ASSERT(offset < count);
-
-            return cdf + offset;
-        }
-
-        const float* GetBlockEnd(std::size_t aBlockIdx) const
-        {
-            PG3_ASSERT(cdf != nullptr);
-
-            auto offset = (aBlockIdx + 1) * GetBlockSize();
-            offset = std::min(offset, count);
-
-            return cdf + offset;
-        }
-
-        bool Alloc(
-            const std::size_t aSize,
-            const std::size_t aBlockCount)
-        {
-            Free();
-
-            cdf = static_cast<float*>(
-                Memory::AlignedMalloc(sizeof(float) * aSize, Memory::kCacheLine, true));
-            if (cdf == nullptr)
-                return false;
-
-            count      = aSize;
-            blockCount = aBlockCount;
-            return true;
-        }
-
-        void Free()
-        {
-            Memory::AlignedFree(cdf);
-            cdf = nullptr;
-            count = 0;
-            blockCount = 0;
-        }
-
-    public:
-
-        float       *cdf;
-        std::size_t  count;
-        std::size_t  blockCount;
-    };
 
 private:
 
