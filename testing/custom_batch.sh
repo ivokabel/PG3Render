@@ -44,6 +44,14 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+render -s 7 -em 10 -a pt -i 32
+render -s 7 -em 10 -a pt -i 32
+render -s 7 -em 10 -a pt -i 32
+
+render -s 7 -em 11 -a pt -i 32
+render -s 7 -em 11 -a pt -i 32
+render -s 7 -em 11 -a pt -i 32
+
 ### Diff tool comparison modes
 
 #IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images\\steer_sampl_tuning"
