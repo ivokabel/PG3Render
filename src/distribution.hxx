@@ -440,6 +440,8 @@ private:
             blockCount = 0;
         }
 
+    public:
+
         float       *cdf;
         std::size_t  count;
         std::size_t  blockCount;
