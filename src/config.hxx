@@ -2,7 +2,7 @@
 
 #include "math.hxx"
 #include "ray.hxx"
-#include "geometry.hxx"
+#include "scene_graph.hxx"
 #include "camera.hxx"
 #include "frame_buffer.hxx"
 #include "scene.hxx"

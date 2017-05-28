@@ -35,9 +35,6 @@
     <ClInclude Include="src\config.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry.hxx">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\lights.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -135,6 +132,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\memory.hxx">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scene_graph.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

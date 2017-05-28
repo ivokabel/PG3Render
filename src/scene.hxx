@@ -2,7 +2,7 @@
 
 #include "math.hxx"
 #include "spectrum.hxx"
-#include "geometry.hxx"
+#include "scene_graph.hxx"
 #include "camera.hxx"
 #include "materials.hxx"
 #include "lights.hxx"
