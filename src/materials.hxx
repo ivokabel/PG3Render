@@ -8,6 +8,8 @@
 #include "rng.hxx"
 #include "types.hxx"
 
+#include <memory>
+
 #define MAT_BLOCKER_EPSILON    1e-5
 
 // Various material IoRs and absorbances at roughly 590 nm
@@ -1045,5 +1047,104 @@ protected:
     float           mEta;               // inner IOR / outer IOR
     float           mEtaInv;            // outer IOR / inner IOR
     float           mRoughnessAlpha;    // GGX isotropic roughness
+};
+
+class WeidlichWilkie2LayeredMaterial : public AbstractMaterial
+{
+public:
+
+    WeidlichWilkie2LayeredMaterial(
+        AbstractMaterial    *aOuterLayerMaterial,
+        AbstractMaterial    *aInnerLayerMaterial
+        ) :
+        AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling)), // TODO
+        mOuterLayerMaterial(aOuterLayerMaterial),
+        mInnerLayerMaterial(aInnerLayerMaterial)
+    {}
+
+    virtual SpectrumF EvalBsdf(
+        const Vec3f& aWil,
+        const Vec3f& aWol
+        ) const override
+    {
+        aWil, aWol; //dbg
+        return SpectrumF();
+    }
+
+    virtual void EvalBsdf(
+        Rng             &aRng,
+        MaterialRecord  &oMatRecord
+        ) const override
+    {
+        aRng, oMatRecord; //unused parameter
+    }
+
+    // Generates a random BSDF sample.
+    virtual void SampleBsdf(
+        Rng             &aRng,
+        MaterialRecord  &oMatRecord
+        ) const override
+    {
+        aRng, oMatRecord; //debug
+        //GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProbability, ctx);
+    }
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        aWol; // unreferenced param
+        return 1.0f;
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        return false; // debug
+    }
+
+protected:
+
+
+    //void GetWholeFiniteCompProbabilities(
+    //          float         &oWholeFinCompPdfW,
+    //          float         &oWholeFinCompProbability,
+    //    const EvalContext   &aCtx
+    //    ) const
+    //{
+    //    oWholeFinCompProbability = 1.0f;
+    //
+    //    if (aCtx.wolSwitched.z < 0.f)
+    //    {
+    //        oWholeFinCompPdfW = 0.0f;
+    //        return;
+    //    }
+    //
+    //    const float visNormalsPdf =
+    //        Microfacet::GgxSamplingPdfVisibleNormals(
+    //            aCtx.wolSwitched, aCtx.microfacetDirSwitched, aCtx.distrVal, mRoughnessAlpha);
+    //
+    //    float transfJacobian;
+    //    if (aCtx.isReflection)
+    //        transfJacobian = Microfacet::ReflectionJacobian(
+    //            aCtx.wilSwitched, aCtx.microfacetDirSwitched);
+    //    else
+    //        transfJacobian = Microfacet::RefractionJacobian(
+    //            aCtx.wolSwitched, aCtx.wilSwitched, aCtx.microfacetDirSwitched, aCtx.etaInvSwitched);
+    //
+    //    const float compProbability =
+    //        aCtx.isReflection ? aCtx.fresnelReflectance : (1.0f - aCtx.fresnelReflectance);
+    //
+    //    oWholeFinCompPdfW = visNormalsPdf * transfJacobian * compProbability;
+    //
+    //    PG3_ASSERT_FLOAT_NONNEGATIVE(oWholeFinCompPdfW);
+    //}
+
+protected:
+
+    std::unique_ptr<AbstractMaterial>   mOuterLayerMaterial;
+    std::unique_ptr<AbstractMaterial>   mInnerLayerMaterial;
+    // TODO: attenuation of the material material between the two interfaces
 };
 
