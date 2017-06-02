@@ -146,6 +146,87 @@ protected:
     MaterialProperties  mProperties;
 };
 
+class LambertMaterial : public AbstractMaterial
+{
+public:
+    LambertMaterial() :
+        AbstractMaterial(kBsdfFrontSideLightSampling)
+    {
+        mReflectance.SetGreyAttenuation(0.0f);
+    }
+
+    LambertMaterial(
+        const SpectrumF &aDiffuseReflectance) :
+        AbstractMaterial(kBsdfFrontSideLightSampling)
+    {
+        mReflectance = aDiffuseReflectance;
+    }
+
+    virtual SpectrumF EvalBsdf(
+        const Vec3f& aWil,
+        const Vec3f& aWol
+        ) const override
+    {
+        if (aWil.z <= 0.f || aWol.z <= 0.f)
+            return SpectrumF().MakeZero();
+
+        return mReflectance / Math::kPiF; // TODO: Pre-compute?
+    }
+
+    virtual void EvalBsdf(
+        Rng             &aRng,
+        MaterialRecord  &oMatRecord
+        ) const override
+    {
+        aRng; //unused parameter
+
+        oMatRecord.mAttenuation     = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+        oMatRecord.mPdfW            = GetPdfW(oMatRecord.mWol, oMatRecord.mWil);
+        oMatRecord.mCompProbability = 1.f;
+    }
+
+    virtual void SampleBsdf(
+        Rng             &aRng,
+        MaterialRecord  &oMatRecord
+        ) const override
+    {
+        oMatRecord.mWil             = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
+        oMatRecord.mAttenuation     = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+        oMatRecord.mCompProbability = 1.f;
+    }
+
+    float GetPdfW(
+        const Vec3f &aWol,
+        const Vec3f &aWil
+        ) const
+    {
+        aWol; // unused param
+
+        return Sampling::CosHemispherePdfW(aWil);
+    }
+
+    // Computes the probability of surviving for Russian roulette in path tracer
+    // based on the material reflectance.
+    virtual float GetRRContinuationProb(
+        const Vec3f &aWol
+        ) const override
+    {
+        aWol; // unused param
+
+        return Math::Clamp(mReflectance.Luminance(), 0.f, 1.f);
+    }
+
+    virtual bool IsReflectanceZero() const override
+    {
+        return mReflectance.IsZero();
+    }
+
+protected:
+
+    SpectrumF mReflectance;
+};
+
+
 class PhongMaterial : public AbstractMaterial
 {
 public:
@@ -402,6 +483,7 @@ protected:
     float       mPhongExponent;
 };
 
+
 class AbstractSmoothMaterial : public AbstractMaterial
 {
 protected:
@@ -457,6 +539,7 @@ protected:
         oWholeFinCompProbability = 0.0f;
     }
 };
+
 
 class SmoothConductorMaterial : public AbstractSmoothMaterial
 {
@@ -515,6 +598,7 @@ protected:
     float mEta;         // inner IOR / outer IOR
     float mAbsorbance;  // k, the imaginary part of the complex index of refraction
 };
+
 
 class SmoothDielectricMaterial : public AbstractSmoothMaterial
 {
@@ -582,6 +666,7 @@ public:
 protected:
     float mEta;         // inner IOR / outer IOR
 };
+
 
 class MicrofacetGGXConductorMaterial : public AbstractMaterial
 {
@@ -771,6 +856,7 @@ protected:
     float           mAbsorbance;        // k, the imaginary part of the complex index of refraction
     float           mRoughnessAlpha;    // GGX isotropic roughness
 };
+
 
 class MicrofacetGGXDielectricMaterial : public AbstractMaterial
 {
@@ -1048,6 +1134,7 @@ protected:
     float           mEtaInv;            // outer IOR / inner IOR
     float           mRoughnessAlpha;    // GGX isotropic roughness
 };
+
 
 class WeidlichWilkie2LayeredMaterial : public AbstractMaterial
 {
