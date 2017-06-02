@@ -395,7 +395,7 @@ public:
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             MaterialRecord matRecord(wil, aWol);
             aSurfMaterial.EvalBsdf(aRng, matRecord);
-            const float bsdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProbability;
+            const float bsdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProb;
             const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
 
             oLightBuffer +=
@@ -455,7 +455,7 @@ public:
         if (aMatRecord.mPdfW != Math::InfinityF())
         {
             // Finite BSDF: Compute two-step MIS MC estimator. 
-            const float bsdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProbability;
+            const float bsdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProb;
             const float misWeight =
                 MISWeight2(
                     bsdfPdfW, aBrdfSamplesCount,
@@ -473,8 +473,8 @@ public:
             oLightBuffer +=
                   (   aMatRecord.mAttenuation
                     * LiLight)
-                / (   static_cast<float>(aBrdfSamplesCount)     // Splitting
-                    * aMatRecord.mCompProbability);             // Discrete multi-component MC
+                / (   static_cast<float>(aBrdfSamplesCount) // Splitting
+                    * aMatRecord.mCompProb);                // Discrete multi-component MC
         }
 
         PG3_ASSERT_VEC3F_NONNEGATIVE(oLightBuffer);

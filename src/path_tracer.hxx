@@ -132,13 +132,13 @@ protected:
                     (matRecord.mPdfW != Math::InfinityF()) ?
                         (  matRecord.mAttenuation
                             * matRecord.ThetaInCosAbs())
-                        / (  matRecord.mPdfW                // Monte Carlo est.
-                            * rrContinuationProb            // Russian roulette (optional)
-                            * matRecord.mCompProbability)   // Discrete multi-component MC
+                        / (  matRecord.mPdfW        // Monte Carlo est.
+                            * rrContinuationProb    // Russian roulette (optional)
+                            * matRecord.mCompProb)  // Discrete multi-component MC
                     :
                         matRecord.mAttenuation
-                        / (  rrContinuationProb             // Russian roulette (optional)
-                            * matRecord.mCompProbability);  // Discrete multi-component MC
+                        / (  rrContinuationProb     // Russian roulette (optional)
+                            * matRecord.mCompProb); // Discrete multi-component MC
                 pathThroughput *= segmentThroughput;
 
                 PG3_ASSERT_VEC3F_NONNEGATIVE(pathThroughput);
@@ -347,7 +347,7 @@ protected:
                         PG3_ASSERT(bsdfLightPdfW != Math::InfinityF()); // BSDF sampling should never hit a point light
 
                         const float lightPdfW = bsdfLightPdfW * bsdfLightPickingProb;
-                        const float bsdfPdfW  = matRecord.mPdfW * matRecord.mCompProbability;
+                        const float bsdfPdfW  = matRecord.mPdfW * matRecord.mCompProb;
                         oReflectedRadianceEstimate +=
                               (   matRecord.mAttenuation
                                 * matRecord.ThetaInCosAbs()
@@ -362,7 +362,7 @@ protected:
                               (   matRecord.mAttenuation
                                 * bsdfEmmittedRadiance)
                             / (   static_cast<float>(bsdfSamplesCount)  // Splitting
-                                * matRecord.mCompProbability);          // Discrete multi-component MC
+                                * matRecord.mCompProb);                 // Discrete multi-component MC
                     }
 
                     PG3_ASSERT_VEC3F_NONNEGATIVE(oReflectedRadianceEstimate);
@@ -379,10 +379,10 @@ protected:
                               (   matRecord.mAttenuation
                                 * matRecord.ThetaInCosAbs()
                                 * bsdfReflectedRadianceEstimate)
-                            / (   matRecord.mPdfW               // MC
-                                * bsdfSamplesCount              // Splitting
-                                * rrContinuationProb            // Russian roulette
-                                * matRecord.mCompProbability);  // Discrete multi-component MC
+                            / (   matRecord.mPdfW       // MC
+                                * bsdfSamplesCount      // Splitting
+                                * rrContinuationProb    // Russian roulette
+                                * matRecord.mCompProb); // Discrete multi-component MC
                     }
                     else
                     {
@@ -390,9 +390,9 @@ protected:
                         indirectRadianceEstimate =
                               (   matRecord.mAttenuation
                                 * bsdfReflectedRadianceEstimate)
-                            / (   bsdfSamplesCount              // Splitting
-                                * rrContinuationProb            // Russian roulette
-                                * matRecord.mCompProbability);  // Discrete multi-component MC
+                            / (   bsdfSamplesCount      // Splitting
+                                * rrContinuationProb    // Russian roulette
+                                * matRecord.mCompProb); // Discrete multi-component MC
                     }
 
                     PG3_ASSERT_VEC3F_NONNEGATIVE(indirectRadianceEstimate);

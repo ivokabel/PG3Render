@@ -84,14 +84,14 @@ public:
                               (   matRecord.mAttenuation
                                 * matRecord.ThetaInCosAbs()
                                 * LiLight)
-                            / (   matRecord.mPdfW               // Monte Carlo est.
-                                * matRecord.mCompProbability);  // Discrete multi-component MC
+                            / (   matRecord.mPdfW       // Monte Carlo est.
+                                * matRecord.mCompProb); // Discrete multi-component MC
                     else
                         // Dirac BSDF: compute the integral analytically
                         LoDirect =
                               (   matRecord.mAttenuation
                                 * LiLight)
-                            / matRecord.mCompProbability;      // Discrete multi-component MC
+                            / matRecord.mCompProb;  // Discrete multi-component MC
 
                     PG3_ASSERT_VEC3F_NONNEGATIVE(LoDirect);
                 }

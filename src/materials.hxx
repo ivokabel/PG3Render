@@ -99,7 +99,7 @@ public:
     //
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
-    float       mCompProbability;
+    float       mCompProb;
 };
 
 class AbstractMaterial
@@ -180,9 +180,9 @@ public:
     {
         aRng; //unused parameter
 
-        oMatRecord.mAttenuation     = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        oMatRecord.mPdfW            = GetPdfW(oMatRecord.mWol, oMatRecord.mWil);
-        oMatRecord.mCompProbability = 1.f;
+        oMatRecord.mAttenuation = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+        oMatRecord.mPdfW        = GetPdfW(oMatRecord.mWol, oMatRecord.mWil);
+        oMatRecord.mCompProb    = 1.f;
     }
 
     virtual void SampleBsdf(
@@ -190,9 +190,9 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        oMatRecord.mWil             = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
-        oMatRecord.mAttenuation     = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        oMatRecord.mCompProbability = 1.f;
+        oMatRecord.mWil         = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
+        oMatRecord.mAttenuation = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+        oMatRecord.mCompProb    = 1.f;
     }
 
     float GetPdfW(
@@ -310,7 +310,7 @@ public:
 
         GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW,
-            oMatRecord.mCompProbability,
+            oMatRecord.mCompProb,
             oMatRecord.mWol,
             oMatRecord.mWil);
     }
@@ -337,8 +337,8 @@ public:
         {
             // Diffuse fallback for blocker materials
             oMatRecord.mAttenuation.MakeZero();
-            oMatRecord.mWil = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
-            oMatRecord.mCompProbability = 1.f;
+            oMatRecord.mWil      = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
+            oMatRecord.mCompProb = 1.f;
             return;
         }
 
@@ -368,7 +368,7 @@ public:
             oMatRecord.mWil = lobeFrame.ToWorld(canonicalSample);
         }
 
-        oMatRecord.mCompProbability = 1.f;
+        oMatRecord.mCompProb = 1.f;
 
         // Get whole PDF value
         oMatRecord.mPdfW =
@@ -518,7 +518,7 @@ public:
 
         GetWholeFiniteCompProbabilities(
             oMatRecord.mPdfW,
-            oMatRecord.mCompProbability,
+            oMatRecord.mCompProb,
             oMatRecord.mWol,
             oMatRecord.mWil);
     }
@@ -563,9 +563,9 @@ public:
     {
         aRng; // unreferenced params
 
-        oMatRecord.mWil             = Geom::ReflectLocal(oMatRecord.mWol);
-        oMatRecord.mPdfW            = Math::InfinityF();
-        oMatRecord.mCompProbability = 1.f;
+        oMatRecord.mWil         = Geom::ReflectLocal(oMatRecord.mWol);
+        oMatRecord.mPdfW        = Math::InfinityF();
+        oMatRecord.mCompProb    = 1.f;
 
         // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
@@ -642,8 +642,8 @@ public:
             // TODO: Radiance (de)compression?
         }
 
-        oMatRecord.mCompProbability = attenuation;
-        oMatRecord.mPdfW            = Math::InfinityF();
+        oMatRecord.mCompProb    = attenuation;
+        oMatRecord.mPdfW        = Math::InfinityF();
         oMatRecord.mAttenuation.SetGreyAttenuation(attenuation);
     }
 
@@ -711,7 +711,7 @@ public:
         InitEvalContextFromInOut(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
         oMatRecord.mAttenuation = EvalBsdf(ctx);
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProbability, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
     }
 
     // Generates a random BSDF sample.
@@ -736,7 +736,7 @@ public:
         const float cosThetaOM = Dot(ctx.microfacetDir, ctx.wol);
         ctx.fresnelReflectance = Utils::Fresnel::Conductor(cosThetaOM, mEta, mAbsorbance);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProbability, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
@@ -913,7 +913,7 @@ public:
         InitEvalContextFromInOut(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
         oMatRecord.mAttenuation = EvalBsdf(ctx);
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProbability, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
     }
 
     // Generates a random BSDF sample.
@@ -962,7 +962,7 @@ public:
         // Switch up-down back if necessary
         oMatRecord.mWil = ctx.wilSwitched * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProbability, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
@@ -1173,7 +1173,7 @@ public:
         ) const override
     {
         aRng, oMatRecord; //debug
-        //GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProbability, ctx);
+        //GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
