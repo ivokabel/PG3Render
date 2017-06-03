@@ -1157,8 +1157,8 @@ public:
 
     WeidlichWilkie2LayeredMaterial(
         AbstractMaterial    *aOuterLayerMaterial,
-        AbstractMaterial    *aInnerLayerMaterial
-        ) :
+        AbstractMaterial    *aInnerLayerMaterial)
+        :
         AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling)), // TODO
         mOuterLayerMaterial(aOuterLayerMaterial),
         mInnerLayerMaterial(aInnerLayerMaterial)
