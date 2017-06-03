@@ -129,7 +129,7 @@ public:
         k2Spheres                           = 0x00000010,
         k1Sphere                            = 0x00000020,   // large sphere in the middle
         kVerticalRectangle                  = 0x00000040,   // large vertical rectangle in the front
-        kDiagonalRectangles                 = 0x00000080,   // rectangle from front floort edge to back ceiling edge
+        kDiagonalRectangles                 = 0x00000080,   // rectangle from front floor edge to back ceiling edge
         kWalls                              = 0x00000100,
         kFloor                              = 0x00000200,
         kAllGeometry                        = 0x00000ff0,
