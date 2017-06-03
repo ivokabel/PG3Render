@@ -201,9 +201,9 @@ public:
         SpectrumF diffuseReflectance, glossyReflectance;
 
         // 0) light1, will only emit
-        mMaterials.push_back(new PhongMaterial());
+        mMaterials.push_back(new LambertMaterial());
         // 1) light2, will only emit
-        mMaterials.push_back(new PhongMaterial());
+        mMaterials.push_back(new LambertMaterial());
 
         // 2) white floor (and possibly the ceiling)
         diffuseReflectance.SetSRGBAttenuation(0.803922f, 0.803922f, 0.803922f);
