@@ -155,8 +155,7 @@ public:
         mReflectance.SetGreyAttenuation(0.0f);
     }
 
-    LambertMaterial(
-        const SpectrumF &aDiffuseReflectance) :
+    LambertMaterial(const SpectrumF &aDiffuseReflectance) :
         AbstractMaterial(kBsdfFrontSideLightSampling)
     {
         mReflectance = aDiffuseReflectance;
@@ -213,7 +212,23 @@ public:
     {
         aWol; // unused param
 
-        return Math::Clamp(mReflectance.Luminance(), 0.f, 1.f);
+        // For conversion from spectral to scalar form we combine two strategies:
+        //      maximum component value and weighted "luminance".
+        // The "luminance" strategy minimizes noise in colour 
+        // channels which human eye is most sensitive to; however, it doesn't work well for paths
+        // which mainly contribute with less important channels (e.g. blue in sRGB). 
+        // In such cases, the paths can have very small probability of survival even if they 
+        // transfer the less important channels with no attenuation which leads to blue or,
+        // less often, red fireflies. Maximum channel strategy removes those fireflies completely,
+        // but tends to prefer less important channels too much and doesn't cut paths 
+        // with blocking combinations of attenuations like (1,0,0)*(0,1,0).
+        // It seems that a combination of both works pretty well.
+        static const float blendCoeff = 0.15f;
+        const float probability =
+              blendCoeff         * mReflectance.Luminance()
+            + (1.f - blendCoeff) * mReflectance.Max();
+
+        return Math::Clamp(probability, 0.f, 1.f);
     }
 
     virtual bool IsReflectanceZero() const override
@@ -423,7 +438,7 @@ public:
         const Vec3f &aWol
         ) const override
     {
-        // For conversion to scalar form we combine two strategies:
+        // For conversion from spectral to scalar form we combine two strategies:
         //      maximum component value and weighted "luminance".
         // The "luminance" strategy minimizes noise in colour 
         // channels which human eye is most sensitive to; however, it doesn't work well for paths
@@ -434,7 +449,7 @@ public:
         // but tends to prefer less important channels too much and doesn't cut paths 
         // with blocking combinations of attenuations like (1,0,0)*(0,1,0).
         // It seems that a combination of both works pretty well.
-        const float blendCoeff = 0.15f;
+        static const float blendCoeff = 0.15f;
         const float diffuseReflectanceEst =
               blendCoeff         * mDiffuseReflectance.Luminance()
             + (1.f - blendCoeff) * mDiffuseReflectance.Max();
