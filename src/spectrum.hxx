@@ -18,32 +18,36 @@ public:
     SRGBSpectrumBase(const Vec3Base<T> &aVec) : Vec3Base<T>(aVec) {};
 
     // Sets as light quantity which is grey in sRGB colourspace
-    void SetSRGBGreyLight(T a)
+    SRGBSpectrumBase& SetSRGBGreyLight(T a)
     {
         x = y = z = a;
+        return *this;
     };
 
     // Sets as light quantity in sRGB colourspace coordinates
-    void SetSRGBLight(T r, T g, T b)
+    SRGBSpectrumBase& SetSRGBLight(T r, T g, T b)
     {
         x = r;
         y = g;
         z = b;
+        return *this;
     };
 
     // Sets as attenuation quantity which is neutral - doesn't change the colour of incident light
-    void SetGreyAttenuation(T a)
+    SRGBSpectrumBase& SetGreyAttenuation(T a)
     {
         x = y = z = a;
+        return *this;
     };
 
     // Sets as attenuation quantity which will transform white sRGB incident light to light 
     // with specified sRGB colour coordinates.
-    void SetSRGBAttenuation(T r, T g, T b)
+    SRGBSpectrumBase& SetSRGBAttenuation(T r, T g, T b)
     {
         x = r;
         y = g;
         z = b;
+        return *this;
     };
 
     // Converts the internal representation to SRGBSpectrumBase.
