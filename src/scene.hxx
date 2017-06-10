@@ -143,8 +143,9 @@ public:
         kSpheresFresnelDielectric           = 0x00020000,
         kSpheresMicrofacetGGXConductor      = 0x00040000,
         kSpheresMicrofacetGGXDielectric     = 0x00080000,
-        kVertRectFresnelDielectric          = 0x00100000,
-        kVertRectMicrofacetGGXDielectric    = 0x00200000,
+        kSpheresWeidlichWilkieLayers        = 0x00100000,
+        kVertRectFresnelDielectric          = 0x00200000,
+        kVertRectMicrofacetGGXDielectric    = 0x00400000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
@@ -319,6 +320,16 @@ public:
             const float roughness =
                 (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
+        }
+        else if (Utils::IsMasked(aBoxMask, kSpheresWeidlichWilkieLayers))
+        {
+            //mMaterials.push_back(new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.390f, 0.144f)));
+            //mMaterials.push_back(new MicrofacetGGXDielectricMaterial(0.2f, SpectralData::kGlassCorningIor, SpectralData::kAirIor));
+
+            mMaterials.push_back(
+                new WeidlichWilkie2LayeredMaterial(
+                    new MicrofacetGGXDielectricMaterial(0.2f, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
+                    new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.390f, 0.144f))));
         }
         else
         {
@@ -1119,6 +1130,12 @@ public:
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "sph. microfacet ggx dielectric";
             acronym += "Smgd";
+        }
+        else if (Utils::IsMasked(aBoxMask, kSpheresWeidlichWilkieLayers))
+        {
+            MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "sph. layers a la Weidlich&Wilkie";
+            acronym += "Slww";
         }
 
         if (Utils::IsMasked(aBoxMask, kWallsPhongDiffuse) ||

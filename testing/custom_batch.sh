@@ -158,8 +158,8 @@ render -s 7 -em 11 -a pt -i 32
 #done
 
 #for PL in `echo 1 2 3 4 5 6`; do
-#    render -s 28 -em 3 -a ptn       -i 2 -minpl $PL -maxpl $PL -ot $OT
-#    render -s 28 -em 3 -a pt -sb 1  -i 1 -minpl $PL -maxpl $PL -ot $OT
+#    render -s 29 -em 3 -a ptn       -i 2 -minpl $PL -maxpl $PL -ot $OT
+#    render -s 29 -em 3 -a pt -sb 1  -i 1 -minpl $PL -maxpl $PL -ot $OT
 #done
 
 

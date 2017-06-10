@@ -80,7 +80,7 @@ const Scene::BoxMask g_SceneConfigs[] =
     Scene::BoxMask(Scene::kLightCeiling | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightBox     | GEOM_FULL_BOX    | Scene::kSpheresFresnelConductor | Scene::kWallsPhongDiffuse | Scene::kWallsPhongGlossy),
 
-    // Material testing, 1 sphere: 20-26
+    // Material testing, 1 sphere: 20-27
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse),
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongGlossy),
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresPhongDiffuse | Scene::kSpheresPhongGlossy),
@@ -88,14 +88,15 @@ const Scene::BoxMask g_SceneConfigs[] =
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelDielectric),
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXConductor),
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXDielectric),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresWeidlichWilkieLayers),
 
-    // Material testing, rectangles: 27-28
+    // Material testing, rectangles: 28-29
     Scene::BoxMask(Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric),
     Scene::BoxMask(Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectMicrofacetGGXDielectric),
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Box with sphere: 29-36
+    // Box with sphere: 30-37
     Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelConductor         | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresFresnelDielectric        | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightBox     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXConductor   | Scene::kWallsPhongDiffuse),
