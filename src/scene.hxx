@@ -323,13 +323,10 @@ public:
         }
         else if (Utils::IsMasked(aBoxMask, kSpheresWeidlichWilkieLayers))
         {
-            //mMaterials.push_back(new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.390f, 0.144f)));
-            //mMaterials.push_back(new MicrofacetGGXDielectricMaterial(0.2f, SpectralData::kGlassCorningIor, SpectralData::kAirIor));
-
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
                     new MicrofacetGGXDielectricMaterial(0.2f, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
-                    new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.390f, 0.144f))));
+                    new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f))));
         }
         else
         {

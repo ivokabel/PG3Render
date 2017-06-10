@@ -1162,14 +1162,31 @@ public:
         AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling)), // TODO
         mOuterLayerMaterial(aOuterLayerMaterial),
         mInnerLayerMaterial(aInnerLayerMaterial)
-    {}
+    {
+        PG3_ASSERT(mOuterLayerMaterial.get() != nullptr);
+        PG3_ASSERT(mInnerLayerMaterial.get() != nullptr);
+    }
 
     virtual SpectrumF EvalBsdf(
         const Vec3f& aWil,
         const Vec3f& aWol
         ) const override
     {
+        // debug
+        //return mOuterLayerMaterial->EvalBsdf(aWil, aWol);
+        //return mInnerLayerMaterial->EvalBsdf(aWil, aWol);
+
+
+
+
+        PG3_ERROR_NOT_IMPLEMENTED("");
+
         aWil, aWol; //dbg
+
+        // TODO: No transmission below horizon (both input and output)
+
+        // ...
+
         return SpectrumF();
     }
 
@@ -1179,6 +1196,8 @@ public:
         ) const override
     {
         aRng, oMatRecord; //unused parameter
+
+        PG3_ERROR_NOT_IMPLEMENTED("");
     }
 
     // Generates a random BSDF sample.
@@ -1189,6 +1208,8 @@ public:
     {
         aRng, oMatRecord; //debug
         //GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
+
+        PG3_ERROR_NOT_IMPLEMENTED("");
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -1198,11 +1219,16 @@ public:
         ) const override
     {
         aWol; // unreferenced param
+
+        PG3_ERROR_NOT_IMPLEMENTED("");
+
         return 1.0f;
     }
 
     virtual bool IsReflectanceZero() const override
     {
+        PG3_ERROR_NOT_IMPLEMENTED("");
+
         return false; // debug
     }
 
