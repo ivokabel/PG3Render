@@ -709,7 +709,7 @@ public:
         ) const override
     {
         EvalContext ctx;
-        InitEvalContextFromInOut(ctx, aWil, aWol);
+        InitEvalContext(ctx, aWil, aWol);
 
         SpectrumF bsdfVal = EvalBsdf(ctx);
         return bsdfVal;
@@ -723,7 +723,7 @@ public:
         aRng; //unused parameter
 
         EvalContext ctx;
-        InitEvalContextFromInOut(ctx, oMatRecord.mWil, oMatRecord.mWol);
+        InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
         oMatRecord.mAttenuation = EvalBsdf(ctx);
         GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
@@ -792,7 +792,7 @@ protected:
         float distrVal;
     };
 
-    void InitEvalContextFromInOut(
+    void InitEvalContext(
         EvalContext &oCtx,
         const Vec3f &aWil,
         const Vec3f &aWol
@@ -910,7 +910,7 @@ public:
         ) const override
     {
         EvalContext ctx;
-        InitEvalContextFromInOut(ctx, aWil, aWol);
+        InitEvalContext(ctx, aWil, aWol);
 
         SpectrumF bsdfVal = EvalBsdf(ctx);
 
@@ -925,7 +925,7 @@ public:
         aRng; //unused parameter
 
         EvalContext ctx;
-        InitEvalContextFromInOut(ctx, oMatRecord.mWil, oMatRecord.mWol);
+        InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
         oMatRecord.mAttenuation = EvalBsdf(ctx);
         GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
@@ -939,7 +939,7 @@ public:
     {
         EvalContext ctx;
 
-        // Warning: Partially replicated in InitEvalContextFromInOut()!
+        // Warning: Partially replicated in InitEvalContext()!
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
         ctx.isOutDirFromBelow   = (oMatRecord.mWol.z < 0.f);
@@ -1023,7 +1023,7 @@ protected:
         float distrVal;
     };
 
-    void InitEvalContextFromInOut(
+    void InitEvalContext(
         EvalContext &oCtx,
         const Vec3f &aWil,
         const Vec3f &aWol
