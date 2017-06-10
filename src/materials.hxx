@@ -1035,12 +1035,12 @@ protected:
         PG3_ASSERT_VEC3F_NORMALIZED(aWol);
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        oCtx.isOutDirFromBelow = (aWol.z < 0.f);
-        oCtx.isReflection = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
-        oCtx.wolSwitched = aWol * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
-        oCtx.wilSwitched = aWil * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
-        oCtx.etaSwitched = (oCtx.isOutDirFromBelow ? mEtaInv : mEta);
-        oCtx.etaInvSwitched = (oCtx.isOutDirFromBelow ? mEta : mEtaInv);
+        oCtx.isOutDirFromBelow  = (aWol.z < 0.f);
+        oCtx.isReflection       = (aWil.z > 0.f == aWol.z > 0.f); // on the same side of the surface
+        oCtx.wolSwitched        = aWol * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
+        oCtx.wilSwitched        = aWil * (oCtx.isOutDirFromBelow ? -1.0f : 1.0f);
+        oCtx.etaSwitched        = (oCtx.isOutDirFromBelow ? mEtaInv : mEta);
+        oCtx.etaInvSwitched     = (oCtx.isOutDirFromBelow ? mEta : mEtaInv);
 
         if (oCtx.isReflection)
             oCtx.microfacetDirSwitched =
@@ -1085,17 +1085,17 @@ protected:
         const float fresnelRefl = aCtx.fresnelReflectance;
         if (aCtx.isReflection)
             bsdfVal =
-            (fresnelRefl * geometricalFactor * aCtx.distrVal)
-            / (4.0f * cosThetaIAbs * cosThetaOAbs);
+                  (fresnelRefl * geometricalFactor * aCtx.distrVal)
+                / (4.0f * cosThetaIAbs * cosThetaOAbs);
         else
         {
             const float cosThetaMI = Dot(aCtx.microfacetDirSwitched, aCtx.wilSwitched);
             const float cosThetaMO = Dot(aCtx.microfacetDirSwitched, aCtx.wolSwitched);
             bsdfVal =
-                ((std::abs(cosThetaMI) * std::abs(cosThetaMO))
-                / (cosThetaIAbs * cosThetaOAbs))
-                * ((Math::Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
-                / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
+                  (   (std::abs(cosThetaMI) * std::abs(cosThetaMO))
+                    / (cosThetaIAbs * cosThetaOAbs))
+                * (   (Math::Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
+                    / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
             bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
