@@ -1232,16 +1232,15 @@ public:
         //return mOuterLayerMaterial->EvalBsdf(aWil, aWol);
         //return mInnerLayerMaterial->EvalBsdf(aWil, aWol);
 
+        // No transmission below horizon (both input and output)
+        if (aWil.z <= 0.f || aWol.z <= 0.f)
+            return SpectrumF().MakeZero();
 
-
-
-        PG3_ERROR_NOT_IMPLEMENTED("");
-
-        aWil, aWol; //dbg
-
-        // TODO: No transmission below horizon (both input and output)
-
-        // ...
+        // Outer layer
+        //MaterialRecord matRecord(aWil, aWol);
+        //matRecord.RequestOptData(MaterialRecord::kOptEta);
+        //matRecord.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        //mOuterLayerMaterial->EvalBsdf(aRng, matRecord);
 
         return SpectrumF();
     }
