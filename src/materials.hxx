@@ -1234,21 +1234,43 @@ public:
         const Vec3f& aWol
         ) const override
     {
-        // debug
-        //return mOuterLayerMaterial->EvalBsdf(aWil, aWol);
-        //return mInnerLayerMaterial->EvalBsdf(aWil, aWol);
-
         // No transmission below horizon (both input and output)
         if (aWil.z <= 0.f || aWol.z <= 0.f)
             return SpectrumF().MakeZero();
 
-        // Outer layer
-        //MaterialRecord matRecord(aWil, aWol);
-        //matRecord.RequestOptData(MaterialRecord::kOptEta);
-        //matRecord.RequestOptData(MaterialRecord::kOptHalfwayVec);
-        //mOuterLayerMaterial->EvalBsdf(aRng, matRecord);
+        // Evaluate outer layer reflection
+        // (and get some optional data)
+        MaterialRecord matRecOuterRefl(aWil, aWol);
+        matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
+        matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
 
-        return SpectrumF();
+        PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
+        PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
+
+        // Compute refraction directions through the current microfacet
+        Vec3f wilRefract;
+        bool dummy;
+        Geom::Refract(wilRefract, dummy, aWil, matRecOuterRefl.mOptHalfwayVec, matRecOuterRefl.mOptEta);
+        // TODO: Refraction of the outgoing direction
+
+        // Evaluate outer layer refractions
+        MaterialRecord matRecOuterRefrIn(aWil, wilRefract);
+        mOuterLayerMaterial->EvalBsdf(matRecOuterRefrIn);
+        // TODO: Refraction of the outgoing direction
+
+        // debug
+        return
+              matRecOuterRefrIn.mAttenuation
+            / Math::Sqr(matRecOuterRefl.mOptEta); // solid angle de-compression
+
+        // TODO: Volumetric attenuation
+
+        // TODO: Evaluate inner layer
+
+        // TODO: ...
+
+        //return SpectrumF();
     }
 
     virtual void EvalBsdf(
