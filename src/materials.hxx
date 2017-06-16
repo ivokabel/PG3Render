@@ -968,7 +968,9 @@ public:
         InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
         oMatRecord.mAttenuation = EvalBsdf(ctx);
+
         GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
+        GetOptionalData(oMatRecord, ctx);
     }
 
     // Generates a random BSDF sample.
@@ -1181,6 +1183,26 @@ protected:
         oWholeFinCompPdfW = visNormalsPdf * transfJacobian * compProbability;
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(oWholeFinCompPdfW);
+    }
+
+    void GetOptionalData(
+        MaterialRecord      &oMatRecord,
+        const EvalContext   &aCtx
+        ) const
+    {
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptEta))
+        {
+            oMatRecord.mOptEta = mEta;
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptEta);
+        }
+
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptHalfwayVec))
+        {
+            oMatRecord.mOptHalfwayVec =
+                  aCtx.microfacetDirSwitched
+                * (aCtx.isOutDirFromBelow ? -1.0f : 1.0f);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptHalfwayVec);
+        }
     }
 
 protected:
