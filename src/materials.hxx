@@ -1140,7 +1140,9 @@ protected:
                     / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
-            bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) compression
+            // TODO: Choose the correct direction!
+            //bsdfVal *= Math::Sqr(aCtx.etaSwitched);    // radiance (solid angle) (de-)compression
+              bsdfVal *= Math::Sqr(aCtx.etaInvSwitched); // radiance (solid angle) (de-)compression
         }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);
@@ -1248,25 +1250,42 @@ public:
         PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
         PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
+        //// debug
+        //return matRecOuterRefl.mAttenuation;
+
         // Compute refraction directions through the current microfacet
         Vec3f wilRefract;
+        Vec3f wolRefract;
         bool dummy;
         Geom::Refract(wilRefract, dummy, aWil, matRecOuterRefl.mOptHalfwayVec, matRecOuterRefl.mOptEta);
-        // TODO: Refraction of the outgoing direction
+        Geom::Refract(wolRefract, dummy, aWol, matRecOuterRefl.mOptHalfwayVec, matRecOuterRefl.mOptEta);
+
+        // TODO: Are the refracted directions always valid??
 
         // Evaluate outer layer refractions
         MaterialRecord matRecOuterRefrIn(aWil, wilRefract);
+        MaterialRecord matRecOuterRefrOut(wolRefract, aWol);
         mOuterLayerMaterial->EvalBsdf(matRecOuterRefrIn);
-        // TODO: Refraction of the outgoing direction
+        mOuterLayerMaterial->EvalBsdf(matRecOuterRefrOut);
 
         // debug
+        //return
+        //      matRecOuterRefrIn.mAttenuation
+        //    / Math::Sqr(matRecOuterRefl.mOptEta); // solid angle compression compensation
+        //return
+        //      matRecOuterRefrOut.mAttenuation
+        //    * Math::Sqr(matRecOuterRefl.mOptEta); // solid angle de-compression compensation
         return
               matRecOuterRefrIn.mAttenuation
-            / Math::Sqr(matRecOuterRefl.mOptEta); // solid angle de-compression
+            * matRecOuterRefrOut.mAttenuation;
 
         // TODO: Volumetric attenuation
 
         // TODO: Evaluate inner layer
+        ////MaterialRecord matRecOuterRefl(aWil, aWol);
+        ////matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
+        ////matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        //mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
 
         // TODO: ...
 
