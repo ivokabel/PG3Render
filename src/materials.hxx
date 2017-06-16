@@ -180,7 +180,6 @@ public:
 
     // Evaluates the BSDF and computes the probabilities needed for MIS computations
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const = 0;
 
@@ -229,12 +228,9 @@ public:
     }
 
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        aRng; //unused parameter
-
         oMatRecord.mAttenuation = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
         oMatRecord.mPdfW        = GetPdfW(oMatRecord.mWol, oMatRecord.mWil);
         oMatRecord.mCompProb    = 1.f;
@@ -371,12 +367,9 @@ public:
     }
 
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        aRng; //unused parameter
-
         oMatRecord.mAttenuation = PhongMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
 
         GetWholeFiniteCompProbabilities(
@@ -578,12 +571,9 @@ public:
     }
 
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        aRng; //unused parameter
-
         oMatRecord.mAttenuation =
             AbstractSmoothMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
 
@@ -772,12 +762,9 @@ public:
     }
 
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        aRng; //unused parameter
-
         EvalContext ctx;
         InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
@@ -974,12 +961,9 @@ public:
     }
 
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        aRng; //unused parameter
-
         EvalContext ctx;
         InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
 
@@ -1246,11 +1230,10 @@ public:
     }
 
     virtual void EvalBsdf(
-        Rng             &aRng,
         MaterialRecord  &oMatRecord
         ) const override
     {
-        aRng, oMatRecord; //unused parameter
+        oMatRecord; //unused parameter
 
         PG3_ERROR_NOT_IMPLEMENTED("");
     }

@@ -258,7 +258,7 @@ protected:
                     {
                         AddMISLightSampleContribution(
                             lightSample, lightSamplesCount, bsdfSamplesCount,
-                            surfPt, surfFrame, wol, mat, mRng,
+                            surfPt, surfFrame, wol, mat,
                             oReflectedRadianceEstimate);
                     }
                 }

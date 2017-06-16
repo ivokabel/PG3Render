@@ -352,7 +352,6 @@ public:
         const Frame             &aSurfFrame, 
         const Vec3f             &aWol,
         const AbstractMaterial  &aSurfMaterial,
-              Rng               &aRng,
               SpectrumF         &oLightBuffer)
     {
         if (aLightSample.mSample.Max() <= 0.)
@@ -394,7 +393,7 @@ public:
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             MaterialRecord matRecord(wil, aWol);
-            aSurfMaterial.EvalBsdf(aRng, matRecord);
+            aSurfMaterial.EvalBsdf(matRecord);
             const float bsdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProb;
             const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
 

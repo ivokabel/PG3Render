@@ -104,7 +104,7 @@ public:
                 LightSample lightSample;
                 if (SampleLightsSingle(surfPt, surfFrame, mat, lightSamplingCtx, lightSample))
                     AddMISLightSampleContribution(
-                        lightSample, 1, 1, surfPt, surfFrame, wol, mat, mRng,
+                        lightSample, 1, 1, surfPt, surfFrame, wol, mat,
                         LoDirect);
 
                 // Generate one sample by sampling the BSDF
