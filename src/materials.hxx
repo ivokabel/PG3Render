@@ -54,7 +54,7 @@ public:
     {}
 
     MaterialRecord(const Vec3f &aWol) :
-        MaterialRecord(aWol, Vec3f(0.0f))
+        MaterialRecord(Vec3f(0.0f), aWol)
     {}
 
     bool IsBlocker() const
@@ -132,7 +132,7 @@ public:
 
     bool AreOptDataRequested(OptDataType aTypeMask)
     {
-        return (OptDataType)(mRequestedOptDataMask | aTypeMask) == aTypeMask;
+        return (OptDataType)(mRequestedOptDataMask & aTypeMask) == aTypeMask;
     }
 
     void SetAreOptDataProvided(OptDataType aTypeMask)
@@ -142,7 +142,7 @@ public:
 
     bool AreOptDataProvided(OptDataType aTypeMask)
     {
-        return (OptDataType)(mProvidedOptDataMask | aTypeMask) == aTypeMask;
+        return (OptDataType)(mProvidedOptDataMask & aTypeMask) == aTypeMask;
     }
 
 public:
@@ -151,7 +151,7 @@ public:
 
     // Optional eta (relative index of refraction).
     // Valid only if AreOptDataProvided(kOptEta) is true.
-    double mOptEta;
+    float mOptEta;
 
     // Optional halfway vector (microfacet normal) for the given in-out directions.
     // Valid only if AreOptDataProvided(kOptHalfwayVec) is true.
