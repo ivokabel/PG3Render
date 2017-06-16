@@ -40,17 +40,22 @@ enum MaterialProperties
     kBsdfBackSideLightSampling      = 0x00000002,
 };
 
-// Structure that holds data for sampling & evaluation or just evaluation of materials.
+// Structure that holds data for evaluation and/or sampling of materials.
 // In the case involving sampling many of the members have slightly different meaning.
 class MaterialRecord
 {
 public:
 
-    MaterialRecord(const Vec3f &aWol) :
-        mWol(aWol), mWil(0.0f) {}
-
     MaterialRecord(const Vec3f &aWil, const Vec3f &aWol) :
-        mWol(aWol), mWil(aWil) {}
+        mWol(aWol),
+        mWil(aWil),
+        mRequestedOptDataMask(kOptNone),
+        mProvidedOptDataMask(kOptNone)
+    {}
+
+    MaterialRecord(const Vec3f &aWol) :
+        MaterialRecord(aWol, Vec3f(0.0f))
+    {}
 
     bool IsBlocker() const
     {
@@ -100,6 +105,57 @@ public:
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
     float       mCompProb;
+
+public:
+
+    // Optional data masks
+
+    enum OptDataType
+    {
+        kOptNone        = 0x0000,
+        kOptEta         = 0x0001,
+        kOptHalfwayVec  = 0x0002,
+        //kOptDummy     = 0x0004,
+    };
+
+private:
+
+    OptDataType mRequestedOptDataMask;
+    OptDataType mProvidedOptDataMask;
+
+public:
+
+    void RequestOptData(OptDataType aTypeMask)
+    {
+        mRequestedOptDataMask = (OptDataType)(mRequestedOptDataMask | aTypeMask);
+    }
+
+    bool AreOptDataRequested(OptDataType aTypeMask)
+    {
+        return (OptDataType)(mRequestedOptDataMask | aTypeMask) == aTypeMask;
+    }
+
+    void SetAreOptDataProvided(OptDataType aTypeMask)
+    {
+        mProvidedOptDataMask = (OptDataType)(mProvidedOptDataMask | aTypeMask);
+    }
+
+    bool AreOptDataProvided(OptDataType aTypeMask)
+    {
+        return (OptDataType)(mProvidedOptDataMask | aTypeMask) == aTypeMask;
+    }
+
+public:
+
+    // Optional data (tied with mRequestedOptDataMask and mProvidedOptDataMask)
+
+    // Optional eta (relative index of refraction).
+    // Valid only if AreOptDataProvided(kOptEta) is true.
+    double mOptEta;
+
+    // Optional halfway vector (microfacet normal) for the given in-out directions.
+    // Valid only if AreOptDataProvided(kOptHalfwayVec) is true.
+    Vec3f mOptHalfwayVec;
 };
 
 class AbstractMaterial
