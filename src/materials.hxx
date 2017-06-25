@@ -1124,10 +1124,10 @@ protected:
 
         // The whole BSDF
         float bsdfVal;
-        const float fresnelRefl = aCtx.fresnelReflectance;
+        const float fresnel = aCtx.fresnelReflectance;
         if (aCtx.isReflection)
             bsdfVal =
-                  (fresnelRefl * geometricalFactor * aCtx.distrVal)
+                  (fresnel * geometricalFactor * aCtx.distrVal)
                 / (4.0f * cosThetaIAbs * cosThetaOAbs);
         else
         {
@@ -1136,7 +1136,7 @@ protected:
             bsdfVal =
                   (   (std::abs(cosThetaMI) * std::abs(cosThetaMO))
                     / (cosThetaIAbs * cosThetaOAbs))
-                * (   (Math::Sqr(aCtx.etaInvSwitched) * (1.0f - fresnelRefl) * geometricalFactor * aCtx.distrVal)
+                * (   (Math::Sqr(aCtx.etaInvSwitched) * (1.0f - fresnel) * geometricalFactor * aCtx.distrVal)
                     / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
@@ -1244,52 +1244,55 @@ public:
         // (and get some optional data)
         MaterialRecord matRecOuterRefl(aWil, aWol);
         matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
-        matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        //matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
         mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
 
         PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
-        PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
+        //PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
-        //// debug
-        //return matRecOuterRefl.mAttenuation;
+        const float outerEta = matRecOuterRefl.mOptEta;
+        const SpectrumF outerMatAttenuation = matRecOuterRefl.mAttenuation;
 
-        // Compute refraction directions through the current microfacet
-        Vec3f wilRefract;
-        Vec3f wolRefract;
-        bool dummy;
-        Geom::Refract(wilRefract, dummy, aWil, matRecOuterRefl.mOptHalfwayVec, matRecOuterRefl.mOptEta);
-        Geom::Refract(wolRefract, dummy, aWol, matRecOuterRefl.mOptHalfwayVec, matRecOuterRefl.mOptEta);
-
+        //// Compute refraction directions through the current microfacet
+        //Vec3f wilRefract, wolRefract;
+        //bool dummy;
+        //Geom::Refract(wilRefract, dummy, aWil, matRecOuterRefl.mOptHalfwayVec, outerEta);
+        //Geom::Refract(wolRefract, dummy, aWol, matRecOuterRefl.mOptHalfwayVec, outerEta);
         // TODO: Are the refracted directions always valid??
 
-        // Evaluate outer layer refractions
-        MaterialRecord matRecOuterRefrIn(aWil, wilRefract);
-        MaterialRecord matRecOuterRefrOut(wolRefract, aWol);
-        mOuterLayerMaterial->EvalBsdf(matRecOuterRefrIn);
-        mOuterLayerMaterial->EvalBsdf(matRecOuterRefrOut);
+        // Compute refraction directions through the geometrical normal
+        Vec3f wilRefract, wolRefract;
+        bool dummy;
+        Geom::Refract(wilRefract, dummy, aWil, Vec3f(0.f, 0.f, 1.f), outerEta);
+        Geom::Refract(wolRefract, dummy, aWol, Vec3f(0.f, 0.f, 1.f), outerEta);
+
+        const float wilFresnelTrans = 1.f - Utils::Fresnel::Dielectric(aWil.z, outerEta);
+        const float wolFresnelTrans = 1.f - Utils::Fresnel::Dielectric(aWol.z, outerEta);
 
         // debug
-        //return
-        //      matRecOuterRefrIn.mAttenuation
-        //    / Math::Sqr(matRecOuterRefl.mOptEta); // solid angle compression compensation
-        //return
-        //      matRecOuterRefrOut.mAttenuation
-        //    * Math::Sqr(matRecOuterRefl.mOptEta); // solid angle de-compression compensation
-        return
-              matRecOuterRefrIn.mAttenuation
-            * matRecOuterRefrOut.mAttenuation;
+        //return SpectrumF(1 / Math::kPiF); // Lambert, based on aWil
+        //return SpectrumF(
+        //      wilFresnelTrans * wolFresnelTrans
+        //    * (-wilRefract.z / aWil.z)// Hack: cancel out aWil in the further processing and replace it with refracted in dir
+        //    / Math::kPiF);// Lambert
 
         // TODO: Volumetric attenuation
 
         // TODO: Evaluate inner layer
-        ////MaterialRecord matRecOuterRefl(aWil, aWol);
-        ////matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
-        ////matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
-        //mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
+        MaterialRecord matRecInner(-wilRefract, -wolRefract);
+        //matRecInner.RequestOptData(MaterialRecord::kOptEta);
+        //matRecInner.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        mInnerLayerMaterial->EvalBsdf(matRecInner);
 
-        // TODO: ...
+        // debug
+        const SpectrumF innerMatAttenuation =
+              matRecInner.mAttenuation
+            * (wilFresnelTrans * wolFresnelTrans)
+            * (-wilRefract.z / aWil.z);// Hack: cancel out aWil in the further processing and replace it with refracted in dir
 
-        //return SpectrumF();
+        //return outerMatAttenuation;
+        //return innerMatAttenuation;
+        return outerMatAttenuation + innerMatAttenuation;
     }
 
     virtual void EvalBsdf(

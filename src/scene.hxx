@@ -325,7 +325,8 @@ public:
         {
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
-                    new MicrofacetGGXDielectricMaterial(0.2f, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
+                    new MicrofacetGGXDielectricMaterial(0.05f, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
+                    //new MicrofacetGGXConductorMaterial(0.2f, SpectralData::kSilverIor, SpectralData::kAirIor, SpectralData::kSilverAbsorb)));
                     new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f))));
         }
         else
