@@ -44,13 +44,9 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-render -s 7 -em 10 -a pt -i 32
-render -s 7 -em 10 -a pt -i 32
-render -s 7 -em 10 -a pt -i 32
-
-render -s 7 -em 11 -a pt -i 32
-render -s 7 -em 11 -a pt -i 32
-render -s 7 -em 11 -a pt -i 32
+for EM in 1; do
+    render -s 27 -em $EM -a dlsa -i 10000 -ot RefractionGlobal_BothLayers_Outer005
+done
 
 ### Diff tool comparison modes
 

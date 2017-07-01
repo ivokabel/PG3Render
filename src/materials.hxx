@@ -595,7 +595,7 @@ protected:
     {
         aWil; aWol; // unreferenced params
 
-        // There is no finite component
+        // There is no finite (non-dirac) component
         oWholeFinCompPdfW        = 0.0f;
         oWholeFinCompProbability = 0.0f;
     }
@@ -1278,17 +1278,14 @@ public:
 
         // TODO: Volumetric attenuation
 
-        // TODO: Evaluate inner layer
+        // Evaluate inner layer
         MaterialRecord matRecInner(-wilRefract, -wolRefract);
-        //matRecInner.RequestOptData(MaterialRecord::kOptEta);
-        //matRecInner.RequestOptData(MaterialRecord::kOptHalfwayVec);
         mInnerLayerMaterial->EvalBsdf(matRecInner);
 
-        // debug
         const SpectrumF innerMatAttenuation =
               matRecInner.mAttenuation
             * (wilFresnelTrans * wolFresnelTrans)
-            * (-wilRefract.z / aWil.z);// Hack: cancel out aWil in the further processing and replace it with refracted in dir
+            * (-wilRefract.z / aWil.z); // Hack: cancel out aWil in the further processing and replace it with refracted in dir
 
         //return outerMatAttenuation;
         //return innerMatAttenuation;
