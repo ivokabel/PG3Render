@@ -49,8 +49,8 @@ public:
     MaterialRecord(const Vec3f &aWil, const Vec3f &aWol) :
         mWol(aWol),
         mWil(aWil),
-        mRequestedOptDataMask(kOptNone),
-        mProvidedOptDataMask(kOptNone)
+        mOptDataMaskRequested(kOptNone),
+        mOptDataMaskProvided(kOptNone)
     {}
 
     MaterialRecord(const Vec3f &aWol) :
@@ -120,37 +120,37 @@ public:
 
 private:
 
-    OptDataType mRequestedOptDataMask;
-    OptDataType mProvidedOptDataMask;
+    OptDataType mOptDataMaskRequested;
+    OptDataType mOptDataMaskProvided;
 
 public:
 
     void RequestOptData(OptDataType aTypeMask)
     {
-        mRequestedOptDataMask = (OptDataType)(mRequestedOptDataMask | aTypeMask);
+        mOptDataMaskRequested = (OptDataType)(mOptDataMaskRequested | aTypeMask);
     }
 
     bool AreOptDataRequested(OptDataType aTypeMask)
     {
-        return (OptDataType)(mRequestedOptDataMask & aTypeMask) == aTypeMask;
+        return (OptDataType)(mOptDataMaskRequested & aTypeMask) == aTypeMask;
     }
 
     void SetAreOptDataProvided(OptDataType aTypeMask)
     {
-        mProvidedOptDataMask = (OptDataType)(mProvidedOptDataMask | aTypeMask);
+        mOptDataMaskProvided = (OptDataType)(mOptDataMaskProvided | aTypeMask);
 
-        // Also clear the request to avoid unnecessary re-evaluation
-        mRequestedOptDataMask = (OptDataType)(mRequestedOptDataMask & ~aTypeMask);
+        // Clear the request to avoid unnecessary re-evaluation
+        mOptDataMaskRequested = (OptDataType)(mOptDataMaskRequested & ~aTypeMask);
     }
 
     bool AreOptDataProvided(OptDataType aTypeMask)
     {
-        return (OptDataType)(mProvidedOptDataMask & aTypeMask) == aTypeMask;
+        return (OptDataType)(mOptDataMaskProvided & aTypeMask) == aTypeMask;
     }
 
 public:
 
-    // Optional data (tied with mRequestedOptDataMask and mProvidedOptDataMask)
+    // Optional data (tied with mOptDataMaskRequested and mOptDataMaskProvided)
 
     // Optional eta (relative index of refraction).
     // Valid only if AreOptDataProvided(kOptEta) is true.
@@ -241,7 +241,7 @@ public:
         ) const override
     {
         oMatRecord.mAttenuation = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        oMatRecord.mPdfW        = GetPdfW(oMatRecord.mWol, oMatRecord.mWil);
+        oMatRecord.mPdfW        = GetPdfW(oMatRecord.mWil);
         oMatRecord.mCompProb    = 1.f;
     }
 
@@ -1280,8 +1280,10 @@ public:
         //Geom::Refract(wolRefract, dummy, wol, matRecOuterRefl.mOptHalfwayVec, outerEta);
         // TODO: Are refracted directions always valid??
 
-        const float wilFresnelTrans = 1.f - Utils::Fresnel::Dielectric(wil.z, outerEta);
-        const float wolFresnelTrans = 1.f - Utils::Fresnel::Dielectric(wol.z, outerEta);
+        const float wilFresnelRefl = Utils::Fresnel::Dielectric(wil.z, outerEta);
+        const float wolFresnelRefl = Utils::Fresnel::Dielectric(wol.z, outerEta);
+        const float wilFresnelTrans = 1.f - wilFresnelRefl;
+        const float wolFresnelTrans = 1.f - wolFresnelRefl;
 
         // debug
         //oMatRecord.mAttenuation = SpectrumF(1 / Math::kPiF); // Lambert, based on wil
@@ -1302,10 +1304,27 @@ public:
             * (wilFresnelTrans * wolFresnelTrans)
             * (-wilRefract.z / wil.z); // Hack: cancel out wil in the further processing and replace it with refracted in dir
 
-        //oMatRecord.mAttenuation = outerMatAttenuation;
-        //oMatRecord.mAttenuation = innerMatAttenuation;
+        //oMatRecord.mAttenuation = outerMatAttenuation; // debug
+        //oMatRecord.mAttenuation = innerMatAttenuation; // debug
         oMatRecord.mAttenuation = outerMatAttenuation + innerMatAttenuation;
-        oMatRecord.mPdfW = GetPdfW(oMatRecord);
+
+        // Sampling PDF
+
+        const float outerCompContrEst = wolFresnelRefl;
+        const float innerCompContrEst = wolFresnelTrans; // TODO: volumetric attenuation + in-scattering energy loss
+        const float totalContrEst = outerCompContrEst + innerCompContrEst;
+
+        PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
+
+        const auto outerPdf = matRecOuterRefl.mPdfW;
+        const auto innerPdf =
+              matRecInner.mPdfW
+            / Math::Sqr(outerEta); // solid angle de-compression (extension)
+
+        const float outerPdfWeight = outerCompContrEst / totalContrEst;
+        const float innerPdfWeight = innerCompContrEst / totalContrEst;
+        oMatRecord.mPdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
+
         oMatRecord.mCompProb = 1.f;
     }
 
@@ -1339,19 +1358,25 @@ public:
 
         const float outerEta = oMatRecord.mOptEta;
         const float wolFresnel = Utils::Fresnel::Dielectric(oMatRecord.mWol.z, outerEta);
-        const float outerCompContr = wolFresnel;
-        const float innerCompContr = 1.f - wolFresnel; // TODO: volumetric attenuation + TIR energy loss
-        const float totalContr = outerCompContr + innerCompContr;
+        const float outerCompContrEst = wolFresnel;
+        const float innerCompContrEst = 1.f - wolFresnel; // TODO: volumetric attenuation + in-scattering energy loss
+        const float totalContrEst = outerCompContrEst + innerCompContrEst;
 
-        PG3_ASSERT_FLOAT_LARGER_THAN(totalContr, 0.001f);
+        PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
         // Pick and sample one component
-        const float randomVal = aRng.GetFloat() * totalContr;
-        if (randomVal < outerCompContr)
+        const float randomVal = aRng.GetFloat() * totalContrEst;
+        if (randomVal < outerCompContrEst)
         {
             // Outer component
-            // TODO: Sample only upper hemisphere 
-            mOuterLayerMaterial->SampleBsdf(aRng, oMatRecord);
+            MaterialRecord outerMatRecord(oMatRecord);
+            // TODO: Sample only upper hemisphere
+            //outerMatRecord.RequestOptData();
+            mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
+
+            PG3_ASSERT(oMatRecord.mWil.z >= -0.001f);
+
+            oMatRecord.mWil = outerMatRecord.mWil;
         }
         else
         {
@@ -1360,7 +1385,6 @@ public:
             // Compute refracted outgoing direction
             Vec3f wolRefract;
             bool dummy;
-            // FIXME: Is this in the right direction???
             Geom::Refract(wolRefract, dummy, oMatRecord.mWol, Vec3f(0.f, 0.f, 1.f), outerEta);
             //Geom::Refract(wolRefract, dummy, aWol, oMatRecord.mOptHalfwayVec, outerEta);
             // TODO: Is refracted direction always valid??
@@ -1375,7 +1399,7 @@ public:
             if (wilRefract.z > 0.f)
                 oMatRecord.mWil = wilRefract;
             else
-                // TIR: Forbiden direction  will evaluate to zero attenuation later on
+                // TIR: Forbiden direction will evaluate to zero attenuation later on
                 oMatRecord.mWil.Set(0.f, 0.f, -1.f);
         }
 
@@ -1385,9 +1409,7 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const override
     {
         aWol; // unreferenced param
 
