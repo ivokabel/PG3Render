@@ -394,12 +394,12 @@ public:
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             MaterialRecord matRecord(wil, aWol);
             aSurfMaterial.EvalBsdf(matRecord);
-            const float bsdfTotalFinitePdfW = matRecord.mPdfW * matRecord.mCompProb;
+            const float bsdfTotalFinitePdfW = matRecord.pdfW * matRecord.compProb;
             const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
 
             oLightBuffer +=
                     (   aLightSample.mSample
-                      * matRecord.mAttenuation
+                      * matRecord.attenuation
                       * MISWeight2(lightPdfW, aLightSamplesCount, bsdfTotalFinitePdfW, aBrdfSamplesCount))
                     / lightPdfW;
         }
@@ -435,7 +435,7 @@ public:
             aSurfPt,
             aSurfFrame,
             aSurfMaterial,
-            aMatRecord.mWil,
+            aMatRecord.wil,
             aContext,
             LiLight,
             &lightPdfW,
@@ -451,16 +451,16 @@ public:
         //PG3_ASSERT(lightPickingProbability > 0.f);
         PG3_ASSERT(lightPdfW != Math::InfinityF()); // BSDF sampling should never hit a point light
 
-        if (aMatRecord.mPdfW != Math::InfinityF())
+        if (aMatRecord.pdfW != Math::InfinityF())
         {
             // Finite BSDF: Compute two-step MIS MC estimator. 
-            const float bsdfPdfW = aMatRecord.mPdfW * aMatRecord.mCompProb;
+            const float bsdfPdfW = aMatRecord.pdfW * aMatRecord.compProb;
             const float misWeight =
                 MISWeight2(
                     bsdfPdfW, aBrdfSamplesCount,
                     lightPdfW * lightPickingProbability, aLightSamplesCount);
             oLightBuffer +=
-                  (   aMatRecord.mAttenuation
+                  (   aMatRecord.attenuation
                     * aMatRecord.ThetaInCosAbs()
                     * LiLight
                     * misWeight)
@@ -470,10 +470,10 @@ public:
         {
             // Dirac BSDF: compute the integral directly, without MIS
             oLightBuffer +=
-                  (   aMatRecord.mAttenuation
+                  (   aMatRecord.attenuation
                     * LiLight)
                 / (   static_cast<float>(aBrdfSamplesCount) // Splitting
-                    * aMatRecord.mCompProb);                // Discrete multi-component MC
+                    * aMatRecord.compProb);                 // Discrete multi-component MC
         }
 
         PG3_ASSERT_VEC3F_NONNEGATIVE(oLightBuffer);

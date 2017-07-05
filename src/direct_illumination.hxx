@@ -74,24 +74,24 @@ public:
                         surfPt,
                         surfFrame,
                         mat,
-                        matRecord.mWil,
+                        matRecord.wil,
                         lightSamplingCtx,
                         LiLight);
 
-                    if (matRecord.mPdfW != Math::InfinityF())
+                    if (matRecord.pdfW != Math::InfinityF())
                         // Finite BSDF: Compute the two-step MC estimator.
                         LoDirect =
-                              (   matRecord.mAttenuation
+                              (   matRecord.attenuation
                                 * matRecord.ThetaInCosAbs()
                                 * LiLight)
-                            / (   matRecord.mPdfW       // Monte Carlo est.
-                                * matRecord.mCompProb); // Discrete multi-component MC
+                            / (   matRecord.pdfW       // Monte Carlo est.
+                                * matRecord.compProb); // Discrete multi-component MC
                     else
                         // Dirac BSDF: compute the integral analytically
                         LoDirect =
-                              (   matRecord.mAttenuation
+                              (   matRecord.attenuation
                                 * LiLight)
-                            / matRecord.mCompProb;  // Discrete multi-component MC
+                            / matRecord.compProb;  // Discrete multi-component MC
 
                     PG3_ASSERT_VEC3F_NONNEGATIVE(LoDirect);
                 }

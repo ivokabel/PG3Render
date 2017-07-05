@@ -125,20 +125,20 @@ protected:
 
                 // Construct new ray from the current surface point
                 currentRay.org  = surfPt;
-                currentRay.dir  = surfFrame.ToWorld(matRecord.mWil);
+                currentRay.dir  = surfFrame.ToWorld(matRecord.wil);
                 currentRay.tmin = Geom::EpsRayCos(matRecord.ThetaInCosAbs());
 
                 const SpectrumF segmentThroughput =
-                    (matRecord.mPdfW != Math::InfinityF()) ?
-                        (  matRecord.mAttenuation
+                    (matRecord.pdfW != Math::InfinityF()) ?
+                        (  matRecord.attenuation
                             * matRecord.ThetaInCosAbs())
-                        / (  matRecord.mPdfW        // Monte Carlo est.
+                        / (  matRecord.pdfW         // Monte Carlo est.
                             * rrContinuationProb    // Russian roulette (optional)
-                            * matRecord.mCompProb)  // Discrete multi-component MC
+                            * matRecord.compProb)   // Discrete multi-component MC
                     :
-                        matRecord.mAttenuation
+                        matRecord.attenuation
                         / (  rrContinuationProb     // Russian roulette (optional)
-                            * matRecord.mCompProb); // Discrete multi-component MC
+                            * matRecord.compProb);  // Discrete multi-component MC
                 pathThroughput *= segmentThroughput;
 
                 PG3_ASSERT_VEC3F_NONNEGATIVE(pathThroughput);
@@ -312,7 +312,7 @@ protected:
                 float       bsdfLightPdfW = 0.f;
                 int32_t     bsdfLightId = -1;
 
-                const Vec3f wig = surfFrame.ToWorld(matRecord.mWil);
+                const Vec3f wig = surfFrame.ToWorld(matRecord.wil);
                 const float rayMin = Geom::EpsRayCos(matRecord.ThetaInCosAbs());
                 const Ray   bsdfRay(surfPt, wig, rayMin);
 
@@ -331,7 +331,7 @@ protected:
                     // one for Dirac components of the BSDF. This is analogical and well working 
                     // together with the separate light sampling scheme used in 
                     // AddMISLightSampleContribution() - see comments there for more information.
-                    if (matRecord.mPdfW != Math::InfinityF())
+                    if (matRecord.pdfW != Math::InfinityF())
                     {
                         // Finite BSDF: Compute MIS MC estimator. 
 
@@ -347,9 +347,9 @@ protected:
                         PG3_ASSERT(bsdfLightPdfW != Math::InfinityF()); // BSDF sampling should never hit a point light
 
                         const float lightPdfW = bsdfLightPdfW * bsdfLightPickingProb;
-                        const float bsdfPdfW  = matRecord.mPdfW * matRecord.mCompProb;
+                        const float bsdfPdfW  = matRecord.pdfW * matRecord.compProb;
                         oReflectedRadianceEstimate +=
-                              (   matRecord.mAttenuation
+                              (   matRecord.attenuation
                                 * matRecord.ThetaInCosAbs()
                                 * bsdfEmmittedRadiance
                                 * MISWeight2(bsdfPdfW, bsdfSamplesCount, lightPdfW, lightSamplesCount)) // MIS
@@ -359,10 +359,10 @@ protected:
                     {
                         // Dirac BSDF: compute the integral directly, without MIS
                         oReflectedRadianceEstimate +=
-                              (   matRecord.mAttenuation
+                              (   matRecord.attenuation
                                 * bsdfEmmittedRadiance)
                             / (   static_cast<float>(bsdfSamplesCount)  // Splitting
-                                * matRecord.mCompProb);                 // Discrete multi-component MC
+                                * matRecord.compProb);                  // Discrete multi-component MC
                     }
 
                     PG3_ASSERT_VEC3F_NONNEGATIVE(oReflectedRadianceEstimate);
@@ -372,27 +372,27 @@ protected:
                 if (!bCutIndirect && !bsdfReflectedRadianceEstimate.IsZero())
                 {
                     SpectrumF indirectRadianceEstimate;
-                    if (matRecord.mPdfW != Math::InfinityF())
+                    if (matRecord.pdfW != Math::InfinityF())
                     {
                         // Finite BSDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =
-                              (   matRecord.mAttenuation
+                              (   matRecord.attenuation
                                 * matRecord.ThetaInCosAbs()
                                 * bsdfReflectedRadianceEstimate)
-                            / (   matRecord.mPdfW       // MC
+                            / (   matRecord.pdfW        // MC
                                 * bsdfSamplesCount      // Splitting
                                 * rrContinuationProb    // Russian roulette
-                                * matRecord.mCompProb); // Discrete multi-component MC
+                                * matRecord.compProb);  // Discrete multi-component MC
                     }
                     else
                     {
                         // Dirac BSDF: compute the integral directly, without MIS
                         indirectRadianceEstimate =
-                              (   matRecord.mAttenuation
+                              (   matRecord.attenuation
                                 * bsdfReflectedRadianceEstimate)
                             / (   bsdfSamplesCount      // Splitting
                                 * rrContinuationProb    // Russian roulette
-                                * matRecord.mCompProb); // Discrete multi-component MC
+                                * matRecord.compProb);  // Discrete multi-component MC
                     }
 
                     PG3_ASSERT_VEC3F_NONNEGATIVE(indirectRadianceEstimate);

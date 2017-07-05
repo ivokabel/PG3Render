@@ -47,8 +47,8 @@ class MaterialRecord
 public:
 
     MaterialRecord(const Vec3f &aWil, const Vec3f &aWol) :
-        mWol(aWol),
-        mWil(aWil),
+        wol(aWol),
+        wil(aWil),
         mOptDataMaskRequested(kOptNone),
         mOptDataMaskProvided(kOptNone)
     {}
@@ -59,13 +59,13 @@ public:
 
     bool IsBlocker() const
     {
-        const float attenuationAndCos = mAttenuation.Max() * ThetaInCosAbs();
+        const float attenuationAndCos = attenuation.Max() * ThetaInCosAbs();
         return attenuationAndCos <= MAT_BLOCKER_EPSILON;
     }
 
     float ThetaInCos() const
     {
-        return mWil.z;
+        return wil.z;
     }
 
     float ThetaInCosAbs() const
@@ -76,23 +76,23 @@ public:
 public:
 
     // Outgoing direction
-    Vec3f       mWol;
+    Vec3f       wol;
 
     // Incoming direction (either input or output parameter)
-    Vec3f       mWil;
+    Vec3f       wil;
 
     // BSDF value for the case of finite BSDF or attenuation for dirac BSDF.
     //
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
-    SpectrumF   mAttenuation;
+    SpectrumF   attenuation;
 
     // In finite BSDF cases it contains the angular PDF of all finite components summed up.
     // In infinite cases it equals Math::InfinityF().
     //
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
-    float       mPdfW;
+    float       pdfW;
 
     // Probability of picking the additive BSDF component for given outgoing direction.
     // The components can be more infinite pdf (dirac) BSDFs (e.g. Fresnel) 
@@ -104,7 +104,7 @@ public:
     //
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
-    float       mCompProb;
+    float       compProb;
 
 public:
 
@@ -154,11 +154,11 @@ public:
 
     // Optional eta (relative index of refraction).
     // Valid only if AreOptDataProvided(kOptEta) is true.
-    float mOptEta;
+    float optEta;
 
     // Optional halfway vector (microfacet normal) for the given in-out directions.
     // Valid only if AreOptDataProvided(kOptHalfwayVec) is true.
-    Vec3f mOptHalfwayVec;
+    Vec3f optHalfwayVec;
 };
 
 class AbstractMaterial
@@ -240,9 +240,9 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        oMatRecord.mAttenuation = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        oMatRecord.mPdfW        = GetPdfW(oMatRecord.mWil);
-        oMatRecord.mCompProb    = 1.f;
+        oMatRecord.attenuation = LambertMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
+        oMatRecord.pdfW        = GetPdfW(oMatRecord.wil);
+        oMatRecord.compProb    = 1.f;
     }
 
     virtual void SampleBsdf(
@@ -250,9 +250,9 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        oMatRecord.mWil         = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
-        oMatRecord.mAttenuation = LambertMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
-        oMatRecord.mCompProb    = 1.f;
+        oMatRecord.wil         = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.pdfW);
+        oMatRecord.attenuation = LambertMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
+        oMatRecord.compProb    = 1.f;
     }
 
     float GetPdfW(const Vec3f &aWil) const
@@ -372,13 +372,13 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        oMatRecord.mAttenuation = PhongMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+        oMatRecord.attenuation = PhongMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
         GetWholeFiniteCompProbabilities(
-            oMatRecord.mPdfW,
-            oMatRecord.mCompProb,
-            oMatRecord.mWol,
-            oMatRecord.mWil);
+            oMatRecord.pdfW,
+            oMatRecord.compProb,
+            oMatRecord.wol,
+            oMatRecord.wil);
     }
 
     // Generates a random BSDF sample.
@@ -391,7 +391,7 @@ public:
     {
         // Compute scalar reflectances. Replicated in GetWholeFiniteCompProbabilities()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
-        const float cosThetaOut = std::max(oMatRecord.mWol.z, 0.f);
+        const float cosThetaOut = std::max(oMatRecord.wol.z, 0.f);
         const float glossyReflectanceEst =
               GetGlossyReflectance()
             * (0.5f + 0.5f * cosThetaOut); // Attenuate to make it half the full reflectance at grazing angles.
@@ -402,9 +402,9 @@ public:
         if (totalReflectance < MAT_BLOCKER_EPSILON)
         {
             // Diffuse fallback for blocker materials
-            oMatRecord.mAttenuation.MakeZero();
-            oMatRecord.mWil      = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.mPdfW);
-            oMatRecord.mCompProb = 1.f;
+            oMatRecord.attenuation.MakeZero();
+            oMatRecord.wil      = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.pdfW);
+            oMatRecord.compProb = 1.f;
             return;
         }
 
@@ -417,7 +417,7 @@ public:
         if (randomVal < diffuseReflectanceEst)
         {
             // Diffuse, cosine-weighted sampling
-            oMatRecord.mWil = Sampling::SampleCosHemisphereW(aRng.GetVec2f());
+            oMatRecord.wil = Sampling::SampleCosHemisphereW(aRng.GetVec2f());
         }
         else
         {
@@ -425,28 +425,28 @@ public:
 
             // Sample phong lobe in the canonical coordinate system (lobe around normal)
             const Vec3f canonicalSample =
-                Sampling::SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oMatRecord.mPdfW*/);
+                Sampling::SamplePowerCosHemisphereW(aRng.GetVec2f(), mPhongExponent/*, &oMatRecord.pdfW*/);
 
             // Rotate sample to mirror-reflection
-            const Vec3f wrl = Geom::ReflectLocal(oMatRecord.mWol);
+            const Vec3f wrl = Geom::ReflectLocal(oMatRecord.wol);
             Frame lobeFrame;
             lobeFrame.SetFromZ(wrl);
-            oMatRecord.mWil = lobeFrame.ToWorld(canonicalSample);
+            oMatRecord.wil = lobeFrame.ToWorld(canonicalSample);
         }
 
-        oMatRecord.mCompProb = 1.f;
+        oMatRecord.compProb = 1.f;
 
         // Get whole PDF value
-        oMatRecord.mPdfW =
-            GetPdfW(oMatRecord.mWol, oMatRecord.mWil, diffuseReflectanceEst, glossyReflectanceEst);
+        oMatRecord.pdfW =
+            GetPdfW(oMatRecord.wol, oMatRecord.wil, diffuseReflectanceEst, glossyReflectanceEst);
 
         const float thetaInCos = oMatRecord.ThetaInCos();
         if (thetaInCos > 0.0f)
             // Above surface: Evaluate the whole BSDF
-            oMatRecord.mAttenuation = PhongMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+            oMatRecord.attenuation = PhongMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
         else
             // Below surface: The sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
+            oMatRecord.attenuation.MakeZero();
     }
 
     float GetPdfW(
@@ -576,14 +576,13 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        oMatRecord.mAttenuation =
-            AbstractSmoothMaterial::EvalBsdf(oMatRecord.mWil, oMatRecord.mWol);
+        oMatRecord.attenuation = AbstractSmoothMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
         GetWholeFiniteCompProbabilities(
-            oMatRecord.mPdfW,
-            oMatRecord.mCompProb,
-            oMatRecord.mWol,
-            oMatRecord.mWil);
+            oMatRecord.pdfW,
+            oMatRecord.compProb,
+            oMatRecord.wol,
+            oMatRecord.wil);
     }
 
 protected:
@@ -626,15 +625,15 @@ public:
     {
         aRng; // unreferenced params
 
-        oMatRecord.mWil         = Geom::ReflectLocal(oMatRecord.mWol);
-        oMatRecord.mPdfW        = Math::InfinityF();
-        oMatRecord.mCompProb    = 1.f;
+        oMatRecord.wil         = Geom::ReflectLocal(oMatRecord.wol);
+        oMatRecord.pdfW        = Math::InfinityF();
+        oMatRecord.compProb    = 1.f;
 
         // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
         const float reflectance = Utils::Fresnel::Conductor(oMatRecord.ThetaInCos(), mEta, mAbsorbance);
-        oMatRecord.mAttenuation.SetGreyAttenuation(reflectance);
+        oMatRecord.attenuation.SetGreyAttenuation(reflectance);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -680,7 +679,7 @@ public:
         MaterialRecord  &oMatRecord
         ) const override
     {
-        const float fresnelRefl = Utils::Fresnel::Dielectric(oMatRecord.mWol.z, mEta);
+        const float fresnelRefl = Utils::Fresnel::Dielectric(oMatRecord.wol.z, mEta);
 
         float attenuation;
 
@@ -690,8 +689,8 @@ public:
         {
             // Reflect
             // This branch also handles TIR cases
-            oMatRecord.mWil = Geom::ReflectLocal(oMatRecord.mWol);
-            attenuation     = fresnelRefl;
+            oMatRecord.wil = Geom::ReflectLocal(oMatRecord.wol);
+            attenuation    = fresnelRefl;
         }
         else
         {
@@ -699,15 +698,15 @@ public:
             // TODO: local version of refract?
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
             bool isAboveMicrofacet;
-            Geom::Refract(oMatRecord.mWil, isAboveMicrofacet, oMatRecord.mWol, Vec3f(0.f, 0.f, 1.f), mEta);
+            Geom::Refract(oMatRecord.wil, isAboveMicrofacet, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
             // TODO: Radiance (de)compression?
         }
 
-        oMatRecord.mCompProb    = attenuation;
-        oMatRecord.mPdfW        = Math::InfinityF();
-        oMatRecord.mAttenuation.SetGreyAttenuation(attenuation);
+        oMatRecord.compProb    = attenuation;
+        oMatRecord.pdfW        = Math::InfinityF();
+        oMatRecord.attenuation.SetGreyAttenuation(attenuation);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -768,10 +767,10 @@ public:
         ) const override
     {
         EvalContext ctx;
-        InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
+        InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
 
-        oMatRecord.mAttenuation = EvalBsdf(ctx);
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
+        oMatRecord.attenuation = EvalBsdf(ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
     }
 
     // Generates a random BSDF sample.
@@ -782,7 +781,7 @@ public:
     {
         EvalContext ctx;
 
-        ctx.wol = oMatRecord.mWol;
+        ctx.wol = oMatRecord.wol;
 
         ctx.microfacetDir =
             Microfacet::SampleGgxVisibleNormals(ctx.wol, mRoughnessAlpha, aRng.GetVec2f());
@@ -791,21 +790,21 @@ public:
 
         bool isOutDirAboveMicrofacet;
         Geom::Reflect(ctx.wil, isOutDirAboveMicrofacet, ctx.wol, ctx.microfacetDir);
-        oMatRecord.mWil = ctx.wil;
+        oMatRecord.wil = ctx.wil;
 
         const float cosThetaOM = Dot(ctx.microfacetDir, ctx.wol);
         ctx.fresnelReflectance = Utils::Fresnel::Conductor(cosThetaOM, mEta, mAbsorbance);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
-            oMatRecord.mAttenuation.MakeZero();
+            oMatRecord.attenuation.MakeZero();
         else if (ctx.wil.z < 0.0f)
             // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
+            oMatRecord.attenuation.MakeZero();
         else
-            oMatRecord.mAttenuation = EvalBsdf(ctx);
+            oMatRecord.attenuation = EvalBsdf(ctx);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -967,11 +966,11 @@ public:
         ) const override
     {
         EvalContext ctx;
-        InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
+        InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
 
-        oMatRecord.mAttenuation = EvalBsdf(ctx);
+        oMatRecord.attenuation = EvalBsdf(ctx);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
         GetOptData(oMatRecord, ctx);
     }
 
@@ -986,8 +985,8 @@ public:
         // Warning: Partially replicated in InitEvalContext()!
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
-        ctx.isOutDirFromBelow   = (oMatRecord.mWol.z < 0.f);
-        ctx.wolSwitched         = oMatRecord.mWol * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
+        ctx.isOutDirFromBelow   = (oMatRecord.wol.z < 0.f);
+        ctx.wolSwitched         = oMatRecord.wol * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
         ctx.etaSwitched         = (ctx.isOutDirFromBelow ? mEtaInv : mEta);
         ctx.etaInvSwitched      = (ctx.isOutDirFromBelow ? mEta : mEtaInv);
 
@@ -1019,18 +1018,18 @@ public:
         }
 
         // Switch up-down back if necessary
-        oMatRecord.mWil = ctx.wilSwitched * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
+        oMatRecord.wil = ctx.wilSwitched * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.mPdfW, oMatRecord.mCompProb, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
-            oMatRecord.mAttenuation.MakeZero();
+            oMatRecord.attenuation.MakeZero();
         else if (thetaInCosAbs < 0.0f)
             // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
-            oMatRecord.mAttenuation.MakeZero();
+            oMatRecord.attenuation.MakeZero();
         else
-            oMatRecord.mAttenuation = EvalBsdf(ctx);
+            oMatRecord.attenuation = EvalBsdf(ctx);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -1053,7 +1052,7 @@ public:
     {
         // TODO: Initializing the context just to obtain optional data might be inefficient!
         EvalContext ctx;
-        InitEvalContext(ctx, oMatRecord.mWil, oMatRecord.mWol);
+        InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
 
         GetOptData(oMatRecord, ctx);
 
@@ -1207,13 +1206,13 @@ protected:
     {
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptEta))
         {
-            oMatRecord.mOptEta = mEta;
+            oMatRecord.optEta = mEta;
             oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptEta);
         }
 
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptHalfwayVec))
         {
-            oMatRecord.mOptHalfwayVec =
+            oMatRecord.optHalfwayVec =
                   aCtx.microfacetDirSwitched
                 * (aCtx.isOutDirFromBelow ? -1.0f : 1.0f);
             oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptHalfwayVec);
@@ -1246,16 +1245,16 @@ public:
 
     virtual void EvalBsdf(MaterialRecord &oMatRecord) const override
     {
-        const Vec3f wil = oMatRecord.mWil;
-        const Vec3f wol = oMatRecord.mWol;
+        const Vec3f wil = oMatRecord.wil;
+        const Vec3f wol = oMatRecord.wol;
             
-        oMatRecord.mCompProb = 1.f;
+        oMatRecord.compProb = 1.f;
 
         // No transmission below horizon (both input and output)
-        if (oMatRecord.mWil.z <= 0.f || oMatRecord.mWol.z <= 0.f)
+        if (oMatRecord.wil.z <= 0.f || oMatRecord.wol.z <= 0.f)
         {
-            oMatRecord.mAttenuation.MakeZero();
-            oMatRecord.mPdfW = 0.f;
+            oMatRecord.attenuation.MakeZero();
+            oMatRecord.pdfW = 0.f;
         }
 
         // Evaluate outer layer reflection
@@ -1268,16 +1267,16 @@ public:
         PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
         //PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
-        const float outerEta = matRecOuterRefl.mOptEta;
-        const SpectrumF outerMatAttenuation = matRecOuterRefl.mAttenuation;
+        const float outerEta = matRecOuterRefl.optEta;
+        const SpectrumF outerMatAttenuation = matRecOuterRefl.attenuation;
 
         // Compute refracted directions
         Vec3f wilRefract, wolRefract;
         bool dummy;
         Geom::Refract(wilRefract, dummy, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
         Geom::Refract(wolRefract, dummy, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
-        //Geom::Refract(wilRefract, dummy, wil, matRecOuterRefl.mOptHalfwayVec, outerEta);
-        //Geom::Refract(wolRefract, dummy, wol, matRecOuterRefl.mOptHalfwayVec, outerEta);
+        //Geom::Refract(wilRefract, dummy, wil, matRecOuterRefl.optHalfwayVec, outerEta);
+        //Geom::Refract(wolRefract, dummy, wol, matRecOuterRefl.optHalfwayVec, outerEta);
         // TODO: Are refracted directions always valid??
 
         const float wilFresnelRefl = Utils::Fresnel::Dielectric(wil.z, outerEta);
@@ -1286,8 +1285,8 @@ public:
         const float wolFresnelTrans = 1.f - wolFresnelRefl;
 
         // debug
-        //oMatRecord.mAttenuation = SpectrumF(1 / Math::kPiF); // Lambert, based on wil
-        //oMatRecord.mAttenuation = SpectrumF(
+        //oMatRecord.attenuation = SpectrumF(1 / Math::kPiF); // Lambert, based on wil
+        //oMatRecord.attenuation = SpectrumF(
         //      wilFresnelTrans * wolFresnelTrans
         //    * (-wilRefract.z / wil.z)// Hack: cancel out wil in the further processing and replace it with refracted in dir
         //    / Math::kPiF);// Lambert
@@ -1300,13 +1299,13 @@ public:
         mInnerLayerMaterial->EvalBsdf(matRecInner);
 
         const SpectrumF innerMatAttenuation =
-              matRecInner.mAttenuation
+              matRecInner.attenuation
             * (wilFresnelTrans * wolFresnelTrans)
             * (-wilRefract.z / wil.z); // Hack: cancel out wil in the further processing and replace it with refracted in dir
 
-        //oMatRecord.mAttenuation = outerMatAttenuation; // debug
-        //oMatRecord.mAttenuation = innerMatAttenuation; // debug
-        oMatRecord.mAttenuation = outerMatAttenuation + innerMatAttenuation;
+        //oMatRecord.attenuation = outerMatAttenuation; // debug
+        //oMatRecord.attenuation = innerMatAttenuation; // debug
+        oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
 
         // Sampling PDF
 
@@ -1316,16 +1315,16 @@ public:
 
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
-        const auto outerPdf = matRecOuterRefl.mPdfW;
+        const auto outerPdf = matRecOuterRefl.pdfW;
         const auto innerPdf =
-              matRecInner.mPdfW
+              matRecInner.pdfW
             / Math::Sqr(outerEta); // solid angle de-compression (extension)
 
         const float outerPdfWeight = outerCompContrEst / totalContrEst;
         const float innerPdfWeight = innerCompContrEst / totalContrEst;
-        oMatRecord.mPdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
+        oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
 
-        oMatRecord.mCompProb = 1.f;
+        oMatRecord.compProb = 1.f;
     }
 
     virtual SpectrumF EvalBsdf(
@@ -1337,7 +1336,7 @@ public:
 
         EvalBsdf(matRecord);
 
-        return matRecord.mAttenuation;
+        return matRecord.attenuation;
     }
 
     // Generates a random BSDF sample.
@@ -1356,8 +1355,8 @@ public:
         PG3_ASSERT(oMatRecord.AreOptDataProvided(MaterialRecord::kOptEta));
         //PG3_ASSERT(oMatRecord.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
-        const float outerEta = oMatRecord.mOptEta;
-        const float wolFresnel = Utils::Fresnel::Dielectric(oMatRecord.mWol.z, outerEta);
+        const float outerEta = oMatRecord.optEta;
+        const float wolFresnel = Utils::Fresnel::Dielectric(oMatRecord.wol.z, outerEta);
         const float outerCompContrEst = wolFresnel;
         const float innerCompContrEst = 1.f - wolFresnel; // TODO: volumetric attenuation + in-scattering energy loss
         const float totalContrEst = outerCompContrEst + innerCompContrEst;
@@ -1374,9 +1373,9 @@ public:
             //outerMatRecord.RequestOptData();
             mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
 
-            PG3_ASSERT(oMatRecord.mWil.z >= -0.001f);
+            PG3_ASSERT(oMatRecord.wil.z >= -0.001f);
 
-            oMatRecord.mWil = outerMatRecord.mWil;
+            oMatRecord.wil = outerMatRecord.wil;
         }
         else
         {
@@ -1385,8 +1384,8 @@ public:
             // Compute refracted outgoing direction
             Vec3f wolRefract;
             bool dummy;
-            Geom::Refract(wolRefract, dummy, oMatRecord.mWol, Vec3f(0.f, 0.f, 1.f), outerEta);
-            //Geom::Refract(wolRefract, dummy, aWol, oMatRecord.mOptHalfwayVec, outerEta);
+            Geom::Refract(wolRefract, dummy, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+            //Geom::Refract(wolRefract, dummy, aWol, oMatRecord.optHalfwayVec, outerEta);
             // TODO: Is refracted direction always valid??
 
             // Sample inner BRDF
@@ -1395,12 +1394,12 @@ public:
 
             // Refract through the upper layer
             Vec3f wilRefract;
-            Geom::Refract(wilRefract, dummy, -innerMatRecord.mWil, Vec3f(0.f, 0.f, 1.f), outerEta);
+            Geom::Refract(wilRefract, dummy, -innerMatRecord.wil, Vec3f(0.f, 0.f, 1.f), outerEta);
             if (wilRefract.z > 0.f)
-                oMatRecord.mWil = wilRefract;
+                oMatRecord.wil = wilRefract;
             else
                 // TIR: Forbiden direction will evaluate to zero attenuation later on
-                oMatRecord.mWil.Set(0.f, 0.f, -1.f);
+                oMatRecord.wil.Set(0.f, 0.f, -1.f);
         }
 
         // Evaluate BRDF & PDF
