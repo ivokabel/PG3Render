@@ -108,14 +108,37 @@ public:
 
 public:
 
-    // Optional data masks
+    // General flags
+    enum Flags
+    {
+        kNone           = 0x0000,
+        kUpperHemiOnly  = 0x0001,
+    };
 
+private:
+
+    Flags mFlags;
+
+public:
+
+    void SetFlag(Flags aFlag)
+    {
+        mFlags = static_cast<Flags>(mFlags | aFlag);
+    }
+
+    bool IsFlagSet(Flags aFlag)
+    {
+        return static_cast<Flags>(mFlags & aFlag) == aFlag;
+    }
+
+public:
+
+    // Optional data flags
     enum OptDataType
     {
         kOptNone        = 0x0000,
         kOptEta         = 0x0001,
         kOptHalfwayVec  = 0x0002,
-        //kOptDummy     = 0x0004,
     };
 
 private:
@@ -127,25 +150,25 @@ public:
 
     void RequestOptData(OptDataType aTypeMask)
     {
-        mOptDataMaskRequested = (OptDataType)(mOptDataMaskRequested | aTypeMask);
+        mOptDataMaskRequested = static_cast<OptDataType>(mOptDataMaskRequested | aTypeMask);
     }
 
     bool AreOptDataRequested(OptDataType aTypeMask)
     {
-        return (OptDataType)(mOptDataMaskRequested & aTypeMask) == aTypeMask;
+        return static_cast<OptDataType>(mOptDataMaskRequested & aTypeMask) == aTypeMask;
     }
 
     void SetAreOptDataProvided(OptDataType aTypeMask)
     {
-        mOptDataMaskProvided = (OptDataType)(mOptDataMaskProvided | aTypeMask);
+        mOptDataMaskProvided = static_cast<OptDataType>(mOptDataMaskProvided | aTypeMask);
 
         // Clear the request to avoid unnecessary re-evaluation
-        mOptDataMaskRequested = (OptDataType)(mOptDataMaskRequested & ~aTypeMask);
+        mOptDataMaskRequested = static_cast<OptDataType>(mOptDataMaskRequested & ~aTypeMask);
     }
 
     bool AreOptDataProvided(OptDataType aTypeMask)
     {
-        return (OptDataType)(mOptDataMaskProvided & aTypeMask) == aTypeMask;
+        return static_cast<OptDataType>(mOptDataMaskProvided & aTypeMask) == aTypeMask;
     }
 
 public:
@@ -1117,6 +1140,8 @@ protected:
         const float cosThetaIAbs = std::abs(aCtx.wilSwitched.z);
         const float cosThetaOAbs = std::abs(aCtx.wolSwitched.z);
 
+        // TODO: matRec.SetFlag(MaterialRecord::kUpperHemiOnly);
+
         // Check BSDF denominator
         if (aCtx.isReflection && Math::IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
             return SpectrumF().MakeZero();
@@ -1262,6 +1287,7 @@ public:
         MaterialRecord matRecOuterRefl(wil, wol);
         matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
         //matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        matRecOuterRefl.SetFlag(MaterialRecord::kUpperHemiOnly);
         mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
 
         PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
@@ -1369,8 +1395,7 @@ public:
         {
             // Outer component
             MaterialRecord outerMatRecord(oMatRecord);
-            // TODO: Sample only upper hemisphere
-            //outerMatRecord.RequestOptData();
+            outerMatRecord.SetFlag(MaterialRecord::kUpperHemiOnly);
             mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
 
             PG3_ASSERT(oMatRecord.wil.z >= -0.001f);
