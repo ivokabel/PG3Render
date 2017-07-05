@@ -55,11 +55,11 @@ public:
     {
         PG3_ASSERT(mEmImage != nullptr);
 
-        oLightSample.mLightProbability = 1.0f;
-        oLightSample.mDist             = std::numeric_limits<float>::max();
+        oLightSample.lightProbability = 1.0f;
+        oLightSample.dist             = std::numeric_limits<float>::max();
 
         return SampleImpl(
-            oLightSample.mWig, oLightSample.mPdfW, oLightSample.mSample,
+            oLightSample.wig, oLightSample.pdfW, oLightSample.sample,
             aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
     }
 

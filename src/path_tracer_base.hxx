@@ -179,7 +179,7 @@ public:
 
             bool success =
                 light->SampleIllumination(aSurfPt, aSurfFrame, aSurfMaterial, mRng, oLightSample);
-            oLightSample.mLightProbability = lightProbability;
+            oLightSample.lightProbability = lightProbability;
 
             return success;
         }
@@ -320,28 +320,28 @@ public:
         const Vec3f             &aWol,
               SpectrumF         &oLightBuffer)
     {
-        if (aLightSample.mSample.Max() <= 0.)
+        if (aLightSample.sample.Max() <= 0.)
             // The light emmits zero radiance in this direction
             return;
-        if (mConfig.mScene->Occluded(aSurfPt, aLightSample.mWig, aLightSample.mDist))
+        if (mConfig.mScene->Occluded(aSurfPt, aLightSample.wig, aLightSample.dist))
             // The light is not visible from this point
             return;
 
-        if (aLightSample.mPdfW != Math::InfinityF())
+        if (aLightSample.pdfW != Math::InfinityF())
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
-                  aLightSample.mSample
-                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
-                / (aLightSample.mPdfW * aLightSample.mLightProbability);
+                  aLightSample.sample
+                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.wig), aWol)
+                / (aLightSample.pdfW * aLightSample.lightProbability);
         else
             // Point light - the contribution of a single light is computed 
             // analytically (without MC estimation), there is only one MC 
             // estimation left - the estimation of the sum of contributions 
             // of all light sources.
             oLightBuffer +=
-                  aLightSample.mSample
-                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.mWig), aWol)
-                / aLightSample.mLightProbability;
+                  aLightSample.sample
+                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.wig), aWol)
+                / aLightSample.lightProbability;
     }
 
     void AddMISLightSampleContribution(
@@ -354,14 +354,14 @@ public:
         const AbstractMaterial  &aSurfMaterial,
               SpectrumF         &oLightBuffer)
     {
-        if (aLightSample.mSample.Max() <= 0.)
+        if (aLightSample.sample.Max() <= 0.)
             // The light emmits zero radiance in this direction
             return;
-        if (mConfig.mScene->Occluded(aSurfPt, aLightSample.mWig, aLightSample.mDist))
+        if (mConfig.mScene->Occluded(aSurfPt, aLightSample.wig, aLightSample.dist))
             // The light is not visible from this point
             return;
 
-        const Vec3f wil = aSurfFrame.ToLocal(aLightSample.mWig);
+        const Vec3f wil = aSurfFrame.ToLocal(aLightSample.wig);
 
         // Since Monte Carlo estimation works only for planar and angular light sources, we can't 
         // use the multiple importance sampling scheme for the whole reflectance integral. We split 
@@ -389,19 +389,19 @@ public:
         //       filtering a proper set of lights when choosing a light and also when computing 
         //       the probability of picking one.
 
-        if (aLightSample.mPdfW != Math::InfinityF())
+        if (aLightSample.pdfW != Math::InfinityF())
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
             MaterialRecord matRecord(wil, aWol);
             aSurfMaterial.EvalBsdf(matRecord);
             const float bsdfTotalFinitePdfW = matRecord.pdfW * matRecord.compProb;
-            const float lightPdfW = aLightSample.mPdfW * aLightSample.mLightProbability;
+            const float lightPdfW = aLightSample.pdfW * aLightSample.lightProbability;
 
             oLightBuffer +=
-                    (   aLightSample.mSample
-                      * matRecord.attenuation
-                      * MISWeight2(lightPdfW, aLightSamplesCount, bsdfTotalFinitePdfW, aBrdfSamplesCount))
-                    / lightPdfW;
+                  (   aLightSample.sample
+                    * matRecord.attenuation
+                    * MISWeight2(lightPdfW, aLightSamplesCount, bsdfTotalFinitePdfW, aBrdfSamplesCount))
+                / lightPdfW;
         }
         else
         {
@@ -409,8 +409,8 @@ public:
             // there is only one MC estimation left - the estimation of the sum of contributions
             // of all light sources.
             oLightBuffer +=
-                  (aLightSample.mSample * aSurfMaterial.EvalBsdf(wil, aWol))
-                / (aLightSample.mLightProbability * aLightSamplesCount);
+                  (aLightSample.sample * aSurfMaterial.EvalBsdf(wil, aWol))
+                / (aLightSample.lightProbability * aLightSamplesCount);
         }
     }
 

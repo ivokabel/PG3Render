@@ -144,23 +144,23 @@ public:
             // Strategy 1: Sample the sphere in the cosine-weighted fashion
             LightSample sample1;
             mTmpCosineSampler->Sample(sample1, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-            const float pdf1Cos = sample1.mPdfW;
+            const float pdf1Cos = sample1.pdfW;
             const float pdf1Sph = 
-                mTmpSimpleSphericalSampler->PdfW(sample1.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+                mTmpSimpleSphericalSampler->PdfW(sample1.wig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
 
             // Strategy 2: Sample the environment map alone
             LightSample sample2;
             mTmpSimpleSphericalSampler->Sample(sample2, aSurfFrame, aSampleFrontSide, aSampleBackSide, aRng);
-            const float pdf2Sph = sample2.mPdfW;
+            const float pdf2Sph = sample2.pdfW;
             const float pdf2Cos =
-                mTmpCosineSampler->PdfW(sample2.mWig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
+                mTmpCosineSampler->PdfW(sample2.wig, aSurfFrame, aSampleFrontSide, aSampleBackSide);
 
             // Combine the two samples via MIS (balanced heuristics)
             const float part1 =
-                sample1.mSample.Luminance()
+                  sample1.sample.Luminance()
                 / (pdf1Cos + pdf1Sph);
             const float part2 =
-                sample2.mSample.Luminance()
+                  sample2.sample.Luminance()
                 / (pdf2Cos + pdf2Sph);
             sum += part1 + part2;
         }

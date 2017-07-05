@@ -158,10 +158,10 @@ public:
         ComputeSample(aSurfPt, P2,  aSurfFrame, aSurfMaterial, sample2);
         ComputeSample(aSurfPt, P3,  aSurfFrame, aSurfMaterial, sample3);
         return
-            (   sample0.mSample.Luminance() / sample0.mPdfW
-              + sample1.mSample.Luminance() / sample1.mPdfW
-              + sample2.mSample.Luminance() / sample2.mPdfW
-              + sample3.mSample.Luminance() / sample3.mPdfW
+            (   sample0.sample.Luminance() / sample0.pdfW
+              + sample1.sample.Luminance() / sample1.pdfW
+              + sample2.sample.Luminance() / sample2.pdfW
+              + sample3.sample.Luminance() / sample3.pdfW
               )
             / 4.f;
     }
@@ -177,12 +177,12 @@ private:
     {
         // Replicated in GetEmmision()!
 
-        oSample.mWig = aSamplePt - aSurfPt;
-        const float distSqr = oSample.mWig.LenSqr();
-        oSample.mDist = sqrt(distSqr);
-        oSample.mWig /= oSample.mDist;
-        const float cosThetaOut = -Dot(mFrame.Normal(), oSample.mWig); // for two-sided light use absf()
-        float cosThetaIn        =  Dot(aSurfFrame.Normal(), oSample.mWig);
+        oSample.wig = aSamplePt - aSurfPt;
+        const float distSqr = oSample.wig.LenSqr();
+        oSample.dist = sqrt(distSqr);
+        oSample.wig /= oSample.dist;
+        const float cosThetaOut = -Dot(mFrame.Normal(), oSample.wig); // for two-sided light use absf()
+        float cosThetaIn        =  Dot(aSurfFrame.Normal(), oSample.wig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
         const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
@@ -207,17 +207,17 @@ private:
 
         if (cosThetaOut > 0.f)
             // Planar version: BSDF * Li * ((cos_in * cos_out) / dist^2)
-            oSample.mSample = mRadiance * cosThetaIn; // Angular version
+            oSample.sample = mRadiance * cosThetaIn; // Angular version
         else
-            oSample.mSample.MakeZero();
+            oSample.sample.MakeZero();
 
         // Angular PDF. We use low epsilon boundary to avoid division by very small PDFs.
         const float absCosThetaOut = abs(cosThetaOut);
-        oSample.mPdfW = std::max(mInvArea * (distSqr / absCosThetaOut), Geom::kEpsDist);
+        oSample.pdfW = std::max(mInvArea * (distSqr / absCosThetaOut), Geom::kEpsDist);
 
-        PG3_ASSERT(oSample.mPdfW >= Geom::kEpsDist);
+        PG3_ASSERT(oSample.pdfW >= Geom::kEpsDist);
 
-        oSample.mLightProbability = 1.0f;
+        oSample.lightProbability = 1.0f;
     }
 
 public:
@@ -288,7 +288,7 @@ public:
 
         LightSample sample;
         ComputeIllumination(aSurfPt, aSurfFrame, aSurfMaterial, sample);
-        return sample.mSample.Luminance();
+        return sample.sample.Luminance();
     }
 
 private:
@@ -299,12 +299,12 @@ private:
         LightSample             &oSample
         ) const
     {
-        oSample.mWig  = mPosition - aSurfPt;
-        const float distSqr = oSample.mWig.LenSqr();
-        oSample.mDist = sqrt(distSqr);
-        oSample.mWig /= oSample.mDist;
+        oSample.wig  = mPosition - aSurfPt;
+        const float distSqr = oSample.wig.LenSqr();
+        oSample.dist = sqrt(distSqr);
+        oSample.wig /= oSample.dist;
 
-        float cosThetaIn = Dot(aSurfFrame.Normal(), oSample.mWig);
+        float cosThetaIn = Dot(aSurfFrame.Normal(), oSample.wig);
 
         const MaterialProperties matProps = aSurfMaterial.GetProperties();
         const bool sampleFrontSide  = Utils::IsMasked(matProps, kBsdfFrontSideLightSampling);
@@ -328,12 +328,12 @@ private:
         PG3_ASSERT_FLOAT_NONNEGATIVE(cosThetaIn);
 
         if (cosThetaIn > 0.f)
-            oSample.mSample = mIntensity * cosThetaIn / distSqr;
+            oSample.sample = mIntensity * cosThetaIn / distSqr;
         else
-            oSample.mSample.MakeZero();
+            oSample.sample.MakeZero();
 
-        oSample.mPdfW               = Math::InfinityF();
-        oSample.mLightProbability   = 1.0f;
+        oSample.pdfW               = Math::InfinityF();
+        oSample.lightProbability   = 1.0f;
     }
 
 public:
