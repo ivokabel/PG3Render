@@ -327,11 +327,14 @@ public:
             // The light is not visible from this point
             return;
 
+        MaterialRecord matRec(aSurfFrame.ToLocal(aLightSample.wig), aWol);
+        aSurfMaterial.EvalBsdf(matRec);
+
         if (aLightSample.pdfW != Math::InfinityF())
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
                   aLightSample.sample
-                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.wig), aWol)
+                * matRec.attenuation
                 / (aLightSample.pdfW * aLightSample.lightProbability);
         else
             // Point light - the contribution of a single light is computed 
@@ -340,7 +343,7 @@ public:
             // of all light sources.
             oLightBuffer +=
                   aLightSample.sample
-                * aSurfMaterial.EvalBsdf(aSurfFrame.ToLocal(aLightSample.wig), aWol)
+                * matRec.attenuation
                 / aLightSample.lightProbability;
     }
 
@@ -392,8 +395,11 @@ public:
         if (aLightSample.pdfW != Math::InfinityF())
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
+
             MaterialRecord matRecord(wil, aWol);
+            matRecord.RequestOptData(MaterialRecord::kOptSamplingProbs);
             aSurfMaterial.EvalBsdf(matRecord);
+
             const float bsdfTotalFinitePdfW = matRecord.pdfW * matRecord.compProb;
             const float lightPdfW = aLightSample.pdfW * aLightSample.lightProbability;
 
@@ -408,8 +414,12 @@ public:
             // Point light was chosen: The contribution of a single light is computed analytically,
             // there is only one MC estimation left - the estimation of the sum of contributions
             // of all light sources.
+
+            MaterialRecord matRecord(wil, aWol);
+            aSurfMaterial.EvalBsdf(matRecord);
+
             oLightBuffer +=
-                  (aLightSample.sample * aSurfMaterial.EvalBsdf(wil, aWol))
+                  (aLightSample.sample * matRecord.attenuation)
                 / (aLightSample.lightProbability * aLightSamplesCount);
         }
     }

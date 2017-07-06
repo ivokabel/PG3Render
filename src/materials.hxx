@@ -112,7 +112,7 @@ public:
     enum Flags
     {
         kNone           = 0x0000,
-        kUpperHemiOnly  = 0x0001,
+        kUpperHemiOnly  = 0x0001, // Evaluate/sample upper hemisphere only
     };
 
 private:
@@ -136,9 +136,14 @@ public:
     // Optional data flags
     enum OptDataType
     {
-        kOptNone        = 0x0000,
-        kOptEta         = 0x0001,
-        kOptHalfwayVec  = 0x0002,
+        kOptNone            = 0x0000,
+
+        // Compute sampling PDF and component probability.
+        // For sampling routines this flag does not have to be set - probabilities are always computed.
+        kOptSamplingProbs   = 0x0001,
+
+        kOptEta             = 0x0002,
+        kOptHalfwayVec      = 0x0004,
     };
 
 private:
@@ -198,28 +203,17 @@ public:
         return mProperties;
     }
 
-    // Just evaluates the BSDF
-    virtual SpectrumF EvalBsdf(
-        const Vec3f& aWil,  // Incoming radiance direction
-        const Vec3f& aWol   // Outgoing radiance direction
-        ) const = 0;
-
-    // Evaluates the BSDF and computes the probabilities needed for MIS computations
-    virtual void EvalBsdf(
-        MaterialRecord  &oMatRecord
-        ) const = 0;
+    // Evaluates the BSDF and computes additional data requested through the MaterialRecord
+    virtual void EvalBsdf(MaterialRecord  &oMatRecord) const = 0;
 
     // Generates a random BSDF sample.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const = 0;
+        MaterialRecord  &oMatRecord) const = 0;
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const = 0;
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const = 0;
 
     virtual bool IsReflectanceZero() const = 0;
 
@@ -248,10 +242,9 @@ public:
         mReflectance = aDiffuseReflectance;
     }
 
-    virtual SpectrumF EvalBsdf(
+    SpectrumF EvalBsdf(
         const Vec3f& aWil,
-        const Vec3f& aWol
-        ) const override
+        const Vec3f& aWol) const
     {
         if (aWil.z <= 0.f || aWol.z <= 0.f)
             return SpectrumF().MakeZero();
@@ -259,19 +252,20 @@ public:
         return mReflectance / Math::kPiF; // TODO: Pre-compute?
     }
 
-    virtual void EvalBsdf(
-        MaterialRecord  &oMatRecord
-        ) const override
+    virtual void EvalBsdf(MaterialRecord  &oMatRecord) const override
     {
         oMatRecord.attenuation = LambertMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
-        oMatRecord.pdfW        = GetPdfW(oMatRecord.wil);
-        oMatRecord.compProb    = 1.f;
+
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+        {
+            oMatRecord.pdfW     = GetPdfW(oMatRecord.wil);
+            oMatRecord.compProb = 1.f;
+        }
     }
 
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         oMatRecord.wil         = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.pdfW);
         oMatRecord.attenuation = LambertMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
@@ -377,10 +371,9 @@ public:
         return mPhongReflectance.Luminance(); // TODO: Pre-compute?
     }
 
-    virtual SpectrumF EvalBsdf(
+    SpectrumF EvalBsdf(
         const Vec3f& aWil,
-        const Vec3f& aWol
-        ) const override
+        const Vec3f& aWol) const
     {
         if (aWil.z <= 0.f || aWol.z <= 0.f)
             return SpectrumF().MakeZero();
@@ -391,17 +384,16 @@ public:
         return diffuseComponent + glossyComponent;
     }
 
-    virtual void EvalBsdf(
-        MaterialRecord  &oMatRecord
-        ) const override
+    virtual void EvalBsdf(MaterialRecord &oMatRecord) const override
     {
         oMatRecord.attenuation = PhongMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
-        GetWholeFiniteCompProbabilities(
-            oMatRecord.pdfW,
-            oMatRecord.compProb,
-            oMatRecord.wol,
-            oMatRecord.wil);
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+            GetWholeFiniteCompProbabilities(
+                oMatRecord.pdfW,
+                oMatRecord.compProb,
+                oMatRecord.wol,
+                oMatRecord.wil);
     }
 
     // Generates a random BSDF sample.
@@ -409,8 +401,7 @@ public:
     // for this component.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         // Compute scalar reflectances. Replicated in GetWholeFiniteCompProbabilities()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
@@ -508,9 +499,7 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const override
     {
         // For conversion from spectral to scalar form we combine two strategies:
         //      maximum component value and weighted "luminance".
@@ -581,10 +570,9 @@ protected:
     {}
 
 public:
-    virtual SpectrumF EvalBsdf(
+    SpectrumF EvalBsdf(
         const Vec3f& aWil,
-        const Vec3f& aWol
-        ) const override
+        const Vec3f& aWol) const
     {
         aWil; aWol; // unreferenced params
             
@@ -595,17 +583,16 @@ public:
         return result;
     }
 
-    virtual void EvalBsdf(
-        MaterialRecord  &oMatRecord
-        ) const override
+    virtual void EvalBsdf(MaterialRecord  &oMatRecord) const override
     {
-        oMatRecord.attenuation = AbstractSmoothMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
+        oMatRecord.attenuation = EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
-        GetWholeFiniteCompProbabilities(
-            oMatRecord.pdfW,
-            oMatRecord.compProb,
-            oMatRecord.wol,
-            oMatRecord.wil);
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+            GetWholeFiniteCompProbabilities(
+                oMatRecord.pdfW,
+                oMatRecord.compProb,
+                oMatRecord.wol,
+                oMatRecord.wil);
     }
 
 protected:
@@ -614,8 +601,7 @@ protected:
               float &oWholeFinCompPdfW,
               float &oWholeFinCompProbability,
         const Vec3f &aWol,
-        const Vec3f &aWil
-        ) const
+        const Vec3f &aWil) const
     {
         aWil; aWol; // unreferenced params
 
@@ -643,8 +629,7 @@ public:
     // Generates a random BSDF sample.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         aRng; // unreferenced params
 
@@ -661,9 +646,7 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const override
     {
         // We can use local z of outgoing direction, because it's equal to incoming direction z
 
@@ -699,8 +682,7 @@ public:
     // Generates a random BSDF sample.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         const float fresnelRefl = Utils::Fresnel::Dielectric(oMatRecord.wol.z, mEta);
 
@@ -734,9 +716,7 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const override
     {
         aWol; // unused parameter
 
@@ -773,34 +753,21 @@ public:
         mRoughnessAlpha = Math::Clamp(aRoughnessAlpha, 0.001f, 1.0f);
     }
 
-    virtual SpectrumF EvalBsdf(
-        const Vec3f& aWil,
-        const Vec3f& aWol
-        ) const override
-    {
-        EvalContext ctx;
-        InitEvalContext(ctx, aWil, aWol);
-
-        SpectrumF bsdfVal = EvalBsdf(ctx);
-        return bsdfVal;
-    }
-
-    virtual void EvalBsdf(
-        MaterialRecord  &oMatRecord
-        ) const override
+    virtual void EvalBsdf(MaterialRecord  &oMatRecord) const override
     {
         EvalContext ctx;
         InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
 
         oMatRecord.attenuation = EvalBsdf(ctx);
-        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
+
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+            GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
     }
 
     // Generates a random BSDF sample.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         EvalContext ctx;
 
@@ -832,9 +799,7 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const override
     {
         aWol; // unreferenced param
 
@@ -971,37 +936,20 @@ public:
         mRoughnessAlpha = Math::Clamp(aRoughnessAlpha, 0.001f, 1.0f);
     }
 
-    virtual SpectrumF EvalBsdf(
-        const Vec3f& aWil,
-        const Vec3f& aWol
-        ) const override
-    {
-        EvalContext ctx;
-        InitEvalContext(ctx, aWil, aWol);
-
-        SpectrumF bsdfVal = EvalBsdf(ctx);
-
-        return bsdfVal;
-    }
-
-    virtual void EvalBsdf(
-        MaterialRecord  &oMatRecord
-        ) const override
+    virtual void EvalBsdf(MaterialRecord  &oMatRecord) const override
     {
         EvalContext ctx;
         InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
 
         oMatRecord.attenuation = EvalBsdf(ctx);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
         GetOptData(oMatRecord, ctx);
     }
 
     // Generates a random BSDF sample.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         EvalContext ctx;
 
@@ -1057,9 +1005,7 @@ public:
 
     // Computes the probability of surviving for Russian roulette in path tracer
     // based on the material reflectance.
-    virtual float GetRRContinuationProb(
-        const Vec3f &aWol
-        ) const override
+    virtual float GetRRContinuationProb(const Vec3f &aWol) const override
     {
         aWol; // unreferenced param
 
@@ -1224,9 +1170,11 @@ protected:
 
     void GetOptData(
         MaterialRecord      &oMatRecord,
-        const EvalContext   &aCtx
-        ) const
+        const EvalContext   &aCtx) const
     {
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+            GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, aCtx);
+
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptEta))
         {
             oMatRecord.optEta = mEta;
@@ -1280,12 +1228,16 @@ public:
             oMatRecord.pdfW = 0.f;
         }
 
+        const bool computeProbs = oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs);
+
         // Evaluate outer layer reflection
         // (and get some optional data)
         MaterialRecord matRecOuterRefl(wil, wol);
         matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
         //matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
         matRecOuterRefl.SetFlag(MaterialRecord::kUpperHemiOnly);
+        if (computeProbs)
+            matRecOuterRefl.RequestOptData(MaterialRecord::kOptSamplingProbs);
         mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
 
         PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
@@ -1320,6 +1272,8 @@ public:
 
         // Evaluate inner layer
         MaterialRecord matRecInner(-wilRefract, -wolRefract);
+        if (computeProbs)
+            matRecInner.RequestOptData(MaterialRecord::kOptSamplingProbs);
         mInnerLayerMaterial->EvalBsdf(matRecInner);
 
         const SpectrumF innerMatAttenuation =
@@ -1332,42 +1286,29 @@ public:
         oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
 
         // Sampling PDF
+        if (computeProbs)
+        {
+            const float outerCompContrEst = wolFresnelRefl;
+            const float innerCompContrEst = wolFresnelTrans; // TODO: volumetric attenuation + in-scattering energy loss
+            const float totalContrEst = outerCompContrEst + innerCompContrEst;
 
-        const float outerCompContrEst = wolFresnelRefl;
-        const float innerCompContrEst = wolFresnelTrans; // TODO: volumetric attenuation + in-scattering energy loss
-        const float totalContrEst = outerCompContrEst + innerCompContrEst;
+            PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
-        PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
+            const auto outerPdf = matRecOuterRefl.pdfW;
+            const auto innerPdf =
+                  matRecInner.pdfW
+                / Math::Sqr(outerEta); // solid angle de-compression (extension)
 
-        const auto outerPdf = matRecOuterRefl.pdfW;
-        const auto innerPdf =
-              matRecInner.pdfW
-            / Math::Sqr(outerEta); // solid angle de-compression (extension)
-
-        const float outerPdfWeight = outerCompContrEst / totalContrEst;
-        const float innerPdfWeight = innerCompContrEst / totalContrEst;
-        oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
-
-        oMatRecord.compProb = 1.f;
-    }
-
-    virtual SpectrumF EvalBsdf(
-        const Vec3f& aWil,
-        const Vec3f& aWol
-        ) const override
-    {
-        MaterialRecord matRecord(aWil, aWol);
-
-        EvalBsdf(matRecord);
-
-        return matRecord.attenuation;
+            const float outerPdfWeight = outerCompContrEst / totalContrEst;
+            const float innerPdfWeight = innerCompContrEst / totalContrEst;
+            oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
+        }
     }
 
     // Generates a random BSDF sample.
     virtual void SampleBsdf(
         Rng             &aRng,
-        MaterialRecord  &oMatRecord
-        ) const override
+        MaterialRecord  &oMatRecord) const override
     {
         // Component contribution estimation
         // TODO: Precompute to contex?
@@ -1426,6 +1367,7 @@ public:
         }
 
         // Evaluate BRDF & PDF
+        oMatRecord.RequestOptData(MaterialRecord::kOptSamplingProbs);
         EvalBsdf(oMatRecord);
     }
 
