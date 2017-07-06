@@ -1177,9 +1177,7 @@ protected:
                     / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
-            // TODO: Choose the correct direction!
-            //bsdfVal *= Math::Sqr(aCtx.etaSwitched);    // radiance (solid angle) (de-)compression
-              bsdfVal *= Math::Sqr(aCtx.etaInvSwitched); // radiance (solid angle) (de-)compression
+            bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) (de-)compression
         }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);
