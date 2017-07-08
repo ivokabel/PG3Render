@@ -49,6 +49,7 @@ public:
     MaterialRecord(const Vec3f &aWil, const Vec3f &aWol) :
         wol(aWol),
         wil(aWil),
+        mFlags(kNone),
         mOptDataMaskRequested(kOptNone),
         mOptDataMaskProvided(kOptNone)
     {}
@@ -112,7 +113,7 @@ public:
     enum Flags
     {
         kNone           = 0x0000,
-        kUpperHemiOnly  = 0x0001, // Evaluate/sample upper hemisphere only
+        kReflectionOnly = 0x0001, // Forbids refractions
     };
 
 private:
@@ -126,7 +127,7 @@ public:
         mFlags = static_cast<Flags>(mFlags | aFlag);
     }
 
-    bool IsFlagSet(Flags aFlag)
+    bool IsFlagSet(Flags aFlag) const
     {
         return static_cast<Flags>(mFlags & aFlag) == aFlag;
     }
@@ -158,7 +159,7 @@ public:
         mOptDataMaskRequested = static_cast<OptDataType>(mOptDataMaskRequested | aTypeMask);
     }
 
-    bool AreOptDataRequested(OptDataType aTypeMask)
+    bool AreOptDataRequested(OptDataType aTypeMask) const
     {
         return static_cast<OptDataType>(mOptDataMaskRequested & aTypeMask) == aTypeMask;
     }
@@ -171,7 +172,7 @@ public:
         mOptDataMaskRequested = static_cast<OptDataType>(mOptDataMaskRequested & ~aTypeMask);
     }
 
-    bool AreOptDataProvided(OptDataType aTypeMask)
+    bool AreOptDataProvided(OptDataType aTypeMask) const
     {
         return static_cast<OptDataType>(mOptDataMaskProvided & aTypeMask) == aTypeMask;
     }
@@ -254,12 +255,13 @@ public:
 
     virtual void EvalBsdf(MaterialRecord  &oMatRecord) const override
     {
-        oMatRecord.attenuation = LambertMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
+        oMatRecord.attenuation = EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
         {
             oMatRecord.pdfW     = GetPdfW(oMatRecord.wil);
             oMatRecord.compProb = 1.f;
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
         }
     }
 
@@ -268,7 +270,7 @@ public:
         MaterialRecord  &oMatRecord) const override
     {
         oMatRecord.wil         = Sampling::SampleCosHemisphereW(aRng.GetVec2f(), &oMatRecord.pdfW);
-        oMatRecord.attenuation = LambertMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
+        oMatRecord.attenuation = EvalBsdf(oMatRecord.wil, oMatRecord.wol);
         oMatRecord.compProb    = 1.f;
     }
 
@@ -389,11 +391,14 @@ public:
         oMatRecord.attenuation = PhongMaterial::EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+        {
             GetWholeFiniteCompProbabilities(
                 oMatRecord.pdfW,
                 oMatRecord.compProb,
                 oMatRecord.wol,
                 oMatRecord.wil);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
+        }
     }
 
     // Generates a random BSDF sample.
@@ -540,8 +545,7 @@ protected:
               float &oWholeFinCompPdfW,
               float &oWholeFinCompProbability,
         const Vec3f &aWol,
-        const Vec3f &aWil
-        ) const
+        const Vec3f &aWil) const
     {
         // Compute scalar reflectances. Replicated in SampleBsdf()!
         const float diffuseReflectanceEst = GetDiffuseReflectance();
@@ -588,11 +592,14 @@ public:
         oMatRecord.attenuation = EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+        {
             GetWholeFiniteCompProbabilities(
                 oMatRecord.pdfW,
                 oMatRecord.compProb,
                 oMatRecord.wol,
                 oMatRecord.wil);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
+        }
     }
 
 protected:
@@ -702,8 +709,7 @@ public:
             // Refract
             // TODO: local version of refract?
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
-            bool isAboveMicrofacet;
-            Geom::Refract(oMatRecord.wil, isAboveMicrofacet, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), mEta);
+            Geom::Refract(oMatRecord.wil, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
             // TODO: Radiance (de)compression?
@@ -761,7 +767,10 @@ public:
         oMatRecord.attenuation = EvalBsdf(ctx);
 
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+        {
             GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
+        }
     }
 
     // Generates a random BSDF sample.
@@ -878,8 +887,7 @@ protected:
     void GetWholeFiniteCompProbabilities(
               float         &oWholeFinCompPdfW,
               float         &oWholeFinCompProbability,
-        const EvalContext   &aCtx
-        ) const
+        const EvalContext   &aCtx) const
     {
         oWholeFinCompProbability = 1.0f;
 
@@ -941,7 +949,7 @@ public:
         EvalContext ctx;
         InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
 
-        oMatRecord.attenuation = EvalBsdf(ctx);
+        EvalBsdf(oMatRecord, ctx);
 
         GetOptData(oMatRecord, ctx);
     }
@@ -953,7 +961,7 @@ public:
     {
         EvalContext ctx;
 
-        // Warning: Partially replicated in InitEvalContext()!
+        // WARNING: Partially replicated in InitEvalContext()!
 
         // Make sure that the underlying code always deals with outgoing direction which is above the surface
         ctx.isOutDirFromBelow   = (oMatRecord.wol.z < 0.f);
@@ -968,12 +976,13 @@ public:
 
         float thetaInCosAbs;
 
+        const bool reflectionOnly = oMatRecord.IsFlagSet(MaterialRecord::kReflectionOnly);
+
         // Randomly choose between reflection or refraction
         const float cosThetaOM = Dot(ctx.microfacetDirSwitched, ctx.wolSwitched);
         ctx.fresnelReflectance  = Utils::Fresnel::Dielectric(cosThetaOM, ctx.etaSwitched);
         bool isOutDirAboveMicrofacet;
-        const float rnd = aRng.GetFloat();
-        if (rnd <= ctx.fresnelReflectance)
+        if (reflectionOnly || (aRng.GetFloat() <= ctx.fresnelReflectance))
         {
             // This branch also handles TIR cases
             Geom::Reflect(ctx.wilSwitched, isOutDirAboveMicrofacet, ctx.wolSwitched, ctx.microfacetDirSwitched);
@@ -991,7 +1000,7 @@ public:
         // Switch up-down back if necessary
         oMatRecord.wil = ctx.wilSwitched * (ctx.isOutDirFromBelow ? -1.0f : 1.0f);
 
-        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
+        GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx, oMatRecord);
 
         if (!isOutDirAboveMicrofacet)
             // Outgoing dir is below microsurface: this happens occasionally because of numerical problems in the sampling routine.
@@ -1000,7 +1009,7 @@ public:
             // Incoming dir is below relative surface: the sample is valid, it just has zero contribution
             oMatRecord.attenuation.MakeZero();
         else
-            oMatRecord.attenuation = EvalBsdf(ctx);
+            EvalBsdf(oMatRecord, ctx);
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
@@ -1081,18 +1090,22 @@ protected:
         oCtx.fresnelReflectance = Utils::Fresnel::Dielectric(cosThetaOM, oCtx.etaSwitched);
     }
 
-    SpectrumF EvalBsdf(EvalContext &aCtx) const
+    void EvalBsdf(
+        MaterialRecord  &oMatRecord,
+        EvalContext     &aCtx) const
     {
         const float cosThetaIAbs = std::abs(aCtx.wilSwitched.z);
         const float cosThetaOAbs = std::abs(aCtx.wolSwitched.z);
 
-        // TODO: matRec.SetFlag(MaterialRecord::kUpperHemiOnly);
+        const bool reflectionOnly = oMatRecord.IsFlagSet(MaterialRecord::kReflectionOnly);
 
-        // Check BSDF denominator
-        if (aCtx.isReflection && Math::IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
-            return SpectrumF().MakeZero();
-        else if (!aCtx.isReflection && Math::IsTiny(cosThetaIAbs * cosThetaOAbs))
-            return SpectrumF().MakeZero();
+        if (   (!aCtx.isReflection && Math::IsTiny(cosThetaIAbs * cosThetaOAbs))
+            || ( aCtx.isReflection && Math::IsTiny(4.0f * cosThetaIAbs * cosThetaOAbs))
+            || (reflectionOnly && !aCtx.isReflection))
+        {
+            oMatRecord.attenuation.MakeZero();
+            return;
+        }
 
         // Geometrical factor: Shadowing (incoming direction) * Masking (outgoing direction)
         const float shadowing =
@@ -1109,9 +1122,11 @@ protected:
         float bsdfVal;
         const float fresnel = aCtx.fresnelReflectance;
         if (aCtx.isReflection)
+        {
             bsdfVal =
                   (fresnel * geometricalFactor * aCtx.distrVal)
                 / (4.0f * cosThetaIAbs * cosThetaOAbs);
+        }
         else
         {
             const float cosThetaMI = Dot(aCtx.microfacetDirSwitched, aCtx.wilSwitched);
@@ -1121,6 +1136,7 @@ protected:
                     / (cosThetaIAbs * cosThetaOAbs))
                 * (   (Math::Sqr(aCtx.etaInvSwitched) * (1.0f - fresnel) * geometricalFactor * aCtx.distrVal)
                     / (Math::Sqr(cosThetaMI + aCtx.etaInvSwitched * cosThetaMO)));
+
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
             bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) (de-)compression
@@ -1129,20 +1145,21 @@ protected:
         PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);
 
         // TODO: Color (from fresnel?)
-        SpectrumF result;
-        result.SetGreyAttenuation(bsdfVal);
-        return result;
+        oMatRecord.attenuation.SetGreyAttenuation(bsdfVal);
     }
 
     void GetWholeFiniteCompProbabilities(
-              float         &oWholeFinCompPdfW,
-              float         &oWholeFinCompProbability,
-        const EvalContext   &aCtx
-        ) const
+              float             &oWholeFinCompPdfW,
+              float             &oWholeFinCompProbability,
+        const EvalContext       &aCtx,
+        const MaterialRecord    &aMatRecord) const
     {
         oWholeFinCompProbability = 1.0f;
 
-        if (aCtx.wolSwitched.z < 0.f)
+        const bool reflectionOnly = aMatRecord.IsFlagSet(MaterialRecord::kReflectionOnly);
+
+        if (   (aCtx.wolSwitched.z < 0.f)
+            || (reflectionOnly && !aCtx.isReflection))
         {
             oWholeFinCompPdfW = 0.0f;
             return;
@@ -1152,16 +1169,20 @@ protected:
             Microfacet::GgxSamplingPdfVisibleNormals(
                 aCtx.wolSwitched, aCtx.microfacetDirSwitched, aCtx.distrVal, mRoughnessAlpha);
 
-        float transfJacobian;
-        if (aCtx.isReflection)
-            transfJacobian = Microfacet::ReflectionJacobian(
-                aCtx.wilSwitched, aCtx.microfacetDirSwitched);
-        else
-            transfJacobian = Microfacet::RefractionJacobian(
-                aCtx.wolSwitched, aCtx.wilSwitched, aCtx.microfacetDirSwitched, aCtx.etaInvSwitched);
+        const float transfJacobian = [&]()
+        {
+            if (aCtx.isReflection)
+                return Microfacet::ReflectionJacobian(
+                    aCtx.wilSwitched, aCtx.microfacetDirSwitched);
+            else
+                return Microfacet::RefractionJacobian(
+                    aCtx.wolSwitched, aCtx.wilSwitched, aCtx.microfacetDirSwitched, aCtx.etaInvSwitched);
+        }();
 
         const float compProbability =
-            aCtx.isReflection ? aCtx.fresnelReflectance : (1.0f - aCtx.fresnelReflectance);
+            reflectionOnly      ? 1.f :
+            aCtx.isReflection   ? aCtx.fresnelReflectance :
+                                  (1.f - aCtx.fresnelReflectance);
 
         oWholeFinCompPdfW = visNormalsPdf * transfJacobian * compProbability;
 
@@ -1173,7 +1194,10 @@ protected:
         const EvalContext   &aCtx) const
     {
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
-            GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, aCtx);
+        {
+            GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, aCtx, oMatRecord);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
+        }
 
         if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptEta))
         {
@@ -1226,16 +1250,18 @@ public:
         {
             oMatRecord.attenuation.MakeZero();
             oMatRecord.pdfW = 0.f;
+            // This also handles TIR refraction scenarios - we expect the rest of the system
+            // to work properly even if we return incorrect (zero) PDF
+            return;
         }
 
         const bool computeProbs = oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs);
 
-        // Evaluate outer layer reflection
-        // (and get some optional data)
+        // Outer layer reflection
         MaterialRecord matRecOuterRefl(wil, wol);
         matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
         //matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
-        matRecOuterRefl.SetFlag(MaterialRecord::kUpperHemiOnly);
+        matRecOuterRefl.SetFlag(MaterialRecord::kReflectionOnly);
         if (computeProbs)
             matRecOuterRefl.RequestOptData(MaterialRecord::kOptSamplingProbs);
         mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
@@ -1246,13 +1272,12 @@ public:
         const float outerEta = matRecOuterRefl.optEta;
         const SpectrumF outerMatAttenuation = matRecOuterRefl.attenuation;
 
-        // Compute refracted directions
+        // Refracted directions
         Vec3f wilRefract, wolRefract;
-        bool dummy;
-        Geom::Refract(wilRefract, dummy, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
-        Geom::Refract(wolRefract, dummy, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
-        //Geom::Refract(wilRefract, dummy, wil, matRecOuterRefl.optHalfwayVec, outerEta);
-        //Geom::Refract(wolRefract, dummy, wol, matRecOuterRefl.optHalfwayVec, outerEta);
+        Geom::Refract(wilRefract, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
+        Geom::Refract(wolRefract, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+        //Geom::Refract(wilRefract, wil, matRecOuterRefl.optHalfwayVec, outerEta);
+        //Geom::Refract(wolRefract, wol, matRecOuterRefl.optHalfwayVec, outerEta);
         // TODO: Are refracted directions always valid??
 
         const float wilFresnelRefl = Utils::Fresnel::Dielectric(wil.z, outerEta);
@@ -1279,7 +1304,7 @@ public:
         const SpectrumF innerMatAttenuation =
               matRecInner.attenuation
             * (wilFresnelTrans * wolFresnelTrans)
-            * (-wilRefract.z / wil.z); // Hack: cancel out wil in the further processing and replace it with refracted in dir
+            * (-wilRefract.z / wil.z); // Hack: replace wil with refracted version for the further processing
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
         //oMatRecord.attenuation = innerMatAttenuation; // debug
@@ -1297,11 +1322,16 @@ public:
             const auto outerPdf = matRecOuterRefl.pdfW;
             const auto innerPdf =
                   matRecInner.pdfW
-                / Math::Sqr(outerEta); // solid angle de-compression (extension)
+                / Math::Sqr(outerEta)       // solid angle de-compression
+                * wil.z / -wilRefract.z;    // irradiance conversion (from Mitsuba)
 
             const float outerPdfWeight = outerCompContrEst / totalContrEst;
             const float innerPdfWeight = innerCompContrEst / totalContrEst;
+            //oMatRecord.pdfW = outerPdf; // debug
+            //oMatRecord.pdfW = innerPdf; // debug
             oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
+
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
         }
     }
 
@@ -1334,7 +1364,7 @@ public:
         {
             // Outer component
             MaterialRecord outerMatRecord(oMatRecord);
-            outerMatRecord.SetFlag(MaterialRecord::kUpperHemiOnly);
+            outerMatRecord.SetFlag(MaterialRecord::kReflectionOnly);
             mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
 
             PG3_ASSERT(oMatRecord.wil.z >= -0.001f);
@@ -1347,23 +1377,18 @@ public:
 
             // Compute refracted outgoing direction
             Vec3f wolRefract;
-            bool dummy;
-            Geom::Refract(wolRefract, dummy, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), outerEta);
-            //Geom::Refract(wolRefract, dummy, aWol, oMatRecord.optHalfwayVec, outerEta);
+            Geom::Refract(wolRefract, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+            //Geom::Refract(wolRefract, aWol, oMatRecord.optHalfwayVec, outerEta);
             // TODO: Is refracted direction always valid??
 
             // Sample inner BRDF
             MaterialRecord innerMatRecord(-wolRefract);
+            innerMatRecord.RequestOptData(MaterialRecord::kOptSamplingProbs); // debug
             mInnerLayerMaterial->SampleBsdf(aRng, innerMatRecord);
 
             // Refract through the upper layer
-            Vec3f wilRefract;
-            Geom::Refract(wilRefract, dummy, -innerMatRecord.wil, Vec3f(0.f, 0.f, 1.f), outerEta);
-            if (wilRefract.z > 0.f)
-                oMatRecord.wil = wilRefract;
-            else
-                // TIR: Forbiden direction will evaluate to zero attenuation later on
-                oMatRecord.wil.Set(0.f, 0.f, -1.f);
+            // This can yield directions under surface due to TIR!
+            Geom::Refract(oMatRecord.wil, -innerMatRecord.wil, Vec3f(0.f, 0.f, 1.f), outerEta);
         }
 
         // Evaluate BRDF & PDF
@@ -1388,43 +1413,6 @@ public:
 
         return false; // debug
     }
-
-protected:
-
-
-    //void GetWholeFiniteCompProbabilities(
-    //          float         &oWholeFinCompPdfW,
-    //          float         &oWholeFinCompProbability,
-    //    const EvalContext   &aCtx
-    //    ) const
-    //{
-    //    oWholeFinCompProbability = 1.0f;
-    //
-    //    if (aCtx.wolSwitched.z < 0.f)
-    //    {
-    //        oWholeFinCompPdfW = 0.0f;
-    //        return;
-    //    }
-    //
-    //    const float visNormalsPdf =
-    //        Microfacet::GgxSamplingPdfVisibleNormals(
-    //            aCtx.wolSwitched, aCtx.microfacetDirSwitched, aCtx.distrVal, mRoughnessAlpha);
-    //
-    //    float transfJacobian;
-    //    if (aCtx.isReflection)
-    //        transfJacobian = Microfacet::ReflectionJacobian(
-    //            aCtx.wilSwitched, aCtx.microfacetDirSwitched);
-    //    else
-    //        transfJacobian = Microfacet::RefractionJacobian(
-    //            aCtx.wolSwitched, aCtx.wilSwitched, aCtx.microfacetDirSwitched, aCtx.etaInvSwitched);
-    //
-    //    const float compProbability =
-    //        aCtx.isReflection ? aCtx.fresnelReflectance : (1.0f - aCtx.fresnelReflectance);
-    //
-    //    oWholeFinCompPdfW = visNormalsPdf * transfJacobian * compProbability;
-    //
-    //    PG3_ASSERT_FLOAT_NONNEGATIVE(oWholeFinCompPdfW);
-    //}
 
 protected:
 

@@ -112,9 +112,10 @@ namespace Geom
         return Vec3f(-aDirIn.x, -aDirIn.y, aDirIn.z);
     }
 
-    // Reflect vector through given normal.
+    // Reflects vector through given normal.
+    // Works also for direction under the surface.
     // Both vectors are expected to be normalized.
-    // Returns whether the input/output direction is in the half-space defined by the normal.
+    // oIsAboveSurface will contain whether the input/output directions are in the half-space defined by the normal.
     void Reflect(
         Vec3f &oDirOut,
         bool  &oIsAboveSurface,
@@ -124,7 +125,7 @@ namespace Geom
         PG3_ASSERT_VEC3F_NORMALIZED(aDirIn);
         PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
 
-        const float dot = Dot(aDirIn, aNormal); // projection of aDirIn on normal
+        const float dot = Dot(aDirIn, aNormal); // projection of aDirIn onto normal
         oDirOut = (2.0f * dot) * aNormal - aDirIn;
 
         PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
@@ -132,13 +133,22 @@ namespace Geom
         oIsAboveSurface = dot > 0.0f;
     }
 
+    // Convenience wrapper for the full Recflect function
+    void Reflect(
+        Vec3f &oDirOut,
+        const Vec3f &aDirIn,
+        const Vec3f &aNormal)
+    {
+        bool dummy;
+        Reflect(oDirOut, dummy, aDirIn, aNormal);
+    }
+
     void Refract(
         Vec3f &oDirOut,
         bool  &oIsDirInAboveSurface,
         const Vec3f &aDirIn,
         const Vec3f &aNormal,
-        float  aEtaAbs           // internal IOR / external IOR
-        )
+        float  aEtaAbs)          // internal IOR / external IOR
     {
         PG3_ASSERT_VEC3F_NORMALIZED(aDirIn);
         PG3_ASSERT_VEC3F_NORMALIZED(aNormal);
@@ -156,7 +166,7 @@ namespace Geom
         if (cosThetaTSqr < 0.0f)
         {
             // Total internal reflection
-            oDirOut.Set(0.0f, 0.0f, 0.0f);
+            Reflect(oDirOut, aDirIn, aNormal);
             return;
         }
 
@@ -166,6 +176,17 @@ namespace Geom
         oDirOut = aNormal * (cosThetaI * aEtaAbs + cosThetaT) - aDirIn * aEtaAbs;
 
         PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
+    }
+
+    // Convenience wrapper for the full Recflect function
+    void Refract(
+        Vec3f &oDirOut,
+        const Vec3f &aDirIn,
+        const Vec3f &aNormal,
+        float  aEtaAbs)          // internal IOR / external IOR
+    {
+        bool dummy;
+        Refract(oDirOut, dummy, aDirIn, aNormal, aEtaAbs);
     }
 
     void ComputeSphericalTriangleAngles(
