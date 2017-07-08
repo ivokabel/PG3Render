@@ -44,8 +44,10 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-for EM in 1; do
-    render -s 27 -em $EM -a dlsa -i 10000 -ot RefractionGlobal_BothLayers_Outer005
+for EM in 1 7 8 9 10 11 12; do
+    for ROUGHNESS in 0.100 0.050 0.010 0.001; do
+        render -s 27 -em $EM -a dmis -i 2048 -auxf1 $ROUGHNESS -ot InnerLamb_Outer${ROUGHNESS}_RefrGlob
+    done
 done
 
 ### Diff tool comparison modes

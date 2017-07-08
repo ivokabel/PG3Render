@@ -323,15 +323,14 @@ public:
         }
         else if (Utils::IsMasked(aBoxMask, kSpheresWeidlichWilkieLayers))
         {
+            const float outerRoughness =
+                (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
-                    new MicrofacetGGXDielectricMaterial(0.05f, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
+                    new MicrofacetGGXDielectricMaterial(
+                        outerRoughness, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
                     //new MicrofacetGGXConductorMaterial(0.2f, SpectralData::kSilverIor, SpectralData::kAirIor, SpectralData::kSilverAbsorb)));
                     new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f))));
-
-            //// debug
-            //mMaterials.push_back(
-            //    new MicrofacetGGXDielectricMaterial(0.05f, SpectralData::kGlassCorningIor, SpectralData::kAirIor));
         }
         else
         {
