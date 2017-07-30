@@ -145,6 +145,7 @@ public:
 
         kOptEta             = 0x0002,
         kOptHalfwayVec      = 0x0004,
+        kOptReflectance     = 0x0008,
     };
 
 private:
@@ -188,6 +189,9 @@ public:
     // Optional halfway vector (microfacet normal) for the given in-out directions.
     // Valid only if AreOptDataProvided(kOptHalfwayVec) is true.
     Vec3f optHalfwayVec;
+
+    // Optional material reflectance
+    SpectrumF optReflectance;
 };
 
 class AbstractMaterial
@@ -257,12 +261,7 @@ public:
     {
         oMatRecord.attenuation = EvalBsdf(oMatRecord.wil, oMatRecord.wol);
 
-        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
-        {
-            oMatRecord.pdfW     = GetPdfW(oMatRecord.wil);
-            oMatRecord.compProb = 1.f;
-            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
-        }
+        GetOptData(oMatRecord);
     }
 
     virtual void SampleBsdf(
@@ -307,6 +306,24 @@ public:
     virtual bool IsReflectanceZero() const override
     {
         return mReflectance.IsZero();
+    }
+
+    virtual bool GetOptData(MaterialRecord &oMatRecord) const override
+    {
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+        {
+            oMatRecord.pdfW     = GetPdfW(oMatRecord.wil);
+            oMatRecord.compProb = 1.f;
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
+        }
+
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptReflectance))
+        {
+            oMatRecord.optReflectance = mReflectance;
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptReflectance);
+        }
+
+        return true;
     }
 
 protected:
@@ -1299,7 +1316,10 @@ public:
         MaterialRecord matRecInner(-wilRefract, -wolRefract);
         if (computeProbs)
             matRecInner.RequestOptData(MaterialRecord::kOptSamplingProbs);
+        matRecInner.RequestOptData(MaterialRecord::kOptReflectance);
         mInnerLayerMaterial->EvalBsdf(matRecInner);
+
+        PG3_ASSERT(matRecInner.AreOptDataProvided(MaterialRecord::kOptReflectance));
 
         const SpectrumF innerMatAttenuation =
               matRecInner.attenuation
@@ -1313,9 +1333,11 @@ public:
         // Sampling PDF
         if (computeProbs)
         {
+            const float innerReflectance = matRecInner.optReflectance.Luminance();
+
             const float outerCompContrEst = wolFresnelRefl;
-            const float innerCompContrEst = wolFresnelTrans; // TODO: volumetric attenuation + in-scattering energy loss
-            const float totalContrEst = outerCompContrEst + innerCompContrEst;
+            const float innerCompContrEst = innerReflectance * wolFresnelTrans;// TODO: volumetric attenuation
+            const float totalContrEst     = outerCompContrEst + innerCompContrEst;
 
             PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
@@ -1327,6 +1349,7 @@ public:
 
             const float outerPdfWeight = outerCompContrEst / totalContrEst;
             const float innerPdfWeight = innerCompContrEst / totalContrEst;
+
             //oMatRecord.pdfW = outerPdf; // debug
             //oMatRecord.pdfW = innerPdf; // debug
             oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
@@ -1341,20 +1364,30 @@ public:
         MaterialRecord  &oMatRecord) const override
     {
         // Component contribution estimation
-        // TODO: Precompute to contex?
+        // TODO: Precompute to contex!
 
-        oMatRecord.RequestOptData(MaterialRecord::kOptEta);
-        //oMatRecord.RequestOptData(MaterialRecord::kOptHalfwayVec);
-        mOuterLayerMaterial->GetOptData(oMatRecord);
+        MaterialRecord outerMatRecord(oMatRecord.wil, oMatRecord.wol);
+        outerMatRecord.RequestOptData(MaterialRecord::kOptEta);
+        //outerMatRecord.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        mOuterLayerMaterial->GetOptData(outerMatRecord);
 
-        PG3_ASSERT(oMatRecord.AreOptDataProvided(MaterialRecord::kOptEta));
-        //PG3_ASSERT(oMatRecord.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
+        PG3_ASSERT(outerMatRecord.AreOptDataProvided(MaterialRecord::kOptEta));
+        //PG3_ASSERT(outerMatRecord.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
-        const float outerEta = oMatRecord.optEta;
-        const float wolFresnel = Utils::Fresnel::Dielectric(oMatRecord.wol.z, outerEta);
-        const float outerCompContrEst = wolFresnel;
-        const float innerCompContrEst = 1.f - wolFresnel; // TODO: volumetric attenuation + in-scattering energy loss
-        const float totalContrEst = outerCompContrEst + innerCompContrEst;
+        MaterialRecord innerMatRecord(oMatRecord.wil, oMatRecord.wol);
+        innerMatRecord.RequestOptData(MaterialRecord::kOptReflectance);
+        mInnerLayerMaterial->GetOptData(innerMatRecord);
+
+        PG3_ASSERT(innerMatRecord.AreOptDataProvided(MaterialRecord::kOptReflectance));
+
+        const float outerEta            = outerMatRecord.optEta;
+        const float wolFresnelRefl      = Utils::Fresnel::Dielectric(oMatRecord.wol.z, outerEta);
+        const float wolFresnelTrans     = 1.f - wolFresnelRefl;
+        const float innerReflectance    = innerMatRecord.optReflectance.Luminance();
+
+        const float outerCompContrEst = wolFresnelRefl;
+        const float innerCompContrEst = innerReflectance * wolFresnelTrans;// TODO: volumetric attenuation
+        const float totalContrEst     = outerCompContrEst + innerCompContrEst;
 
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
@@ -1363,7 +1396,6 @@ public:
         if (randomVal < outerCompContrEst)
         {
             // Outer component
-            MaterialRecord outerMatRecord(oMatRecord);
             outerMatRecord.SetFlag(MaterialRecord::kReflectionOnly);
             mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
 
