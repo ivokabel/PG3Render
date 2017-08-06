@@ -432,7 +432,7 @@ public:
     bool EqualsDelta(const Vec2Base &aVal2, float aDelta) const
     {
         PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
-        for (uint32_t i = 0; i < 2; i++)
+        for (uint32_t i = 0; i < 2; ++i)
             if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta))
                 return false;
         return true;
@@ -441,14 +441,14 @@ public:
     friend Vec2Base Min(const Vec2Base& a, const Vec2Base& b)
     {
         Vec2Base result;
-        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::min(a.Get(i), b.Get(i));
+        for (uint32_t i = 0; i < 2; ++i) result.Get(i) = std::min(a.Get(i), b.Get(i));
         return result;
     }
 
     friend Vec2Base Max(const Vec2Base& a, const Vec2Base& b)
     {
         Vec2Base result;
-        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::max(a.Get(i), b.Get(i));
+        for (uint32_t i = 0; i < 2; ++i) result.Get(i) = std::max(a.Get(i), b.Get(i));
         return result;
     }
 
@@ -460,14 +460,14 @@ public:
     Vec2Base Sqrt() const
     {
         Vec2Base result;
-        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::sqrt(Get(i));
+        for (uint32_t i = 0; i < 2; ++i) result.Get(i) = std::sqrt(Get(i));
         return result;
     }
 
     Vec2Base Tan() const
     {
         Vec2Base result;
-        for (uint32_t i = 0; i < 2; i++) result.Get(i) = std::tan(Get(i));
+        for (uint32_t i = 0; i < 2; ++i) result.Get(i) = std::tan(Get(i));
         return result;
     }
 
@@ -584,7 +584,7 @@ public:
     bool EqualsDelta(const Vec3Base &aVal2, float aDelta) const
     {
         PG3_ASSERT_FLOAT_NONNEGATIVE(aDelta);
-        for (uint32_t i = 0; i < 3; i++)
+        for (uint32_t i = 0; i < 3; ++i)
             if (!Math::EqualDelta(Get(i), aVal2.Get(i), aDelta))
                 return false;
         return true;
@@ -593,7 +593,7 @@ public:
     friend Vec3Base Min(const Vec3Base& a, const Vec3Base& b)
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++)
+        for (uint32_t i = 0; i < 3; ++i)
             result.Get(i) = std::min(a.Get(i), b.Get(i));
         return result;
     }
@@ -601,7 +601,7 @@ public:
     friend Vec3Base Max(const Vec3Base& a, const Vec3Base& b)
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++)
+        for (uint32_t i = 0; i < 3; ++i)
             result.Get(i) = std::max(a.Get(i), b.Get(i));
         return result;
     }
@@ -614,7 +614,7 @@ public:
     Vec3Base Sqrt() const
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++)
+        for (uint32_t i = 0; i < 3; ++i)
             result.Get(i) = std::sqrt(Get(i));
         return result;
     }
@@ -622,7 +622,7 @@ public:
     Vec3Base Tan() const
     {
         Vec3Base result;
-        for (uint32_t i = 0; i < 3; i++)
+        for (uint32_t i = 0; i < 3; ++i)
             result.Get(i) = std::tan(Get(i));
         return result;
     }
@@ -663,7 +663,7 @@ public:
 
     friend std::ostream &operator<< (std::ostream &aStream, const Vec3Base &aVector)
     {
-        for (uint32_t i = 0; i < 3; i++)
+        for (uint32_t i = 0; i < 3; ++i)
         {
             if (i > 0)
                 aStream << ", ";
@@ -687,7 +687,7 @@ class Mat4f
 public:
 
     Mat4f(){}
-    Mat4f(float a){ for (uint32_t i=0; i<16; i++) GetPtr()[i] = a; }
+    Mat4f(float a){ for (uint32_t i=0; i<16; ++i) GetPtr()[i] = a; }
 
     const float* GetPtr() const { return reinterpret_cast<const float*>(this); }
     float*       GetPtr()       { return reinterpret_cast<float*>(this);       }
@@ -705,7 +705,7 @@ public:
 
     void SetRow(uint32_t r, const Vec3f &a, float b)
     {
-        for (uint32_t i=0; i<3; i++)
+        for (uint32_t i=0; i<3; ++i)
             Get(r, i) = a.Get(i);
 
         Get(r, 3) = b;
@@ -749,14 +749,14 @@ public:
     static Mat4f Indetity()
     {
         Mat4f res(0);
-        for (uint32_t i=0; i<4; i++) res.Get(i,i) = 1.f;
+        for (uint32_t i=0; i<4; ++i) res.Get(i,i) = 1.f;
         return res;
     }
 
     static Mat4f Scale(const Vec3f& aScale)
     {
         Mat4f res = Mat4f::Indetity();
-        for (uint32_t i=0; i<3; i++) res.Get(i,i) = aScale.Get(i);
+        for (uint32_t i=0; i<3; ++i) res.Get(i,i) = aScale.Get(i);
         res.Get(3,3) = 1;
         return res;
     }
@@ -764,7 +764,7 @@ public:
     static Mat4f Translate(const Vec3f& aScale)
     {
         Mat4f res = Mat4f::Indetity();
-        for (uint32_t i=0; i<3; i++) res.Get(i,3) = aScale.Get(i);
+        for (uint32_t i=0; i<3; ++i) res.Get(i,3) = aScale.Get(i);
         res.Get(3,3) = 1;
         return res;
     }
@@ -799,7 +799,7 @@ public:
         Mat4f res(0);
         for (uint32_t row=0; row<4; row++)
             for (uint32_t col=0; col<4; col++)
-                for (uint32_t i=0; i<4; i++)
+                for (uint32_t i=0; i<4; ++i)
                     res.Get(row, col) += left.Get(row, i) * right.Get(i, col);
 
         return res;
@@ -933,7 +933,7 @@ public:
         det = 1.f / det;
 
         Mat4f res;
-        for (i = 0; i < 16; i++)
+        for (i = 0; i < 16; ++i)
             res.GetPtr()[i] = inv[i] * det;
 
         return res;
