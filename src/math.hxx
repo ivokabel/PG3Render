@@ -641,6 +641,15 @@ public:
         return res;
     }
 
+    friend Vec3Base Exp(const Vec3Base &a)
+    {
+        Vec3Base result;
+        for (uint32_t i = 0; i < 3; ++i)
+            result.Get(i) = std::exp(a.Get(i));
+        return result;
+    }
+
+
     friend Vec3Base Normalize(const Vec3Base& a)
     {
         const T lenSqr = Dot(a, a);

@@ -42,6 +42,8 @@ public:
 
     // Sets as attenuation quantity which will transform white sRGB incident light to light 
     // with specified sRGB colour coordinates.
+    //
+    // TODO: Make a clear distinction between attenuation and transmittance?
     SRGBSpectrumBase& SetSRGBAttenuation(T r, T g, T b)
     {
         x = r;

@@ -44,9 +44,9 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-for EM in 1 7 8 9 10 11 12; do
-    for ROUGHNESS in 0.100 0.050 0.010 0.001; do
-        render -s 27 -em $EM -a dmis -i 2048 -auxf1 $ROUGHNESS -ot InnerLamb_Outer${ROUGHNESS}_RefrGlob
+for EM in 10; do
+    for THICKNESS in 0.00 0.05 0.10 0.20 0.50 1.00 2.00 5.00; do
+        render -s 27 -em $EM -a dmis -i 64 -auxf1 0.01 -auxf2 $THICKNESS -ot InnerLambGrey0.8_Outer0.010_RefrGlob_MediumBlue_Thick${THICKNESS}_DoubleOutMediumTransSampling
     done
 done
 

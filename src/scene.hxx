@@ -325,12 +325,17 @@ public:
         {
             const float outerRoughness =
                 (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
+            const float mediumThickness =
+                (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.001f;
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
                     new MicrofacetGGXDielectricMaterial(
                         outerRoughness, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
                     //new MicrofacetGGXConductorMaterial(0.2f, SpectralData::kSilverIor, SpectralData::kAirIor, SpectralData::kSilverAbsorb)));
-                    new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f))));
+                    //new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)),
+                    new LambertMaterial(SpectrumF().SetGreyAttenuation(0.8f)),
+                    SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f),
+                    mediumThickness));
         }
         else
         {

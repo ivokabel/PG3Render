@@ -86,6 +86,8 @@ public:
     //
     // For sampling usage scenario it relates to the chosen BSDF component only,
     // otherwise it relates to the total finite BSDF.
+    //
+    // TODO: Rename to transmittance??
     SpectrumF   attenuation;
 
     // In finite BSDF cases it contains the angular PDF of all finite components summed up.
@@ -1246,14 +1248,19 @@ public:
 
     WeidlichWilkie2LayeredMaterial(
         AbstractMaterial    *aOuterLayerMaterial,
-        AbstractMaterial    *aInnerLayerMaterial)
+        AbstractMaterial    *aInnerLayerMaterial,
+        SpectrumF            aMediumAttenuationCoeff, // 0 means no attenuation
+        float                aMediumThickness)
         :
         AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling)), // TODO
         mOuterLayerMaterial(aOuterLayerMaterial),
-        mInnerLayerMaterial(aInnerLayerMaterial)
+        mInnerLayerMaterial(aInnerLayerMaterial),
+        mMediumAttenuationCoeff(aMediumAttenuationCoeff),
+        mMediumThickness(aMediumThickness)
     {
         PG3_ASSERT(mOuterLayerMaterial.get() != nullptr);
         PG3_ASSERT(mInnerLayerMaterial.get() != nullptr);
+        PG3_ASSERT_VEC3F_VALID(aMediumAttenuationCoeff);
     }
 
     virtual void EvalBsdf(MaterialRecord &oMatRecord) const override
@@ -1276,26 +1283,26 @@ public:
         const bool computeProbs = oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs);
 
         // Outer layer reflection
-        MaterialRecord matRecOuterRefl(wil, wol);
-        matRecOuterRefl.RequestOptData(MaterialRecord::kOptEta);
-        //matRecOuterRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
-        matRecOuterRefl.SetFlag(MaterialRecord::kReflectionOnly);
+        MaterialRecord outerMatRecRefl(wil, wol);
+        outerMatRecRefl.RequestOptData(MaterialRecord::kOptEta);
+        //outerMatRecRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
+        outerMatRecRefl.SetFlag(MaterialRecord::kReflectionOnly);
         if (computeProbs)
-            matRecOuterRefl.RequestOptData(MaterialRecord::kOptSamplingProbs);
-        mOuterLayerMaterial->EvalBsdf(matRecOuterRefl);
+            outerMatRecRefl.RequestOptData(MaterialRecord::kOptSamplingProbs);
+        mOuterLayerMaterial->EvalBsdf(outerMatRecRefl);
 
-        PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptEta));
-        //PG3_ASSERT(matRecOuterRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
+        PG3_ASSERT(outerMatRecRefl.AreOptDataProvided(MaterialRecord::kOptEta));
+        //PG3_ASSERT(outerMatRecRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
-        const float outerEta = matRecOuterRefl.optEta;
-        const SpectrumF outerMatAttenuation = matRecOuterRefl.attenuation;
+        const float outerEta = outerMatRecRefl.optEta;
+        const SpectrumF outerMatAttenuation = outerMatRecRefl.attenuation;
 
         // Refracted directions
         Vec3f wilRefract, wolRefract;
         Geom::Refract(wilRefract, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
         Geom::Refract(wolRefract, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
-        //Geom::Refract(wilRefract, wil, matRecOuterRefl.optHalfwayVec, outerEta);
-        //Geom::Refract(wolRefract, wol, matRecOuterRefl.optHalfwayVec, outerEta);
+        //Geom::Refract(wilRefract, wil, outerMatRecRefl.optHalfwayVec, outerEta);
+        //Geom::Refract(wolRefract, wol, outerMatRecRefl.optHalfwayVec, outerEta);
         // TODO: Are refracted directions always valid??
 
         const float wilFresnelRefl = Utils::Fresnel::Dielectric(wil.z, outerEta);
@@ -1311,20 +1318,27 @@ public:
         //    / Math::kPiF);// Lambert
         //return;
 
-        // TODO: Volumetric attenuation
+        // Medium attenuation
+        const float clampedCosO      = std::max(wol.z, 0.0001f);
+        const float clampedCosI      = std::max(wil.z, 0.0001f);
+        const float mediumPathLength = mMediumThickness * (1.f / clampedCosO + 1.f / clampedCosI);
+        // TODO: Wrap into function (and namespace?)
+        const SpectrumF mediumOpticalDepth  = mMediumAttenuationCoeff * mediumPathLength;
+        const SpectrumF mediumTrans         = Exp(-mediumOpticalDepth);
 
         // Evaluate inner layer
-        MaterialRecord matRecInner(-wilRefract, -wolRefract);
+        MaterialRecord innerMatRec(-wilRefract, -wolRefract);
         if (computeProbs)
-            matRecInner.RequestOptData(MaterialRecord::kOptSamplingProbs);
-        matRecInner.RequestOptData(MaterialRecord::kOptReflectance);
-        mInnerLayerMaterial->EvalBsdf(matRecInner);
+            innerMatRec.RequestOptData(MaterialRecord::kOptSamplingProbs);
+        innerMatRec.RequestOptData(MaterialRecord::kOptReflectance);
+        mInnerLayerMaterial->EvalBsdf(innerMatRec);
 
-        PG3_ASSERT(matRecInner.AreOptDataProvided(MaterialRecord::kOptReflectance));
+        PG3_ASSERT(innerMatRec.AreOptDataProvided(MaterialRecord::kOptReflectance));
 
         const SpectrumF innerMatAttenuation =
-              matRecInner.attenuation
+              innerMatRec.attenuation
             * (wilFresnelTrans * wolFresnelTrans)
+            * mediumTrans
             * (-wilRefract.z / wil.z); // Hack: replace wil with refracted version for the further processing
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
@@ -1334,25 +1348,32 @@ public:
         // Sampling PDF
         if (computeProbs)
         {
-            const float innerReflectance = matRecInner.optReflectance.Luminance();
+            const float innerReflectance = innerMatRec.optReflectance.Luminance();
+
+            // Medium attenuation estimate
+            // We estimate the incoming path length using the outgoing one
+            const float mediumPathLengthEst = mMediumThickness * (1.f / clampedCosO * 2.f);
+            // TODO: Wrap into function (and namespace?)
+            const SpectrumF mediumOpticalDepthEst = mMediumAttenuationCoeff * mediumPathLengthEst;
+            const SpectrumF mediumTransEst = Exp(-mediumOpticalDepthEst);
 
             const float outerCompContrEst = wolFresnelRefl;
-            const float innerCompContrEst = innerReflectance * wolFresnelTrans;// TODO: volumetric attenuation
+            const float innerCompContrEst = innerReflectance * wolFresnelTrans * mediumTransEst.Luminance();
             const float totalContrEst     = outerCompContrEst + innerCompContrEst;
 
             PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
-            const auto outerPdf = matRecOuterRefl.pdfW;
-            const auto innerPdf =
-                  matRecInner.pdfW
-                / Math::Sqr(outerEta)       // solid angle de-compression
-                * wil.z / -wilRefract.z;    // irradiance conversion (from Mitsuba)
-
             const float outerPdfWeight = outerCompContrEst / totalContrEst;
             const float innerPdfWeight = innerCompContrEst / totalContrEst;
 
+            const auto outerPdf = outerMatRecRefl.pdfW;
+            const auto innerPdf =
+                  innerMatRec.pdfW
+                / Math::Sqr(outerEta)       // solid angle de-compression
+                * wil.z / -wilRefract.z;    // irradiance conversion (from Mitsuba)
+
             //oMatRecord.pdfW = outerPdf; // debug
-            //oMatRecord.pdfW = innerPdf; // debug
+            //oMatRecord.pdfW  = innerPdf; // debug
             oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
 
             oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
@@ -1386,8 +1407,16 @@ public:
         const float wolFresnelTrans     = 1.f - wolFresnelRefl;
         const float innerReflectance    = innerMatRecord.optReflectance.Luminance();
 
+        // Medium attenuation estimate
+        // We estimate the incoming path length using the outgoing one
+        const float clampedCosO = std::max(oMatRecord.wol.z, 0.0001f);
+        const float mediumPathLengthEst = mMediumThickness * (1.f / clampedCosO * 2.f);
+        // TODO: Wrap into function (and namespace?)
+        const SpectrumF mediumOpticalDepthEst   = mMediumAttenuationCoeff * mediumPathLengthEst;
+        const SpectrumF mediumTransEst          = Exp(-mediumOpticalDepthEst);
+
         const float outerCompContrEst = wolFresnelRefl;
-        const float innerCompContrEst = innerReflectance * wolFresnelTrans;// TODO: volumetric attenuation
+        const float innerCompContrEst = innerReflectance * wolFresnelTrans * mediumTransEst.Luminance();
         const float totalContrEst     = outerCompContrEst + innerCompContrEst;
 
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
@@ -1451,6 +1480,7 @@ protected:
 
     std::unique_ptr<AbstractMaterial>   mOuterLayerMaterial;
     std::unique_ptr<AbstractMaterial>   mInnerLayerMaterial;
-    // TODO: attenuation of the material material between the two interfaces
+    SpectrumF                           mMediumAttenuationCoeff;
+    float                               mMediumThickness;
 };
 
