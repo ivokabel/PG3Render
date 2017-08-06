@@ -191,6 +191,7 @@ public:
     Vec3f optHalfwayVec;
 
     // Optional material reflectance
+    // Valid only if AreOptDataProvided(kOptReflectance) is true.
     SpectrumF optReflectance;
 };
 
