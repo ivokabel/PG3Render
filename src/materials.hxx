@@ -1,6 +1,8 @@
 #pragma once 
 
 #include "hard_config.hxx"
+
+#include "utils.hxx"
 #include "microfacet.hxx"
 #include "sampling.hxx"
 #include "math.hxx"
@@ -1255,7 +1257,7 @@ public:
         AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling)), // TODO
         mOuterLayerMaterial(aOuterLayerMaterial),
         mInnerLayerMaterial(aInnerLayerMaterial),
-        mMediumAttenuationCoeff(aMediumAttenuationCoeff),
+        mMediumAttCoeff(aMediumAttenuationCoeff),
         mMediumThickness(aMediumThickness)
     {
         PG3_ASSERT(mOuterLayerMaterial.get() != nullptr);
@@ -1322,9 +1324,7 @@ public:
         const float clampedCosO      = std::max(wol.z, 0.0001f);
         const float clampedCosI      = std::max(wil.z, 0.0001f);
         const float mediumPathLength = mMediumThickness * (1.f / clampedCosO + 1.f / clampedCosI);
-        // TODO: Wrap into function (and namespace?)
-        const SpectrumF mediumOpticalDepth  = mMediumAttenuationCoeff * mediumPathLength;
-        const SpectrumF mediumTrans         = Exp(-mediumOpticalDepth);
+        const SpectrumF mediumTrans  = Utils::BeerLambert::Eval(mMediumAttCoeff, mediumPathLength);
 
         // Evaluate inner layer
         MaterialRecord innerMatRec(-wilRefract, -wolRefract);
@@ -1353,9 +1353,7 @@ public:
             // Medium attenuation estimate
             // We estimate the incoming path length using the outgoing one
             const float mediumPathLengthEst = mMediumThickness * (1.f / clampedCosO * 2.f);
-            // TODO: Wrap into function (and namespace?)
-            const SpectrumF mediumOpticalDepthEst = mMediumAttenuationCoeff * mediumPathLengthEst;
-            const SpectrumF mediumTransEst = Exp(-mediumOpticalDepthEst);
+            const SpectrumF mediumTransEst  = Utils::BeerLambert::Eval(mMediumAttCoeff, mediumPathLengthEst);
 
             const float outerCompContrEst = wolFresnelRefl;
             const float innerCompContrEst = innerReflectance * wolFresnelTrans * mediumTransEst.Luminance();
@@ -1409,11 +1407,9 @@ public:
 
         // Medium attenuation estimate
         // We estimate the incoming path length using the outgoing one
-        const float clampedCosO = std::max(oMatRecord.wol.z, 0.0001f);
+        const float clampedCosO         = std::max(oMatRecord.wol.z, 0.0001f);
         const float mediumPathLengthEst = mMediumThickness * (1.f / clampedCosO * 2.f);
-        // TODO: Wrap into function (and namespace?)
-        const SpectrumF mediumOpticalDepthEst   = mMediumAttenuationCoeff * mediumPathLengthEst;
-        const SpectrumF mediumTransEst          = Exp(-mediumOpticalDepthEst);
+        const SpectrumF mediumTransEst  = Utils::BeerLambert::Eval(mMediumAttCoeff, mediumPathLengthEst);
 
         const float outerCompContrEst = wolFresnelRefl;
         const float innerCompContrEst = innerReflectance * wolFresnelTrans * mediumTransEst.Luminance();
@@ -1480,7 +1476,7 @@ protected:
 
     std::unique_ptr<AbstractMaterial>   mOuterLayerMaterial;
     std::unique_ptr<AbstractMaterial>   mInnerLayerMaterial;
-    SpectrumF                           mMediumAttenuationCoeff;
+    SpectrumF                           mMediumAttCoeff;
     float                               mMediumThickness;
 };
 

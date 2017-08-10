@@ -393,6 +393,7 @@ namespace Utils
 
     //////////////////////////////////////////////////////////////////////////
     // Fresnel-related routines
+    // TODO: Move to a new namespace Physics (or just Phys)
     //////////////////////////////////////////////////////////////////////////
     namespace Fresnel
     {
@@ -541,6 +542,28 @@ namespace Utils
             return reflectance;
         }
     } // namespace Fresnel
+
+    //////////////////////////////////////////////////////////////////////////
+    // Bouguer-Lambert-Beer law
+    // TODO: Move to a new namespace Physics (or just Phys)
+    //////////////////////////////////////////////////////////////////////////
+    namespace BeerLambert
+    {
+        SpectrumF Eval(
+            const SpectrumF &aAttenuationCoeff,
+            const float      aPathLength)
+        {
+            PG3_ASSERT_VEC3F_VALID(aAttenuationCoeff);
+            PG3_ASSERT_FLOAT_VALID(aPathLength);
+
+            const SpectrumF opticalDepth    = aAttenuationCoeff * aPathLength;
+            const SpectrumF transmissivity  = Exp(-opticalDepth);
+
+            PG3_ASSERT_FLOAT_VALID(transmissivity);
+
+            return transmissivity;
+        }
+    } // namespace BeerLambert
 
     namespace ProgressBar
     {
