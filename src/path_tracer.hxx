@@ -459,7 +459,7 @@ protected:
 #ifdef _DEBUG
     const uint32_t kMaxPathLength = 700;     // crash at 700
 #else
-    const uint32_t kMaxPathLength = 1400;    // crash at 1490 @ 64 bit
+    const uint32_t kMaxPathLength = 1200;    // crash at 1370 @ 64 bit
 #endif
 
 };
