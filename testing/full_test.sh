@@ -48,8 +48,9 @@ DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/BinCMake/Release"
 PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 DIFF_TOOL=perceptualdiff.exe
 
-TEST_COUNT_TOTAL=0
-TEST_COUNT_SUCCESSFUL=0
+SUCCESSFUL_COUNT=0
+FAILED_RENDER_COUNT=0
+FAILED_TEST_COUNT=0
 
 # $1 ... algorithm
 # $2 ... scene idx
@@ -93,23 +94,25 @@ run_single_render () {
             "$DIFF_TOOL" -mode rmsde_relative -gamma 1.0 -deltaethreshold $ERROR_THRESHOLD -output "$DIFF_IMG" "$RENDERED_IMG" "$REFERENCE_IMG"
             DIFF_RESULT=$?
             if [ "$DIFF_RESULT" = "0" ]; then
-                ((TEST_COUNT_SUCCESSFUL+=1))
+                ((SUCCESSFUL_COUNT+=1))
                 echo "Difference passed"
             else
+                ((FAILED_TEST_COUNT+=1))
                 echo "           $RENDERED_IMG"
             fi
         else
+             ((FAILED_RENDER_COUNT+=1))
             echo "Rendering FAILED"
         fi
     else
         if [ $RENDERING_RESULT = 0 ]; then
-            ((TEST_COUNT_SUCCESSFUL+=1))
+            ((SUCCESSFUL_COUNT+=1))
             echo "Reference generated"
         else
+            ((FAILED_RENDER_COUNT+=1))
             echo "Reference generation FAILED"
         fi
     fi
-    ((TEST_COUNT_TOTAL+=1))
 }
 
 # $1 ... scene idx
@@ -208,8 +211,9 @@ done
 echo
 echo "The script has finished."
 
-TEST_COUNT_UNSUCCESSFUL=`expr $TEST_COUNT_TOTAL - $TEST_COUNT_SUCCESSFUL`
-echo "Successful: $TEST_COUNT_SUCCESSFUL, unsuccessful: $TEST_COUNT_UNSUCCESSFUL"
+echo "Successful:     $SUCCESSFUL_COUNT"
+echo "Failed renders: $FAILED_RENDER_COUNT"
+echo "Failed tests:   $FAILED_TEST_COUNT"
 
 END_TIME=`date +%s`
 TOTAL_TIME=`expr $END_TIME - $START_TIME`
