@@ -2,7 +2,7 @@
 
 #include "hard_config.hxx"
 
-#include "utils.hxx"
+#include "physics.hxx"
 #include "microfacet.hxx"
 #include "sampling.hxx"
 #include "math.hxx"
@@ -669,7 +669,7 @@ public:
         // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
-        const float reflectance = Utils::Fresnel::Conductor(oMatRecord.ThetaInCos(), mEta, mAbsorbance);
+        const float reflectance = Physics::FresnelConductor(oMatRecord.ThetaInCos(), mEta, mAbsorbance);
         oMatRecord.attenuation.SetGreyAttenuation(reflectance);
     }
 
@@ -682,7 +682,7 @@ public:
         // TODO: This may be cached (GetRRContinuationProb and SampleBsdf compute the same Fresnel 
         //       value), but it doesn't seem to be the bottleneck now. Postponing.
 
-        const float reflectance = Utils::Fresnel::Conductor(aWol.z, mEta, mAbsorbance);
+        const float reflectance = Physics::FresnelConductor(aWol.z, mEta, mAbsorbance);
         return reflectance;
     }
 
@@ -713,7 +713,7 @@ public:
         Rng             &aRng,
         MaterialRecord  &oMatRecord) const override
     {
-        const float fresnelRefl = Utils::Fresnel::Dielectric(oMatRecord.wol.z, mEta);
+        const float fresnelRefl = Physics::FresnelDielectric(oMatRecord.wol.z, mEta);
 
         float attenuation;
 
@@ -814,7 +814,7 @@ public:
         oMatRecord.wil = ctx.wil;
 
         const float cosThetaOM = Dot(ctx.microfacetDir, ctx.wol);
-        ctx.fresnelReflectance = Utils::Fresnel::Conductor(cosThetaOM, mEta, mAbsorbance);
+        ctx.fresnelReflectance = Physics::FresnelConductor(cosThetaOM, mEta, mAbsorbance);
 
         GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
 
@@ -872,7 +872,7 @@ protected:
         oCtx.distrVal = Microfacet::DistributionGgx(oCtx.microfacetDir, mRoughnessAlpha);
 
         const float cosThetaOM = Dot(oCtx.microfacetDir, oCtx.wol);
-        oCtx.fresnelReflectance = Utils::Fresnel::Conductor(cosThetaOM, mEta, mAbsorbance);
+        oCtx.fresnelReflectance = Physics::FresnelConductor(cosThetaOM, mEta, mAbsorbance);
     }
 
     SpectrumF EvalBsdf(EvalContext &aCtx) const
@@ -1002,7 +1002,7 @@ public:
 
         // Randomly choose between reflection or refraction
         const float cosThetaOM = Dot(ctx.microfacetDirSwitched, ctx.wolSwitched);
-        ctx.fresnelReflectance  = Utils::Fresnel::Dielectric(cosThetaOM, ctx.etaSwitched);
+        ctx.fresnelReflectance = Physics::FresnelDielectric(cosThetaOM, ctx.etaSwitched);
         bool isOutDirAboveMicrofacet;
         if (reflectionOnly || (aRng.GetFloat() <= ctx.fresnelReflectance))
         {
@@ -1108,8 +1108,8 @@ protected:
 
         oCtx.distrVal =
             Microfacet::DistributionGgx(oCtx.microfacetDirSwitched, mRoughnessAlpha);
-        const float cosThetaOM = Dot(oCtx.microfacetDirSwitched, oCtx.wolSwitched);
-        oCtx.fresnelReflectance = Utils::Fresnel::Dielectric(cosThetaOM, oCtx.etaSwitched);
+        const float cosThetaOM  = Dot(oCtx.microfacetDirSwitched, oCtx.wolSwitched);
+        oCtx.fresnelReflectance = Physics::FresnelDielectric(cosThetaOM, oCtx.etaSwitched);
     }
 
     void EvalBsdf(
@@ -1307,8 +1307,8 @@ public:
         //Geom::Refract(wolRefract, wol, outerMatRecRefl.optHalfwayVec, outerEta);
         // TODO: Are refracted directions always valid??
 
-        const float wilFresnelRefl = Utils::Fresnel::Dielectric(wil.z, outerEta);
-        const float wolFresnelRefl = Utils::Fresnel::Dielectric(wol.z, outerEta);
+        const float wilFresnelRefl  = Physics::FresnelDielectric(wil.z, outerEta);
+        const float wolFresnelRefl  = Physics::FresnelDielectric(wol.z, outerEta);
         const float wilFresnelTrans = 1.f - wilFresnelRefl;
         const float wolFresnelTrans = 1.f - wolFresnelRefl;
 
@@ -1324,7 +1324,7 @@ public:
         const float clampedCosO      = std::max(wol.z, 0.0001f);
         const float clampedCosI      = std::max(wil.z, 0.0001f);
         const float mediumPathLength = mMediumThickness * (1.f / clampedCosO + 1.f / clampedCosI);
-        const SpectrumF mediumTrans  = Utils::BeerLambert::Eval(mMediumAttCoeff, mediumPathLength);
+        const SpectrumF mediumTrans  = Physics::BeerLambert(mMediumAttCoeff, mediumPathLength);
 
         // Evaluate inner layer
         MaterialRecord innerMatRec(-wilRefract, -wolRefract);
@@ -1353,7 +1353,7 @@ public:
             // Medium attenuation estimate
             // We estimate the incoming path length using the outgoing one
             const float mediumPathLengthEst = mMediumThickness * (1.f / clampedCosO * 2.f);
-            const SpectrumF mediumTransEst  = Utils::BeerLambert::Eval(mMediumAttCoeff, mediumPathLengthEst);
+            const SpectrumF mediumTransEst  = Physics::BeerLambert(mMediumAttCoeff, mediumPathLengthEst);
 
             const float outerCompContrEst = wolFresnelRefl;
             const float innerCompContrEst = innerReflectance * wolFresnelTrans * mediumTransEst.Luminance();
@@ -1401,7 +1401,7 @@ public:
         PG3_ASSERT(innerMatRecord.AreOptDataProvided(MaterialRecord::kOptReflectance));
 
         const float outerEta            = outerMatRecord.optEta;
-        const float wolFresnelRefl      = Utils::Fresnel::Dielectric(oMatRecord.wol.z, outerEta);
+        const float wolFresnelRefl      = Physics::FresnelDielectric(oMatRecord.wol.z, outerEta);
         const float wolFresnelTrans     = 1.f - wolFresnelRefl;
         const float innerReflectance    = innerMatRecord.optReflectance.Luminance();
 
@@ -1409,7 +1409,7 @@ public:
         // We estimate the incoming path length using the outgoing one
         const float clampedCosO         = std::max(oMatRecord.wol.z, 0.0001f);
         const float mediumPathLengthEst = mMediumThickness * (1.f / clampedCosO * 2.f);
-        const SpectrumF mediumTransEst  = Utils::BeerLambert::Eval(mMediumAttCoeff, mediumPathLengthEst);
+        const SpectrumF mediumTransEst  = Physics::BeerLambert(mMediumAttCoeff, mediumPathLengthEst);
 
         const float outerCompContrEst = wolFresnelRefl;
         const float innerCompContrEst = innerReflectance * wolFresnelTrans * mediumTransEst.Luminance();
