@@ -325,16 +325,28 @@ public:
         {
             const float outerRoughness =
                 (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
+            const float innerRoughness =
+                (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.200f;
             const float mediumThickness =
-                (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.001f;
+                (aAuxDbgParams.float3 != Math::InfinityF()) ? aAuxDbgParams.float3 : 0.001f;
+
+            innerRoughness; // not always used
+
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
+                    // Outer layer
                     new MicrofacetGGXDielectricMaterial(
                         outerRoughness, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
-                    //new MicrofacetGGXConductorMaterial(0.2f, SpectralData::kSilverIor, SpectralData::kAirIor, SpectralData::kSilverAbsorb)));
+
+                    // Inner layer
+                    new MicrofacetGGXConductorMaterial(innerRoughness, SpectralData::kSilverIor, SpectralData::kGlassCorningIor, SpectralData::kSilverAbsorb),
                     //new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)),
-                    new LambertMaterial(SpectrumF().SetGreyAttenuation(0.8f)),
-                    SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f),
+                    //new LambertMaterial(SpectrumF().SetGreyAttenuation(0.8f)),
+                    //new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f)),
+
+                    // Inter-layer medium
+                    //SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f), // blue
+                      SpectrumF().SetSRGBAttenuation(0.3f, 0.6f, 4.0f), // greenish-yellow -> brown
                     mediumThickness));
         }
         else

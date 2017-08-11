@@ -159,7 +159,7 @@ namespace Physics
         const SpectrumF opticalDepth    = aAttenuationCoeff * aPathLength;
         const SpectrumF transmissivity  = Exp(-opticalDepth);
 
-        PG3_ASSERT_FLOAT_VALID(transmissivity);
+        PG3_ASSERT_VEC3F_VALID(transmissivity);
 
         return transmissivity;
     }

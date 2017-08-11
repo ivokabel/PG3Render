@@ -788,11 +788,7 @@ public:
 
         oMatRecord.attenuation = EvalBsdf(ctx);
 
-        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
-        {
-            GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, ctx);
-            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
-        }
+        GetOptData(oMatRecord, ctx);
     }
 
     // Generates a random BSDF sample.
@@ -834,7 +830,18 @@ public:
     {
         aWol; // unreferenced param
 
-        return 1.0f; // TODO
+        return 1.0f; // TODO: GetReflectanceEst(aCtx);
+    }
+
+    virtual bool GetOptData(MaterialRecord &oMatRecord) const override
+    {
+        // TODO: Initializing the context just to obtain optional data might be inefficient!
+        EvalContext ctx;
+        InitEvalContext(ctx, oMatRecord.wil, oMatRecord.wol);
+
+        GetOptData(oMatRecord, ctx);
+
+        return true;
     }
 
     virtual bool IsReflectanceZero() const override
@@ -925,6 +932,29 @@ protected:
         const float reflectionJacobian =
             Microfacet::ReflectionJacobian(aCtx.wol, aCtx.microfacetDir);
         oWholeFinCompPdfW = normalPdf * reflectionJacobian;
+    }
+
+    void GetOptData(
+        MaterialRecord      &oMatRecord,
+        const EvalContext   &aCtx) const
+    {
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptSamplingProbs))
+        {
+            GetWholeFiniteCompProbabilities(oMatRecord.pdfW, oMatRecord.compProb, aCtx);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
+        }
+
+        if (oMatRecord.AreOptDataRequested(MaterialRecord::kOptReflectance))
+        {
+            oMatRecord.optReflectance = GetReflectanceEst(aCtx);
+            oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptReflectance);
+        }
+    }
+
+    SpectrumF GetReflectanceEst(const EvalContext &aCtx) const
+    {
+        // We estimate the whole BRDF reflectance with the current microfacet Fresnel reflectance
+        return aCtx.fresnelReflectance; // gets converted to spectrum...
     }
 
 protected:
@@ -1312,14 +1342,6 @@ public:
         const float wilFresnelTrans = 1.f - wilFresnelRefl;
         const float wolFresnelTrans = 1.f - wolFresnelRefl;
 
-        // debug
-        //oMatRecord.attenuation = SpectrumF(1 / Math::kPiF); // Lambert, based on wil
-        //oMatRecord.attenuation = SpectrumF(
-        //      wilFresnelTrans * wolFresnelTrans
-        //    * (-wilRefract.z / wil.z)// Hack: cancel out wil in the further processing and replace it with refracted in dir
-        //    / Math::kPiF);// Lambert
-        //return;
-
         // Medium attenuation
         const float clampedCosO      = std::max(wol.z, 0.0001f);
         const float clampedCosI      = std::max(wil.z, 0.0001f);
@@ -1339,7 +1361,8 @@ public:
               innerMatRec.attenuation
             * (wilFresnelTrans * wolFresnelTrans)
             * mediumTrans
-            * (-wilRefract.z / wil.z); // Hack: replace wil with refracted version for the further processing
+              //* (wil.z / -wilRefract.z) // irradiance conversion (Mistuba)
+            ; //* (-wilRefract.z / wil.z); // Hack: replace wil with refracted version for the further processing
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
         //oMatRecord.attenuation = innerMatAttenuation; // debug
