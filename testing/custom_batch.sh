@@ -44,19 +44,33 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+# Full furnace test
+#COMPENSATION_METHOD=OrigHack
+ COMPENSATION_METHOD=MtsIrrIn2
+#COMPENSATION_METHOD=MtsIrrOut2
+#COMPENSATION_METHOD=MtsSolang
+THICKNESS=0.00
+for EM in 1; do
+    for INNER_ROUGHNESS in 1.00 0.30 0.01; do
+        for OUTER_ROUGHNESS in 0.30 0.20 0.10 0.01; do
+            render -s 27 -em $EM -a dmis -i 16 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Comp${COMPENSATION_METHOD}
+        done
+    done
+done
+
 # Asserts
 #render -s 27 -em 1 -a dbs  -i 128 -auxf1 0.45 -auxf2 0.40 -auxf3 0.00 -ot RefrGlob_Inner0.40_Outer0.45_Thick0.00_IrrConv
 #render -s 27 -em 1 -a dlsa -i 128 -auxf1 0.45 -auxf2 0.40 -auxf3 0.00 -ot RefrGlob_Inner0.40_Outer0.45_Thick0.00_IrrConv
 #render -s 27 -em 1 -a dmis -i 128 -auxf1 0.45 -auxf2 0.40 -auxf3 0.00 -ot RefrGlob_Inner0.40_Outer0.45_Thick0.00_IrrConv
 
 # Specular-Glossy: Furnace test
-OUTER_ROUGHNESS=0.005
-THICKNESS=0.00
-for EM in 1 10; do
-    for INNER_ROUGHNESS in 0.01 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45; do
-        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}_IrrConv
-    done
-done
+#OUTER_ROUGHNESS=0.005
+#THICKNESS=0.00
+#for EM in 1 10; do
+#    for INNER_ROUGHNESS in 0.01 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45; do
+#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}_IrrConv
+#    done
+#done
 
 # Specular-Lambert Furnace Test
 #THICKNESS=0.00

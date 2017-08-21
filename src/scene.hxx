@@ -339,10 +339,11 @@ public:
                         outerRoughness, SpectralData::kGlassCorningIor, SpectralData::kAirIor),
 
                     // Inner layer
-                    new MicrofacetGGXConductorMaterial(innerRoughness, SpectralData::kSilverIor, SpectralData::kGlassCorningIor, SpectralData::kSilverAbsorb),
+                    (innerRoughness != 1.0f)
+                        ? (AbstractMaterial*)new MicrofacetGGXConductorMaterial(innerRoughness, SpectralData::kSilverIor, SpectralData::kGlassCorningIor, SpectralData::kSilverAbsorb)
                     //new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)),
                     //new LambertMaterial(SpectrumF().SetGreyAttenuation(0.8f)),
-                    //new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f)),
+                        : (AbstractMaterial*)new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f)),
 
                     // Inter-layer medium
                     //SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f), // blue

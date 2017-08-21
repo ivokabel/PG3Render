@@ -1361,8 +1361,12 @@ public:
               innerMatRec.attenuation
             * (wilFresnelTrans * wolFresnelTrans)
             * mediumTrans
-              //* (wil.z / -wilRefract.z) // irradiance conversion (Mistuba)
-            ; //* (-wilRefract.z / wil.z); // Hack: replace wil with refracted version for the further processing
+            //* (wol.z / -wolRefract.z) // irradiance conversion - out (Mistuba old)
+            //* (-wolRefract.z / wol.z) // irradiance conversion - out2
+            //* (wil.z / -wilRefract.z) // irradiance conversion - in (Mistuba)
+            //* (-wilRefract.z / wil.z) // irradiance conversion - in2
+            //* ((1.f / outerEta) * (1.f / outerEta)) // solid angle compression (Mistuba)
+            ;
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
         //oMatRecord.attenuation = innerMatAttenuation; // debug
