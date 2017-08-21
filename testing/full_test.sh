@@ -4,7 +4,7 @@
 # Settings
 ###################################################################################################
 
-COMPARISON_MODE="compare_to_reference"  #make_references_from_currents"  #"generate_references"  #"
+COMPARISON_MODE="compare_to_reference"  #"make_references_from_currents"  #"generate_references"  #"
 ITERATIONS_COUNTS="4 16"
 ARCH_MODES="32 64"
 ERROR_THRESHOLD=0.25
@@ -211,9 +211,9 @@ done
 echo
 echo "The script has finished."
 
-echo "Successful:     $SUCCESSFUL_COUNT"
 echo "Failed renders: $FAILED_RENDER_COUNT"
 echo "Failed tests:   $FAILED_TEST_COUNT"
+echo "Successful:     $SUCCESSFUL_COUNT"
 
 END_TIME=`date +%s`
 TOTAL_TIME=`expr $END_TIME - $START_TIME`
