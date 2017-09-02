@@ -330,7 +330,7 @@ public:
         MaterialRecord matRec(aSurfFrame.ToLocal(aLightSample.wig), aWol);
         aSurfMaterial.EvalBsdf(matRec);
 
-        if (aLightSample.pdfW != Math::InfinityF())
+        if (!aLightSample.IsPointLight())
             // Planar or angular light sources - compute two-step MC estimator.
             oLightBuffer +=
                   aLightSample.sample
@@ -392,7 +392,7 @@ public:
         //       filtering a proper set of lights when choosing a light and also when computing 
         //       the probability of picking one.
 
-        if (aLightSample.pdfW != Math::InfinityF())
+        if (!aLightSample.IsPointLight())
         {
             // Planar or angular light source was chosen: Proceed with MIS MC estimator
 
@@ -461,7 +461,7 @@ public:
         //PG3_ASSERT(lightPickingProbability > 0.f);
         PG3_ASSERT(lightPdfW != Math::InfinityF()); // BSDF sampling should never hit a point light
 
-        if (aMatRecord.pdfW != Math::InfinityF())
+        if (aMatRecord.IsFiniteComp())
         {
             // Finite BSDF: Compute two-step MIS MC estimator. 
             const float bsdfPdfW = aMatRecord.pdfW * aMatRecord.compProb;

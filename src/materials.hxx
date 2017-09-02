@@ -76,6 +76,12 @@ public:
         return std::abs(ThetaInCos());
     }
 
+    // Not a Dirac component
+    bool IsFiniteComp() const
+    {
+        return pdfW != Math::InfinityF();
+    }
+
 public:
 
     // Outgoing direction

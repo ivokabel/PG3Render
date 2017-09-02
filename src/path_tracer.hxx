@@ -129,7 +129,7 @@ protected:
                 currentRay.tmin = Geom::EpsRayCos(matRecord.ThetaInCosAbs());
 
                 const SpectrumF segmentThroughput =
-                    (matRecord.pdfW != Math::InfinityF()) ?
+                    matRecord.IsFiniteComp() ?
                         (  matRecord.attenuation
                             * matRecord.ThetaInCosAbs())
                         / (  matRecord.pdfW         // Monte Carlo est.
@@ -331,7 +331,7 @@ protected:
                     // one for Dirac components of the BSDF. This is analogical and well working 
                     // together with the separate light sampling scheme used in 
                     // AddMISLightSampleContribution() - see comments there for more information.
-                    if (matRecord.pdfW != Math::InfinityF())
+                    if (matRecord.IsFiniteComp())
                     {
                         // Finite BSDF: Compute MIS MC estimator. 
 
@@ -372,7 +372,7 @@ protected:
                 if (!bCutIndirect && !bsdfReflectedRadianceEstimate.IsZero())
                 {
                     SpectrumF indirectRadianceEstimate;
-                    if (matRecord.pdfW != Math::InfinityF())
+                    if (matRecord.IsFiniteComp())
                     {
                         // Finite BSDF: Compute simple MC estimator. 
                         indirectRadianceEstimate =

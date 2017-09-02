@@ -11,6 +11,13 @@
 class LightSample
 {
 public:
+
+    bool IsPointLight() const
+    {
+        return pdfW == Math::InfinityF();
+    }
+
+public:
     // (outgoing radiance * abs(cosine theta_in)) or it's equivalent (e.g. for point lights)
     // Note that this structure is designed for the angular version of the rendering equation 
     // to allow convenient combination of multiple sampling strategies in multiple-importance scheme.
