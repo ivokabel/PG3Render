@@ -44,18 +44,14 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-# Full furnace test
-#COMPENSATION_METHOD=OrigHack
- COMPENSATION_METHOD=MtsIrrIn2
-#COMPENSATION_METHOD=MtsIrrOut2
-#COMPENSATION_METHOD=MtsSolang
-THICKNESS=0.00
-for EM in 1; do
-    for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-        for OUTER_ROUGHNESS in 0.30 0.20 0.10 0.01; do
-            render -s 27 -em $EM -a dmis -i 16 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Comp${COMPENSATION_METHOD}
-        done
-    done
+# Layered material references
+ITERS=32
+for EM in 1 7; do    # 10; do
+    render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -ot LayersRef
+    render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -ot LayersRef
+    render -s 38 -em $EM -a pt -minpl 1 -maxpl 4    -i $ITERS -ot LayersRef
+    render -s 38 -em $EM -a pt                      -i $ITERS -ot LayersRef
+    render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -ot LayersRef
 done
 
 # Full furnace test

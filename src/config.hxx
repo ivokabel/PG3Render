@@ -37,6 +37,7 @@ enum Algorithm
 #define GEOM_2SPHERES_ON_FLOOR                  Scene::kFloor | Scene::k2Spheres
 #define GEOM_BOX_1SPHERE        Scene::kWalls | Scene::kFloor | Scene::k1Sphere
 #define GEOM_1SPHERE            Scene::k1Sphere
+#define GEOM_LAYERED_SPHERE     Scene::kLayeredSphere
 #define GEOM_RECTANTGLES        Scene::kVerticalRectangle | Scene::kDiagonalRectangles
 #define MATS_PHONG_DIFFUSE      Scene::kWallsPhongDiffuse | Scene::kSpheresPhongDiffuse
 #define MATS_PHONG_GLOSSY       Scene::kWallsPhongGlossy | Scene::kSpheresPhongGlossy
@@ -105,6 +106,11 @@ const Scene::BoxMask g_SceneConfigs[] =
     Scene::BoxMask(Scene::kLightCeiling | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightPoint   | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
     Scene::BoxMask(Scene::kLightEnv     | GEOM_BOX_1SPHERE | Scene::kSpheresMicrofacetGGXDielectric  | Scene::kWallsPhongDiffuse),
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Debug: Layered material reference: 38 
+    Scene::BoxMask(Scene::kLightEnv | GEOM_LAYERED_SPHERE),
 };
 
 // Renderer configuration, holds algorithm, scene, and all other settings. Provides related routines.

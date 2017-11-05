@@ -147,6 +147,9 @@ public:
         kVertRectFresnelDielectric          = 0x00200000,
         kVertRectMicrofacetGGXDielectric    = 0x00400000,
 
+        // Debug: Layered material reference
+        kLayeredSphere                      = 0x10000000,
+
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
 
@@ -385,6 +388,14 @@ public:
         mMaterials.push_back(
             new PhongMaterial(diffuseReflectance, glossyReflectance, 1, 1, 0));
 
+        // Debug: 11, 12 Layered material reference
+        {
+            const float outerIor = SpectralData::kAirIor;
+            const float innerIor = SpectralData::kGlassCorningIor;
+            mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor)); // Outer layer
+            mMaterials.push_back(new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f))); // Inner layer
+        }
+
         delete mGeometry;
         mGeometry = nullptr;
 
@@ -609,6 +620,16 @@ public:
             //                           pointSize * ballRadius, 8));
             //        }
             //}
+        }
+        if (aBoxMask & kLayeredSphere) // Debug: Layered material reference
+        {
+            float ballRadius = 1.3f;
+            Vec3f floorCenter = (cb[0] + cb[5]) * 0.5f;
+            Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
+            const float layersOffset = 0.01f;
+
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius + layersOffset, 11));
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius - layersOffset, 12));
         }
 
         // Rectangles
@@ -1015,6 +1036,13 @@ public:
             GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
             name    += "1 sphere";
             acronym += "1s";
+        }
+
+        if (Utils::IsMasked(aBoxMask, kLayeredSphere)) // Debug: Layered material reference
+        {
+            GEOMETRY_ADD_COMMA_AND_SPACE_IF_NEEDED
+            name    += "layered sphere";
+            acronym += "ls";
         }
 
         if (Utils::IsMasked(aBoxMask, kVerticalRectangle))
