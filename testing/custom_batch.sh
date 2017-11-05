@@ -44,28 +44,34 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-# Layered material references
-ITERS=32
-for EM in 1 7; do    # 10; do
-    render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -ot LayersRef
-    render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -ot LayersRef
-    render -s 38 -em $EM -a pt -minpl 1 -maxpl 4    -i $ITERS -ot LayersRef
-    render -s 38 -em $EM -a pt                      -i $ITERS -ot LayersRef
-    render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -ot LayersRef
-done
-
-# Full furnace test
-#COMPENSATION_METHOD=None
-#COMPENSATION_METHOD=ProjSolAng
+# Layered material analysis: components' contributions
 #ITERS=32
-#THICKNESS=0.00
-#for EM in 1 10; do
-#    for OUTER_ROUGHNESS in 0.01; do
-#        for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Comp${COMPENSATION_METHOD}
-#        done
-#    done
+#for EM in 1 7; do    # 10; do
+#    render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -ot LayersRef
+#    render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -ot LayersRef
+#    render -s 38 -em $EM -a pt -minpl 1 -maxpl 4    -i $ITERS -ot LayersRef
+#    render -s 38 -em $EM -a pt                      -i $ITERS -ot LayersRef
+#    render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -ot LayersRef
 #done
+
+# TODO: Layered references
+#ITERS=32
+#for EM in 1 7; do    # 10; do
+#    render -s 38 -em $EM -a pt -minpl 1 -maxpl 4    -i $ITERS -ot LayersRef
+#done
+
+# Layered model furnace test
+#COMPENSATION_METHOD=None
+COMPENSATION_METHOD=ProjSolAng
+ITERS=32
+THICKNESS=0.00
+for EM in 1 7 10; do
+    for OUTER_ROUGHNESS in 0.01; do
+        for INNER_ROUGHNESS in 1.00 0.30 0.01; do
+            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Comp${COMPENSATION_METHOD}
+        done
+    done
+done
 
 # Asserts
 #render -s 27 -em 1 -a dbs  -i 128 -auxf1 0.45 -auxf2 0.40 -auxf3 0.00 -ot RefrGlob_Inner0.40_Outer0.45_Thick0.00_IrrConv
