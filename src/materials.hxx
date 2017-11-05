@@ -1372,14 +1372,9 @@ public:
 
         const SpectrumF innerMatAttenuation =
               innerMatRec.attenuation
-            * (wilFresnelTrans * wolFresnelTrans)
-            * mediumTrans
-            //* (wol.z / -wolRefract.z) // irradiance conversion - out (Mistuba old)
-            //* (-wolRefract.z / wol.z) // irradiance conversion - out2
-            //* (wil.z / -wilRefract.z) // irradiance conversion - in (Mistuba)
-            //* (-wilRefract.z / wil.z) // irradiance conversion - in2
-            //* ((1.f / outerEta) * (1.f / outerEta)) // solid angle compression (Mistuba)
-            ;
+            * wilFresnelTrans * wolFresnelTrans     // refraction transmission
+            * Math::Sqr(1.f / outerEta)             // solid angle compression
+            * mediumTrans;
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
         //oMatRecord.attenuation = innerMatAttenuation; // debug
@@ -1407,8 +1402,7 @@ public:
             const auto outerPdf = outerMatRecRefl.pdfW;
             const auto innerPdf =
                   innerMatRec.pdfW
-                / Math::Sqr(outerEta)       // solid angle de-compression
-                * wil.z / -wilRefract.z;    // irradiance conversion (from Mitsuba)
+                / Math::Sqr(outerEta);  // solid angle de-compression
 
             //oMatRecord.pdfW = outerPdf; // debug
             //oMatRecord.pdfW  = innerPdf; // debug
