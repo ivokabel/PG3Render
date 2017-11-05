@@ -133,7 +133,7 @@ namespace Geom
         oIsAboveSurface = dot > 0.0f;
     }
 
-    // Convenience wrapper for the full Recflect function
+    // Convenience wrapper for the full Reflect function
     void Reflect(
         Vec3f &oDirOut,
         const Vec3f &aDirIn,
@@ -178,7 +178,7 @@ namespace Geom
         PG3_ASSERT_VEC3F_NORMALIZED(oDirOut);
     }
 
-    // Convenience wrapper for the full Recflect function
+    // Convenience wrapper for the full Refract function
     void Refract(
         Vec3f &oDirOut,
         const Vec3f &aDirIn,
