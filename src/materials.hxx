@@ -712,6 +712,11 @@ public:
             mEta = aInnerIor / aOuterIor;
         else
             mEta = 1.0f;
+
+        if (!Math::IsTiny(aInnerIor))
+            mEtaInv = aOuterIor / aInnerIor;
+        else
+            mEtaInv = 1.0f;
     }
 
     // Generates a random BSDF sample.
@@ -737,10 +742,11 @@ public:
             // Refract
             // TODO: local version of refract?
             // TODO: Re-use cosTrans from fresnel in refraction to save one sqrt?
-            Geom::Refract(oMatRecord.wil, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), mEta);
+            bool isDirInAboveSurface;
+            Geom::Refract(oMatRecord.wil, isDirInAboveSurface, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
-            // TODO: Radiance (de)compression?
+            attenuation *= isDirInAboveSurface ? Math::Sqr(mEta) : Math::Sqr(mEtaInv);
         }
 
         oMatRecord.compProb    = attenuation;
@@ -763,7 +769,8 @@ public:
     }
 
 protected:
-    float mEta;         // inner IOR / outer IOR
+    float mEta;     // inner IOR / outer IOR
+    float mEtaInv;  // outer IOR / inner IOR
 };
 
 
