@@ -54,21 +54,25 @@ START_TIME=`date +%s`
 #    render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -ot LayersRef
 #done
 
-# TODO: Layered references
-#ITERS=32
-#for EM in 1 7; do    # 10; do
-#    render -s 38 -em $EM -a pt -minpl 1 -maxpl 4    -i $ITERS -ot LayersRef
-#done
+-s 38 -em 7 -a pt -minpl 4 -maxpl 4 -i 1 -auxf2 0.01 -ot RefrGlob_Inner0.01_InnerCompOnly_Debug
+
+# Layered references
+OT=_Reference_InnerCompOnly
+ITERS=20000
+for EM in 1 7 10; do
+    for INNER_ROUGHNESS in 1.00 0.30 0.01; do
+        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4 -i $ITERS -auxf2 $INNER_ROUGHNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}${OT}
+    done
+done
 
 # Layered model furnace test
-#COMPENSATION_METHOD=None
-COMPENSATION_METHOD=ProjSolAng
-ITERS=32
+OT=_InnerCompOnly
+ITERS=1024
 THICKNESS=0.00
 for EM in 1 7 10; do
     for OUTER_ROUGHNESS in 0.01; do
         for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Comp${COMPENSATION_METHOD}
+            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
         done
     done
 done

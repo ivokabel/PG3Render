@@ -388,12 +388,25 @@ public:
         mMaterials.push_back(
             new PhongMaterial(diffuseReflectance, glossyReflectance, 1, 1, 0));
 
-        // Debug: 11, 12 Layered material reference
+        // Debug: 11, 12 - Layered material reference
         {
+            //const float outerRoughness =
+            //    (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
+            const float innerRoughness =
+                (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.200f;
+
             const float outerIor = SpectralData::kAirIor;
             const float innerIor = SpectralData::kGlassCorningIor;
-            mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor)); // Outer layer
-            mMaterials.push_back(new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f))); // Inner layer
+
+            // Outer layer
+            mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
+
+            // Inner layer
+            mMaterials.push_back(
+                (innerRoughness != 1.0f)
+                    ? (AbstractMaterial*)new MicrofacetGGXConductorMaterial(innerRoughness, SpectralData::kSilverIor, innerIor, SpectralData::kSilverAbsorb)
+                    : (AbstractMaterial*)new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f)));
+
         }
 
         delete mGeometry;
@@ -623,7 +636,7 @@ public:
         }
         if (aBoxMask & kLayeredSphere) // Debug: Layered material reference
         {
-            float ballRadius = 1.3f;
+            float ballRadius = 1.f;
             Vec3f floorCenter = (cb[0] + cb[5]) * 0.5f;
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
             const float layersOffset = 0.01f;
