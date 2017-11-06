@@ -736,6 +736,8 @@ public:
             // This branch also handles TIR cases
             oMatRecord.wil = Geom::ReflectLocal(oMatRecord.wol);
             attenuation    = fresnelRefl;
+
+            oMatRecord.compProb = fresnelRefl;
         }
         else
         {
@@ -746,12 +748,14 @@ public:
             Geom::Refract(oMatRecord.wil, isDirInAboveSurface, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), mEta);
             attenuation = 1.0f - fresnelRefl;
 
+            // Radiance (de)compression
             attenuation *= isDirInAboveSurface ? Math::Sqr(mEta) : Math::Sqr(mEtaInv);
+
+            oMatRecord.compProb = 1.0f - fresnelRefl;
         }
 
-        oMatRecord.compProb    = attenuation;
-        oMatRecord.pdfW        = Math::InfinityF();
         oMatRecord.attenuation.SetGreyAttenuation(attenuation);
+        oMatRecord.pdfW = Math::InfinityF();
     }
 
     // Computes the probability of surviving for Russian roulette in path tracer
