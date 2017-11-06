@@ -84,7 +84,7 @@ protected:
                 if ((mMaxPathLength > 0) && (pathLength >= mMaxPathLength))
                     return;
 
-                if (pathLength >= kMaxPathLength)
+                if (pathLength >= kMaxPathLengthHard)
                     // We cut too long paths even when Russian roulette ending is active
                     // to avoid stack overflows
                     return;
@@ -229,7 +229,7 @@ protected:
                 return;
             }
             
-            if (aPathLength >= kMaxPathLength)
+            if (aPathLength >= kMaxPathLengthHard)
             {
                 // We cut too long paths even when Russian roulette ending is active
                 // to avoid stack overflows
@@ -457,9 +457,9 @@ protected:
 
 // Empirical values for cutting too long paths
 #ifdef _DEBUG
-    const uint32_t kMaxPathLength = 700;     // crash at 700
+    const uint32_t kMaxPathLengthHard = 700;     // crash at 700
 #else
-    const uint32_t kMaxPathLength = 1200;    // crash at 1370 @ 64 bit
+    const uint32_t kMaxPathLengthHard = 1200;    // crash at 1370 @ 64 bit
 #endif
 
 };
