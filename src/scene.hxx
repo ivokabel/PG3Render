@@ -132,7 +132,8 @@ public:
         kDiagonalRectangles                 = 0x00000080,   // rectangle from front floor edge to back ceiling edge
         kWalls                              = 0x00000100,
         kFloor                              = 0x00000200,
-        kAllGeometry                        = 0x00000ff0,
+        kLayeredSphere                      = 0x10000000,  // Debug: Layered material reference
+        kAllGeometry                        = 0x10000ff0,
 
         // material flags
         kSpheresPhongDiffuse                = 0x00001000,
@@ -146,9 +147,6 @@ public:
         kSpheresWeidlichWilkieLayers        = 0x00100000,
         kVertRectFresnelDielectric          = 0x00200000,
         kVertRectMicrofacetGGXDielectric    = 0x00400000,
-
-        // Debug: Layered material reference
-        kLayeredSphere                      = 0x10000000,
 
         kDefault                = (kLightCeiling | kWalls | k2Spheres | kSpheresPhongDiffuse | kWallsPhongDiffuse),
     };
