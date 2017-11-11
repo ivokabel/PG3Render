@@ -60,25 +60,25 @@ START_TIME=`date +%s`
 # Layered references
 
 OT=_Reference
-ITERS=20000
-THICKNESS=0.01
+ITERS=32        #20000
+THICKNESS=0.010
 for EM in 1 7 10; do
     for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-        render -s 38 -em $EM -a pt -minpl 1 -maxpl 1 -i $ITERS -auxf2 $INNER_ROUGHNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}${OT}
-        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4 -i $ITERS -auxf2 $INNER_ROUGHNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}${OT}
+        render -s 38 -em $EM -a pt -minpl 1 -maxpl 1 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
+        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
     done
 done
 #for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#    render -s 38 -em 1  -a pt -minpl 4 -maxpl 4 -i   1000 -auxf2 $INNER_ROUGHNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}${OT}
+#    render -s 38 -em 1  -a pt -minpl 4 -maxpl 4 -i   1000 -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
 #done
 #for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#    render -s 38 -em 7  -a pt -minpl 4 -maxpl 4 -i  10000 -auxf2 $INNER_ROUGHNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}${OT}
+#    render -s 38 -em 7  -a pt -minpl 4 -maxpl 4 -i  10000 -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
 #done
 #for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#    render -s 38 -em 10 -a pt -minpl 4 -maxpl 4 -i 100000 -auxf2 $INNER_ROUGHNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}${OT}
+#    render -s 38 -em 10 -a pt -minpl 4 -maxpl 4 -i 100000 -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
 #done
 
-# Layered material analysis: components' contributions
+# Layered references: components' contribution analysis
 
 #ITERS=10000     #2048
 #OT=LayersAnalysis
