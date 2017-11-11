@@ -634,13 +634,15 @@ public:
         }
         if (aBoxMask & kLayeredSphere) // Debug: Layered material reference
         {
-            float ballRadius = 1.f;
+            float ballRadius = 1.3f; //1.f;
             Vec3f floorCenter = (cb[0] + cb[5]) * 0.5f;
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
-            const float layersOffset = 0.01f;
 
-            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius + layersOffset, 11));
-            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius - layersOffset, 12));
+            const float layersOffset =
+                (aAuxDbgParams.float3 != Math::InfinityF()) ? aAuxDbgParams.float3 : 0.01f;
+
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius, 11));
+            geometryList->mGeometry.push_back(new Sphere(ballCenter, ballRadius * (1.f - layersOffset), 12));
         }
 
         // Rectangles
