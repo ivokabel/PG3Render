@@ -81,10 +81,10 @@ THICKNESS=0.005
 #    render -s 38 -em 10 -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 1000` -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
 #done
 
-# Layered model: furnace test?
+# Second layered testing
 
-#OT=_InnerOnly_NoBg
-#ITERS=100     #10000
+#OT=_InnerOnly_NoBg_SolAngIrrConvPdf
+#ITERS=10    #100     #10000
 #THICKNESS=0.00
 #for EM in 1 7 10; do
 #    for OUTER_ROUGHNESS in 0.01; do
