@@ -44,53 +44,53 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
-# Layered model furnace test
-
-#OT=_InnerOnly_NoBg
-#ITERS=1024
-#THICKNESS=0.00
-#for EM in 1 7 10; do
-#    for OUTER_ROUGHNESS in 0.01; do
-#        for INNER_ROUGHNESS in 1.00; do     #do 0.30 0.01; do
-#            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
-#        done
-#    done
-#done
-
-# Layered references
-
-OT=_Reference
-ITERS=32        #20000
-THICKNESS=0.010
-for EM in 1 7 10; do
-    for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-        render -s 38 -em $EM -a pt -minpl 1 -maxpl 1 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-    done
-done
-#for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#    render -s 38 -em 1  -a pt -minpl 4 -maxpl 4 -i   1000 -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#done
-#for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#    render -s 38 -em 7  -a pt -minpl 4 -maxpl 4 -i  10000 -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#done
-#for INNER_ROUGHNESS in 1.00 0.30 0.01; do
-#    render -s 38 -em 10 -a pt -minpl 4 -maxpl 4 -i 100000 -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#done
-
 # Layered references: components' contribution analysis
 
-#ITERS=10000     #2048
-#OT=LayersAnalysis
-#INNER_ROUGHNESS=1.00
-#for EM in 10; do        #1 7 10; do
-#    for THICKNESS in 0.010; do      #0.001 0.010 0.100 0.250 0.500; do
+#ITERS=1    #10000
+#OT=ArtifactsAnalysis    #DistortionAnalysis   #LayersAnalysis
+#INNER_ROUGHNESS=0.01    #1.00
+#for EM in 1 7 10; do
+#    for THICKNESS in 0.005; do      #0.001 0.010 0.100 0.250 0.500; do
 #        render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
 #        render -s 38 -em $EM -a pt -minpl 3 -maxpl 3    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
 #        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
 #        render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
 #        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
 #        render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#    done
+#done
+
+# Layered references, 2nd layer: Roughness x EM
+
+OT=_Reference
+THICKNESS=0.005
+#ITERS=64
+#for EM in 1 7 10; do
+#    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
+#    done
+#done
+#BASE_ITERS=24
+#for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#    render -s 38 -em 1  -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 2`    -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
+#done
+#for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#    render -s 38 -em 7  -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 10`   -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
+#done
+#for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#    render -s 38 -em 10 -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 1000` -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
+#done
+
+# Layered model: furnace test?
+
+#OT=_InnerOnly_NoBg
+#ITERS=100     #10000
+#THICKNESS=0.00
+#for EM in 1 7 10; do
+#    for OUTER_ROUGHNESS in 0.01; do
+#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#        done
 #    done
 #done
 
