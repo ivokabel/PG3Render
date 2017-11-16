@@ -1407,7 +1407,8 @@ public:
             const auto outerPdf = outerMatRecRefl.pdfW;
             const auto innerPdf =
                   innerMatRec.pdfW
-                / Math::Sqr(outerEta);  // solid angle de-compression
+                * Math::Sqr(1.f / outerEta) // solid angle compression
+                * (wil.z / -wilRefract.z);  // Mitsuba: irradiance conversion factor (cosTheta(bRec.wo) / cosTheta(woPrime))
 
             //oMatRecord.pdfW = outerPdf; // debug
             oMatRecord.pdfW  = innerPdf; // debug
