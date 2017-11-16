@@ -1208,7 +1208,7 @@ protected:
 
             // TODO: What if (cosThetaMI + etaInvSwitched * cosThetaMO) is close to zero??
 
-            bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) (de-)compression
+            bsdfVal *= Math::Sqr(aCtx.etaSwitched); // radiance (solid angle) (de)compression
         }
 
         PG3_ASSERT_FLOAT_NONNEGATIVE(bsdfVal);
@@ -1377,8 +1377,7 @@ public:
         const SpectrumF innerMatAttenuation =
               innerMatRec.attenuation
             * wilFresnelTrans * wolFresnelTrans // refraction transmissions
-            * Math::Sqr(1.f / outerEta)         // incident solid angle compression
-            * (-wilRefract.z / wil.z)           // Mitsuba: irradiance conversion factor (cosTheta(bRec.wo) / cosTheta(bRecInt.wo))
+            * Math::Sqr(1.f / outerEta)         // incident solid angle (de)compression
             * mediumTrans;
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
@@ -1407,8 +1406,7 @@ public:
             const auto outerPdf = outerMatRecRefl.pdfW;
             const auto innerPdf =
                   innerMatRec.pdfW
-                * Math::Sqr(1.f / outerEta) // solid angle compression
-                * (wil.z / -wilRefract.z);  // Mitsuba: irradiance conversion factor (cosTheta(bRec.wo) / cosTheta(woPrime))
+                * Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z); // solid angle (de)compression
 
             //oMatRecord.pdfW = outerPdf; // debug
             oMatRecord.pdfW  = innerPdf; // debug
