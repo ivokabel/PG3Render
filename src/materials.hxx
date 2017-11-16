@@ -1376,8 +1376,9 @@ public:
 
         const SpectrumF innerMatAttenuation =
               innerMatRec.attenuation
-            * wilFresnelTrans * wolFresnelTrans     // refraction transmission
-            * Math::Sqr(1.f / outerEta)             // solid angle compression
+            * wilFresnelTrans * wolFresnelTrans // refraction transmissions
+            * Math::Sqr(1.f / outerEta)         // incident solid angle compression
+            * (-wilRefract.z / wil.z)           // Mitsuba: irradiance conversion factor (cosTheta(bRec.wo) / cosTheta(bRecInt.wo))
             * mediumTrans;
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
