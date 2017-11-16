@@ -94,7 +94,20 @@ done
 #    done
 #done
 
+# Layered model: Sampling/convergence test
 
+#OT=_InnerOnly_NoBg_ConvTest_SolAngIrrConvPdf
+#ITERS=500
+#THICKNESS=0.00
+#for EM in 10; do     #1 7 10; do
+#    for OUTER_ROUGHNESS in 0.01; do
+#        for INNER_ROUGHNESS in 1.0 0.50 0.30 0.10; do
+#             render -s 27 -em $EM -a dlsa -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#            #render -s 27 -em $EM -a dbs  -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#            #render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#        done
+#    done
+#done
 
 
 
