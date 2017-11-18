@@ -388,8 +388,8 @@ public:
 
         // Debug: 11, 12 - Layered material reference
         {
-            //const float outerRoughness =
-            //    (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
+            const float outerRoughness =
+                (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
             const float innerRoughness =
                 (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.200f;
 
@@ -397,7 +397,10 @@ public:
             const float innerIor = SpectralData::kGlassCorningIor;
 
             // Outer layer
-            mMaterials.push_back(new SmoothDielectricMaterial(innerIor, outerIor));
+            mMaterials.push_back(
+                (outerRoughness != 0.0f)
+                    ? (AbstractMaterial*)new MicrofacetGGXDielectricMaterial(outerRoughness, innerIor, outerIor)
+                    : (AbstractMaterial*)new SmoothDielectricMaterial(innerIor, outerIor));
 
             // Inner layer
             mMaterials.push_back(

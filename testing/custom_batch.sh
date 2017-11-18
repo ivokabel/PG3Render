@@ -51,50 +51,54 @@ START_TIME=`date +%s`
 #INNER_ROUGHNESS=0.01    #1.00
 #for EM in 1 7 10; do
 #    for THICKNESS in 0.005; do      #0.001 0.010 0.100 0.250 0.500; do
-#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 3 -maxpl 3    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 3 -maxpl 3    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
 #    done
 #done
 
-# Layered references, 2nd layer: Roughness x EM
+### ...
 
-OT=_Reference
-THICKNESS=0.005
-#ITERS=64
-#for EM in 1 7 10; do
-#    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4 -i $ITERS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#    done
-#done
-#BASE_ITERS=24
-#for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#    render -s 38 -em 1  -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 2`    -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#done
-#for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#    render -s 38 -em 7  -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 10`   -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#done
-#for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#    render -s 38 -em 10 -a pt -minpl 4 -maxpl 4 -i `expr $BASE_ITERS \* 1000` -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}${OT}
-#done
+for OUTER_ROUGHNESS in 0.01 0.05 0.10 0.20 0.30; do
 
-# Second layered testing
+    # Layered references: InnerRoughness x EM
+    
+    OT=_Reference
+    THICKNESS=0.005
+    ITERS=200    #1000
+    #for EM in 1 7 10; do
+    #    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+    #         render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}${OT}
+    #    done
+    #done
+    #for EM in 1 7 10; do
+    #    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+    #        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}${OT}
+    #    done
+    #done
+    for EM in 1 7 10; do
+        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}${OT}
+        done
+    done
 
-#OT=_InnerOnly_NoBg_SolAngIrrConvPdf
-#ITERS=10    #100     #10000
-#THICKNESS=0.00
-#for EM in 1 7 10; do
-#    for OUTER_ROUGHNESS in 0.01; do
-#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#            render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
-#        done
-#    done
-#done
+    # Layers testing
 
-# Layered model: Sampling/convergence test
+    #OT=_NoBg
+    #ITERS=100     #500
+    #THICKNESS=0.00
+    #for EM in 1 7 10; do
+    #    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+    #        render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+    #    done
+    #done
+
+done
+
+# Layered model: Second layer sampling/convergence test
 
 #OT=_InnerOnly_NoBg_ConvTest_SolAngIrrConvPdf
 #ITERS=500
