@@ -1381,8 +1381,8 @@ public:
             * mediumTrans;
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
-        oMatRecord.attenuation = innerMatAttenuation; // debug
-        //oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
+        //oMatRecord.attenuation = innerMatAttenuation; // debug
+        oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
 
         // Sampling PDF
         if (computeProbs)
@@ -1409,8 +1409,8 @@ public:
                 * Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z); // solid angle (de)compression
 
             //oMatRecord.pdfW = outerPdf; // debug
-            oMatRecord.pdfW  = innerPdf; // debug
-            //oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
+            //oMatRecord.pdfW  = innerPdf; // debug
+            oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
 
             oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
         }
@@ -1456,18 +1456,18 @@ public:
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
         // Pick and sample one component
-        //const float randomVal = aRng.GetFloat() * totalContrEst;
-        //if (randomVal < outerCompContrEst)
-        //{
-        //    // Outer component
-        //    outerMatRecord.SetFlag(MaterialRecord::kReflectionOnly);
-        //    mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
+        const float randomVal = aRng.GetFloat() * totalContrEst;
+        if (randomVal < outerCompContrEst)
+        {
+            // Outer component
+            outerMatRecord.SetFlag(MaterialRecord::kReflectionOnly);
+            mOuterLayerMaterial->SampleBsdf(aRng, outerMatRecord);
 
-        //    PG3_ASSERT(oMatRecord.wil.z >= -0.001f);
+            PG3_ASSERT(oMatRecord.wil.z >= -0.001f);
 
-        //    oMatRecord.wil = outerMatRecord.wil;
-        //}
-        //else
+            oMatRecord.wil = outerMatRecord.wil;
+        }
+        else
         {
             // Inner component
 
