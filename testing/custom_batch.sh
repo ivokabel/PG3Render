@@ -60,42 +60,45 @@ START_TIME=`date +%s`
 #    done
 #done
 
-### ...
+# Layered model analysis
 
-for OUTER_ROUGHNESS in 0.01 0.05 0.10 0.20 0.30; do
+REF_ITERS=1000
+MODEL_ITERS=500
 
-    # Layered references: InnerRoughness x EM
-    
+REF_THICKNESS=0.005
+MODEL_THICKNESS=0.00
+
+for OUTER_ROUGHNESS in 0.01; do     # 0.05 0.10 0.20 0.30; do
+
+    # Reference: single, multi
     OT=_Reference
-    THICKNESS=0.005
-    ITERS=200    #1000
-    #for EM in 1 7 10; do
-    #    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-    #         render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}${OT}
-    #    done
-    #done
-    #for EM in 1 7 10; do
-    #    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-    #        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}${OT}
-    #    done
-    #done
     for EM in 1 7 10; do
         for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}${OT}
+             render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+        done
+    done
+    for EM in 1 7 10; do
+        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+            render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
         done
     done
 
-    # Layers testing
+    # Model
+    OT=_NoBg
+    for EM in 1 7 10; do
+        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+            render -s 27 -em $EM -a dmis -i $MODEL_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $MODEL_THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+        done
+    done
 
-    #OT=_NoBg
-    #ITERS=100     #500
-    #THICKNESS=0.00
-    #for EM in 1 7 10; do
-    #    for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-    #        render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
-    #    done
-    #done
-
+    # Reference: missing energy
+    OT=_Reference
+    for EM in 1 7 10; do
+        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+        done
+    done
+    
 done
 
 # Layered model: Second layer sampling/convergence test
