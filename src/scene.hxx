@@ -330,6 +330,10 @@ public:
                 (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.200f;
             const float mediumThickness =
                 (aAuxDbgParams.float3 != Math::InfinityF()) ? aAuxDbgParams.float3 : 0.001f;
+            const SpectrumF lambertAtt(
+                  (aAuxDbgParams.float4 == 1.f)
+                ? SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)
+                : SpectrumF().SetGreyAttenuation(1.0f));
 
             innerRoughness; // not always used
 
@@ -342,9 +346,7 @@ public:
                     // Inner layer
                     (innerRoughness != 1.0f)
                         ? (AbstractMaterial*)new MicrofacetGGXConductorMaterial(innerRoughness, SpectralData::kSilverIor, SpectralData::kGlassCorningIor, SpectralData::kSilverAbsorb)
-                    //new LambertMaterial(SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)),
-                    //new LambertMaterial(SpectrumF().SetGreyAttenuation(0.8f)),
-                        : (AbstractMaterial*)new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f)),
+                        : (AbstractMaterial*)new LambertMaterial(lambertAtt),
 
                     // Inter-layer medium
                     //SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f), // blue
@@ -392,6 +394,10 @@ public:
                 (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
             const float innerRoughness =
                 (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.200f;
+            const SpectrumF lambertAtt(
+                  (aAuxDbgParams.float4 == 1.f)
+                ? SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)
+                : SpectrumF().SetGreyAttenuation(1.0f));
 
             const float outerIor = SpectralData::kAirIor;
             const float innerIor = SpectralData::kGlassCorningIor;
@@ -406,7 +412,7 @@ public:
             mMaterials.push_back(
                 (innerRoughness != 1.0f)
                     ? (AbstractMaterial*)new MicrofacetGGXConductorMaterial(innerRoughness, SpectralData::kSilverIor, innerIor, SpectralData::kSilverAbsorb)
-                    : (AbstractMaterial*)new LambertMaterial(SpectrumF().SetGreyAttenuation(1.0f)));
+                    : (AbstractMaterial*)new LambertMaterial(lambertAtt));
 
         }
 
