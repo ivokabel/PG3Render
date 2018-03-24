@@ -354,7 +354,8 @@ public:
 
                     // Inter-layer medium
                     mediumAtt,
-                    mediumThickness));
+                    mediumThickness,
+                    aAuxDbgParams));
         }
         else
         {

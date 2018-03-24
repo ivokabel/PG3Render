@@ -9,6 +9,7 @@
 #include "spectrum.hxx"
 #include "rng.hxx"
 #include "types.hxx"
+#include "aux_dbg_params.hxx"
 
 #include <memory>
 
@@ -208,9 +209,14 @@ public:
 class AbstractMaterial
 {
 protected:
-    AbstractMaterial(MaterialProperties aProperties) :
-        mProperties(aProperties)
+    AbstractMaterial(
+        const MaterialProperties    &aProperties,
+        const AuxDbgParams          &aAuxDbgParams = AuxDbgParams()) :
+        mProperties(aProperties),
+        mAuxDbgParams(aAuxDbgParams)
     {}
+
+    AbstractMaterial & operator=(const AbstractMaterial&) = delete;
 
 public:
 
@@ -240,7 +246,8 @@ public:
     }
 
 protected:
-    MaterialProperties  mProperties;
+    MaterialProperties   mProperties;
+    const AuxDbgParams  &mAuxDbgParams;
 };
 
 class LambertMaterial : public AbstractMaterial
@@ -1299,9 +1306,10 @@ public:
         AbstractMaterial    *aOuterLayerMaterial,
         AbstractMaterial    *aInnerLayerMaterial,
         SpectrumF            aMediumAttenuationCoeff, // 0 means no attenuation
-        float                aMediumThickness)
+        float                aMediumThickness,
+        const AuxDbgParams  &aAuxDbgParams = AuxDbgParams())
         :
-        AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling)), // TODO
+        AbstractMaterial(MaterialProperties(kBsdfFrontSideLightSampling), aAuxDbgParams), // TODO
         mOuterLayerMaterial(aOuterLayerMaterial),
         mInnerLayerMaterial(aInnerLayerMaterial),
         mMediumAttCoeff(aMediumAttenuationCoeff),
