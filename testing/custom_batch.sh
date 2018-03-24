@@ -44,6 +44,33 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+# Blog images
+
+# Inner layer - Naive refraction
+# Orange Lambert layer without any modifications
+# (3 lights)
+
+# Inner layer - Naive refraction
+# Orange Lambert layer with refracted directions
+# (3 lights)
+
+# Inner layer - Naive refraction
+# Orange Lambert layer with Fresnel attenuation
+# (3 lights)
+
+# Inner layer - Medium attenuation
+# Ideally white (albedo 100%) Lambert layer under blue medium.  Without outer layer.
+# (thicknesses: large to none; 3 lights)
+
+# Inner layer - Proper refraction - BSDF under a smooth refractive interface
+# Solid angle compression applied. Ideally white (albedo 100%) Lambert layer under blue medium. Without outer layer.
+# (thicknesses: large to none; 3 lights)
+
+# Whole formula
+# Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and blue medium between them
+# (thicknesses: large to none; 3 lights)
+
+
 # Layered references: components' contribution analysis
 
 #ITERS=1    #10000
@@ -60,45 +87,45 @@ START_TIME=`date +%s`
 #    done
 #done
 
-# Layered model analysis
+# SRAL model analysis
 
-REF_ITERS=10000
-MODEL_ITERS=500
-
-REF_THICKNESS=0.005
-MODEL_THICKNESS=0.00
-
-for OUTER_ROUGHNESS in 0.10 0.20 0.30; do  #0.01 0.05
-
-    # Reference: single-scattering, multi-scattering
-    OT=_Reference
-    for EM in 1 7 10; do
-        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-             render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
-        done
-    done
-    for EM in 1 7 10; do
-        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-            render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
-        done
-    done
-    
-    # Model
-    OT=_NoBg
-    for EM in 1 7 10; do
-        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-            render -s 27 -em $EM -a dmis -i $MODEL_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $MODEL_THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
-        done
-    done
-
-    # Reference: missing energy
-    OT=_Reference
-    for EM in 1 7 10; do
-        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
-        done
-    done
-done
+#REF_ITERS=10000
+#MODEL_ITERS=500
+#
+#REF_THICKNESS=0.005
+#MODEL_THICKNESS=0.00
+#
+#for OUTER_ROUGHNESS in 0.10 0.20 0.30; do  #0.01 0.05
+#
+#    # Reference: single-scattering, multi-scattering
+#    OT=_Reference
+#    for EM in 1 7 10; do
+#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#             render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+#        done
+#    done
+#    for EM in 1 7 10; do
+#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#            render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+#        done
+#    done
+#
+#    # Model
+#    OT=_NoBg
+#    for EM in 1 7 10; do
+#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#            render -s 27 -em $EM -a dmis -i $MODEL_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $MODEL_THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#        done
+#    done
+#
+#    # Reference: missing energy
+#    OT=_Reference
+#    for EM in 1 7 10; do
+#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
+#            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+#        done
+#    done
+#done
 
 # Layered model: Second layer sampling/convergence test
 

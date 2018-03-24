@@ -334,6 +334,10 @@ public:
                   (aAuxDbgParams.float4 == 1.f)
                 ? SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)
                 : SpectrumF().SetGreyAttenuation(1.0f));
+            const SpectrumF mediumAtt(
+                  (aAuxDbgParams.float5 == 1.f)
+                ? SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f)   // blue
+                : SpectrumF().SetSRGBAttenuation(0.3f, 0.6f, 4.0f)); // greenish-yellow -> brown
 
             innerRoughness; // not always used
 
@@ -349,8 +353,7 @@ public:
                         : (AbstractMaterial*)new LambertMaterial(lambertAtt),
 
                     // Inter-layer medium
-                    //SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f), // blue
-                      SpectrumF().SetSRGBAttenuation(0.3f, 0.6f, 4.0f), // greenish-yellow -> brown
+                    mediumAtt,
                     mediumThickness));
         }
         else
