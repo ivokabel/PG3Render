@@ -309,19 +309,33 @@ public:
         // Debugging options
         if (!mAuxDbgParams.IsEmpty())
             printf(
-                "Debugging: "
-                "Aux param1 %f, "
-                "aux param2 %f, "
-                "aux param3 %f, "
-                "aux param4 %f, "
-                "aux param5 %f"
+                "Debugging aux params: "
+
+                "float1 %f, "
+                "float2 %f, "
+                "float3 %f, "
+                "float4 %f, "
+                "float5 %f, "
+
+                "bool1 %s, "
+                "bool2 %s, "
+                "bool3 %s, "
+                "bool4 %s, "
+                "bool5 %s"
+
                 "\n",
+
                 mAuxDbgParams.float1,
                 mAuxDbgParams.float2,
                 mAuxDbgParams.float3,
                 mAuxDbgParams.float4,
-                mAuxDbgParams.float5
-                );
+                mAuxDbgParams.float5,
+
+                mAuxDbgParams.bool1 ? "true" : "false",
+                mAuxDbgParams.bool2 ? "true" : "false",
+                mAuxDbgParams.bool3 ? "true" : "false",
+                mAuxDbgParams.bool4 ? "true" : "false",
+                mAuxDbgParams.bool5 ? "true" : "false");
 
         // Output
         printf("Out file:  ");
@@ -352,6 +366,11 @@ public:
             "[-auxf3|--dbg_aux_float3 <value>] "
             "[-auxf4|--dbg_aux_float4 <value>] "
             "[-auxf4|--dbg_aux_float5 <value>] "
+            "[-auxb1|--dbg_aux_bool1 <value>] "
+            "[-auxb2|--dbg_aux_bool2 <value>] "
+            "[-auxb3|--dbg_aux_bool3 <value>] "
+            "[-auxb4|--dbg_aux_bool4 <value>] "
+            "[-auxb4|--dbg_aux_bool5 <value>] "
             "\n\n",
             filename.c_str());
 
@@ -403,6 +422,17 @@ public:
         printf("    -auxf5 | --dbg_aux_float5 \n");
         printf("           Auxiliary float debugging ad hoc parameter no. 5 (default: infinity=not set).\n");
 
+        printf("    -auxb1 | --dbg_aux_bool1 \n");
+        printf("           Auxiliary bool debugging ad hoc parameter no. 1 (default: false).\n");
+        printf("    -auxb2 | --dbg_aux_bool2 \n");
+        printf("           Auxiliary bool debugging ad hoc parameter no. 2 (default: false).\n");
+        printf("    -auxb3 | --dbg_aux_bool3 \n");
+        printf("           Auxiliary bool debugging ad hoc parameter no. 3 (default: false).\n");
+        printf("    -auxb4 | --dbg_aux_bool4 \n");
+        printf("           Auxiliary bool debugging ad hoc parameter no. 4 (default: false).\n");
+        printf("    -auxb5 | --dbg_aux_bool5 \n");
+        printf("           Auxiliary bool debugging ad hoc parameter no. 5 (default: false).\n");
+
         printf("    -opop | --only-print-output-pathname \n");
         printf("           Do not render anything; just print the full path of the current output file.\n");
 
@@ -438,6 +468,38 @@ public:
         }
 
         aValue = tmp;
+        return true;
+    }
+
+
+    bool ProcessCommandlineParamBool(
+        const int32_t    aArgc,
+        const char      *aArgv[],
+        int32_t         &aParamIdx,
+        bool            &aValue,
+        const char      *aParamName)
+    {
+        if (++aParamIdx == aArgc)
+        {
+            printf(
+                "Error: Missing <%s> argument, please see help (-h)\n",
+                aParamName);
+            return false;
+        }
+
+        float tmp;
+        std::istringstream iss(aArgv[aParamIdx]);
+        iss >> tmp;
+
+        if (iss.fail())
+        {
+            printf(
+                "Error: Invalid <%s> argument \"%s\" (should be a floating point value). Please see help (-h).\n",
+                aParamName, aArgv[aParamIdx]);
+            return false;
+        }
+
+        aValue = tmp; // TODO: true/false, 1/0
         return true;
     }
 
@@ -887,29 +949,56 @@ public:
 
                 outputNameTrail += currentTrail;
             }
-            else if ((arg == "-auxf1"))
+
+            else if ((arg == "-auxf1") || (arg == "--dbg_aux_float1"))
             {
                 if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float1, "dbg_aux_float1"))
                     return false;
             }
-            else if ((arg == "-auxf2"))
+            else if ((arg == "-auxf2") || (arg == "--dbg_aux_float2"))
             {
                 if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float2, "dbg_aux_float2"))
                     return false;
             }
-            else if ((arg == "-auxf3"))
+            else if ((arg == "-auxf3") || (arg == "--dbg_aux_float3"))
             {
                 if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float3, "dbg_aux_float3"))
                     return false;
             }
-            else if ((arg == "-auxf4"))
+            else if ((arg == "-auxf4") || (arg == "--dbg_aux_float4"))
             {
                 if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float4, "dbg_aux_float4"))
                     return false;
             }
-            else if ((arg == "-auxf5"))
+            else if ((arg == "-auxf5") || (arg == "--dbg_aux_float5"))
             {
                 if (!ProcessCommandlineParamFloat(argc, argv, i, mAuxDbgParams.float5, "dbg_aux_float5"))
+                    return false;
+            }
+
+            else if ((arg == "-auxb1") || (arg == "--dbg_aux_bool1"))
+            {
+                if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool1, "dbg_aux_bool1"))
+                    return false;
+            }
+            else if ((arg == "-auxb2") || (arg == "--dbg_aux_bool2"))
+            {
+                if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool2, "dbg_aux_bool2"))
+                    return false;
+            }
+            else if ((arg == "-auxb3") || (arg == "--dbg_aux_bool3"))
+            {
+                if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool3, "dbg_aux_bool3"))
+                    return false;
+            }
+            else if ((arg == "-auxb4") || (arg == "--dbg_aux_bool4"))
+            {
+                if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool4, "dbg_aux_bool4"))
+                    return false;
+            }
+            else if ((arg == "-auxb5") || (arg == "--dbg_aux_bool5"))
+            {
+                if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool5, "dbg_aux_bool5"))
                     return false;
             }
         }
