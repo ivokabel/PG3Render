@@ -339,8 +339,6 @@ public:
                 ? SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f)   // blue
                 : SpectrumF().SetSRGBAttenuation(0.3f, 0.6f, 4.0f)); // greenish-yellow -> brown
 
-            innerRoughness; // not always used
-
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
                     // Outer layer

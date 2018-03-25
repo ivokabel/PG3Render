@@ -346,11 +346,11 @@ public:
         fflush(stdout);
     }
 
-    static void PrintHelp(const char *argv[])
+    static void PrintHelp(const char *pathname)
     {
         std::string filename;
-        if (!Utils::IO::GetFileName(argv[0], filename))
-            filename = argv[0];
+        if (!Utils::IO::GetFileName(pathname, filename))
+            filename = pathname;
 
         printf("\n");
         printf(
@@ -557,7 +557,7 @@ public:
             // print help string (at any position)
             if (arg == "-h" || arg == "--help" || arg == "/?")
             {
-                PrintHelp(argv);
+                PrintHelp(argv[0]);
                 return false;
             }
 
