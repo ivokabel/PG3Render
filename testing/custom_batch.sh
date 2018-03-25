@@ -75,15 +75,15 @@ START_TIME=`date +%s`
 
 #ITERS=1    #10000
 #OT=ArtifactsAnalysis    #DistortionAnalysis   #LayersAnalysis
-#INNER_ROUGHNESS=0.01    #1.00
+#INNER_ROUGH=0.01    #1.00
 #for EM in 1 7 10; do
-#    for THICKNESS in 0.005; do      #0.001 0.010 0.100 0.250 0.500; do
-#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 3 -maxpl 3    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
-#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot Inner${INNER_ROUGHNESS}_Thick${THICKNESS}_${OT}
+#    for THICK in 0.005; do      #0.001 0.010 0.100 0.250 0.500; do
+#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 2    -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot Inner${INNER_ROUGH}_Thick${THICK}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 3 -maxpl 3    -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot Inner${INNER_ROUGH}_Thick${THICK}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 4 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot Inner${INNER_ROUGH}_Thick${THICK}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot Inner${INNER_ROUGH}_Thick${THICK}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot Inner${INNER_ROUGH}_Thick${THICK}_${OT}
+#        render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot Inner${INNER_ROUGH}_Thick${THICK}_${OT}
 #    done
 #done
 
@@ -92,37 +92,37 @@ START_TIME=`date +%s`
 #REF_ITERS=10000
 #MODEL_ITERS=500
 #
-#REF_THICKNESS=0.005
-#MODEL_THICKNESS=0.00
+#REF_THICK=0.005
+#MODEL_THICK=0.00
 #
-#for OUTER_ROUGHNESS in 0.10 0.20 0.30; do  #0.01 0.05
+#for OUTER_ROUGH in 0.10 0.20 0.30; do  #0.01 0.05
 #
 #    # Reference: single-scattering, multi-scattering
 #    OT=_Reference
 #    for EM in 1 7 10; do
-#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#             render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+#        for INNER_ROUGH in 1.00 0.30 0.10 0.01; do
+#             render -s 38 -em $EM -a pt -minpl 2 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $REF_THICK -ot Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}_Thick${REF_THICK}${OT}
 #        done
 #    done
 #    for EM in 1 7 10; do
-#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#            render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+#        for INNER_ROUGH in 1.00 0.30 0.10 0.01; do
+#            render -s 38 -em $EM -a pt -minpl 2 -maxpl 4    -i $REF_ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $REF_THICK -ot Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}_Thick${REF_THICK}${OT}
 #        done
 #    done
 #
 #    # Model
 #    OT=_NoBg
 #    for EM in 1 7 10; do
-#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#            render -s 27 -em $EM -a dmis -i $MODEL_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $MODEL_THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#        for INNER_ROUGH in 1.00 0.30 0.10 0.01; do
+#            render -s 27 -em $EM -a dmis -i $MODEL_ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $MODEL_THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}${OT}
 #        done
 #    done
 #
 #    # Reference: missing energy
 #    OT=_Reference
 #    for EM in 1 7 10; do
-#        for INNER_ROUGHNESS in 1.00 0.30 0.10 0.01; do
-#            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $REF_THICKNESS -ot Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${REF_THICKNESS}${OT}
+#        for INNER_ROUGH in 1.00 0.30 0.10 0.01; do
+#            render -s 38 -em $EM -a pt -minpl 5 -maxpl 1000 -i $REF_ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $REF_THICK -ot Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}_Thick${REF_THICK}${OT}
 #        done
 #    done
 #done
@@ -131,13 +131,13 @@ START_TIME=`date +%s`
 
 #OT=_InnerOnly_NoBg_ConvTest_SolAngIrrConvPdf
 #ITERS=500
-#THICKNESS=0.00
+#THICK=0.00
 #for EM in 10; do     #1 7 10; do
-#    for OUTER_ROUGHNESS in 0.01; do
-#        for INNER_ROUGHNESS in 1.0 0.50 0.30 0.10; do
-#             render -s 27 -em $EM -a dlsa -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
-#            #render -s 27 -em $EM -a dbs  -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
-#            #render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}${OT}
+#    for OUTER_ROUGH in 0.01; do
+#        for INNER_ROUGH in 1.0 0.50 0.30 0.10; do
+#             render -s 27 -em $EM -a dlsa -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}${OT}
+#            #render -s 27 -em $EM -a dbs  -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}${OT}
+#            #render -s 27 -em $EM -a dmis -i $ITERS -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}${OT}
 #        done
 #    done
 #done
@@ -151,44 +151,44 @@ START_TIME=`date +%s`
 #render -s 27 -em 1 -a dmis -i 128 -auxf1 0.45 -auxf2 0.40 -auxf3 0.00 -ot RefrGlob_Inner0.40_Outer0.45_Thick0.00_IrrConv
 
 # Specular-Glossy: Furnace test
-#OUTER_ROUGHNESS=0.005
-#THICKNESS=0.00
+#OUTER_ROUGH=0.005
+#THICK=0.00
 #for EM in 1 10; do
-#    for INNER_ROUGHNESS in 0.01 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45; do
-#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_Thick${THICKNESS}_IrrConv
+#    for INNER_ROUGH in 0.01 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45; do
+#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}_Thick${THICK}_IrrConv
 #    done
 #done
 
 # Specular-Lambert Furnace Test
-#THICKNESS=0.00
+#THICK=0.00
 #for EM in 1 10; do
-#    for OUTER_ROUGHNESS in 0.01 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45; do
-#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_InnerLambGrey1.0_Outer${OUTER_ROUGHNESS}_MediumYellow_Thick${THICKNESS}_IrrConv
+#    for OUTER_ROUGH in 0.01 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45; do
+#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGH -auxf3 $THICK -ot RefrGlob_InnerLambGrey1.0_Outer${OUTER_ROUGH}_MediumYellow_Thick${THICK}_IrrConv
 #    done
 #done
 
 # Specular-Medium-Glossy: Thickness
-#OUTER_ROUGHNESS=0.005
-#INNER_ROUGHNESS=0.39
+#OUTER_ROUGH=0.005
+#INNER_ROUGH=0.39
 #for EM in 1 10; do
-#    for THICKNESS in 0.00 0.01 0.02 0.05 0.10 0.20 0.50 1.00 2.00 5.00; do
-#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_MediumYellow_Thick${THICKNESS}_IrrConv
+#    for THICK in 0.00 0.01 0.02 0.05 0.10 0.20 0.50 1.00 2.00 5.00; do
+#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}_MediumYellow_Thick${THICK}_IrrConv
 #    done
 #done
 
 # Specular-Medium-Glossy: Inner roughness
-#OUTER_ROUGHNESS=0.005
-#THICKNESS=0.30
+#OUTER_ROUGH=0.005
+#THICK=0.30
 #for EM in 10; do        # 1; do
-#    for INNER_ROUGHNESS in 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40; do
-#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGHNESS -auxf2 $INNER_ROUGHNESS -auxf3 $THICKNESS -ot RefrGlob_Inner${INNER_ROUGHNESS}_Outer${OUTER_ROUGHNESS}_MediumYellow_Thick${THICKNESS}_IrrConv
+#    for INNER_ROUGH in 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40; do
+#        render -s 27 -em $EM -a dmis -i 128 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -ot RefrGlob_Inner${INNER_ROUGH}_Outer${OUTER_ROUGH}_MediumYellow_Thick${THICK}_IrrConv
 #    done
 #done
 
 # Specular-Medium-Lambert
 #for EM in 10 1; do
-#    for THICKNESS in 0.00 0.01 0.02 0.05 0.10 0.20 0.50 1.00 2.00 5.00; do
-#        render -s 27 -em $EM -a dmis -i 256 -auxf1 0.01 -auxf3 $THICKNESS -ot InnerLambGrey1.0_Outer0.010_RefrGlob_MediumYellow_Thick${THICKNESS}_IrrConv
+#    for THICK in 0.00 0.01 0.02 0.05 0.10 0.20 0.50 1.00 2.00 5.00; do
+#        render -s 27 -em $EM -a dmis -i 256 -auxf1 0.01 -auxf3 $THICK -ot InnerLambGrey1.0_Outer0.010_RefrGlob_MediumYellow_Thick${THICK}_IrrConv
 #    done
 #done
 
