@@ -412,26 +412,30 @@ public:
         printf("\n");
 
         printf("    -auxf1 | --dbg_aux_float1 \n");
-        printf("           Auxiliary float debugging ad hoc parameter no. 1 (default: infinity=not set).\n");
+        printf("           Auxiliary float debugging parameter no. 1 (default: infinity=not set).\n");
         printf("    -auxf2 | --dbg_aux_float2 \n");
-        printf("           Auxiliary float debugging ad hoc parameter no. 2 (default: infinity=not set).\n");
+        printf("           Auxiliary float debugging parameter no. 2 (default: infinity=not set).\n");
         printf("    -auxf3 | --dbg_aux_float3 \n");
-        printf("           Auxiliary float debugging ad hoc parameter no. 3 (default: infinity=not set).\n");
+        printf("           Auxiliary float debugging parameter no. 3 (default: infinity=not set).\n");
         printf("    -auxf4 | --dbg_aux_float4 \n");
-        printf("           Auxiliary float debugging ad hoc parameter no. 4 (default: infinity=not set).\n");
+        printf("           Auxiliary float debugging parameter no. 4 (default: infinity=not set).\n");
         printf("    -auxf5 | --dbg_aux_float5 \n");
-        printf("           Auxiliary float debugging ad hoc parameter no. 5 (default: infinity=not set).\n");
+        printf("           Auxiliary float debugging parameter no. 5 (default: infinity=not set).\n");
+
+        printf("\n");
 
         printf("    -auxb1 | --dbg_aux_bool1 \n");
-        printf("           Auxiliary bool debugging ad hoc parameter no. 1 (default: false).\n");
+        printf("           Auxiliary bool debugging parameter no. 1 (default: false).\n");
         printf("    -auxb2 | --dbg_aux_bool2 \n");
-        printf("           Auxiliary bool debugging ad hoc parameter no. 2 (default: false).\n");
+        printf("           Auxiliary bool debugging parameter no. 2 (default: false).\n");
         printf("    -auxb3 | --dbg_aux_bool3 \n");
-        printf("           Auxiliary bool debugging ad hoc parameter no. 3 (default: false).\n");
+        printf("           Auxiliary bool debugging parameter no. 3 (default: false).\n");
         printf("    -auxb4 | --dbg_aux_bool4 \n");
-        printf("           Auxiliary bool debugging ad hoc parameter no. 4 (default: false).\n");
+        printf("           Auxiliary bool debugging parameter no. 4 (default: false).\n");
         printf("    -auxb5 | --dbg_aux_bool5 \n");
-        printf("           Auxiliary bool debugging ad hoc parameter no. 5 (default: false).\n");
+        printf("           Auxiliary bool debugging parameter no. 5 (default: false).\n");
+
+        printf("\n");
 
         printf("    -opop | --only-print-output-pathname \n");
         printf("           Do not render anything; just print the full path of the current output file.\n");
@@ -487,19 +491,28 @@ public:
             return false;
         }
 
-        float tmp;
+        bool tmp;
         std::istringstream iss(aArgv[aParamIdx]);
-        iss >> tmp;
+
+        // parse "true" or "false"
+        iss >> std::boolalpha >> tmp;
+
+        if (iss.fail())
+        {
+            // try also "1" or "0"
+            iss.clear();
+            iss >> std::noboolalpha >> tmp;
+        }
 
         if (iss.fail())
         {
             printf(
-                "Error: Invalid <%s> argument \"%s\" (should be a floating point value). Please see help (-h).\n",
+                "Error: Invalid <%s> argument \"%s\" (should be a boolean value: true/false or 1/0). Please see help (-h).\n",
                 aParamName, aArgv[aParamIdx]);
             return false;
         }
 
-        aValue = tmp; // TODO: true/false, 1/0
+        aValue = tmp;
         return true;
     }
 

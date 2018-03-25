@@ -12,11 +12,11 @@ public:
     float   float4;
     float   float5;
 
-    bool   bool1;
-    bool   bool2;
-    bool   bool3;
-    bool   bool4;
-    bool   bool5;
+    bool    bool1;
+    bool    bool2;
+    bool    bool3;
+    bool    bool4;
+    bool    bool5;
 
     AuxDbgParams() :
         float1(Math::InfinityF()),
