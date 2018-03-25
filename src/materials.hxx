@@ -1327,6 +1327,12 @@ public:
             
         oMatRecord.compProb = 1.f;
 
+        // debug
+        const bool dbgInnerOnly         = mAuxDbgParams.bool2;
+        const bool dbgInnerRefract      = mAuxDbgParams.bool3;
+        const bool dbgInnerFresnel      = mAuxDbgParams.bool4;
+        const bool dbgInnerSolAngCompr  = mAuxDbgParams.bool5;
+
         // No transmission below horizon (both input and output)
         if (oMatRecord.wil.z <= 0.f || oMatRecord.wol.z <= 0.f)
         {
@@ -1342,24 +1348,28 @@ public:
         // Outer layer reflection
         MaterialRecord outerMatRecRefl(wil, wol);
         outerMatRecRefl.RequestOptData(MaterialRecord::kOptEta);
-        //outerMatRecRefl.RequestOptData(MaterialRecord::kOptHalfwayVec);
         outerMatRecRefl.SetFlag(MaterialRecord::kReflectionOnly);
         if (computeProbs)
             outerMatRecRefl.RequestOptData(MaterialRecord::kOptSamplingProbs);
         mOuterLayerMaterial->EvalBsdf(outerMatRecRefl);
 
         PG3_ASSERT(outerMatRecRefl.AreOptDataProvided(MaterialRecord::kOptEta));
-        //PG3_ASSERT(outerMatRecRefl.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
         const float outerEta = outerMatRecRefl.optEta;
         const SpectrumF outerMatAttenuation = outerMatRecRefl.attenuation;
 
         // Refracted directions
         Vec3f wilRefract, wolRefract;
-        Geom::Refract(wilRefract, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
-        Geom::Refract(wolRefract, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
-        //Geom::Refract(wilRefract, wil, outerMatRecRefl.optHalfwayVec, outerEta);
-        //Geom::Refract(wolRefract, wol, outerMatRecRefl.optHalfwayVec, outerEta);
+        if (dbgInnerRefract)
+        {
+            Geom::Refract(wilRefract, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
+            Geom::Refract(wolRefract, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+        }
+        else
+        {
+            wilRefract = -wil;
+            wolRefract = -wol;
+        }
         // TODO: Are refracted directions always valid??
 
         const float wilFresnelRefl  = Physics::FresnelDielectric(wil.z, outerEta);
@@ -1382,15 +1392,19 @@ public:
 
         PG3_ASSERT(innerMatRec.AreOptDataProvided(MaterialRecord::kOptReflectance));
 
+        const float innerFresnelTrans = dbgInnerFresnel ? (wilFresnelTrans * wolFresnelTrans) : 1.0f;
+        const float innerSolAngCompr  = dbgInnerSolAngCompr ? Math::Sqr(1.f / outerEta) : 1.0f;
         const SpectrumF innerMatAttenuation =
               innerMatRec.attenuation
-            * wilFresnelTrans * wolFresnelTrans // refraction transmissions
-            * Math::Sqr(1.f / outerEta)         // incident solid angle (de)compression
+            * innerFresnelTrans     // refraction transmissions
+            * innerSolAngCompr      // incident solid angle (de)compression
             * mediumTrans;
 
         //oMatRecord.attenuation = outerMatAttenuation; // debug
-        //oMatRecord.attenuation = innerMatAttenuation; // debug
-        oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
+        if (dbgInnerOnly)
+            oMatRecord.attenuation = innerMatAttenuation; // debug
+        else
+            oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
 
         // Sampling PDF
         if (computeProbs)
@@ -1417,8 +1431,10 @@ public:
                 * Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z); // solid angle (de)compression
 
             //oMatRecord.pdfW = outerPdf; // debug
-            //oMatRecord.pdfW  = innerPdf; // debug
-            oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
+            if (dbgInnerOnly)
+                oMatRecord.pdfW = innerPdf; // debug
+            else
+                oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
 
             oMatRecord.SetAreOptDataProvided(MaterialRecord::kOptSamplingProbs);
         }
@@ -1434,11 +1450,9 @@ public:
 
         MaterialRecord outerMatRecord(oMatRecord.wil, oMatRecord.wol);
         outerMatRecord.RequestOptData(MaterialRecord::kOptEta);
-        //outerMatRecord.RequestOptData(MaterialRecord::kOptHalfwayVec);
         mOuterLayerMaterial->GetOptData(outerMatRecord);
 
         PG3_ASSERT(outerMatRecord.AreOptDataProvided(MaterialRecord::kOptEta));
-        //PG3_ASSERT(outerMatRecord.AreOptDataProvided(MaterialRecord::kOptHalfwayVec));
 
         MaterialRecord innerMatRecord(oMatRecord.wil, oMatRecord.wol);
         innerMatRecord.RequestOptData(MaterialRecord::kOptReflectance);
@@ -1463,9 +1477,13 @@ public:
 
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
+        // debug
+        const bool dbgInnerOnly    = mAuxDbgParams.bool2;
+        const bool dbgInnerRefract = mAuxDbgParams.bool3;
+
         // Pick and sample one component
         const float randomVal = aRng.GetFloat() * totalContrEst;
-        if (randomVal < outerCompContrEst)
+        if (!dbgInnerOnly && (randomVal < outerCompContrEst))
         {
             // Outer component
             outerMatRecord.SetFlag(MaterialRecord::kReflectionOnly);
@@ -1481,8 +1499,10 @@ public:
 
             // Compute refracted outgoing direction
             Vec3f wolRefract;
-            Geom::Refract(wolRefract, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), outerEta);
-            //Geom::Refract(wolRefract, aWol, oMatRecord.optHalfwayVec, outerEta);
+            if (dbgInnerRefract)
+                Geom::Refract(wolRefract, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+            else
+                wolRefract = -oMatRecord.wol;
             // TODO: Is refracted direction always valid??
 
             // Sample inner BRDF

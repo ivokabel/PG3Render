@@ -140,11 +140,14 @@ public:
         }
         else
         {
-            //// No intersection - get radiance from the background
-            //const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
-            //if (backgroundLight != nullptr)
-            //    oRadiance = backgroundLight->GetEmmision(aRay.dir);
-            //else
+            // debug
+            const bool dbgUseBckg = mConfig.mAuxDbgParams.bool1;
+
+            // No intersection - get radiance from the background
+            const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
+            if (dbgUseBckg && backgroundLight != nullptr)
+                oRadiance = backgroundLight->GetEmmision(aRay.dir);
+            else
                 oRadiance.MakeZero(); // No background light
         }
     }
