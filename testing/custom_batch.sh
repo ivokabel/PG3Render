@@ -46,29 +46,45 @@ START_TIME=`date +%s`
 
 # Blog images
 
+ITERS=4
+SHOW_BCKG=true
+OT_BASE=Blog
+
+OUTER_ROUGH=0.00
+INNER_ROUGH=1.00
+THICK=0
+
 # Inner layer - Naive refraction
 # Orange Lambert layer without any modifications
-# (3 lights)
+IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr
+INNER_ONLY=true
+INNER_REFRACT=false
+INNER_FRESNEL=false
+INNER_SOLANGCOMPR=false
+for EM in 1 7 10; do
+    render -s 27 -em $EM -a dmis -i $ITERS \
+           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+           -ot ${IMG_NAME}_REFR${INNER_REFRACT}_FRN${INNER_FRESNEL}_SOLANG${INNER_SOLANGCOMPR}_Inner${INNER_ROUGH}_BG${SHOW_BCKG}
+done
 
 # Inner layer - Naive refraction
 # Orange Lambert layer with refracted directions
-# (3 lights)
 
 # Inner layer - Naive refraction
 # Orange Lambert layer with Fresnel attenuation
-# (3 lights)
 
 # Inner layer - Medium attenuation
 # Ideally white (albedo 100%) Lambert layer under blue medium.  Without outer layer.
-# (thicknesses: large to none; 3 lights)
+# (thicknesses: large to none)
 
 # Inner layer - Proper refraction - BSDF under a smooth refractive interface
 # Solid angle compression applied. Ideally white (albedo 100%) Lambert layer under blue medium. Without outer layer.
-# (thicknesses: large to none; 3 lights)
+# (thicknesses: large to none)
 
 # Whole formula
 # Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and blue medium between them
-# (thicknesses: large to none; 3 lights)
+# (thicknesses: large to none)
 
 
 # Layered references: components' contribution analysis
