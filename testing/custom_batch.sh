@@ -46,44 +46,139 @@ START_TIME=`date +%s`
 
 # Blog images
 
-ITERS=4
-SHOW_BCKG=true
+ITERS=64
 OT_BASE=Blog
+SHOW_BCKG=true
+SHOW_BCKG_OT="_Bg"
 
 OUTER_ROUGH=0.00
 INNER_ROUGH=1.00
+INNER_LAMB_ORANGE=0
+INNER_LAMB_ORANGE_OT=""     #"Orange"
 THICK=0
 
 # Inner layer - Naive refraction
-# Orange Lambert layer without any modifications
+# White Lambert layer without any modifications
 IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr
 INNER_ONLY=true
 INNER_REFRACT=false
+INNER_REFRACT_OT=""
 INNER_FRESNEL=false
+INNER_FRESNEL_OT=""
 INNER_SOLANGCOMPR=false
+INNER_SOLANGCOMPR_OT=""
 for EM in 1 7 10; do
     render -s 27 -em $EM -a dmis -i $ITERS \
-           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
            -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-           -ot ${IMG_NAME}_REFR${INNER_REFRACT}_FRN${INNER_FRESNEL}_SOLANG${INNER_SOLANGCOMPR}_Inner${INNER_ROUGH}_BG${SHOW_BCKG}
+           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
 done
 
 # Inner layer - Naive refraction
-# Orange Lambert layer with refracted directions
+# White Lambert layer with refracted directions
+INNER_REFRACT=true 
+INNER_REFRACT_OT="_Refr"
+for EM in 1 7 10; do
+    render -s 27 -em $EM -a dmis -i $ITERS \
+           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+done
 
 # Inner layer - Naive refraction
-# Orange Lambert layer with Fresnel attenuation
+# White Lambert layer with Fresnel attenuation
+INNER_FRESNEL=true
+INNER_FRESNEL_OT="_Fresnel"
+for EM in 1 7 10; do
+    render -s 27 -em $EM -a dmis -i $ITERS \
+           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+done
+
+## Inner layer - Proper refraction
+## White Lambert layer with Solid angle compression compensation
+#IMG_NAME=${OT_BASE}_InnerOnly_ProperRefr
+#INNER_SOLANGCOMPR=true
+#INNER_SOLANGCOMPR_OT="_SolAngCompr"
+#for EM in 1 7 10; do
+#    render -s 27 -em $EM -a dmis -i $ITERS \
+#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+#done
+
+## Whole formula - Proper refraction
+## White Lambert layer with Solid angle compression compensation
+#IMG_NAME=${OT_BASE}_Both_ProperRefr
+#INNER_ONLY=false
+#for EM in 1 7 10; do
+#    render -s 27 -em $EM -a dmis -i $ITERS \
+#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+#done
 
 # Inner layer - Medium attenuation
-# Ideally white (albedo 100%) Lambert layer under blue medium.  Without outer layer.
+# Ideally white (albedo 100%) Lambert layer under brown medium.  Without outer layer.
 # (thicknesses: large to none)
+IMG_NAME=${OT_BASE}_MediumAttenuation
+OUTER_ROUGH=0.00
+INNER_ROUGH=1.00
+INNER_LAMB_ORANGE=0
+INNER_LAMB_ORANGE_OT=""     #"Orange"
+MEDIUM_BLUE=0.0
+MEDIUM_BLUE_OT="Brown"
+INNER_ONLY=true
+INNER_REFRACT=true 
+INNER_REFRACT_OT="_Refr"
+INNER_FRESNEL=true
+INNER_FRESNEL_OT="_Fresnel"
+INNER_SOLANGCOMPR=false
+INNER_SOLANGCOMPR_OT=""
+for EM in 1 7 10; do
+    for THICK in 5.00 1.00 0.20 0.05 0.00; do
+        render -s 27 -em $EM -a dmis -i $ITERS \
+               -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+               -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+               -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_BLUE_OT}${SHOW_BCKG_OT}
+    done
+done
+
+# Inner layer - Proper refraction
+# Missing solid angle problem. Glossy layer under brown medium. (thicknesses: large to none; 3 lights)
+# (thicknesses: large to none)
+IMG_NAME=${OT_BASE}_InnerMedium_SolAngProblem
+INNER_ROUGH=0.10
+for EM in 1; do
+    for THICK in 5.00 1.00 0.20 0.05 0.00; do
+        render -s 27 -em $EM -a dmis -i $ITERS \
+               -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+               -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+               -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_BLUE_OT}${SHOW_BCKG_OT}
+    done
+done
+
 
 # Inner layer - Proper refraction - BSDF under a smooth refractive interface
-# Solid angle compression applied. Ideally white (albedo 100%) Lambert layer under blue medium. Without outer layer.
+# Solid angle compression applied. Glossy layer under brown medium.
 # (thicknesses: large to none)
+IMG_NAME=${OT_BASE}_InnerMedium_SolAngComp
+INNER_ROUGH=0.10
+INNER_SOLANGCOMPR=true
+INNER_SOLANGCOMPR_OT="_SolAngCompr"
+for EM in 1; do
+    for THICK in 5.00 1.00 0.20 0.05 0.00; do
+        render -s 27 -em $EM -a dmis -i $ITERS \
+               -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+               -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+               -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_BLUE_OT}${SHOW_BCKG_OT}
+    done
+done
+
 
 # Whole formula
-# Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and blue medium between them
+# Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and brown medium between them
 # (thicknesses: large to none)
 
 

@@ -1426,9 +1426,11 @@ public:
             const float innerPdfWeight = innerCompContrEst / totalContrEst;
 
             const auto outerPdf = outerMatRecRefl.pdfW;
+            const float innerPdfSolAngCompr =
+                dbgInnerRefract ? (Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z)) : 1.0f;
             const auto innerPdf =
                   innerMatRec.pdfW
-                * Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z); // solid angle (de)compression
+                * innerPdfSolAngCompr; // solid angle (de)compression
 
             //oMatRecord.pdfW = outerPdf; // debug
             if (dbgInnerOnly)
@@ -1507,12 +1509,14 @@ public:
 
             // Sample inner BRDF
             MaterialRecord innerMatRecord(-wolRefract);
-            innerMatRecord.RequestOptData(MaterialRecord::kOptSamplingProbs); // debug
             mInnerLayerMaterial->SampleBsdf(aRng, innerMatRecord);
 
             // Refract through the upper layer
             // This can yield directions under surface due to TIR!
-            Geom::Refract(oMatRecord.wil, -innerMatRecord.wil, Vec3f(0.f, 0.f, 1.f), outerEta);
+            if (dbgInnerRefract)
+                Geom::Refract(oMatRecord.wil, -innerMatRecord.wil, Vec3f(0.f, 0.f, 1.f), outerEta);
+            else
+                oMatRecord.wil = innerMatRecord.wil;
         }
 
         // Evaluate BRDF & PDF
