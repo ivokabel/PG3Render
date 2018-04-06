@@ -337,7 +337,8 @@ public:
             const SpectrumF mediumAtt(
                   (aAuxDbgParams.float5 == 1.f)
                 ? SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f)   // blue
-                : SpectrumF().SetSRGBAttenuation(0.2f, 0.6f, 4.0f)); // greenish-yellow -> brown
+              //: SpectrumF().SetSRGBAttenuation(0.2f, 0.6f, 4.0f)); // greenish-yellow -> brown
+                : SpectrumF().SetSRGBAttenuation(0.05f, 0.8f, 4.0f)); // yellow -> dark red
 
             mMaterials.push_back(
                 new WeidlichWilkie2LayeredMaterial(
