@@ -47,6 +47,8 @@ stitch_images ()
     local INPUT_LIST=("${!INPUT_LIST_NAME}")
     local OUTPUT=$2
 
+    echo "Stitching ${OUTPUT}..."
+
     local INPUT_PATH_LIST=()
     for INPUT in "${INPUT_LIST[@]}" ; do
         INPUT_PATH_LIST+=("${IMAGES_BASE_DIR}/${INPUT}")
@@ -56,8 +58,7 @@ stitch_images ()
 
     "$IMCONVERT" +append "${INPUT_PATH_LIST[@]}" -resize 50% "${OUTPUT_PATH}"
 
-    #debug
-    echo "${OUTPUT} stitched"
+    echo
 }
 
 ###################################################################################################
@@ -69,7 +70,7 @@ START_TIME=`date +%s`
 
 # Blog images
 
-ITERS=64
+ITERS=256
 OT_BASE=Blog
 SHOW_BCKG=true
 SHOW_BCKG_OT="_Bg"
@@ -82,7 +83,7 @@ THICK=0
 
 # Inner layer - Naive refraction
 # White Lambert layer without any modifications
-IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr
+IMG_NAME=${OT_BASE}_InnerOnly_NoModif
 INNER_ONLY=true
 INNER_REFRACT=false
 INNER_REFRACT_OT=""
@@ -90,34 +91,60 @@ INNER_FRESNEL=false
 INNER_FRESNEL_OT=""
 INNER_SOLANGCOMPR=false
 INNER_SOLANGCOMPR_OT=""
-#for EM in 1 7 10; do
-#    render -s 27 -em $EM -a dmis -i $ITERS \
-#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
-#done
+FILENAME_LIST=()
+for EM in 1 7 10; do
+              render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT} \
+                     -opof`
+    FILENAME_LIST+=("$FILENAME")
+done
+stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 # Inner layer - Naive refraction
 # White Lambert layer with refracted directions
+IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr
 INNER_REFRACT=true 
 INNER_REFRACT_OT="_Refr"
-#for EM in 1 7 10; do
-#    render -s 27 -em $EM -a dmis -i $ITERS \
-#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
-#done
+FILENAME_LIST=()
+for EM in 1 7 10; do
+              render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT} \
+                     -opof`
+    FILENAME_LIST+=("$FILENAME")
+done
+stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 # Inner layer - Naive refraction
 # White Lambert layer with Fresnel attenuation
+IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr_Fresnel
 INNER_FRESNEL=true
 INNER_FRESNEL_OT="_Fresnel"
-#for EM in 1 7 10; do
-#    render -s 27 -em $EM -a dmis -i $ITERS \
-#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
-#done
+FILENAME_LIST=()
+for EM in 1 7 10; do
+              render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT} \
+                     -opof`
+    FILENAME_LIST+=("$FILENAME")
+done
+stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 # Inner layer - Medium attenuation
 # Ideally white (albedo 100%) Lambert layer under brown medium.  Without outer layer.
@@ -138,11 +165,11 @@ INNER_SOLANGCOMPR=false
 INNER_SOLANGCOMPR_OT=""
 for EM in 1 7 10; do
     FILENAME_LIST=()
-    for THICK in 5.00 1.00 0.20 0.05 0.00; do
-                 #render -s 27 -em $EM -a dmis -i $ITERS \
-                 #       -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-                 #       -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-                 #       -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+                 render -s 27 -em $EM -a dmis -i $ITERS \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                        -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
@@ -150,7 +177,7 @@ for EM in 1 7 10; do
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
-    stitch_images FILENAME_LIST "${IMG_NAME}_${EM}_${ITERS}s.jpg"
+    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
 # Inner layer - Proper refraction
@@ -160,11 +187,11 @@ IMG_NAME=${OT_BASE}_InnerMedium_SolAngProblem
 INNER_ROUGH=0.10
 for EM in 1; do
     FILENAME_LIST=()
-    for THICK in 5.00 1.00 0.20 0.05 0.00; do
-                  #render -s 27 -em $EM -a dmis -i $ITERS \
-                  #       -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-                  #       -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-                  #       -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+                  render -s 27 -em $EM -a dmis -i $ITERS \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
@@ -172,7 +199,7 @@ for EM in 1; do
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
-    stitch_images FILENAME_LIST "${IMG_NAME}_${EM}_${ITERS}s.jpg"
+    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
 # Inner layer - Proper refraction - BSDF under a smooth refractive interface
@@ -184,11 +211,11 @@ INNER_SOLANGCOMPR=true
 INNER_SOLANGCOMPR_OT="_SolAngCompr"
 for EM in 1; do
     FILENAME_LIST=()
-    for THICK in 5.00 1.00 0.20 0.05 0.00; do
-                 #render -s 27 -em $EM -a dmis -i $ITERS \
-                 #       -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-                 #       -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-                 #       -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+                  render -s 27 -em $EM -a dmis -i $ITERS \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
@@ -196,23 +223,23 @@ for EM in 1; do
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
-    stitch_images FILENAME_LIST "${IMG_NAME}_${EM}_${ITERS}s.jpg"
+    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
 # Whole formula
 # Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and brown medium between them
 # (thicknesses: large to none)
-IMG_NAME=${OT_BASE}_Whole
+IMG_NAME=${OT_BASE}_WholeLambert
 OUTER_ROUGH=0.02
 INNER_ROUGH=1.00
 INNER_ONLY=false
 for EM in 1 7 10; do
     FILENAME_LIST=()
-    for THICK in 5.00 1.00 0.20 0.05 0.00; do
-                 #render -s 27 -em $EM -a dmis -i $ITERS \
-                 #       -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-                 #       -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-                 #       -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
+    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+                 render -s 27 -em $EM -a dmis -i $ITERS \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                        -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
@@ -220,21 +247,21 @@ for EM in 1 7 10; do
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
-    stitch_images FILENAME_LIST "${IMG_NAME}_${EM}_${ITERS}s.jpg"
+    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
 # Whole formula
 # Highly glossy outer layer, glossy inner layer and brown medium between them
 # (thicknesses: large to none)
-IMG_NAME=${OT_BASE}_Whole
+IMG_NAME=${OT_BASE}_WholeGlossy
 INNER_ROUGH=0.20
-for EM in 7; do    #1 7 10; do
+for EM in 1 7 10; do
     FILENAME_LIST=()
-    for THICK in 5.00 1.00 0.20 0.05 0.00; do
-                  #render -s 27 -em $EM -a dmis -i $ITERS \
-                  #       -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-                  #       -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-                  #       -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
+    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+                  render -s 27 -em $EM -a dmis -i $ITERS \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
@@ -242,7 +269,7 @@ for EM in 7; do    #1 7 10; do
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
-    stitch_images FILENAME_LIST "${IMG_NAME}_${EM}_${ITERS}s.jpg"
+    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
 
