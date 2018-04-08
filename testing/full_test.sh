@@ -81,10 +81,10 @@ run_single_render () {
         RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -opop`
                         "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL
     else
-        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference -em $3 -opop`
+        REFERENCE_IMG=` "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 1Reference  -em $3 -opop`
         DIFF_IMG=`      "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH -ot 3Difference -em $3 -opop`
-        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3 -opop`
-                        "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL -em $3
+        RENDERED_IMG=`  "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL   -em $3 -opop`
+                        "$PG3RENDER" -a $1 -s $2 -i $iterations_count -e hdr -od "$FULL_TEST_OUTPUT_DIR_ARCH_WIN" $QUIET_SWITCH $OUTPUT_TRAIL   -em $3
     fi
     RENDERING_RESULT=$?
 
