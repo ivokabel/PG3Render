@@ -12,6 +12,8 @@ DIFF_TOOL_BASE_DIR="$PG3_TRAINING_DIR/perceptual-diff/BinCMake/Release"
 PATH="$DIFF_TOOL_BASE_DIR:$PATH"
 DIFF_TOOL=perceptualdiff.exe
 
+IMCONVERT=/usr/bin/convert
+
 IMAGES_BASE_DIR="$PG3_TRAINING_DIR/PG3 Training/PG3Render/output images"
 IMAGES_BASE_DIR_WIN="$PG3_TRAINING_DIR_WIN\\PG3 Training\\PG3Render\\output images"
 
@@ -38,15 +40,34 @@ render () {
     "$PG3RENDER" -od "$IMAGES_BASE_DIR_WIN" -e hdr "$@"; echo
 }
 
+append_images ()
+{
+    # array by name
+    local INPUT_LIST_NAME=$1[@]
+    local INPUT_LIST=("${!INPUT_LIST_NAME}")
+    local OUTPUT_NAME=$2
+
+    for i in "${INPUT_LIST[@]}" ; do
+        echo "$i"
+    done
+    echo
+    echo "${OUTPUT_NAME}"
+
+    read
+
+    #"$IMCONVERT" +append "$@" -resize 25% "${IMAGES_BASE_DIR}/combine.hdr"
+}
+
 ###################################################################################################
 
 START_TIME=`date +%s`
 
 ###################################################################################################
 
+
 # Blog images
 
-ITERS=64
+ITERS=4
 OT_BASE=Blog
 SHOW_BCKG=true
 SHOW_BCKG_OT="_Bg"
@@ -67,34 +88,34 @@ INNER_FRESNEL=false
 INNER_FRESNEL_OT=""
 INNER_SOLANGCOMPR=false
 INNER_SOLANGCOMPR_OT=""
-for EM in 1 7 10; do
-    render -s 27 -em $EM -a dmis -i $ITERS \
-           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
-done
+#for EM in 1 7 10; do
+#    render -s 27 -em $EM -a dmis -i $ITERS \
+#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+#done
 
 # Inner layer - Naive refraction
 # White Lambert layer with refracted directions
 INNER_REFRACT=true 
 INNER_REFRACT_OT="_Refr"
-for EM in 1 7 10; do
-    render -s 27 -em $EM -a dmis -i $ITERS \
-           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
-done
+#for EM in 1 7 10; do
+#    render -s 27 -em $EM -a dmis -i $ITERS \
+#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+#done
 
 # Inner layer - Naive refraction
 # White Lambert layer with Fresnel attenuation
 INNER_FRESNEL=true
 INNER_FRESNEL_OT="_Fresnel"
-for EM in 1 7 10; do
-    render -s 27 -em $EM -a dmis -i $ITERS \
-           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
-done
+#for EM in 1 7 10; do
+#    render -s 27 -em $EM -a dmis -i $ITERS \
+#           -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+#           -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+#           -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${SHOW_BCKG_OT}
+#done
 
 # Inner layer - Medium attenuation
 # Ideally white (albedo 100%) Lambert layer under brown medium.  Without outer layer.
@@ -113,14 +134,28 @@ INNER_FRESNEL=true
 INNER_FRESNEL_OT="_Fresnel"
 INNER_SOLANGCOMPR=false
 INNER_SOLANGCOMPR_OT=""
-for EM in 1 7 10; do
+for EM in 1; do    # 7 10; do
+    OUT_IMG_LIST=()
+
     for THICK in 5.00 1.00 0.20 0.05 0.00; do
-        render -s 27 -em $EM -a dmis -i $ITERS \
-               -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
-               -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
-               -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                 #render -s 27 -em $EM -a dmis -i $ITERS \
+                 #       -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                 #       -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                 #       -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+
+        OUT_IMG=`render -s 27 -em $EM -a dmis -i $ITERS \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                        -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                        -opop`
+
+        OUT_IMG_LIST+=("$OUT_IMG")
     done
+
+    append_images OUT_IMG_LIST "${IMAGES_BASE_DIR}/${IMG_NAME}.hdr"
 done
+
+exit #debug
 
 # Inner layer - Proper refraction
 # Missing solid angle problem. Glossy layer under brown medium. (thicknesses: large to none; 3 lights)
