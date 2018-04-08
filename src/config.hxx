@@ -360,7 +360,9 @@ public:
             "[-sb|--splitting-budget <splitting_budget>] "
             "[-slbr|--splitting-light-to-bsdf-ratio <splitting_light_to_bsdf_ratio>] "
             "[-em <env_map_type>] [-e <def_output_ext>] [-od <output_directory>] [-o <output_name>] "
-            "[-ot <output_trail>] [-j <threads_count>] [-q] [-opop|--only-print-output-pathname] "
+            "[-ot <output_trail>] [-j <threads_count>] [-q] "
+            "[-opop|--only-print-output-pathname] "
+            "[-opof|--only-print-output-filename] "
             "[-auxf1|--dbg_aux_float1 <value>] "
             "[-auxf2|--dbg_aux_float2 <value>] "
             "[-auxf3|--dbg_aux_float3 <value>] "
@@ -439,6 +441,8 @@ public:
 
         printf("    -opop | --only-print-output-pathname \n");
         printf("           Do not render anything; just print the full path of the current output file.\n");
+        printf("    -opof | --only-print-output-filename \n");
+        printf("           Do not render anything; just print the name of the current output file.\n");
 
         printf("\n    Note: Time (-t) takes precedence over iterations (-i) if both are defined\n");
     }
@@ -521,25 +525,25 @@ public:
     bool ProcessCommandline(int32_t argc, const char *argv[])
     {
         // Parameters marked with [cmd] can be changed from command line
-        mScene                          = nullptr;                  // [cmd] When nullptr, renderer will not run
+        mScene                      = nullptr;                      // [cmd] When nullptr, renderer will not run
 
-        mOnlyPrintOutputPath            = false;                    // [cmd]
+        mOnlyPrintOutputMode        = OnlyPrintOutputMode::kNone;   // [cmd]
 
-        mIterations                     = 1;                        // [cmd]
-        mMaxTime                        = -1.f;                     // [cmd]
-        mDefOutputExtension             = "bmp";                    // [cmd]
-        mOutputName                     = "";                       // [cmd]
-        mOutputDirectory                = "";                       // [cmd]
-        mNumThreads                     = 0;
-        mQuietMode                      = false;
-        mBaseSeed                       = 1234;
-        mResolution                     = Vec2i(512, 512);
+        mIterations                 = 1;                            // [cmd]
+        mMaxTime                    = -1.f;                         // [cmd]
+        mDefOutputExtension         = "bmp";                        // [cmd]
+        mOutputName                 = "";                           // [cmd]
+        mOutputDirectory            = "";                           // [cmd]
+        mNumThreads                 = 0;
+        mQuietMode                  = false;
+        mBaseSeed                   = 1234;
+        mResolution                 = Vec2i(512, 512);
 
-        mAlgorithm                      = kAlgorithmCount;          // [cmd]
-        mMinPathLength                  = 1;                        // [cmd]
-        mMaxPathLength                  = 0;                        // [cmd]
-        mIndirectIllumClipping          = 0.f;                      // [cmd]
-        mSplittingBudget                = 4;                        // [cmd]
+        mAlgorithm                  = kAlgorithmCount;              // [cmd]
+        mMinPathLength              = 1;                            // [cmd]
+        mMaxPathLength              = 0;                            // [cmd]
+        mIndirectIllumClipping      = 0.f;                          // [cmd]
+        mSplittingBudget            = 4;                            // [cmd]
 
         // debug, temporary
         mDbgSplittingLevel = 1.f;                                   // [cmd]
@@ -567,7 +571,11 @@ public:
             }
             else if ((arg == "-opop") || (arg == "--only-print-output-pathname"))
             {
-                mOnlyPrintOutputPath = true;
+                mOnlyPrintOutputMode = OnlyPrintOutputMode::kOutputPathName;
+            }
+            else if ((arg == "-opof") || (arg == "--only-print-output-filename"))
+            {
+                mOnlyPrintOutputMode = OnlyPrintOutputMode::kOutputFileName;
             }
             else if (arg == "-j") // jobs (number of threads)
             {
@@ -1058,7 +1066,14 @@ public:
 
     const Scene             *mScene;
 
-    bool                     mOnlyPrintOutputPath;
+    enum class OnlyPrintOutputMode
+    {
+        kNone,
+        kOutputFileName,
+        kOutputPathName,
+    };
+
+    OnlyPrintOutputMode      mOnlyPrintOutputMode;
 
     int32_t                  mIterations;
     float                    mMaxTime;

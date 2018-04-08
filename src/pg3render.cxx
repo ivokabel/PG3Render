@@ -232,9 +232,14 @@ int32_t main(int32_t argc, const char *argv[])
     else
         fullOutputPath = config.mOutputName;
 
-    if (config.mOnlyPrintOutputPath)
+    if (config.mOnlyPrintOutputMode == Config::OnlyPrintOutputMode::kOutputPathName)
     {
         printf("%s", fullOutputPath.c_str());
+        return 1;
+    }
+    else if (config.mOnlyPrintOutputMode == Config::OnlyPrintOutputMode::kOutputFileName)
+    {
+        printf("%s", config.mOutputName.c_str());
         return 1;
     }
 
