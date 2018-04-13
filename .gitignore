@@ -15,3 +15,5 @@ desktop.ini
 *.user
 *.lyx~
 *.ods#
+/OpenEXR/include/
+/OpenEXR/lib/
