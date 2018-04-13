@@ -70,7 +70,7 @@ START_TIME=`date +%s`
 
 # Blog images
 
-ITERS=256
+ITERS=512
 OT_BASE=Blog
 SHOW_BCKG=true
 SHOW_BCKG_OT="_Bg"
