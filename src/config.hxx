@@ -321,7 +321,8 @@ public:
                 "bool2 %s, "
                 "bool3 %s, "
                 "bool4 %s, "
-                "bool5 %s"
+                "bool5 %s, "
+                "bool6 %s"
 
                 "\n",
 
@@ -335,7 +336,9 @@ public:
                 mAuxDbgParams.bool2 ? "true" : "false",
                 mAuxDbgParams.bool3 ? "true" : "false",
                 mAuxDbgParams.bool4 ? "true" : "false",
-                mAuxDbgParams.bool5 ? "true" : "false");
+                mAuxDbgParams.bool5 ? "true" : "false",
+                mAuxDbgParams.bool6 ? "true" : "false"
+                );
 
         // Output
         printf("Out file:  ");
@@ -436,6 +439,8 @@ public:
         printf("           Auxiliary bool debugging parameter no. 4 (default: false).\n");
         printf("    -auxb5 | --dbg_aux_bool5 \n");
         printf("           Auxiliary bool debugging parameter no. 5 (default: false).\n");
+        printf("    -auxb6 | --dbg_aux_bool6 \n");
+        printf("           Auxiliary bool debugging parameter no. 6 (default: false).\n");
 
         printf("\n");
 
@@ -1020,6 +1025,11 @@ public:
             else if ((arg == "-auxb5") || (arg == "--dbg_aux_bool5"))
             {
                 if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool5, "dbg_aux_bool5"))
+                    return false;
+            }
+            else if ((arg == "-auxb6") || (arg == "--dbg_aux_bool6"))
+            {
+                if (!ProcessCommandlineParamBool(argc, argv, i, mAuxDbgParams.bool6, "dbg_aux_bool6"))
                     return false;
             }
         }

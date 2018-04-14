@@ -17,6 +17,7 @@ public:
     bool    bool3;
     bool    bool4;
     bool    bool5;
+    bool    bool6;
 
     AuxDbgParams() :
         float1(Math::InfinityF()),
@@ -28,7 +29,8 @@ public:
         bool2(false),
         bool3(false),
         bool4(false),
-        bool5(false)
+        bool5(false),
+        bool6(false)
     {}
 
     bool IsEmpty() const
@@ -43,6 +45,7 @@ public:
             && !bool2
             && !bool3
             && !bool4
-            && !bool5;
+            && !bool5
+            && !bool6;
     }
 };
