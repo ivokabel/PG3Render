@@ -75,15 +75,43 @@ OT_BASE=Blog
 SHOW_BCKG=true
 SHOW_BCKG_OT="_Bg"
 
-OUTER_ROUGH=0.00
-INNER_ROUGH=1.00
+OUTER_ROUGH=0.01
 INNER_LAMB_ORANGE=0
-INNER_LAMB_ORANGE_OT=""     #"Orange"
-THICK=0
+INNER_LAMB_ORANGE_OT=""     #1="Orange"
+MEDIUM_BLUE=0.0
+MEDIUM_OT="Brown"
+INNER_REFRACT=false
+INNER_REFRACT_OT=""
+INNER_FRESNEL=false
+INNER_FRESNEL_OT=""
+INNER_SOLANGCOMPR=false
+INNER_SOLANGCOMPR_OT=""
+
+# Outer layer
+IMG_NAME=${OT_BASE}_OuterOnly
+INNER_ROUGH=1.00
+INNER_ONLY=false
+THICK=1000 # Hack: eliminates inner contribution
+FILENAME_LIST=()
+for EM in 1 7 10; do
+              render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
+    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT} \
+                     -opof`
+    FILENAME_LIST+=("$FILENAME")
+done
+stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 # Inner layer - Naive refraction
 # White Lambert layer without any modifications
 IMG_NAME=${OT_BASE}_InnerOnly_NoModif
+INNER_ROUGH=1.00
+THICK=0
 INNER_ONLY=true
 INNER_REFRACT=false
 INNER_REFRACT_OT=""
@@ -148,14 +176,10 @@ stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 # Inner layer - Medium attenuation
 # Ideally white (albedo 100%) Lambert layer under brown medium.  Without outer layer.
-# (thicknesses: large to none)
 IMG_NAME=${OT_BASE}_MediumAttenuation
-OUTER_ROUGH=0.00
 INNER_ROUGH=1.00
 INNER_LAMB_ORANGE=0
 INNER_LAMB_ORANGE_OT=""     #"Orange"
-MEDIUM_BLUE=0.0
-MEDIUM_OT="Brown"
 INNER_ONLY=true
 INNER_REFRACT=true 
 INNER_REFRACT_OT="_Refr"
@@ -182,7 +206,6 @@ done
 
 # Inner layer - Proper refraction
 # Missing solid angle problem. Glossy layer under brown medium. (thicknesses: large to none; 3 lights)
-# (thicknesses: large to none)
 IMG_NAME=${OT_BASE}_InnerMedium_SolAngProblem
 INNER_ROUGH=0.10
 for EM in 1; do
@@ -204,7 +227,6 @@ done
 
 # Inner layer - Proper refraction - BSDF under a smooth refractive interface
 # Solid angle compression applied. Glossy layer under brown medium.
-# (thicknesses: large to none)
 IMG_NAME=${OT_BASE}_InnerMedium_SolAngComp
 INNER_ROUGH=0.10
 INNER_SOLANGCOMPR=true
@@ -228,9 +250,7 @@ done
 
 # Whole formula
 # Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and brown medium between them
-# (thicknesses: large to none)
 IMG_NAME=${OT_BASE}_WholeLambert
-OUTER_ROUGH=0.02
 INNER_ROUGH=1.00
 INNER_ONLY=false
 for EM in 1 7 10; do
@@ -252,7 +272,6 @@ done
 
 # Whole formula
 # Highly glossy outer layer, glossy inner layer and brown medium between them
-# (thicknesses: large to none)
 IMG_NAME=${OT_BASE}_WholeGlossy
 INNER_ROUGH=0.20
 for EM in 1 7 10; do
