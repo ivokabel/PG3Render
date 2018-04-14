@@ -1332,6 +1332,7 @@ public:
         const bool dbgInnerRefract      = mAuxDbgParams.bool3;
         const bool dbgInnerFresnel      = mAuxDbgParams.bool4;
         const bool dbgInnerSolAngCompr  = mAuxDbgParams.bool5;
+        const bool dbgPdfRefrComp       = mAuxDbgParams.bool6;
 
         // No transmission below horizon (both input and output)
         if (oMatRecord.wil.z <= 0.f || oMatRecord.wol.z <= 0.f)
@@ -1427,7 +1428,9 @@ public:
 
             const auto outerPdf = outerMatRecRefl.pdfW;
             const float innerPdfSolAngCompr =
-                dbgInnerRefract ? (Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z)) : 1.0f;
+                  (dbgInnerRefract && dbgPdfRefrComp)
+                ? (Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z))
+                : 1.0f;
             const auto innerPdf =
                   innerMatRec.pdfW
                 * innerPdfSolAngCompr; // solid angle (de)compression
