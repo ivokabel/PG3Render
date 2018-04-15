@@ -109,6 +109,7 @@ for EM in 1 7 10; do
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
+
 # Inner layer - Naive refraction
 # White Lambert layer without any modifications
 IMG_NAME=${OT_BASE}_InnerOnly_NoModif
@@ -136,6 +137,7 @@ for EM in 1 7 10; do
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
+
 # Inner layer - Naive refraction
 # White Lambert layer with refracted directions
 IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr
@@ -156,6 +158,7 @@ for EM in 1 7 10; do
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
+
 # Inner layer - Naive refraction
 # White Lambert layer with Fresnel attenuation
 IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr_Fresnel
@@ -175,6 +178,7 @@ for EM in 1 7 10; do
     FILENAME_LIST+=("$FILENAME")
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
 
 # Inner layer - Medium attenuation
 # Ideally white (albedo 100%) Lambert layer under brown medium.  Without outer layer.
@@ -206,6 +210,7 @@ for EM in 1 7 10; do
     stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
+
 # Inner layer - Missing solid angle problem.
 # Glossy layer under brown medium. (thicknesses: large to none; 3 lights)
 IMG_NAME=${OT_BASE}_InnerMedium_SolAngProblem
@@ -226,6 +231,7 @@ for EM in 1; do
     done
     stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
+
 
 # Inner layer - Solid angle compression applied.
 # Lambert layer
@@ -249,6 +255,7 @@ for EM in 1 7 10; do
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
+
 # Sampling Inner layer - Darkening problem
 IMG_NAME=${OT_BASE}_InnerGlossy_PdfDarkening
 INNER_ROUGH=0.04
@@ -269,6 +276,7 @@ for EM in 1 7 10; do
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
+
 # Sampling Inner layer - Darkening problem fixed
 IMG_NAME=${OT_BASE}_InnerGlossy_PdfDarkeningFixed
 INNER_PDFREFRCOMP=true
@@ -287,6 +295,7 @@ for EM in 1 7 10; do
     FILENAME_LIST+=("$FILENAME")
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
 
 # Inner layer - Solid angle compression applied.
 # Glossy layer under brown medium.
@@ -309,6 +318,7 @@ for EM in 1; do
     stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
 
+
 # Whole formula
 # Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and brown medium between them
 IMG_NAME=${OT_BASE}_WholeLambert
@@ -330,6 +340,7 @@ for EM in 1 7 10; do
     done
     stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
 done
+
 
 # Whole formula
 # Highly glossy outer layer, glossy inner layer and brown medium between them
