@@ -1328,11 +1328,11 @@ public:
         oMatRecord.compProb = 1.f;
 
         // debug
-        const bool dbgInnerOnly         = mAuxDbgParams.bool2;
-        const bool dbgInnerRefract      = mAuxDbgParams.bool3;
-        const bool dbgInnerFresnel      = mAuxDbgParams.bool4;
-        const bool dbgInnerSolAngCompr  = mAuxDbgParams.bool5;
-        const bool dbgPdfRefrComp       = mAuxDbgParams.bool6;
+        const bool dbgInnerOnly         =  mAuxDbgParams.bool2;
+        const bool dbgInnerRefract      = !mAuxDbgParams.bool3;
+        const bool dbgInnerFresnel      = !mAuxDbgParams.bool4;
+        const bool dbgInnerSolAngCompr  = !mAuxDbgParams.bool5;
+        const bool dbgPdfRefrComp       = !mAuxDbgParams.bool6;
 
         // No transmission below horizon (both input and output)
         if (oMatRecord.wil.z <= 0.f || oMatRecord.wol.z <= 0.f)
@@ -1483,8 +1483,8 @@ public:
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
         // debug
-        const bool dbgInnerOnly    = mAuxDbgParams.bool2;
-        const bool dbgInnerRefract = mAuxDbgParams.bool3;
+        const bool dbgInnerOnly    =  mAuxDbgParams.bool2;
+        const bool dbgInnerRefract = !mAuxDbgParams.bool3;
 
         // Pick and sample one component
         const float randomVal = aRng.GetFloat() * totalContrEst;
