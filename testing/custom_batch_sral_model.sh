@@ -72,8 +72,8 @@ START_TIME=`date +%s`
 
 ITERS=512
 OT_BASE=Blog
-SHOW_BCKG=true
-SHOW_BCKG_OT="_Bg"
+HIDE_BCKG=false
+HIDE_BCKG_OT="_Bg"
 
 OUTER_ROUGH=0.01
 INNER_LAMB_ORANGE=0
@@ -97,13 +97,13 @@ THICK=1000 # Hack: eliminates inner contribution
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -125,13 +125,13 @@ INNER_SOLANGCOMPR_OT=""
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -146,13 +146,13 @@ INNER_REFRACT_OT="_Refr"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -167,13 +167,13 @@ INNER_FRESNEL_OT="_Fresnel"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -197,13 +197,13 @@ for EM in 1 7 10; do
     FILENAME_LIST=()
     for THICK in 20.00 5.00 1.00 0.20 0.00; do
                  render -s 27 -em $EM -a dmis -i $ITERS \
-                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                         -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -219,13 +219,13 @@ for EM in 1; do
     FILENAME_LIST=()
     for THICK in 20.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -243,13 +243,13 @@ THICK=0.0
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -264,13 +264,13 @@ INNER_PDFREFRCOMP_OT="_NoPdfComp"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -284,13 +284,13 @@ INNER_PDFREFRCOMP_OT=""
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -305,13 +305,13 @@ for EM in 1; do
     FILENAME_LIST=()
     for THICK in 20.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT}
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${SHOW_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -328,13 +328,13 @@ for EM in 1 7 10; do
     FILENAME_LIST=()
     for THICK in 20.00 5.00 1.00 0.20 0.00; do
                  render -s 27 -em $EM -a dmis -i $ITERS \
-                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                         -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -350,13 +350,13 @@ for EM in 1 7 10; do
     FILENAME_LIST=()
     for THICK in 20.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT}
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $SHOW_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_ORANGE} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $INNER_REFRACT -auxb4 $INNER_FRESNEL -auxb5 $INNER_SOLANGCOMPR -auxb6 $INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${SHOW_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_ORANGE_OT}${INNER_REFRACT_OT}${INNER_FRESNEL_OT}${INNER_SOLANGCOMPR_OT}${INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
