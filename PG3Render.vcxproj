@@ -232,6 +232,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="testing\custom_batch.sh" />
+    <None Include="testing\custom_batch_sral_model.sh" />
     <None Include="testing\full_test.sh" />
     <None Include="testing\splitting_img_diff.sh" />
     <None Include="testing\splitting_img_diff_to_file.sh" />

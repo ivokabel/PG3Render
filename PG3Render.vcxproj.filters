@@ -163,5 +163,8 @@
     <None Include="testing\steersampl_tuning_to_file.sh">
       <Filter>Scripts</Filter>
     </None>
+    <None Include="testing\custom_batch_sral_model.sh">
+      <Filter>Scripts</Filter>
+    </None>
   </ItemGroup>
 </Project>
