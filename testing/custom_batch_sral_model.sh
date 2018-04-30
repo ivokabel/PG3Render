@@ -70,16 +70,16 @@ START_TIME=`date +%s`
 
 # Blog images - Gallery
 
-ITERS=4
+ITERS=32
 OT_BASE=BlogGallery
 
 # Inner Lambert - Outer Smooth
 
-IMG_NAME=${OT_BASE}_LambertSmooth
+IMG_NAME=${OT_BASE}_LambertOrangeBoostedSmooth
 INNER_ROUGH=1.00
 OUTER_ROUGH=0.01
-INNER_LAMB_COLOUR=1
-INNER_LAMB_COLOUR_OT="Orange"     #1="Orange"
+INNER_LAMB_COLOUR=3
+INNER_LAMB_COLOUR_OT="OrangeBoosted"
 THICK=0.0
 MEDIUM_BLUE=0.0
 MEDIUM_OT=""
@@ -95,6 +95,7 @@ for EM in 1 7 10; do
     FILENAME_LIST+=("$FILENAME")
 done
 stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
+
 
 
 echo
