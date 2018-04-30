@@ -263,9 +263,9 @@ public:
 
         printf("========== [[ PG3Render ]] ==========\n");
 
-        printf("Scene:     %s\n", mScene->mSceneName.c_str());
+        printf("Scene:      %s\n", mScene->mSceneName.c_str());
 
-        printf("Algorithm: %s", GetName(mAlgorithm));
+        printf("Algorithm:  %s", GetName(mAlgorithm));
         if (   (mAlgorithm == kPathTracingNaive)
             || (mAlgorithm == kPathTracing))
         {
@@ -289,9 +289,9 @@ public:
 
         // Configuration
         if (mMaxTime > 0)
-            printf("Config:    %g seconds render time", mMaxTime);
+            printf("Config:     %g seconds render time", mMaxTime);
         else
-            printf("Config:    %d iteration(s)", mIterations);
+            printf("Config:     %d iteration(s)", mIterations);
         printf(""
             ", %d threads, "
             #if !defined _DEBUG
@@ -309,20 +309,20 @@ public:
         // Debugging options
         if (!mAuxDbgParams.IsEmpty())
             printf(
-                "Debugging aux params: "
+                "Aux params: "
 
-                "float1 %f, "
-                "float2 %f, "
-                "float3 %f, "
-                "float4 %f, "
-                "float5 %f, "
+                "f1 %f, "
+                "f2 %f, "
+                "f3 %f, "
+                "f4 %f, "
+                "f5 %f, "
 
-                "bool1 %s, "
-                "bool2 %s, "
-                "bool3 %s, "
-                "bool4 %s, "
-                "bool5 %s, "
-                "bool6 %s"
+                "b1 %s, "
+                "b2 %s, "
+                "b3 %s, "
+                "b4 %s, "
+                "b5 %s, "
+                "b6 %s"
 
                 "\n",
 
@@ -341,9 +341,10 @@ public:
                 );
 
         // Output
-        printf("Out file:  ");
+        printf("Out path:   ");
         if (!mOutputDirectory.empty())
-            printf("%s\\", mOutputDirectory.c_str());
+            printf("%s\n", mOutputDirectory.c_str());
+        printf("Out file:   ");
         printf("%s\n", mOutputName.c_str());
 
         fflush(stdout);
