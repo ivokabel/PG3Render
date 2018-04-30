@@ -69,7 +69,7 @@ START_TIME=`date +%s`
 
 # Blog images - Gallery
 
-ITERS=8     #32    #256
+ITERS=512   #8
 OT_BASE=BlogGallery
 
 # Inner Lambert - Outer Smooth
@@ -225,7 +225,7 @@ exit
 # Blog images - The technical part
 
 ITERS=512
-OT_BASE=Blog
+OT_BASE=BlogExplanation
 HIDE_BCKG=false
 HIDE_BCKG_OT="_Bg"
 
