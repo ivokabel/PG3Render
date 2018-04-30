@@ -330,10 +330,24 @@ public:
                 (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : 0.200f;
             const float mediumThickness =
                 (aAuxDbgParams.float3 != Math::InfinityF()) ? aAuxDbgParams.float3 : 0.001f;
-            const SpectrumF lambertAtt(
-                  (aAuxDbgParams.float4 == 1.f)
-                ? SpectrumF().SetSRGBAttenuation(0.892f, 0.320f, 0.124f)
-                : SpectrumF().SetGreyAttenuation(1.0f));
+            const SpectrumF lambertAtt = [](const float colour) -> SpectrumF
+            {
+                static const float multiScatCompensation = 2.28f; // TIR compensation for glass/air 2.2801/1.0006
+                if (colour == 0.f) // White
+                    return SpectrumF().SetGreyAttenuation(1.0f);
+                else if (colour == 1.f) // Boosted white
+                    return SpectrumF().SetGreyAttenuation(1.0f) * multiScatCompensation;
+                else if (colour == 2.f) // Orange
+                    return SpectrumF().SetSRGBAttenuation(0.81f, 0.18f, 0.06f);
+                else if (colour == 3.f) // Boosted orange
+                    return SpectrumF().SetSRGBAttenuation(0.81f, 0.18f, 0.06f) * multiScatCompensation;
+                else if (colour == 4.f) // Violet
+                    return SpectrumF().SetSRGBAttenuation(0.81f, 0.27f, 0.98f);
+                else if (colour == 5.f) // Boosted violet
+                    return SpectrumF().SetSRGBAttenuation(0.81f, 0.27f, 0.98f) * multiScatCompensation;
+                else
+                    return SpectrumF().SetGreyAttenuation(0.f);
+            }(aAuxDbgParams.float4);
             const SpectrumF mediumAtt(
                   (aAuxDbgParams.float5 == 1.f)
                 ? SpectrumF().SetSRGBAttenuation(5.0f, 2.5f, 0.5f)   // blue
