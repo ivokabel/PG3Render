@@ -117,9 +117,9 @@ MEDIUM_OT=""
 #                     -opof`
 #    FILENAME_LIST+=("$FILENAME")
 #done
-#stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
+#stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
-# Inner Smooth - Outer Smooth
+# Inner Smooth - Medium - Outer Smooth
 
 IMG_NAME=${OT_BASE}_SmoothMediumSmooth
 INNER_ROUGH=0.01
@@ -140,13 +140,59 @@ MEDIUM_OT="Orange"
 #                     -opof`
 #    FILENAME_LIST+=("$FILENAME")
 #done
-#stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
+#stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
-# Inner Glossy - Outer Smooth
+# Inner Glossy - Medium - Outer Smooth
 
 IMG_NAME=${OT_BASE}_GlossyMediumSmooth
 INNER_ROUGH=0.25
 OUTER_ROUGH=0.01
+INNER_LAMB_COLOUR=0
+INNER_LAMB_COLOUR_OT=""
+THICK=1.0
+MEDIUM_BLUE=0.0
+MEDIUM_OT="Orange"
+#FILENAME_LIST=()
+#for EM in 1 7 10; do
+#              render -s 27 -em $EM -a dmis -i $ITERS \
+#                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
+#                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+#    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+#                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
+#                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+#                     -opof`
+#    FILENAME_LIST+=("$FILENAME")
+#done
+#stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
+# Inner Lambert - Medium - Outer Smooth
+
+IMG_NAME=${OT_BASE}_LambertWhiteBoostedMediumSmooth
+INNER_ROUGH=1.00
+OUTER_ROUGH=0.01
+INNER_LAMB_COLOUR=1
+INNER_LAMB_COLOUR_OT="WhiteBoosted"
+THICK=0.8
+MEDIUM_BLUE=0.0
+MEDIUM_OT="Orange"
+#FILENAME_LIST=()
+#for EM in 1 7 10; do
+#              render -s 27 -em $EM -a dmis -i $ITERS \
+#                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
+#                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+#    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+#                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
+#                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+#                     -opof`
+#    FILENAME_LIST+=("$FILENAME")
+#done
+#stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
+# Inner Glossy - Medium - Outer Glossy
+
+IMG_NAME=${OT_BASE}_GlossyMediumGlossy
+INNER_ROUGH=0.22
+OUTER_ROUGH=0.12
 INNER_LAMB_COLOUR=0
 INNER_LAMB_COLOUR_OT=""
 THICK=1.0
@@ -163,7 +209,8 @@ for EM in 1 7 10; do
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
-stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
+stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
 
 
 echo
