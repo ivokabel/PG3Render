@@ -83,6 +83,29 @@ INNER_LAMB_COLOUR_OT="OrangeBoosted"
 THICK=0.0
 MEDIUM_BLUE=0.0
 MEDIUM_OT=""
+#FILENAME_LIST=()
+#for EM in 1 7 10; do
+#              render -s 27 -em $EM -a dmis -i $ITERS \
+#                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
+#                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+#    FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+#                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
+#                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+#                     -opof`
+#    FILENAME_LIST+=("$FILENAME")
+#done
+#stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
+# Inner Lambert - Outer Glossy
+
+IMG_NAME=${OT_BASE}_LambertOrangeBoostedGlossy
+INNER_ROUGH=1.00
+OUTER_ROUGH=0.14
+INNER_LAMB_COLOUR=3
+INNER_LAMB_COLOUR_OT="OrangeBoosted"
+THICK=0.0
+MEDIUM_BLUE=0.0
+MEDIUM_OT=""
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
