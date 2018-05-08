@@ -67,9 +67,12 @@ START_TIME=`date +%s`
 
 ###################################################################################################
 
+
+ITERS=512
+
+
 # Blog images - Gallery
 
-ITERS=512   #8
 OT_BASE=BlogGallery
 
 # Inner Lambert - Outer Smooth
@@ -212,26 +215,15 @@ stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
 
-echo
-echo "The script has finished."
-END_TIME=`date +%s`
-TOTAL_TIME=`expr $END_TIME - $START_TIME`
-echo "Total execution time:" `display_time $TOTAL_TIME`.
-read
-exit
+# Blog images - The explanation technical part
 
-
-
-# Blog images - The technical part
-
-ITERS=512
 OT_BASE=BlogExplanation
 HIDE_BCKG=false
 HIDE_BCKG_OT="_Bg"
 
 OUTER_ROUGH=0.01
 INNER_LAMB_COLOUR=0
-INNER_LAMB_COLOUR_OT=""     #1="Orange"
+INNER_LAMB_COLOUR_OT=""
 MEDIUM_BLUE=0.0
 MEDIUM_OT="Orange"
 NO_INNER_REFRACT=true
@@ -264,8 +256,7 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Inner layer - Naive refraction
-# White Lambert layer without any modifications
+# Inner white Lambert without any modifications
 IMG_NAME=${OT_BASE}_InnerOnly_NoModif
 INNER_ROUGH=1.00
 THICK=0
@@ -292,8 +283,7 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Inner layer - Naive refraction
-# White Lambert layer with refracted directions
+# Inner white Lambert with refracted directions
 IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr
 NO_INNER_REFRACT=false 
 NO_INNER_REFRACT_OT="_Refr"
@@ -313,8 +303,7 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Inner layer - Naive refraction
-# White Lambert layer with Fresnel attenuation
+# Inner white Lambert with Fresnel attenuation
 IMG_NAME=${OT_BASE}_InnerOnly_NaiveRefr_Fresnel
 NO_INNER_FRESNEL=false
 NO_INNER_FRESNEL_OT="_Fresnel"
@@ -334,12 +323,11 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Inner layer - Medium attenuation
-# Ideally white (albedo 100%) Lambert layer under brown medium.  Without outer layer.
+# Inner white Lambert + medium attenuation
 IMG_NAME=${OT_BASE}_MediumAttenuation
 INNER_ROUGH=1.00
 INNER_LAMB_COLOUR=0
-INNER_LAMB_COLOUR_OT=""     #"Orange"
+INNER_LAMB_COLOUR_OT=""
 INNER_ONLY=true
 NO_INNER_REFRACT=false 
 NO_INNER_REFRACT_OT="_Refr"
@@ -349,7 +337,7 @@ NO_INNER_SOLANGCOMPR=true
 NO_INNER_SOLANGCOMPR_OT=""
 for EM in 1 7 10; do
     FILENAME_LIST=()
-    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+    for THICK in 15.00 5.00 1.00 0.20 0.00; do
                  render -s 27 -em $EM -a dmis -i $ITERS \
                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
@@ -365,13 +353,12 @@ for EM in 1 7 10; do
 done
 
 
-# Inner layer - Missing solid angle problem.
-# Glossy layer under brown medium. (thicknesses: large to none; 3 lights)
-IMG_NAME=${OT_BASE}_InnerMedium_SolAngProblem
+# Inner layer - Solid angle problem
+IMG_NAME=${OT_BASE}_InnerGlossyMedium_SolAngProblem
 INNER_ROUGH=0.10
 for EM in 1; do
     FILENAME_LIST=()
-    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+    for THICK in 15.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
@@ -387,12 +374,34 @@ for EM in 1; do
 done
 
 
-# Inner layer - Solid angle compression applied.
-# Lambert layer
-IMG_NAME=${OT_BASE}_InnerLambert_SolAngComp
+# Inner layer - Solid angle compression applied
+IMG_NAME=${OT_BASE}_InnerGlossyMedium_SolAngCompress
+INNER_ROUGH=0.10
+NO_INNER_SOLANGCOMPR=false
+NO_INNER_SOLANGCOMPR_OT="_SolAngCompress"
+for EM in 1; do
+    FILENAME_LIST=()
+    for THICK in 15.00 5.00 1.00 0.20 0.00; do
+                  render -s 27 -em $EM -a dmis -i $ITERS \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+        FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                         -opof`
+        FILENAME_LIST+=("$FILENAME")
+    done
+    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
+done
+
+
+# Inner white lambert - Solid angle compression applied
+IMG_NAME=${OT_BASE}_InnerLambert_SolAngCompress
 INNER_ROUGH=1.00
 NO_INNER_SOLANGCOMPR=false
-NO_INNER_SOLANGCOMPR_OT="_SolAngCompr"
+NO_INNER_SOLANGCOMPR_OT="_SolAngCompress"
 THICK=0.0
 FILENAME_LIST=()
 for EM in 1 7 10; do
@@ -410,7 +419,7 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Sampling Inner layer - Darkening problem
+# Sampling Inner layer - PDF darkening problem
 IMG_NAME=${OT_BASE}_InnerGlossy_PdfDarkening
 INNER_ROUGH=0.04
 NO_INNER_PDFREFRCOMP=true
@@ -431,7 +440,7 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Sampling Inner layer - Darkening problem fixed
+# Sampling Inner layer - PDF darkening problem fixed
 IMG_NAME=${OT_BASE}_InnerGlossy_PdfDarkeningFixed
 NO_INNER_PDFREFRCOMP=false
 NO_INNER_PDFREFRCOMP_OT=""
@@ -451,36 +460,16 @@ done
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
 
 
-# Inner layer - Solid angle compression applied.
-# Glossy layer under brown medium.
-IMG_NAME=${OT_BASE}_InnerGlossyMedium_SolAngComp
-INNER_ROUGH=0.10
-for EM in 1; do
-    FILENAME_LIST=()
-    for THICK in 20.00 5.00 1.00 0.20 0.00; do
-                  render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
-                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
-        FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
-                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
-                         -opof`
-        FILENAME_LIST+=("$FILENAME")
-    done
-    stitch_images FILENAME_LIST "${IMG_NAME}_EM${EM}_${ITERS}s.jpg"
-done
-
-
-# Whole formula
-# Highly glossy outer layer, ideally white (albedo 100%) Lambert inner layer and brown medium between them
+# Whole formula Lambert
+# Highly glossy outer layer, boosted white Lambert inner layer and brown medium between them
 IMG_NAME=${OT_BASE}_WholeLambert
 INNER_ROUGH=1.00
 INNER_ONLY=false
+INNER_LAMB_COLOUR=1
+INNER_LAMB_COLOUR_OT="WhiteBoosted"
 for EM in 1 7 10; do
     FILENAME_LIST=()
-    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+    for THICK in 15.00 5.00 1.00 0.20 0.00; do
                  render -s 27 -em $EM -a dmis -i $ITERS \
                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
@@ -496,13 +485,13 @@ for EM in 1 7 10; do
 done
 
 
-# Whole formula
+# Whole formula glossy
 # Highly glossy outer layer, glossy inner layer and brown medium between them
 IMG_NAME=${OT_BASE}_WholeGlossy
 INNER_ROUGH=0.20
 for EM in 1 7 10; do
     FILENAME_LIST=()
-    for THICK in 20.00 5.00 1.00 0.20 0.00; do
+    for THICK in 15.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
                          -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
