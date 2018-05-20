@@ -70,6 +70,125 @@ START_TIME=`date +%s`
 
 ITERS=512
 
+OT_BASE=BlogTeaser
+IMG_NAME=${OT_BASE}
+EM=10
+HIDE_BCKG=false
+HIDE_BCKG_OT="_Bg"
+INNER_ONLY=false
+NO_INNER_REFRACT=false
+NO_INNER_REFRACT_OT=""
+NO_INNER_FRESNEL=false
+NO_INNER_FRESNEL_OT=""
+NO_INNER_SOLANGCOMPR=false
+NO_INNER_SOLANGCOMPR_OT=""
+NO_INNER_PDFREFRCOMP=false
+NO_INNER_PDFREFRCOMP_OT=""
+
+FILENAME_LIST=()
+
+############
+OUTER_ROUGH=0.15
+THICK=5.0
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
+INNER_ROUGH=0.25
+INNER_LAMB_COLOUR=1
+INNER_LAMB_COLOUR_OT=""
+          render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
+FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
+                 -opof`
+FILENAME_LIST+=("$FILENAME")
+
+############
+OUTER_ROUGH=0.08
+THICK=0
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT=""
+INNER_ROUGH=1.00
+INNER_LAMB_COLOUR=3
+INNER_LAMB_COLOUR_OT="OrangeBoosted"
+          render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
+FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
+                 -opof`
+FILENAME_LIST+=("$FILENAME")
+
+############
+OUTER_ROUGH=0.01
+THICK=0.9
+MEDIUM_COLOUR=1.0
+MEDIUM_COLOUR_OT="Blue"
+INNER_ROUGH=1.00
+INNER_LAMB_COLOUR=1
+INNER_LAMB_COLOUR_OT="BoostedWhite"
+          render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
+FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
+                 -opof`
+FILENAME_LIST+=("$FILENAME")
+
+############
+OUTER_ROUGH=0.01
+THICK=2.0
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
+INNER_ROUGH=0.30
+INNER_LAMB_COLOUR=1
+INNER_LAMB_COLOUR_OT=""
+          render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
+FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
+                 -opof`
+FILENAME_LIST+=("$FILENAME")
+
+############
+OUTER_ROUGH=0.01
+THICK=21.0
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
+INNER_ROUGH=0.25
+INNER_LAMB_COLOUR=1
+INNER_LAMB_COLOUR_OT=""
+          render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
+FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
+                 -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                 -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
+                 -opof`
+FILENAME_LIST+=("$FILENAME")
+
+stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
+
+
+#debug
+echo
+echo "The script has finished."
+END_TIME=`date +%s`
+TOTAL_TIME=`expr $END_TIME - $START_TIME`
+echo "Total execution time:" `display_time $TOTAL_TIME`.
+read
+exit
+
+
+
+
+ITERS=512
+
 
 ###############################################
 # Blog images - The explanation technical part
@@ -82,8 +201,8 @@ HIDE_BCKG_OT="_Bg"
 OUTER_ROUGH=0.01
 INNER_LAMB_COLOUR=0
 INNER_LAMB_COLOUR_OT=""
-MEDIUM_BLUE=0.0
-MEDIUM_OT="Orange"
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
 NO_INNER_REFRACT=true
 NO_INNER_REFRACT_OT=""
 NO_INNER_FRESNEL=true
@@ -101,13 +220,13 @@ THICK=1000 # Hack: eliminates inner contribution
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -197,13 +316,13 @@ for EM in 1 7 10; do
     FILENAME_LIST=()
     for THICK in 15.00 5.00 1.00 0.20 0.00; do
                  render -s 27 -em $EM -a dmis -i $ITERS \
-                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -218,13 +337,13 @@ for EM in 1; do
     FILENAME_LIST=()
     for THICK in 15.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -241,13 +360,13 @@ for EM in 1; do
     FILENAME_LIST=()
     for THICK in 15.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -264,13 +383,13 @@ THICK=0.0
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -285,13 +404,13 @@ NO_INNER_PDFREFRCOMP_OT="_NoPdfComp"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -305,13 +424,13 @@ NO_INNER_PDFREFRCOMP_OT=""
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT}
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                      -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}${HIDE_BCKG_OT} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}${HIDE_BCKG_OT} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -329,13 +448,13 @@ for EM in 1 7 10; do
     FILENAME_LIST=()
     for THICK in 15.00 5.00 1.00 0.20 0.00; do
                  render -s 27 -em $EM -a dmis -i $ITERS \
-                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                        -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                         -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
+                        -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -351,13 +470,13 @@ for EM in 1 7 10; do
     FILENAME_LIST=()
     for THICK in 15.00 5.00 1.00 0.20 0.00; do
                   render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT}
         FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
+                         -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} -auxb1 $HIDE_BCKG -auxb2 $INNER_ONLY \
                          -auxb3 $NO_INNER_REFRACT -auxb4 $NO_INNER_FRESNEL -auxb5 $NO_INNER_SOLANGCOMPR -auxb6 $NO_INNER_PDFREFRCOMP \
-                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
+                         -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}${NO_INNER_REFRACT_OT}${NO_INNER_FRESNEL_OT}${NO_INNER_SOLANGCOMPR_OT}${NO_INNER_PDFREFRCOMP_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}${HIDE_BCKG_OT} \
                          -opof`
         FILENAME_LIST+=("$FILENAME")
     done
@@ -380,16 +499,16 @@ OUTER_ROUGH=0.01
 INNER_LAMB_COLOUR=3
 INNER_LAMB_COLOUR_OT="OrangeBoosted"
 THICK=0.0
-MEDIUM_BLUE=0.0
-MEDIUM_OT=""
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT=""
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -403,16 +522,16 @@ OUTER_ROUGH=0.12
 INNER_LAMB_COLOUR=3
 INNER_LAMB_COLOUR_OT="OrangeBoosted"
 THICK=0.0
-MEDIUM_BLUE=0.0
-MEDIUM_OT=""
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT=""
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -426,16 +545,16 @@ OUTER_ROUGH=0.01
 INNER_LAMB_COLOUR=0
 INNER_LAMB_COLOUR_OT=""
 THICK=1.0
-MEDIUM_BLUE=0.0
-MEDIUM_OT="Orange"
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -449,16 +568,16 @@ OUTER_ROUGH=0.01
 INNER_LAMB_COLOUR=0
 INNER_LAMB_COLOUR_OT=""
 THICK=1.0
-MEDIUM_BLUE=0.0
-MEDIUM_OT="Orange"
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -472,16 +591,16 @@ OUTER_ROUGH=0.01
 INNER_LAMB_COLOUR=1
 INNER_LAMB_COLOUR_OT="WhiteBoosted"
 THICK=0.8
-MEDIUM_BLUE=0.0
-MEDIUM_OT="Orange"
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
@@ -495,16 +614,16 @@ OUTER_ROUGH=0.12
 INNER_LAMB_COLOUR=0
 INNER_LAMB_COLOUR_OT=""
 THICK=1.0
-MEDIUM_BLUE=0.0
-MEDIUM_OT="Orange"
+MEDIUM_COLOUR=0.0
+MEDIUM_COLOUR_OT="Orange"
 FILENAME_LIST=()
 for EM in 1 7 10; do
               render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH}
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH}
     FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
-                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_BLUE} \
-                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_OT}_Outer${OUTER_ROUGH} \
+                     -auxf1 $OUTER_ROUGH -auxf2 $INNER_ROUGH -auxf3 $THICK -auxf4 ${INNER_LAMB_COLOUR} -auxf5 ${MEDIUM_COLOUR} \
+                     -ot ${IMG_NAME}_Inner${INNER_ROUGH}${INNER_LAMB_COLOUR_OT}_Thick${THICK}${MEDIUM_COLOUR_OT}_Outer${OUTER_ROUGH} \
                      -opof`
     FILENAME_LIST+=("$FILENAME")
 done
