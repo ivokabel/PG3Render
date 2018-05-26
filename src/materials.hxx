@@ -1327,12 +1327,19 @@ public:
             
         oMatRecord.compProb = 1.f;
 
-        // debug
-        const bool dbgInnerOnly         =  mAuxDbgParams.bool2;
-        const bool dbgInnerRefract      = !mAuxDbgParams.bool3;
-        const bool dbgInnerFresnel      = !mAuxDbgParams.bool4;
-        const bool dbgInnerSolAngCompr  = !mAuxDbgParams.bool5;
-        const bool dbgPdfRefrComp       = !mAuxDbgParams.bool6;
+#ifdef PG3_WWL_USE_AUX_DEBUG_PARAMS
+        bool innerOnly              =  mAuxDbgParams.bool2;
+        bool refractInner           = !mAuxDbgParams.bool3;
+        bool useInnerFresnel        = !mAuxDbgParams.bool4;
+        bool useInnerSolAngCompr    = !mAuxDbgParams.bool5;
+        bool compensatePdfRefr      = !mAuxDbgParams.bool6;
+#else
+        bool innerOnly              = false;
+        bool refractInner           = true;
+        bool useInnerFresnel        = true;
+        bool useInnerSolAngCompr    = true;
+        bool compensatePdfRefr      = true;
+#endif
 
         // No transmission below horizon (both input and output)
         if (oMatRecord.wil.z <= 0.f || oMatRecord.wol.z <= 0.f)
@@ -1361,17 +1368,17 @@ public:
 
         // Refracted directions
         Vec3f wilRefract, wolRefract;
-        if (dbgInnerRefract)
+        if (refractInner)
         {
             Geom::Refract(wilRefract, wil, Vec3f(0.f, 0.f, 1.f), outerEta);
             Geom::Refract(wolRefract, wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+            // TODO: Are refracted directions always valid??
         }
         else
         {
             wilRefract = -wil;
             wolRefract = -wol;
         }
-        // TODO: Are refracted directions always valid??
 
         const float wilFresnelRefl  = Physics::FresnelDielectric(wil.z, outerEta);
         const float wolFresnelRefl  = Physics::FresnelDielectric(wol.z, outerEta);
@@ -1393,17 +1400,16 @@ public:
 
         PG3_ASSERT(innerMatRec.AreOptDataProvided(MaterialRecord::kOptReflectance));
 
-        const float innerFresnelTrans = dbgInnerFresnel ? (wilFresnelTrans * wolFresnelTrans) : 1.0f;
-        const float innerSolAngCompr  = dbgInnerSolAngCompr ? Math::Sqr(1.f / outerEta) : 1.0f;
+        const float innerFresnelTrans = useInnerFresnel ? (wilFresnelTrans * wolFresnelTrans) : 1.0f;
+        const float innerSolAngCompr  = useInnerSolAngCompr ? Math::Sqr(1.f / outerEta) : 1.0f;
         const SpectrumF innerMatAttenuation =
               innerMatRec.attenuation
             * innerFresnelTrans     // refraction transmissions
             * innerSolAngCompr      // incident solid angle (de)compression
             * mediumTrans;
 
-        //oMatRecord.attenuation = outerMatAttenuation; // debug
-        if (dbgInnerOnly)
-            oMatRecord.attenuation = innerMatAttenuation; // debug
+        if (innerOnly)
+            oMatRecord.attenuation = innerMatAttenuation;
         else
             oMatRecord.attenuation = outerMatAttenuation + innerMatAttenuation;
 
@@ -1428,16 +1434,15 @@ public:
 
             const auto outerPdf = outerMatRecRefl.pdfW;
             const float innerPdfSolAngCompr =
-                  (dbgInnerRefract && dbgPdfRefrComp)
+                  (refractInner && compensatePdfRefr)
                 ? (Math::Sqr(1.f / outerEta) * (wil.z / -wilRefract.z))
                 : 1.0f;
             const auto innerPdf =
                   innerMatRec.pdfW
                 * innerPdfSolAngCompr; // solid angle (de)compression
 
-            //oMatRecord.pdfW = outerPdf; // debug
-            if (dbgInnerOnly)
-                oMatRecord.pdfW = innerPdf; // debug
+            if (innerOnly)
+                oMatRecord.pdfW = innerPdf;
             else
                 oMatRecord.pdfW = outerPdf * outerPdfWeight + innerPdf * innerPdfWeight;
 
@@ -1482,13 +1487,17 @@ public:
 
         PG3_ASSERT_FLOAT_LARGER_THAN(totalContrEst, 0.001f);
 
-        // debug
-        const bool dbgInnerOnly    =  mAuxDbgParams.bool2;
-        const bool dbgInnerRefract = !mAuxDbgParams.bool3;
+#ifdef PG3_WWL_USE_AUX_DEBUG_PARAMS
+        bool innerOnly    =  mAuxDbgParams.bool2;
+        bool refractInner = !mAuxDbgParams.bool3;
+#else
+        bool innerOnly    = false;
+        bool refractInner = true;
+#endif
 
         // Pick and sample one component
         const float randomVal = aRng.GetFloat() * totalContrEst;
-        if (!dbgInnerOnly && (randomVal < outerCompContrEst))
+        if (!innerOnly && (randomVal < outerCompContrEst))
         {
             // Outer component
             outerMatRecord.SetFlag(MaterialRecord::kReflectionOnly);
@@ -1504,11 +1513,11 @@ public:
 
             // Compute refracted outgoing direction
             Vec3f wolRefract;
-            if (dbgInnerRefract)
+            if (refractInner)
                 Geom::Refract(wolRefract, oMatRecord.wol, Vec3f(0.f, 0.f, 1.f), outerEta);
+                // TODO: Is refracted direction always valid??
             else
                 wolRefract = -oMatRecord.wol;
-            // TODO: Is refracted direction always valid??
 
             // Sample inner BRDF
             MaterialRecord innerMatRecord(-wolRefract);
@@ -1516,7 +1525,7 @@ public:
 
             // Refract through the upper layer
             // This can yield directions under surface due to TIR!
-            if (dbgInnerRefract)
+            if (refractInner)
                 Geom::Refract(oMatRecord.wil, -innerMatRecord.wil, Vec3f(0.f, 0.f, 1.f), outerEta);
             else
                 oMatRecord.wil = innerMatRecord.wil;

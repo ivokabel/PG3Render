@@ -140,12 +140,15 @@ public:
         }
         else
         {
-            // debug
-            const bool dbgHideBckg = !mConfig.mAuxDbgParams.bool1;
+#ifdef PG3_WWL_USE_AUX_DEBUG_PARAMS
+            bool hideBckg = !mConfig.mAuxDbgParams.bool1;
+#else
+            bool hideBckg = false;
+#endif
 
             // No intersection - get radiance from the background
             const BackgroundLight *backgroundLight = mConfig.mScene->GetBackgroundLight();
-            if (dbgHideBckg && backgroundLight != nullptr)
+            if (hideBckg && backgroundLight != nullptr)
                 oRadiance = backgroundLight->GetEmmision(aRay.dir);
             else
                 oRadiance.MakeZero(); // No background light
