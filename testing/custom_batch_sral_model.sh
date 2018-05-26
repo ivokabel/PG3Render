@@ -70,6 +70,10 @@ START_TIME=`date +%s`
 
 ITERS=512
 
+###############################################
+# Blog images - Intro teaser image
+###############################################
+
 OT_BASE=BlogTeaser
 IMG_NAME=${OT_BASE}
 EM=10
@@ -173,21 +177,6 @@ FILENAME=`render -s 27 -em $EM -a dmis -i $ITERS \
 FILENAME_LIST+=("$FILENAME")
 
 stitch_images FILENAME_LIST "${IMG_NAME}_${ITERS}s.jpg"
-
-
-#debug
-echo
-echo "The script has finished."
-END_TIME=`date +%s`
-TOTAL_TIME=`expr $END_TIME - $START_TIME`
-echo "Total execution time:" `display_time $TOTAL_TIME`.
-read
-exit
-
-
-
-
-ITERS=512
 
 
 ###############################################
