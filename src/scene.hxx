@@ -355,7 +355,7 @@ public:
                 : SpectrumF().SetSRGBAttenuation(0.05f, 0.8f, 4.0f)); // yellow -> dark red
 
             mMaterials.push_back(
-                new WeidlichWilkie2LayeredMaterial(
+                new SraLayeredMaterial(
                     // Outer layer
                     new MicrofacetGGXDielectricMaterial(
                         outerRoughness, SpectralData::kGlassCorningIor, SpectralData::kAirIor),

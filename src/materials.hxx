@@ -1298,11 +1298,14 @@ protected:
 };
 
 
-class WeidlichWilkie2LayeredMaterial : public AbstractMaterial
+// A Smooth Refraction Approximation Layered Model (SRAL)
+// inspired by the Weidlich-Wilkie Layered Model.
+// https://ivokabel.github.io/2018/05/17/rendering-layered-materials-smooth-refraction-approximation-layered-model.html
+class SraLayeredMaterial : public AbstractMaterial
 {
 public:
 
-    WeidlichWilkie2LayeredMaterial(
+    SraLayeredMaterial(
         AbstractMaterial    *aOuterLayerMaterial,
         AbstractMaterial    *aInnerLayerMaterial,
         SpectrumF            aMediumAttenuationCoeff, // 0 means no attenuation
