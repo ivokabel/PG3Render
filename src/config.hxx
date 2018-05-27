@@ -89,7 +89,7 @@ const Scene::BoxMask g_SceneConfigs[] =
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresFresnelDielectric),
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXConductor),
     Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresMicrofacetGGXDielectric),
-    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresWeidlichWilkieLayers),
+    Scene::BoxMask(Scene::kLightEnv    | GEOM_1SPHERE      | Scene::kSpheresSraLayers),
 
     // Material testing, rectangles: 28-29
     Scene::BoxMask(Scene::kLightEnv     | GEOM_RECTANTGLES | Scene::kVertRectFresnelDielectric),

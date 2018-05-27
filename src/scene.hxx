@@ -144,7 +144,7 @@ public:
         kSpheresFresnelDielectric           = 0x00020000,
         kSpheresMicrofacetGGXConductor      = 0x00040000,
         kSpheresMicrofacetGGXDielectric     = 0x00080000,
-        kSpheresWeidlichWilkieLayers        = 0x00100000,
+        kSpheresSraLayers                   = 0x00100000,
         kVertRectFresnelDielectric          = 0x00200000,
         kVertRectMicrofacetGGXDielectric    = 0x00400000,
 
@@ -322,7 +322,7 @@ public:
                 (aAuxDbgParams.float2 != Math::InfinityF()) ? aAuxDbgParams.float2 : /*0.001f*/ 0.010f /*0.100f*/;
             mMaterials.push_back(new MicrofacetGGXDielectricMaterial(roughness, innerIor, outerIor));
         }
-        else if (Utils::IsMasked(aBoxMask, kSpheresWeidlichWilkieLayers))
+        else if (Utils::IsMasked(aBoxMask, kSpheresSraLayers))
         {
             const float outerRoughness =
                 (aAuxDbgParams.float1 != Math::InfinityF()) ? aAuxDbgParams.float1 : 0.010f;
@@ -1217,11 +1217,11 @@ public:
             name    += "sph. microfacet ggx dielectric";
             acronym += "Smgd";
         }
-        else if (Utils::IsMasked(aBoxMask, kSpheresWeidlichWilkieLayers))
+        else if (Utils::IsMasked(aBoxMask, kSpheresSraLayers))
         {
             MATERIALS_ADD_COMMA_AND_SPACE_IF_NEEDED
-            name    += "sph. layers a la Weidlich&Wilkie";
-            acronym += "Slww";
+            name    += "sph. SRA layers";
+            acronym += "Ssral";
         }
 
         if (Utils::IsMasked(aBoxMask, kWallsPhongDiffuse) ||
