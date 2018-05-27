@@ -398,7 +398,7 @@ public:
         printf("    -minpl Minimum path length. Must be greater than 0 and not greater then maximum path length.\n");
         printf("           Must not be set if Russian roulette is used for ending paths. Only valid for path tracers.\n");
         printf("           Default is 1.\n");
-        printf("    -iic   Maximal allowed value for indirect illumination estimates. 0 means no clipping (default).\n");
+        printf("    -iic   Maximal allowed value for indirect illumination estimates. 0 means no clipping (default 16).\n");
         printf("           Only valid for path tracer (pt).\n");
         printf("    -sb | --splitting-budget \n");
         printf("           Splitting budget: maximal total amount of splitted paths per one camera ray (default 4).\n");
@@ -548,7 +548,7 @@ public:
         mAlgorithm                  = kAlgorithmCount;              // [cmd]
         mMinPathLength              = 1;                            // [cmd]
         mMaxPathLength              = 0;                            // [cmd]
-        mIndirectIllumClipping      = 0.f;                          // [cmd]
+        mIndirectIllumClipping      = 16.f;                         // [cmd]
         mSplittingBudget            = 4;                            // [cmd]
 
         // debug, temporary
