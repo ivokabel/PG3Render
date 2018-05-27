@@ -4,7 +4,10 @@
 # Settings
 ###################################################################################################
 
-COMPARISON_MODE="compare_to_reference"  #"make_references_from_currents"  #"generate_references"  #"
+ COMPARISON_MODE="compare_to_reference"
+#COMPARISON_MODE="make_references_from_currents"
+#COMPARISON_MODE="generate_references"
+
 ITERATIONS_COUNTS="4 16"
 ARCH_MODES="32 64"
 ERROR_THRESHOLD=0.25
