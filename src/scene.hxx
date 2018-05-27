@@ -503,7 +503,7 @@ public:
         }
         if (aBoxMask & k1Sphere)
         {
-            float ballRadius = 1.3f; //1.f;
+            float ballRadius = 1.f; //1.3f; //
             Vec3f floorCenter = (cb[0] + cb[5]) * 0.5f;
             Vec3f ballCenter = floorCenter + Vec3f(0.f, 0.f, ballRadius);
 
