@@ -23,6 +23,7 @@
 enum Algorithm
 {
     kEyeLight,
+    kNormalVisualiser,
     kDirectIllumBsdfSampling,
     kDirectIllumLightSamplingAll,
     kDirectIllumLightSamplingSingle,
@@ -123,6 +124,7 @@ public:
         static const char* algorithmNames[kAlgorithmCount] =
         {
             "eye light",
+            "normals visualiser",
             "direct illumination - BSDF sampling",
             "direct illumination - light sampling (all)",
             "direct illumination - light sampling (single sample)",
@@ -140,6 +142,7 @@ public:
     static const char* GetAcronym(Algorithm aAlgorithm)
     {
         static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "ptn", "pt" };
+        static const char* algorithmNames[kAlgorithmCount] = { "el", "nv", "dbs", "dlsa", "dlss", "dmis", "ptn", "pt" };
 
         if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
             return "unknown";

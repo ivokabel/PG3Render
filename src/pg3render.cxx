@@ -5,6 +5,7 @@
 #include "frame_buffer.hxx"
 #include "scene.hxx"
 #include "eye_light.hxx"
+#include "normal_visualiser.hxx"
 #include "direct_illumination.hxx"
 #include "path_tracer.hxx"
 #include "microfacet.hxx"
@@ -28,6 +29,9 @@ AbstractRenderer* CreateRenderer(
     {
     case kEyeLight:
         return new EyeLight(aConfig, aSeed);
+
+    case kNormalVisualiser:
+        return new NormalVisualiser(aConfig, aSeed);
 
     case kDirectIllumLightSamplingAll:
     case kDirectIllumLightSamplingSingle:

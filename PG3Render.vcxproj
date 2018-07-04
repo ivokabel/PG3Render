@@ -208,6 +208,7 @@
     <ClInclude Include="src\filter.hxx" />
     <ClInclude Include="src\frame_buffer.hxx" />
     <ClInclude Include="src\geom.hxx" />
+    <ClInclude Include="src\normal_visualiser.hxx" />
     <ClInclude Include="src\physics.hxx" />
     <ClInclude Include="src\scene_graph.hxx" />
     <ClInclude Include="src\hard_config.hxx" />

@@ -5,17 +5,18 @@
 #include <omp.h>
 #include "spectrum.hxx"
 #include "renderer.hxx"
+#include "math.hxx"
 #include "rng.hxx"
 #include "types.hxx"
 
-class EyeLight : public AbstractRenderer
+class NormalVisualiser : public AbstractRenderer
 {
 public:
 
-    EyeLight(
+    NormalVisualiser(
         const Config    &aConfig,
         int32_t          aSeed = 1234
-    ) :
+        ) :
         AbstractRenderer(aConfig), mRng(aSeed)
     {}
 
@@ -45,13 +46,11 @@ public:
             // Intersect & Shade
             if (mConfig.mScene->Intersect(ray, isect))
             {
-                float dotLN = Dot(isect.normal, -ray.dir);
-
-                SpectrumF color;
-                if (dotLN > 0)
-                    color.SetSRGBGreyLight(dotLN);
-                else
-                    color.SetSRGBLight(-dotLN, 0, 0);
+                const auto normal = isect.normal;
+                SpectrumF color = SpectrumF().SetSRGBLight(
+                    Math::Clamp(normal.x / 2.f + 0.5f, 0.f, 1.f),
+                    Math::Clamp(normal.y / 2.f + 0.5f, 0.f, 1.f),
+                    Math::Clamp(normal.z / 2.f + 0.5f, 0.f, 1.f));
 
                 mFramebuffer.AddRadiance(x, y, color);
             }
