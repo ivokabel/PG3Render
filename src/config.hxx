@@ -121,33 +121,52 @@ public:
 
     static const char* GetName(Algorithm aAlgorithm)
     {
-        static const char* algorithmNames[kAlgorithmCount] =
+        switch (aAlgorithm)
         {
-            "eye light",
-            "normals visualiser",
-            "direct illumination - BSDF sampling",
-            "direct illumination - light sampling (all)",
-            "direct illumination - light sampling (single sample)",
-            "direct illumination - multiple importance sampling",
-            "naive path tracing",
-            "path tracing",
-        };
-
-        if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
+        case kEyeLight:
+           return "eye light";
+        case kNormalVisualiser:
+            return "normals visualiser";
+        case kDirectIllumBsdfSampling:
+            return "direct illumination - BSDF sampling";
+        case kDirectIllumLightSamplingAll:
+            return "direct illumination - light sampling (all)";
+        case kDirectIllumLightSamplingSingle:
+            return "direct illumination - light sampling (single sample)";
+        case kDirectIllumMis:
+            return "direct illumination - multiple importance sampling";
+        case kPathTracingNaive:
+            return "naive path tracing";
+        case kPathTracing:
+            return "path tracing";
+        default:
             return "unknown algorithm";
-
-        return algorithmNames[aAlgorithm];
+        }
     }
 
     static const char* GetAcronym(Algorithm aAlgorithm)
     {
-        static const char* algorithmNames[kAlgorithmCount] = { "el", "dbs", "dlsa", "dlss", "dmis", "ptn", "pt" };
-        static const char* algorithmNames[kAlgorithmCount] = { "el", "nv", "dbs", "dlsa", "dlss", "dmis", "ptn", "pt" };
-
-        if (aAlgorithm < 0 || aAlgorithm >= kAlgorithmCount)
+        switch (aAlgorithm)
+        {
+        case kEyeLight:
+            return "el";
+        case kNormalVisualiser:
+            return "nv";
+        case kDirectIllumBsdfSampling:
+            return "dbs";
+        case kDirectIllumLightSamplingAll:
+            return "dlsa";
+        case kDirectIllumLightSamplingSingle:
+            return "dlss";
+        case kDirectIllumMis:
+            return "dmis";
+        case kPathTracingNaive:
+            return "ptn";
+        case kPathTracing:
+            return "pt";
+        default:
             return "unknown";
-
-        return algorithmNames[aAlgorithm];
+        }
     }
 
     std::string DefaultFilename(
